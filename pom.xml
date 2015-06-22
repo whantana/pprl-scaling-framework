@@ -1,0 +1,34 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>gr.upatras.ceid</groupId>
+    <artifactId>pprl-scaling-framework</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>pprl-scaling-framework</name>
+
+    <repositories>
+        <repository>
+          <id>cloudera</id>
+          <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+        </repository>
+      </repositories>
+
+    <properties>
+        <hadoop.version>2.6.0-cdh5.4.0</hadoop.version>
+    </properties>
+
+
+    <modules>
+        <module>pprl-scaling-framework-shared</module>
+        <module>pprl-scaling-framework-datasets</module>
+        <module>pprl-scaling-framework-encoding</module>
+        <module>pprl-scaling-framework-blocking</module>
+        <module>pprl-scaling-framework-matching</module>
+        <module>pprl-scaling-framework-evaluation</module>
+        <module>pprl-scaling-framework-webapp</module>
+    </modules>
+
+</project>

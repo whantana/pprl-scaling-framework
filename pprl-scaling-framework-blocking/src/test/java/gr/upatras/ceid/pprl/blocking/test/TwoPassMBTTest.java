@@ -2,33 +2,18 @@ package gr.upatras.ceid.pprl.blocking.test;
 
 import gr.upatras.ceid.pprl.blocking.CombinatoricsRanking;
 import gr.upatras.ceid.pprl.blocking.TwoPassMBT;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.junit.Test;
 
 import java.io.FileNotFoundException;
 import java.io.UnsupportedEncodingException;
 import java.util.BitSet;
 
-public class TwoPassMBTTest extends TestCase {
-    /**
-     * Create the test case
-     *
-     * @param testName name of the test case
-     */
-    public TwoPassMBTTest(String testName)
-    {
-        super( testName );
-    }
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
-    /**
-     * @return the suite of tests being tested
-     */
-    public static Test suite()
-    {
-        return new TestSuite( TwoPassMBTTest.class );
-    }
+public class TwoPassMBTTest {
 
+    @Test
     public void testPrepare() {
         int N = 100;
         int L = 1024;
@@ -37,6 +22,7 @@ public class TwoPassMBTTest extends TestCase {
         assertTrue(algorithm.getBUCKETS().isEmpty());
     }
 
+    @Test
     public void testTOTAL_BIT_COUNTER() {
         TwoPassMBT algorithm = new TwoPassMBT(10,10); // 10 bitsets with length 10
         BitSet bs1 = new BitSet();
@@ -52,6 +38,7 @@ public class TwoPassMBTTest extends TestCase {
 
     }
 
+    @Test
     public void testBIT_2_COMBINATIONS_COUNTERS() {
         TwoPassMBT algorithm = new TwoPassMBT(10,10); // 10 bitsets with length 10
         BitSet bs1 = new BitSet();
@@ -86,17 +73,18 @@ public class TwoPassMBTTest extends TestCase {
         assertEquals(CCS[CombinatoricsRanking.rank2Combination(new int[]{0,1})][3],0);
     }
 
-    public void testDebug() {
-        int N = 100;
-        int L = 10;
-        TwoPassMBT algorithm = new TwoPassMBT(N,L,1,2); // 100 bitsets with length 10 bits and MIN=10,MAX=20
-        algorithm.prepare(BitSets.randomBitSets(N,L));
-        try {
-            algorithm.dumpCounters();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-    }
+//    @Test
+//    public void testDebug() {
+//        int N = 100;
+//        int L = 10;
+//        TwoPassMBT algorithm = new TwoPassMBT(N,L,1,2); // 100 bitsets with length 10 bits and MIN=10,MAX=20
+//        algorithm.prepare(BitSets.randomBitSets(N,L));
+//        try {
+//            algorithm.dumpCounters();
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//        } catch (UnsupportedEncodingException e) {
+//            e.printStackTrace();
+//        }
+//    }
 }

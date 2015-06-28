@@ -59,33 +59,33 @@ public class TwoPassMBT implements BTAlgorithm {
         return (bitValues[0] ? 1 : 0) + (bitValues[1] ? 2 : 0);
     }
 
-    /**
-     * DEBUG - dump counters into a file
-     *
-     * @throws FileNotFoundException
-     * @throws UnsupportedEncodingException
-     */
-    public void dumpCounters() throws FileNotFoundException, UnsupportedEncodingException {
-
-        assert ROOT_NODE != null;
-        assert BUCKETS != null;
-
-        PrintWriter writer = new PrintWriter("debug_ccs.txt", "UTF-8");
-        writer.println(Arrays.toString(TOTAL_BIT_COUNTER) + "\n");
-        Combinations CL2 = new Combinations(L, 2);
-        for (int[] c : CL2) {
-            int rank = CombinatoricsRanking.rank2Combination(c);
-
-            String s = String.format("%d.{%d,%d} \t 00=%d , 01=%d , 10=%d , 11 =%d",
-                    rank, c[1], c[0],
-                    BIT_2_COMBINATIONS_COUNTERS[rank][0],
-                    BIT_2_COMBINATIONS_COUNTERS[rank][1],
-                    BIT_2_COMBINATIONS_COUNTERS[rank][2],
-                    BIT_2_COMBINATIONS_COUNTERS[rank][3]);
-            writer.println(s);
-        }
-        writer.close();
-    }
+//    /**
+//     * DEBUG - dump counters into a file
+//     *
+//     * @throws FileNotFoundException
+//     * @throws UnsupportedEncodingException
+//     */
+//    public void dumpCounters() throws FileNotFoundException, UnsupportedEncodingException {
+//
+//        assert ROOT_NODE != null;
+//        assert BUCKETS != null;
+//
+//        PrintWriter writer = new PrintWriter("debug_ccs.txt", "UTF-8");
+//        writer.println(Arrays.toString(TOTAL_BIT_COUNTER) + "\n");
+//        Combinations CL2 = new Combinations(L, 2);
+//        for (int[] c : CL2) {
+//            int rank = CombinatoricsRanking.rank2Combination(c);
+//
+//            String s = String.format("%d.{%d,%d} \t 00=%d , 01=%d , 10=%d , 11 =%d",
+//                    rank, c[1], c[0],
+//                    BIT_2_COMBINATIONS_COUNTERS[rank][0],
+//                    BIT_2_COMBINATIONS_COUNTERS[rank][1],
+//                    BIT_2_COMBINATIONS_COUNTERS[rank][2],
+//                    BIT_2_COMBINATIONS_COUNTERS[rank][3]);
+//            writer.println(s);
+//        }
+//        writer.close();
+//    }
 
     /**
      * PREPARE - Update counters, set root node and bucket list

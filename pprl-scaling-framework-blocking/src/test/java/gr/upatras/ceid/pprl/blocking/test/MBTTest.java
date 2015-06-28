@@ -2,35 +2,21 @@ package gr.upatras.ceid.pprl.blocking.test;
 
 import gr.upatras.ceid.pprl.blocking.Bucket;
 import gr.upatras.ceid.pprl.blocking.MBT;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.junit.Test;
 
 import java.util.BitSet;
 import java.util.List;
 
-public class MBTTest extends TestCase {
-    /**
-     * Create the test case
-     *
-     * @param testName name of the test case
-     */
-    public MBTTest(String testName) {
-        super(testName);
-    }
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
-    /**
-     * @return the suite of tests being tested
-     */
-    public static Test suite() {
-        return new TestSuite(TwoPassMBTTest.class);
-    }
+public class MBTTest {
 
     public void testChoosingBit() {
 
     }
 
-
+    @Test
     public void testPrepare() {
         int N=100;
         MBT algorithm = new MBT(N,1024,10,20); // 100 records of 1024 bits with MIN_BUCKET_SIZE=10 , MAX_BUCKET_SIZE=20
@@ -41,7 +27,7 @@ public class MBTTest extends TestCase {
             assertTrue(algorithm.getBUCKETS().isEmpty());
         }
     }
-
+    @Test
     public void testRun() {
         int N = 100;
         int L = 1024;
@@ -52,6 +38,7 @@ public class MBTTest extends TestCase {
         for(Bucket b : buckets) testBucket(b);
     }
 
+    @Test
     private void testBucket(final Bucket b) {
         assertEquals(b.getSplitBits().size(),b.getSplitBitValues().size());
         BitSet[] bitSets = new BitSet[b.getCount()];

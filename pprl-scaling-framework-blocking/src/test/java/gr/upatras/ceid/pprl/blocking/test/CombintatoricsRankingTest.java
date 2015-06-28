@@ -1,32 +1,17 @@
 package gr.upatras.ceid.pprl.blocking.test;
 
 import gr.upatras.ceid.pprl.blocking.CombinatoricsRanking;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
 import org.apache.commons.math3.util.Combinations;
+import org.junit.Test;
 
 import java.util.Iterator;
 
-public class CombintatoricsRankingTest extends TestCase {
-    /**
-     * Create the test case
-     *
-     * @param testName name of the test case
-     */
-    public CombintatoricsRankingTest(String testName)
-    {
-        super( testName );
-    }
+import static org.junit.Assert.assertEquals;
 
-    /**
-     * @return the suite of tests being tested
-     */
-    public static Test suite()
-    {
-        return new TestSuite( CombintatoricsRankingTest.class );
-    }
 
+public class CombintatoricsRankingTest {
+
+    @Test
     public void testRank() {
         assertEquals(CombinatoricsRanking.rank2Combination(new int[]{0,1}),0);
         assertEquals(CombinatoricsRanking.rankCombination(new int[]{0, 1}, 2),0);
@@ -45,6 +30,7 @@ public class CombintatoricsRankingTest extends TestCase {
         }
     }
 
+    @Test
     public void testElementRank() {
         int N = 10;
         int[] elements = {9,5,4,2,0};
@@ -82,6 +68,7 @@ public class CombintatoricsRankingTest extends TestCase {
         }
     }
 
+    @Test
     public void testElementRankIterator() {
         int N = 10;
         int[] elements = {9,5,4,2,0};

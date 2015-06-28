@@ -19,7 +19,7 @@
     <properties>
         <hadoop.version>2.6.0-cdh5.4.0</hadoop.version>
         <hbase.version>1.0.0-cdh5.4.0</hbase.version>
-        <junit.version>3.8.1</junit.version>
+        <junit.version>4.12</junit.version>
         <mahout.integration.version>0.9-cdh5.4.0</mahout.integration.version>
     </properties>
 

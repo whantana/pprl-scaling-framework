@@ -7,7 +7,7 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>pprl-scaling-framework</name>
+    <name>PPRL Scaling Framework</name>
 
     <repositories>
         <repository>
@@ -32,6 +32,7 @@
         <module>pprl-scaling-framework-matching</module>
         <module>pprl-scaling-framework-evaluation</module>
         <module>pprl-scaling-framework-webapp</module>
+        <module>pprl-scaling-framework-shell</module>
     </modules>
 
 </project>

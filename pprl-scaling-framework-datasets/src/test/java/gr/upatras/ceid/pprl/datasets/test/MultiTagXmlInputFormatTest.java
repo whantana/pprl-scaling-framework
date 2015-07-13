@@ -12,7 +12,6 @@ import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
 import org.apache.hadoop.util.ReflectionUtils;
-import org.apache.mahout.text.wikipedia.XmlInputFormat;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -51,48 +50,6 @@ public class MultiTagXmlInputFormatTest {
 
         assert testFile != null;
         split = new FileSplit(new Path(testFile.getAbsoluteFile().toURI()), 0, testFile.length(), null);
-    }
-
-    @Test
-    public void testXmlInputFormat1() {
-        conf.set(XmlInputFormat.START_TAG_KEY,"<phdthesis");
-        conf.set(XmlInputFormat.END_TAG_KEY,"</phdthesis>");
-        XmlInputFormat inputFormat = ReflectionUtils.newInstance(XmlInputFormat.class, conf);
-        TaskAttemptContext context = new TaskAttemptContextImpl(conf, new TaskAttemptID());
-        RecordReader<LongWritable, Text> reader = inputFormat.createRecordReader(split, context);
-        try {
-            reader.initialize(split, context);
-            boolean foundKv = reader.nextKeyValue();
-            int i = 0;
-            while(foundKv) {
-                foundKv = reader.nextKeyValue();
-                i++;
-            }
-            assertEquals(i,SAMPLE_PHD_TAG_PAIR_COUNT);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Test
-    public void testXmlInputFormat2() {
-        conf.set(XmlInputFormat.START_TAG_KEY,"<foobar");
-        conf.set(XmlInputFormat.END_TAG_KEY,"</foobar>");
-        XmlInputFormat inputFormat = ReflectionUtils.newInstance(XmlInputFormat.class, conf);
-        TaskAttemptContext context = new TaskAttemptContextImpl(conf, new TaskAttemptID());
-        RecordReader<LongWritable, Text> reader = inputFormat.createRecordReader(split, context);
-        try {
-            reader.initialize(split, context);
-            boolean foundKv = reader.nextKeyValue();
-            int i = 0;
-            while(foundKv) {
-                foundKv = reader.nextKeyValue();
-                i++;
-            }
-            assertEquals(i,0);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     @Test

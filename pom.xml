@@ -11,21 +11,29 @@
 
     <repositories>
         <repository>
-          <id>cloudera</id>
-          <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+            <id>cloudera</id>
+            <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
         </repository>
-      </repositories>
+        <repository>
+   	        <id>spring-milestones</id>
+   	        <url>http://repo.spring.io/libs-release</url>
+   	    </repository>
+    </repositories>
 
     <properties>
+        <java.version>1.7</java.version>
         <hadoop.version>2.6.0-cdh5.4.0</hadoop.version>
         <hbase.version>1.0.0-cdh5.4.0</hbase.version>
         <junit.version>4.12</junit.version>
-        <mahout.integration.version>0.9-cdh5.4.0</mahout.integration.version>
+        <slf4j.version>1.7.12</slf4j.version>
+        <spring.framework.version>4.1.7.RELEASE</spring.framework.version>
+        <spring.boot.version>1.2.5.RELEASE</spring.boot.version>
+        <spring.data.hadoop.version>2.2.0.RELEASE</spring.data.hadoop.version>
+        <spring.test.version>${spring.framework.version}</spring.test.version>
     </properties>
 
 
     <modules>
-        <module>pprl-scaling-framework-shared</module>
         <module>pprl-scaling-framework-datasets</module>
         <module>pprl-scaling-framework-encoding</module>
         <module>pprl-scaling-framework-blocking</module>

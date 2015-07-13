@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>pprl-scaling-framework-datasets</artifactId>
-    <version>${parent.version}</version>
+    <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
 
@@ -22,29 +22,57 @@
     </properties>
 
     <dependencies>
+        <!-- Spring dependencies -->
         <dependency>
-            <groupId>gr.upatras.ceid</groupId>
-            <artifactId>pprl-scaling-framework-shared</artifactId>
-            <version>${parent.version}</version>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-hadoop</artifactId>
+            <version>${spring.data.hadoop.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-hadoop-test</artifactId>
+            <version>${spring.data.hadoop.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>${spring.test.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- SLF4J dependencies -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+
+        <!-- junit dependencies -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
+
+
+        <!-- Hadoop dependencies -->
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-client</artifactId>
             <version>${hadoop.version}</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>org.apache.mahout</groupId>
-            <artifactId>mahout-integration</artifactId>
-            <version>${mahout.integration.version}</version>
-            <scope>provided</scope>
-        </dependency>
+
+        <!-- HBase dependencies -->
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-client</artifactId>

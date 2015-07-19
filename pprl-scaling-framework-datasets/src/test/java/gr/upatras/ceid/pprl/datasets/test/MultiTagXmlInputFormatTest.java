@@ -14,6 +14,8 @@ import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,6 +27,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class MultiTagXmlInputFormatTest {
+
+    private static final Logger LOG = LoggerFactory.getLogger(MultiTagXmlInputFormatTest.class);
 
     private Configuration conf;
     private FileSplit split;

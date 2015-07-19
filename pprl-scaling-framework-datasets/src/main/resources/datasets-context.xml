@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+			 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:hdp="http://www.springframework.org/schema/hadoop"
+			 xmlns:context="http://www.springframework.org/schema/context"
+			 xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+	http://www.springframework.org/schema/hadoop http://www.springframework.org/schema/hadoop/spring-hadoop.xsd">
+
+    <!--property place holder-->
+	<context:property-placeholder
+            location="classpath:hadoop.properties,
+                      classpath:pprl.properties"
+            ignore-unresolvable="true"/>
+
+    <!--hadoop configuration-->
+    <hdp:configuration id="hadoopConfiguration">
+        fs.defaultFS=${hd.fs}
+		mapred.job.tracker=${hd.jt}
+		yarn.resourcemanager.address=${hd.rm}
+	</hdp:configuration>
+
+    <!-- hdfs pprl service -->
+    <bean id="hdfsPprlService" class="gr.upatras.ceid.pprl.datasets.service.HdfsPprlService">
+        <constructor-arg name="linkingParty" value="${pprl.linking.party:pprl}" type="java.lang.String"/>
+        <constructor-arg name="withPermissions" value="${pprl.with.permissions:true}" type="java.lang.Boolean"/>
+        <constructor-arg name="dataParties" value="${pprl.data.parties}" />
+        <constructor-arg name="configuration" ref="hadoopConfiguration" />
+    </bean>
+
+    <bean id="conversionService"
+        class="org.springframework.context.support.ConversionServiceFactoryBean" />
+</beans>

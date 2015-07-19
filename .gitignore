@@ -1,6 +1,7 @@
 *.iml
 .idea
 target
+build
 .DS_Store
 *.class
 

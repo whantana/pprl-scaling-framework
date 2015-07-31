@@ -1,187 +1,227 @@
 package gr.upatras.ceid.pprl.datasets.service;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 
 @Service
 public class HdfsPprlService {
 
+    public static final FsPermission PPRL_ONLY_USER_PERMISSIONS =
+            new FsPermission(FsAction.ALL, FsAction.NONE, FsAction.NONE, false);
+    public static final FsPermission PPRL_USER_GROUP_PERMISSIONS =
+            new FsPermission(FsAction.ALL, FsAction.READ, FsAction.NONE, false);
+    public static final FsPermission PPRL_FRAMEWORK_DIRS_PERMS =
+            new FsPermission(FsAction.ALL, FsAction.READ, FsAction.READ, false);
+    public static final FsPermission PPRL_NO_PERMISSIONS =
+            new FsPermission(FsAction.ALL, FsAction.ALL, FsAction.ALL, false);
     private static final Logger LOG = LoggerFactory.getLogger(HdfsPprlService.class);
-
-    public static final FsPermission PPRL_USER_PERMISSIONS = new FsPermission((short)740);
-    public static final FsPermission PPRL_NO_PERMISSSIONS = new FsPermission((short)777);
-
     private Path pprlBasePath;
-    private Path pprlFormatPath;
 
-    private Configuration configuration;
+    @Autowired
+    private Configuration hadoopConfiguration;
     private FileSystem hdfs;
 
     private Boolean withPermissions;
-    private Map<String,Path> format;
-    private String linkingParty;
+    private FsPermission partyPathPermissions;
+    private FsPermission basePathPermissions;
+    private FsPermission uploadedFilesPermissions;
 
-    public HdfsPprlService(final String linkingParty, final List<String> dataParties,
-                           final Boolean withPermissions, final Configuration configuration) throws IOException {
-        this.linkingParty = linkingParty;
-        this.withPermissions = withPermissions;
-        this.configuration = configuration;
-        hdfs = DistributedFileSystem.get(configuration);
-        pprlBasePath = new Path(hdfs.getUri() + "/user");
-        pprlFormatPath = new Path(hdfs.getUri() + "/.pprlformat");
-        format = new HashMap<String,Path>();
-        format.put(linkingParty, null);
-        for (String party : dataParties) format.put(party, null);
+    public HdfsPprlService(final Boolean userRestricted,
+                           final String pprlBasePathStr) {
+        withPermissions = userRestricted;
+        partyPathPermissions = withPermissions ? PPRL_USER_GROUP_PERMISSIONS : PPRL_NO_PERMISSIONS;
+        basePathPermissions = withPermissions ? PPRL_FRAMEWORK_DIRS_PERMS : PPRL_NO_PERMISSIONS;
+        uploadedFilesPermissions = withPermissions ? PPRL_ONLY_USER_PERMISSIONS : PPRL_NO_PERMISSIONS;
+        pprlBasePath = new Path(pprlBasePathStr);
+        hdfs = null;
         LOG.info("HDFS PPRL Service initialized.");
-        LOG.info(toString());
     }
 
-    public void undoFormat() throws IOException {
-        for(String party : format.keySet()) undoFormat(party);
+    public void assertHdfsOpen() throws IOException {
+        if (hdfs == null) throw new IOException("HDFS connection is closed.");
     }
 
-    public void undoFormat(final String party) throws IOException {
-        if(hdfs.exists(getPprlPartyPath(party))) {
-            hdfs.delete(getPprlPartyPath(party), true);
-            format.put(party, null);
-            LOG.info("Deleting directory : {}.", getPprlPartyPath(party));
-        }
-    }
-
-    public void doFormat() throws IOException, InterruptedException {
-        if(!hdfs.exists(pprlBasePath)) {
-            hdfs.mkdirs(pprlBasePath);
-            LOG.info("Creating base directory : {}.", pprlBasePath);
-        }
-        for(String party : format.keySet()) {
-            doFormat(party);
-        }
-    }
-
-    public void doFormat(final String party) throws IOException, InterruptedException {
-        hdfs.mkdirs(getPprlPartyPath(party));
-        if (withPermissions) {
-            hdfs.setOwner(getPprlPartyPath(party),party,party);
-            hdfs.setPermission(getPprlPartyPath(party), PPRL_USER_PERMISSIONS);
-        } else hdfs.setPermission(getPprlPartyPath(party), PPRL_NO_PERMISSSIONS);
-        format.put(party, getPprlPartyPath(party));
-        LOG.info("Creating directory [user restricted ? {}] : {}.",
-                withPermissions? "YES":"NO", getPprlPartyPath(party));
-    }
-
-    public Map<String,Path> getFormat() {
-        return format;
-    }
-
-    public boolean validateFormat() throws IOException {
-        if(format == null ) return false;
-        for (Map.Entry<String,Path> entry : format.entrySet()) {
-            if(!validateFormat(entry.getKey(), entry.getValue())) return false;
-        }
-        return true;
-    }
-
-    public Map<String,Boolean> getAvailableFormat() throws IOException {
-        Map<String,Boolean> map = new HashMap<String,Boolean>();
-        for (Map.Entry<String,Path> entry : format.entrySet()) {
-            map.put(entry.getKey(),validateFormat(entry.getKey(), entry.getValue()));
-        }
-        return map;
-    }
-
-    public boolean validateFormat(final String party, final Path path) throws IOException {
-        return path != null && path.equals(getPprlPartyPath(party)) && hdfs.exists(getPprlPartyPath(party));
-    }
-
-    public void saveFormatOnHdfs() throws IOException, InterruptedException {
-        FSDataOutputStream fos = hdfs.create(pprlFormatPath,true);
-        fos.writeChars(linkingParty + "\t" + format.get(linkingParty).toUri().toString() + "\n");
-        for(Map.Entry<String,Path> entry : format.entrySet()) {
-            if(entry.getKey().equals(linkingParty)) continue;
-            fos.writeChars(entry.getKey() + "\t" + entry.getValue().toUri().toString() + "\n");
-        }
-        fos.close();
-        if(withPermissions) {
-            hdfs.setOwner(pprlFormatPath, linkingParty, linkingParty);
-            hdfs.setPermission(pprlFormatPath, PPRL_USER_PERMISSIONS);
-        } else hdfs.setPermission(pprlFormatPath, PPRL_NO_PERMISSSIONS);
-
-        LOG.info("Saving format on HDFS : {}.",pprlFormatPath);
-    }
-
-    public void loadFormatFromHdfs() throws IOException {
-        BufferedReader br = new BufferedReader(new InputStreamReader(hdfs.open(pprlFormatPath)));
-        final String firstLine = br.readLine();
-        if(firstLine == null) throw new IOException("First line is null/empty.");
-        linkingParty = firstLine.split("\t")[0];
-        format.put(linkingParty, new Path(firstLine.split("\t")[1]));
-        for(String line;(line = br.readLine()) != null;) {
-            String party = line.split("\t")[0];
-            format.put(party, new Path(line.split("\t")[1]));
-        }
-        br.close();
-        LOG.info("Loading format from HDFS : {}.",pprlFormatPath);
-    }
-
-    public void deleteFormatFromHdfs() throws IOException {
-        hdfs.delete(pprlFormatPath,true);
-        LOG.info("Deleting format from HDFS : {}.",pprlFormatPath);
-    }
-
-    @Override
-    public String toString() {
-        return "HdfsPprlService{" +
-                "linkingParty=" + linkingParty +
-                ", configuration=" + configuration +
-                ", withPermissions=" + withPermissions +
-                ", format=" + format +
-                ", pprlBasePath=" + pprlBasePath +
-                ", pprlFormatPath=" + pprlFormatPath +
-                '}';
-    }
-
-    public void closeHdfs() throws IOException {
-        if(hdfs != null ) hdfs.close();
-    }
-
-    public void openHdfs() throws IOException {
-        if(hdfs != null) return;
-        hdfs = DistributedFileSystem.get(configuration);
-    }
-
-    public void reopenHdfs() throws IOException {
-        closeHdfs();
-        openHdfs();
+    public void assertBasePathExists() throws IOException {
+        if (!hdfs.exists(pprlBasePath)) throw new IOException("Base path does not exist on hdfs : " + pprlBasePath);
     }
 
     public Path getPprlPartyPath(final String party) {
-        return new Path(pprlBasePath.toString() + "/" + party);
+        return new Path(pprlBasePath + "/" + party);
     }
 
-    public Path getPprlFormatPath() {
-        return pprlFormatPath;
+    public void openHdfs() throws IOException {
+        hdfs = DistributedFileSystem.get(hadoopConfiguration);
+        if (!pprlBasePath.toString().contains("hdfs://"))
+            pprlBasePath = new Path(hdfs.getUri() + pprlBasePath.toString());
+        LOG.info("HDFS connection is now opened.");
     }
 
-    public String getLinkingParty() {
-        return linkingParty;
+    public void closeHdfs() throws IOException {
+        if (hdfs != null) hdfs.close();
+        hdfs = null;
+        LOG.info("HDFS connection is now closed.");
     }
 
-    public Boolean isUserRestricted() {
+    public String[] listPprlDirectories() throws IOException {
+        assertHdfsOpen();
+        assertBasePathExists();
+        FileStatus[] fss = hdfs.listStatus(pprlBasePath);
+        String[] ss = new String[fss.length];
+        int i = 0;
+        for (FileStatus fs : fss) {
+            ss[i] = fs.getPath() + "\t" + fs.getOwner() + ":" + fs.getGroup() + "\t" + fs.getPermission();
+            i++;
+        }
+        return ss;
+    }
+
+    public void makePprlPartyPaths(final String linkingParty, final String[] dataParties) throws IOException {
+        assertHdfsOpen();
+        if (!hdfs.exists(pprlBasePath)) {
+            makePprlBasePath(linkingParty);
+            LOG.info("Base directory does not exist on the HDFS site. Creating {}", pprlBasePath);
+        }
+        if (linkingParty != null) {
+            makePprlPartyPath(linkingParty);
+        }
+        if (dataParties != null) {
+            for (String party : dataParties) makePprlPartyPath(party);
+        }
+    }
+
+    public void makePprlBasePath(final String linkingParty) throws IOException {
+        assertHdfsOpen();
+        hdfs.mkdirs(pprlBasePath, basePathPermissions);
+        hdfs.setOwner(pprlBasePath, linkingParty, linkingParty);
+    }
+
+    public void makePprlPartyPath(final String party) throws IOException {
+        assertHdfsOpen();
+        final Path dataPartyPath = getPprlPartyPath(party);
+        assertBasePathExists();
+        hdfs.mkdirs(dataPartyPath, partyPathPermissions);
+        hdfs.setOwner(dataPartyPath, party, party);
+        LOG.info("Creating {} with permissions {} and owner {}:{}", dataPartyPath, partyPathPermissions,
+                party, party);
+    }
+
+    public void deletePprlBasePath() throws IOException {
+        assertHdfsOpen();
+        assertBasePathExists();
+        hdfs.delete(pprlBasePath, true);
+        LOG.info("Deleting base directory .");
+    }
+
+    public void deletePprlPartyPath(final String party) throws IOException {
+        assertHdfsOpen();
+        assertBasePathExists();
+        final Path partyPath = getPprlPartyPath(party);
+        hdfs.delete(partyPath, true);
+    }
+
+    public boolean pprlBasePathExists() throws IOException {
+        assertHdfsOpen();
+        return hdfs.exists(pprlBasePath);
+    }
+
+    public boolean isUserRestricted() {
         return withPermissions;
+    }
+
+    public String getLinkingParty() throws IOException {
+        assertHdfsOpen();
+        assertBasePathExists();
+        return hdfs.getFileStatus(pprlBasePath).getOwner();
+    }
+
+    public String[] getDataParties() throws IOException {
+        assertHdfsOpen();
+        assertBasePathExists();
+        final String linkingParty = getLinkingParty();
+        FileStatus[] fss = hdfs.listStatus(pprlBasePath);
+        final String[] ss = new String[fss.length - 1];
+        int i = 0;
+        for (FileStatus fs : fss) {
+            if (fs.getOwner().equals(linkingParty))
+                continue;
+            ss[i] = fs.getOwner();
+            i++;
+        }
+        return ss;
+    }
+
+    public boolean isPartyLinkingParty(final String party) throws IOException {
+        assertHdfsOpen();
+        assertBasePathExists();
+        return hdfs.getFileStatus(pprlBasePath).getOwner().equals(party) &&
+                hdfs.getFileStatus(pprlBasePath).getGroup().equals(party) &&
+                hdfs.exists(getPprlPartyPath(party)) &&
+                hdfs.getFileStatus(getPprlPartyPath(party)).getOwner().equals(party) &&
+                hdfs.getFileStatus(getPprlPartyPath(party)).getGroup().equals(party);
+
+    }
+
+    public boolean isPartyDataParty(final String party) throws IOException {
+        assertHdfsOpen();
+        assertBasePathExists();
+        boolean isNotLinkingParty = !isPartyLinkingParty(party);
+        return isNotLinkingParty &&
+                hdfs.exists(getPprlPartyPath(party)) &&
+                hdfs.getFileStatus(getPprlPartyPath(party)).getOwner().equals(party) &&
+                hdfs.getFileStatus(getPprlPartyPath(party)).getGroup().equals(party);
+    }
+
+    public void uploadFile(final String party, final String localFileName) throws IOException {
+        assertHdfsOpen();
+        assertBasePathExists();
+        File localFile = new File(localFileName);
+        Path source = new Path(localFile.toURI());
+        Path destination = new Path(getPprlPartyPath(party) + "/" + localFile.getName());
+        hdfs.copyFromLocalFile(source, destination);
+        hdfs.setPermission(destination, uploadedFilesPermissions);
+        LOG.info("File \"{}\" uploaded at {} on HDFS.", localFileName, destination);
+    }
+
+    public String[] listUploadedFiles(final String party) throws IOException {
+        assertHdfsOpen();
+        assertBasePathExists();
+        FileStatus[] fss = hdfs.listStatus(getPprlPartyPath(party));
+        final String[] ss = new String[fss.length];
+        for (int i = 0; i < fss.length; i++) {
+            ss[i] = fss[i].getPath() + "\t" + fss[i].getOwner() + ":" + fss[i].getGroup() + "\t" + fss[i].getPermission();
+        }
+        LOG.info("Returning files of party  \"{}\" directory on HDFS : {} .", party, getPprlPartyPath(party));
+        return ss;
+    }
+
+    public void deleteUploadedFile(final String party, final String remoteFileName) throws IOException {
+        assertHdfsOpen();
+        assertBasePathExists();
+        final Path remoteFilePath = new Path(getPprlPartyPath(party) + "/" + remoteFileName);
+        if (!hdfs.exists(remoteFilePath)) throw new IOException("file \"" + remoteFileName +
+                "\" does not exist on " + getPprlPartyPath(party));
+        hdfs.delete(remoteFilePath, true);
+        LOG.info("File \"{}\" uploaded at {} on HDFS.", remoteFileName, remoteFilePath);
+    }
+
+    public FileSystem getHdfs() {
+        return hdfs;
+    }
+
+    public Path getPprlBasePath() {
+        return pprlBasePath;
     }
 }

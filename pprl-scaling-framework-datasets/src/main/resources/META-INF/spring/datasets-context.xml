@@ -9,8 +9,7 @@
 
     <!--property place holder-->
 	<context:property-placeholder
-            location="classpath:hadoop.properties,
-                      classpath:pprl.properties"
+            location="classpath:hadoop.properties"
             ignore-unresolvable="true"/>
 
     <!--hadoop configuration-->
@@ -19,12 +18,6 @@
 		mapred.job.tracker=${hd.jt}
 		yarn.resourcemanager.address=${hd.rm}
 	</hdp:configuration>
-
-    <!-- hdfs pprl service -->
-    <bean id="hdfsPprlService" class="gr.upatras.ceid.pprl.datasets.service.HdfsPprlService">
-        <constructor-arg name="userRestricted" value="${pprl.with.permissions:true}" type="java.lang.Boolean"/>
-        <constructor-arg name="pprlBasePathStr" value="${pprl.base.path}" type="java.lang.String"/>
-    </bean>
 
     <bean id="conversionService"
         class="org.springframework.context.support.ConversionServiceFactoryBean" />

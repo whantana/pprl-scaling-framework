@@ -1,7 +1,6 @@
 package gr.upatras.ceid.pprl.datasets.input;
 
 
-import com.google.common.base.Charsets;
 import com.google.common.io.Closeables;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -19,16 +18,13 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import java.io.IOException;
 
 public class MultiTagXmlInputFormat extends TextInputFormat {
-
-    public static final String START_TAGS_KEY = "xmlinput.start.tags";
-    public static final String END_TAGS_KEY = "xmlinput.end.tags";
+    public static final String TAGS_KEY = "xmlinput.tags";
 
     @Override
     public RecordReader<LongWritable, Text> createRecordReader(InputSplit split, TaskAttemptContext context) {
         try {
             return new MultiTagXmlRecordReader((FileSplit) split, context.getConfiguration());
         } catch (IOException ioe) {
-            //log.warn("Error while creating XmlRecordReader", ioe);
             return null;
         }
     }
@@ -39,6 +35,7 @@ public class MultiTagXmlInputFormat extends TextInputFormat {
         private final byte[][] endTags;
         private final long start;
         private final long end;
+        private boolean inOriginalSplit;
         private final FSDataInputStream fsin;
         private final DataOutputBuffer buffer = new DataOutputBuffer();
         private LongWritable currentKey;
@@ -49,21 +46,21 @@ public class MultiTagXmlInputFormat extends TextInputFormat {
 
 
         public MultiTagXmlRecordReader(FileSplit split, Configuration conf) throws IOException{
-            // check tags for validity
-            checkXmlTagsConfiguration(conf);
 
-            // tag count
-            tagCount = conf.getStrings(START_TAGS_KEY).length;
+            // tags and tag count
+            final String[] tagNames = conf.getStrings(TAGS_KEY);
+            tagCount = tagNames.length;
 
             // start tags
             startTags = new byte[tagCount][];
             for (int i = 0; i < tagCount; i++)
-                startTags[i] = conf.getStrings(START_TAGS_KEY)[i].getBytes(Charsets.UTF_8);
+                startTags[i] = ("<" + conf.getStrings(TAGS_KEY)[i]).getBytes();
+
 
             // end tags
             endTags = new byte[tagCount][];
             for (int i = 0; i < tagCount; i++)
-                endTags[i] = conf.getStrings(END_TAGS_KEY)[i].getBytes(Charsets.UTF_8);
+                endTags[i] = ("</" + conf.getStrings(TAGS_KEY)[i] + ">").getBytes();
 
             // current tag (0:start tag,1:end tag)
             // i.e currentTag[0] = "<tag>", currentTag[1] = "</tag>"
@@ -84,36 +81,32 @@ public class MultiTagXmlInputFormat extends TextInputFormat {
             FileSystem fs = file.getFileSystem(conf);
 
             // open input stream and seek start
+            inOriginalSplit = true;
             fsin = fs.open(split.getPath());
             fsin.seek(start);
-        }
 
-        public static void checkXmlTagsConfiguration(Configuration conf) throws IOException {
-            final String[] startTags = conf.getStrings(START_TAGS_KEY);
-            final String[] endTags = conf.getStrings(END_TAGS_KEY);
-            if(startTags.length != endTags.length )
-                throw new IOException("Number of tags provided must agree (" + startTags.length + "!=" + endTags.length + ").");
-            for (int i = 0; i < startTags.length ; i++) {
-                String st = startTags[i].replaceAll("\\p{P}|<|>", "");
-                String et = endTags[i].replaceAll("\\p{P}|<|>", "");
-                if(!st.equals(et))
-                    throw new IOException("Starting and ending tag do not agree (" + st + " != " + et + ").");
+            // If this is not the first split, we always throw away first record
+            // because we always (except the last split) read one extra line in
+            // next() method.
+            if (start != 0) {
+                // read until first record is skipped
+                readUntilAnyEndTagIsFound();
             }
         }
 
         private boolean next(LongWritable key, Text value) throws IOException {
-            boolean foundStartTag = readUntilStartTagIsFound();
-
-            // if end of file reached or no start tag found return false
-            if(!foundStartTag) return false;
+            if(!inOriginalSplit) return false;
             try {
+                readUntilAnyStartTagIsFound();
+                if(currentTag[0] == null) return false;
+
                 // write start tag
                 buffer.write(currentTag[0]);
 
-                boolean foundEndTag = readUntilEndTagIsFound();
+                boolean foundEndTag = readUntilCurrentEndTagIsFound();
                 if(foundEndTag) {
                     key.set(fsin.getPos());
-                    value.set(buffer.getData(),0,buffer.getLength());
+                    value.set(new String(buffer.getData(),0,buffer.getLength()));
                     return true;
                 }
             } finally {
@@ -123,14 +116,15 @@ public class MultiTagXmlInputFormat extends TextInputFormat {
         }
 
 
-        private boolean readUntilStartTagIsFound() throws IOException {
+        private void readUntilAnyStartTagIsFound() throws IOException {
             while (true) {
                 int b = fsin.read();
 
-                // if end of split reached return false
-                if(b == -1 || fsin.getPos() >= end) return false;
-                for (int i = 0; i < tagCount; i++) {
+                // if end of split reached mark that we are outside original split
+                if(fsin.getPos() >= end) inOriginalSplit = false;
+                if(b == -1) return;
 
+                for (int i = 0; i < tagCount; i++) {
                     // continue matching for a tag
                     if(b == startTags[i][matchCounters[i]]) matchCounters[i]++;
                     else resetMatchCounter(i);
@@ -140,19 +134,43 @@ public class MultiTagXmlInputFormat extends TextInputFormat {
                         currentTag[0] = startTags[i];
                         currentTag[1] = endTags[i];
                         resetMatchCounters();
-                        return true;
+                        return;
                     }
                 }
             }
         }
 
-        private boolean readUntilEndTagIsFound() throws IOException {
-            int i = 0;
+        private void readUntilAnyEndTagIsFound() throws IOException {
             while(true) {
                 int b = fsin.read();
+                if(fsin.getPos() >= end || b == -1) {
+                    inOriginalSplit = false ;
+                    return;
+                }
 
-                // if end of split reached return false
-                if(b == -1 || fsin.getPos() >= end) return false;
+                for (int i = 0; i < tagCount; i++) {
+                    // continue matching for a tag
+                    if(b == endTags[i][matchCounters[i]]) matchCounters[i]++;
+                    else resetMatchCounter(i);
+
+                    //  if counter matchs the tag length, assign tag as current and reset counters
+                    if(matchCounters[i] >= endTags[i].length) {
+                        resetMatchCounters();
+                        return;
+                    }
+                }
+            }
+        }
+
+        private boolean readUntilCurrentEndTagIsFound() throws IOException {
+            int i = 0;
+            while(true) {
+
+                int b = fsin.read();
+
+                // if end of split reached mark that we are outside original split
+                if(fsin.getPos() >= end) inOriginalSplit = false;
+                if(b == -1) return false;
 
                 // save to buffer
                 buffer.write(b);
@@ -166,8 +184,7 @@ public class MultiTagXmlInputFormat extends TextInputFormat {
                         resetMatchCounters();
                         return true;
                     }
-                }
-                else i = 0;
+                } else i = 0;
             }
         }
 
@@ -176,7 +193,6 @@ public class MultiTagXmlInputFormat extends TextInputFormat {
                 resetMatchCounter(i);
             }
         }
-
         private void resetMatchCounter(int i) {
             matchCounters[i] = 0;
         }

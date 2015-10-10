@@ -16,6 +16,6 @@ public class ShellPromptProvider extends DefaultPromptProvider {
 
     @Override
     public String getPrompt() {
-        return username + ".pprl-shell>";
+        return username + ".pprl-shell> ";
     }
 }

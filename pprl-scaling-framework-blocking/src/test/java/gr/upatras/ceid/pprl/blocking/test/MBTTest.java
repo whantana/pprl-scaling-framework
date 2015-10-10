@@ -2,6 +2,7 @@ package gr.upatras.ceid.pprl.blocking.test;
 
 import gr.upatras.ceid.pprl.blocking.Bucket;
 import gr.upatras.ceid.pprl.blocking.MBT;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.BitSet;
@@ -10,6 +11,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@Ignore
 public class MBTTest {
 
     public void testChoosingBit() {

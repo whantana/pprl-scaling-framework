@@ -1,0 +1,20 @@
+{
+  "type" : "record",
+  "name" : "RandomTable",
+  "namespace" : "gr.upatras.ceid.pprl.datasets.avro.RandomTable",
+  "fields" : [ {
+    "name" : "random_string",
+    "type" : "string",
+    "doc"  : "A random string"
+  }, {
+    "name"  : "random_int",
+    "type"  : "int",
+	"order" : "ascending",
+    "doc"   : "A random int"
+  }, {
+    "name" : "random_word",
+    "type" : {"type": "fixed", "name": "random_word", "size": 4},
+    "doc"  : "A random word"
+  }],
+  "doc:" : "Something random"
+}

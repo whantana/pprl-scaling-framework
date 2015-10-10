@@ -15,20 +15,31 @@
             <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
         </repository>
         <repository>
-   	        <id>spring-milestones</id>
-   	        <url>http://repo.spring.io/libs-release</url>
-   	    </repository>
+            <id>spring-milestones</id>
+            <url>http://repo.spring.io/libs-release</url>
+        </repository>
+        <repository>
+            <id>spring-snapshots</id>
+            <name>Spring Snapshots</name>
+            <url>http://repo.spring.io/snapshot</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
     </repositories>
 
     <properties>
         <java.version>1.7</java.version>
         <hadoop.version>2.6.0-cdh5.4.0</hadoop.version>
-        <hbase.version>1.0.0-cdh5.4.0</hbase.version>
+        <hive.version>1.1.0-cdh5.4.0-SNAPSHOT</hive.version>
+        <avro.version>1.7.6-cdh5.4.0</avro.version>
+        <avro.maven.version>1.7.6</avro.maven.version>
+        <mr.unit.version>1.1.0</mr.unit.version>
         <junit.version>4.12</junit.version>
         <slf4j.version>1.7.12</slf4j.version>
-        <spring.framework.version>4.1.7.RELEASE</spring.framework.version>
+        <spring.framework.version>4.2.2.BUILD-SNAPSHOT</spring.framework.version>
         <spring.boot.version>1.2.5.RELEASE</spring.boot.version>
-        <spring.data.hadoop.version>2.2.0.RELEASE</spring.data.hadoop.version>
+        <spring.data.hadoop.version>2.3.0.BUILD-SNAPSHOT</spring.data.hadoop.version>
         <spring.test.version>${spring.framework.version}</spring.test.version>
         <spring.shell.version>1.1.0.RELEASE</spring.shell.version>
     </properties>

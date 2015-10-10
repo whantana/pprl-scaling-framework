@@ -3,6 +3,4 @@
 target
 build
 *.shell.log
-create_pprl_users_groups.sh
-greet_pprl_parties.sh
 .DS_Store

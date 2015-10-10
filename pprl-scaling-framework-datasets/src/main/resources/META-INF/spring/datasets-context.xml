@@ -7,18 +7,57 @@
 	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
 	http://www.springframework.org/schema/hadoop http://www.springframework.org/schema/hadoop/spring-hadoop.xsd">
 
-    <!--property place holder-->
+    <context:annotation-config />
+
+    <!-- property place holder-->
 	<context:property-placeholder
-            location="classpath:hadoop.properties"
+            location="classpath:hadoop-${spring.profiles.active}.properties,
+                      classpath:hive-${spring.profiles.active}.properties,
+                      classpath:hadoop.properties,
+                      classpath:hive.properties"
             ignore-unresolvable="true"/>
 
-    <!--hadoop configuration-->
+    <!-- Hadoop configuration-->
     <hdp:configuration id="hadoopConfiguration">
-        fs.defaultFS=${hd.fs}
-		mapred.job.tracker=${hd.jt}
-		yarn.resourcemanager.address=${hd.rm}
-	</hdp:configuration>
+        fs.defaultFS=${hadoop.fileSystem}
+		dfs.client.use.datanode.hostname=true
+		yarn.resourcemanager.address=${hadoop.resourceManager}
+        mapreduce.framework.name=yarn
+        yarn.nodemanager.aux-services=mapreduce_shuffle
+		yarn.application.classpath=${hadoop.yarnApplicationClasspath}
+    </hdp:configuration>
+    <hdp:file-system configuration-ref="hadoopConfiguration"/>
 
-    <bean id="conversionService"
-        class="org.springframework.context.support.ConversionServiceFactoryBean" />
+    <!-- DBLP XML to Avro Job & it's job runner-->
+    <hdp:job id="dblpXmlToAvroJob" jar-by-class="gr.upatras.ceid.pprl.datasets.mapreduce.DblpXmlToAvroMapper"
+             input-format="gr.upatras.ceid.pprl.datasets.input.MultiTagXmlInputFormat"
+             mapper="gr.upatras.ceid.pprl.datasets.mapreduce.DblpXmlToAvroMapper"
+             output-format="org.apache.avro.mapreduce.AvroKeyOutputFormat"
+             number-reducers="0"/>
+    <hdp:job-runner id="dblpXmlToAvroJobRunner" job-ref="dblpXmlToAvroJob" />
+
+    <!-- AvroJob Bean Initializer-->
+    <bean class="gr.upatras.ceid.pprl.datasets.util.AvroJobInitializingBean">
+   		<constructor-arg ref="dblpXmlToAvroJob"/>
+   		<property name="avroMapOutputKey" value="gr.upatras.ceid.pprl.datasets.avro.dblp.DblpPublication" />
+        <property name="avroOutputKey" value="gr.upatras.ceid.pprl.datasets.avro.dblp.DblpPublication" />
+   	</bean>
+
+	<!-- Distributed Cache -->
+	<hdp:cache create-symlink="true" configuration-ref="hadoopConfiguration">
+	   <hdp:classpath value="avro-mapred-1.7.6-cdh5.4.0-hadoop2.jar" />
+	</hdp:cache>
+
+    <!-- hive configuration -->
+    <hdp:hive-client-factory id="hiveClientFactory" hive-data-source-ref="hiveDataSource"/>
+    <bean id="hiveDriver" class="org.apache.hive.jdbc.HiveDriver"/>
+   	<bean id="hiveDataSource" class="org.springframework.jdbc.datasource.SimpleDriverDataSource">
+   		<constructor-arg name="driver" ref="hiveDriver"/>
+   		<constructor-arg name="url" value="${hive.url}"/>
+   	</bean>
+    <hdp:hive-template id="hiveTemplate" hive-client-factory-ref="hiveClientFactory"/>
+
+    <!-- component scan on service package-->
+    <context:component-scan base-package="gr.upatras.ceid.pprl.datasets.service" />
+
 </beans>

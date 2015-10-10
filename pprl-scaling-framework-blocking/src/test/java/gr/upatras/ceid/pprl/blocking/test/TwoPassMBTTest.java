@@ -2,6 +2,7 @@ package gr.upatras.ceid.pprl.blocking.test;
 
 import gr.upatras.ceid.pprl.blocking.CombinatoricsRanking;
 import gr.upatras.ceid.pprl.blocking.TwoPassMBT;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.FileNotFoundException;
@@ -11,6 +12,7 @@ import java.util.BitSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@Ignore
 public class TwoPassMBTTest {
 
     @Test

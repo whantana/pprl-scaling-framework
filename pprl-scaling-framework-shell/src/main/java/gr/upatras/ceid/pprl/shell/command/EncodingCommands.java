@@ -6,5 +6,4 @@ import org.springframework.shell.core.CommandMarker;
 
 public class EncodingCommands implements CommandMarker {
     private Logger LOG = LoggerFactory.getLogger(EncodingCommands.class);
-
 }

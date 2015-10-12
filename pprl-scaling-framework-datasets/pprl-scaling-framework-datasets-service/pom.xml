@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>gr.upatras.ceid</groupId>
+        <artifactId>pprl-scaling-framework-datasets</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>pprl-scaling-framework-datasets-service</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>Datasets (service) - PPRL Scaling Framework</name>
+    <url>https://github.com/whantana/pprl-scaling-framework</url>
+
+
+    <dependencies>
+        <!-- PPRL framework -->
+        <dependency>
+            <groupId>gr.upatras.ceid</groupId>
+            <artifactId>pprl-scaling-framework-base</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>gr.upatras.ceid</groupId>
+            <artifactId>pprl-scaling-framework-datasets-mapreduce</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+</project>

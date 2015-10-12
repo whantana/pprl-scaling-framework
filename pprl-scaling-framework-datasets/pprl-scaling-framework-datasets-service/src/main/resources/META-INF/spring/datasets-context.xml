@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:hdp="http://www.springframework.org/schema/hadoop"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+	http://www.springframework.org/schema/hadoop http://www.springframework.org/schema/hadoop/spring-hadoop.xsd">
+
+    <!-- import context -->
+    <import resource="classpath*:/META-INF/spring/base-context.xml"/>
+
+    <!-- DBLP XML to Avro Job & -->
+    <hdp:job id="dblpXmlToAvroJob"
+             configuration-ref="pprlClusterHadoopConfiguration"
+             jar-by-class="gr.upatras.ceid.pprl.datasets.mapreduce.DblpXmlToAvroMapper"
+             input-format="gr.upatras.ceid.pprl.datasets.input.MultiTagXmlInputFormat"
+             mapper="gr.upatras.ceid.pprl.datasets.mapreduce.DblpXmlToAvroMapper"
+             output-format="org.apache.avro.mapreduce.AvroKeyOutputFormat"
+             number-reducers="0"
+             libs="file://${app.repo}/avro-mapred-1.7.6-cdh5.4.0-hadoop2.jar"/>
+
+    <!-- AvroJob Bean Initializer-->
+    <bean class="gr.upatras.ceid.pprl.datasets.util.AvroJobInitializingBean">
+        <constructor-arg ref="dblpXmlToAvroJob"/>
+        <property name="avroMapOutputKey" value="gr.upatras.ceid.pprl.datasets.avro.dblp.DblpPublication" />
+    </bean>
+
+    <!-- job runner configuration -->
+    <hdp:job-runner id="dblpXmlToAvroJobRunner"
+                    job-ref="dblpXmlToAvroJob" />
+
+    <!-- Tool Runner configuration -->
+    <hdp:tool-runner id="dblpXmlToAvroToolRunner"
+                     configuration-ref="pprlClusterHadoopConfiguration"
+                     jar="file://${app.repo}/pprl-scaling-framework-datasets-mapreduce-1.0-SNAPSHOT.jar"
+                     tool-class="gr.upatras.ceid.pprl.datasets.mapreduce.DblpXmlToAvroTool"
+                     libs="file://${app.repo}/avro-mapred-1.7.6-cdh5.4.0-hadoop2.jar"/>
+
+    <!-- component scan on service package-->
+    <context:component-scan base-package="gr.upatras.ceid.pprl.datasets.service" />
+
+</beans>

@@ -9,12 +9,14 @@
 
     <artifactId>pprl-scaling-framework-encoding</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
 
     <name>Encoding - PPRL Scaling Framework</name>
     <url>https://github.com/whantana/pprl-scaling-framework</url>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
+    <modules>
+        <module>pprl-scaling-framework-encoding-lib</module>
+        <module>pprl-scaling-framework-encoding-mapreduce</module>
+        <module>pprl-scaling-framework-encoding-service</module>
+    </modules>
 </project>

@@ -6,18 +6,26 @@
 
     <parent>
         <groupId>gr.upatras.ceid</groupId>
-        <artifactId>pprl-scaling-framework-datasets</artifactId>
+        <artifactId>pprl-scaling-framework-encoding</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>pprl-scaling-framework-datasets-mapreduce</artifactId>
+    <artifactId>pprl-scaling-framework-encoding-mapreduce</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>Datasets (mapreduce) - PPRL Scaling Framework</name>
+    <name>Encoding (mapreduce) - PPRL Scaling Framework</name>
     <url>https://github.com/whantana/pprl-scaling-framework</url>
 
     <dependencies>
+
+        <!-- PPRL framework -->
+        <dependency>
+            <groupId>gr.upatras.ceid</groupId>
+            <artifactId>pprl-scaling-framework-encoding-lib</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Hadoop dependencies -->
         <dependency>
             <groupId>org.apache.hadoop</groupId>
@@ -37,11 +45,6 @@
             <version>${avro.version}</version>
             <classifier>hadoop2</classifier>
         </dependency>
-        <dependency>
-            <groupId>org.apache.avro</groupId>
-            <artifactId>avro-maven-plugin</artifactId>
-            <version>${avro.maven.version}</version>
-        </dependency>
 
         <!-- MRUnit dependencies -->
         <dependency>
@@ -53,25 +56,4 @@
         </dependency>
     </dependencies>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.avro</groupId>
-                <artifactId>avro-maven-plugin</artifactId>
-                <version>${avro.maven.version}</version>
-                <executions>
-                    <execution>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>schema</goal>
-                        </goals>
-                        <configuration>
-                            <sourceDirectory>src/main/avro</sourceDirectory>
-                            <outputDirectory>src/main/java/</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 </project>

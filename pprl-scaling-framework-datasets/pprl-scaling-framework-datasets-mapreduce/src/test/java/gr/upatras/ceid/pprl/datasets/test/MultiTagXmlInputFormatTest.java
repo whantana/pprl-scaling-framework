@@ -35,7 +35,7 @@ public class MultiTagXmlInputFormatTest {
 
     @Before
     public void setUp() throws URISyntaxException {
-        URL resourceUrl = getClass().getResource("/sample.xml");
+        URL resourceUrl = getClass().getResource("/dblp_sample.xml");
         assertNotNull("Test file missing", resourceUrl);
         File testFile = new File(resourceUrl.toURI());
         conf = new Configuration(false);

@@ -15,8 +15,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-
-import static gr.upatras.ceid.pprl.datasets.util.DblpXmlToAvroUtil.shortenUrl;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class DblpXmlToAvroTool extends Configured implements Tool {
 
@@ -36,51 +36,52 @@ public class DblpXmlToAvroTool extends Configured implements Tool {
             return -1;
         }
 
-        // set tags
-        conf.setStrings(MultiTagXmlInputFormat.TAGS_KEY, TAGS);
-
-        // input output paths
+        // set confuguration and params
         final Path input = new Path(args[0]);
         final Path output = new Path(args[1]);
+        conf.setStrings(MultiTagXmlInputFormat.TAGS_KEY, TAGS);
 
+        // set description
         final String description = JOB_DESCRIPTION + "(input : " + shortenUrl(input.toString()) +
                 ", output : " + shortenUrl(output.toString()) + ")";
 
-        try{
-            // setup map only job
-            Job job = Job.getInstance(conf);
-            job.setJarByClass(DblpXmlToAvroTool.class);
-            job.setJobName(description);
-            job.setNumReduceTasks(0);
+        // setup map only job
+        Job job = Job.getInstance(conf);
+        job.setJarByClass(DblpXmlToAvroTool.class);
+        job.setJobName(description);
+        job.setNumReduceTasks(0);
 
-            // setup input
-            MultiTagXmlInputFormat.setInputPaths(job, input);
-            job.setInputFormatClass(MultiTagXmlInputFormat.class);
+        // setup input
+        MultiTagXmlInputFormat.setInputPaths(job, input);
+        job.setInputFormatClass(MultiTagXmlInputFormat.class);
 
-            // setup mapper
-            job.setMapperClass(DblpXmlToAvroMapper.class);
-            AvroJob.setMapOutputKeySchema(job, DblpPublication.getClassSchema());
+        // setup mapper
+        job.setMapperClass(DblpXmlToAvroMapper.class);
+        AvroJob.setMapOutputKeySchema(job, DblpPublication.getClassSchema());
 
-            // setup output
-            AvroKeyOutputFormat.setOutputPath(job,output);
-            job.setOutputFormatClass(AvroKeyOutputFormat.class);
+        // setup output
+        AvroKeyOutputFormat.setOutputPath(job,output);
+        job.setOutputFormatClass(AvroKeyOutputFormat.class);
 
-            // run job
-            return (job.waitForCompletion(true) ? 0 : 1);
-        } catch (InterruptedException e) {
-            LOG.error(e.getMessage());
-            throw e;
-        } catch (IOException e) {
-            LOG.error(e.getMessage());
-            throw e;
-        } catch (ClassNotFoundException e) {
-            LOG.error(e.getMessage());
-            throw e;
-        }
+        // run job
+        return (job.waitForCompletion(true) ? 0 : 1);
     }
 
     public static void main(String[] args) throws Exception {
         int res = ToolRunner.run(new DblpXmlToAvroTool(), args);
         System.exit(res);
+    }
+
+    public static String shortenUrl(final String url) {
+        Pattern p = Pattern.compile(".*://.*?(/.*)");
+        Matcher m = p.matcher(url);
+        if(m.matches()) {
+            return m.group(1);
+        } else {
+            p = Pattern.compile(".*?(/.*)");
+            m = p.matcher(url);
+            if(m.matches()) return m.group(1);
+            else return url;
+        }
     }
 }

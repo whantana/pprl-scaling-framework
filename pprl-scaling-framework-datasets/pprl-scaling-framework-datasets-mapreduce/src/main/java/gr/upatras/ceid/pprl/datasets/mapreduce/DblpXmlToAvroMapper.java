@@ -2,8 +2,6 @@ package gr.upatras.ceid.pprl.datasets.mapreduce;
 
 import gr.upatras.ceid.pprl.datasets.avro.dblp.DblpPublication;
 import org.apache.avro.mapred.AvroKey;
-import org.apache.avro.mapred.AvroValue;
-import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
@@ -19,7 +17,6 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.regex.Pattern;
 
 public class DblpXmlToAvroMapper extends Mapper<LongWritable, Text, AvroKey<DblpPublication>, NullWritable> {
 

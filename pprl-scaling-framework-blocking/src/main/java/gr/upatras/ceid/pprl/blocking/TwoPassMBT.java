@@ -2,11 +2,7 @@ package gr.upatras.ceid.pprl.blocking;
 
 import org.apache.commons.math3.util.Combinations;
 
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.LinkedList;
 import java.util.List;

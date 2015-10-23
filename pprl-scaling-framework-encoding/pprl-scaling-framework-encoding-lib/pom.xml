@@ -15,7 +15,7 @@
 
     <packaging>jar</packaging>
 
-    <name>Encoding (mapreduce) - PPRL Scaling Framework</name>
+    <name>Encoding (lib) - PPRL Scaling Framework</name>
     <url>https://github.com/whantana/pprl-scaling-framework</url>
 
     <dependencies>

@@ -5,53 +5,40 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 public class EncodingAvroSchemaUtil {
 
-    public static Schema getSchemaJsonFromHdfs(final Path schemaPath, final Configuration config) throws IOException {
+    public static Schema loadAvroSchemaFromHdfs(final Path schemaPath, final Configuration config) throws IOException {
         final FileSystem fs = FileSystem.get(config);
-        final Schema schema = (new Schema.Parser()).parse(fs.open(schemaPath));
+        Schema schema = readAvroSchemaFromInputStream(fs.open(schemaPath));
         fs.close();
         return schema;
     }
 
-    public static Schema createEncodingSchema(final Schema schema , final List<String> columns, final String encodingMethod) {
-        final String name = "Encoding" + encodingMethod + schema.getName();
-        final String doc = "PPRL Encoding(" + encodingMethod +") dataset with name" + schema.getName();
-        final String namespace = "encoding." + encodingMethod + "." + schema.getNamespace();
-        final List<Schema.Field> fields = schema.getFields();
-        final List<Schema.Field> outFields = new ArrayList<Schema.Field>();
-        for(Schema.Field f : fields) {
-            if(!columns.contains(f.name())) { // TODO about encoding fields
-                outFields.add(new Schema.Field(f.name(),f.schema(),f.doc(),f.defaultValue(),f.order()));
-            }
-        }
-        final Schema encodingSchema = Schema.createRecord(name,doc,namespace,false);
-        encodingSchema.setFields(outFields);
-        return encodingSchema;
+    public static Schema loadAvroSchemaFromFile(final File schemaFile) throws IOException {
+        return readAvroSchemaFromInputStream(new FileInputStream(schemaFile));
     }
 
-    public static boolean validateEncocingSchema(final Schema schema, final Schema encodingSchema,
-                                          final List<String> columns, final String encodingMethod) {
+    private static Schema readAvroSchemaFromInputStream(final InputStream is) throws IOException {
+        return (new Schema.Parser()).parse(is);
+    }
 
-        boolean properName = encodingSchema.getName().contains("Encoding");
-        boolean properdoc = encodingSchema.getDoc().contains("Encoding(" + encodingMethod +")");
-        boolean properNamespace = encodingSchema.getNamespace().contains(
-                "encoding." + encodingMethod + "." + schema.getNamespace());
-        final List<Schema.Field> fields = schema.getFields();
-        final List<Schema.Field> encFields = encodingSchema.getFields();
-
-        for(Schema.Field f : fields) {
-            if(!columns.contains(f.name())) { // TODO about encoding fields
-                if(!encFields.contains(f)) return false;
-            }
-        }
-
-        return properName & properdoc & properNamespace;
+    public static void saveAvroSchemaOnHdfs(final Schema schema,final Path schemaPath, final Configuration config) throws IOException {
+        final FileSystem fs = FileSystem.get(config);
+        writeAvroSchemaToOutputStream(schema,fs.create(schemaPath,true));
+        fs.close();
+    }
+    public static void saveAvroSchemaToFile(final Schema schema,final File schemaFile) throws IOException {
+        if(!schemaFile.exists()) schemaFile.createNewFile();
+        writeAvroSchemaToOutputStream(schema, new FileOutputStream(schemaFile,false));
+    }
+    private static void writeAvroSchemaToOutputStream(final Schema schema,final OutputStream os) throws IOException {
+        os.write(schema.toString(true).getBytes());
     }
 }

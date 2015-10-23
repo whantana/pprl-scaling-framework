@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class ShellBannerProvider extends DefaultBannerProvider {
-    // TODO injected so far . Kerberos credentials must be provided here too
+
     @Value("${user.name}")
     private String username;
 

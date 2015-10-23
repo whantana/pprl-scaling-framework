@@ -9,7 +9,6 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
-
 import java.util.Arrays;
 import java.util.List;
 
@@ -18,10 +17,11 @@ public class EncodeDatasetMapper extends Mapper<AvroKey<GenericRecord>, NullWrit
 
     public static final String INPUT_SCHEMA_KEY = "pprl.encoding.input.schema";
     public static final String OUTPUT_SCHEMA_KEY = "pprl.encoding.input.schema";
-    public static final String ENCODING_COLUMNS = "pprl.encoding.columns";
-    public static final String ENCODING_METHOD = "pprl.encoding.method";
-    public static final String BF_SIZE = "pprl.encoding.bf.size";
-    public static final String BF_K = "pprl.encoding.bf.k";
+    public static final String ENCODING_COLUMNS_KEY = "pprl.encoding.columns";
+    public static final String ENCODING_METHOD_KEY = "pprl.encoding.method";
+    public static final String N_KEY = "pprl.encoding.bf.n";
+    public static final String K_KEY = "pprl.encoding.bf.k";
+    public static final String Q_KEY = "pprl.encoding.q";
 
     private Schema inputSchema;
     private Schema outputSchema;
@@ -34,7 +34,7 @@ public class EncodeDatasetMapper extends Mapper<AvroKey<GenericRecord>, NullWrit
         final Configuration config = context.getConfiguration();
         inputSchema = (new Schema.Parser()).parse(config.get(INPUT_SCHEMA_KEY));
         outputSchema = (new Schema.Parser()).parse(config.get(OUTPUT_SCHEMA_KEY));
-        columns = Arrays.asList(config.getStrings(ENCODING_COLUMNS));
+        columns = Arrays.asList(config.getStrings(ENCODING_COLUMNS_KEY));
     }
 
     @Override

@@ -14,9 +14,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @ContextConfiguration(locations = "classpath:META-INF/spring/datasets-context.xml", loader = HadoopDelegatingSmartContextLoader.class)
 @MiniHadoopCluster(nodes = 1, id = "PPRL-Build")
@@ -76,14 +74,14 @@ public class DatasetsServiceTest extends AbstractMapReduceTests {
     public void importDblpTest() throws Exception {
         FileSystem hdfs = getFileSystem();
         final Path home = hdfs.getHomeDirectory();
-        service.makeDatasetDirectory("sample-dblp",false);
+        service.makeDatasetDirectory("dblp_sample",false);
 
-        File localFile = new File(getClass().getResource("/sample.xml").toURI());
-        service.uploadFileToHdfs(localFile,new Path(home + "/sample-dblp/xml"));
-        File localSchemaFile = new File(getClass().getResource("/sample.avsc").toURI());
-        service.uploadFileToHdfs(localSchemaFile,new Path(home + "/sample-dblp/schema"));
-        final Path input = new Path(home + "/sample-dblp/xml");
-        final Path output = new Path(home + "/sample-dblp/avro");
+        File localFile = new File(getClass().getResource("/dblp_sample.xml").toURI());
+        service.uploadFileToHdfs(localFile,new Path(home + "/dblp_sample/xml"));
+        File localSchemaFile = new File(getClass().getResource("/dblp_sample.avsc").toURI());
+        service.uploadFileToHdfs(localSchemaFile,new Path(home + "/dblp_sample/schema"));
+        final Path input = new Path(home + "/dblp_sample/xml");
+        final Path output = new Path(home + "/dblp_sample/avro");
         service.runDblpXmlToAvroTool(input, output);
 
         assertTrue(hdfs.exists(output));

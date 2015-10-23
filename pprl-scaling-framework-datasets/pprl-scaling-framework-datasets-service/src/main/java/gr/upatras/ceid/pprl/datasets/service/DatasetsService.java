@@ -1,7 +1,5 @@
 package gr.upatras.ceid.pprl.datasets.service;
 
-import java.util.List;
-
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsAction;
@@ -19,24 +17,16 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class DatasetsService {
 
-    // TODO get home dir with kerberos credentials
-    // TODO check if hdfs is secure and the site in general is secure
-
     @Autowired
     private FileSystem pprlClusterHdfs;
-
-    @Autowired
-    private Job dblpXmlToAvroJob;
-
-    @Autowired
-    private JobRunner dblpXmlToAvroJobRunner;
 
     @Autowired
     private ToolRunner dblpXmlToAvroToolRunner;
@@ -56,7 +46,7 @@ public class DatasetsService {
     }
 
     public void importDataset(final File localDatasetFile, final File localSchemaFile, final String datasetName)
-            throws Exception {
+            throws IOException {
         try {
             final Path dataset = makeDatasetDirectory(datasetName, true);
             LOG.info("Dataset : " + datasetName + ", Path : " + dataset + ".");
@@ -64,15 +54,16 @@ public class DatasetsService {
             LOG.info("Dataset : " + datasetName + ", Avro Data files Path : " + files + ".");
             final Path schema = uploadFileToHdfs(localSchemaFile, new Path(dataset + "/schema"));
             LOG.info("Dataset : " + datasetName + ", Avro Schema Path : " + schema + ".");
-            makeDatasetTable(datasetName, files, schema);
-            LOG.info("Dataset : " + datasetName + ", table is ready.");
+//            makeDatasetTable(datasetName, files, schema);
+//            LOG.info("Dataset : " + datasetName + ", table is ready.");
         } catch (IOException e) {
             LOG.error(e.getMessage());
             throw e;
-        } catch (SQLException e) {
-            LOG.error(e.getMessage());
-            throw e;
         }
+//        catch (SQLException e) {
+//            LOG.error(e.getMessage());
+//            throw e;
+//        }
     }
     public void importDblpXmlDataset(final File localDatasetFile, final File localSchemaFile, final String datasetName)
             throws Exception {
@@ -86,9 +77,10 @@ public class DatasetsService {
             final Path files = new Path(dataset + "/avro");
             LOG.info("Dataset : " + datasetName + ", Avro Data files Path : " + files + ".");
             runDblpXmlToAvroTool(input, files);
+            removeSuccessFile(files);
             LOG.info("Dataset : " + datasetName + ", Running XML to Avro MapReduce job.");
-            makeDatasetTable(datasetName, files, schema);
-            LOG.info("Dataset : " + datasetName + ", table is ready.");
+//            makeDatasetTable(datasetName, files, schema);
+//            LOG.info("Dataset : " + datasetName + ", table is ready.");
         } catch (InterruptedException e) {
             LOG.error(e.getMessage());
             throw e;
@@ -170,7 +162,6 @@ public class DatasetsService {
         try {
             dblpXmlToAvroToolRunner.setArguments(input.toString(),output.toString());
             final Integer result = dblpXmlToAvroToolRunner.call();
-            LOG.debug("dblp Xml to avro result : " + result);
             pprlClusterHdfs.setPermission(output, new FsPermission(FsAction.ALL, FsAction.NONE, FsAction.NONE, false));
         } catch (InterruptedException e) {
             LOG.error(e.getMessage());
@@ -212,5 +203,10 @@ public class DatasetsService {
         final List<String> values = hiveOperations.query("classpath:import-avro-hive.hql", parameters);
         LOG.debug("Hive query (import-avro-hive.hql) done. Values : " + values + ".");
         return values;
+    }
+
+    private void removeSuccessFile(final Path path) throws IOException {
+        final Path p = new Path(path + "/_SUCESS");
+        if(pprlClusterHdfs.exists(p)) pprlClusterHdfs.delete(p,false);
     }
 }

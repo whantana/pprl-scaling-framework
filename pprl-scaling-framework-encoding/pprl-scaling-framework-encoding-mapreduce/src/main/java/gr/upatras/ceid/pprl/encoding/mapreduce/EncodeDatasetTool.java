@@ -1,6 +1,7 @@
 package gr.upatras.ceid.pprl.encoding.mapreduce;
 
-import gr.upatras.ceid.pprl.encoding.EncodingAvroSchemaException;
+import gr.upatras.ceid.pprl.encoding.BFEncodingException;
+import gr.upatras.ceid.pprl.encoding.BaseBFEncoding;
 import gr.upatras.ceid.pprl.encoding.FieldBFEncoding;
 import gr.upatras.ceid.pprl.encoding.RowBFEncoding;
 import gr.upatras.ceid.pprl.encoding.SimpleBFEncoding;
@@ -24,7 +25,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static gr.upatras.ceid.pprl.encoding.EncodingAvroSchemaUtil.loadAvroSchemaFromHdfs;
-import static gr.upatras.ceid.pprl.encoding.mapreduce.EncodeDatasetMapper.*;
+import static gr.upatras.ceid.pprl.encoding.mapreduce.BaseEncodeMapper.*;
 
 public class EncodeDatasetTool extends Configured implements Tool {
 
@@ -36,14 +37,14 @@ public class EncodeDatasetTool extends Configured implements Tool {
 
 
     public int run(String[] args) throws InterruptedException, IOException, ClassNotFoundException,
-            EncodingAvroSchemaException {
+            BFEncodingException {
 
         // get args
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
-        if (args.length != 9) {
+        if (args.length != 10) {
             LOG.error("Usage: EncodeDatasetTool <input-path> <input-schema> <encoding-path> <encoding-schema>" +
-                    "\n\t <col0,col1,...,colN> <SBF|FBF|RBF> <N> <Q> <K>");
+                    "\n\t <col0,col1,...,colN> <uid_col> <SBF|FBF|RBF> <N> <Q> <K>");
             return -1;
         }
 
@@ -56,38 +57,42 @@ public class EncodeDatasetTool extends Configured implements Tool {
         final String encodingMethod = args[5];
         if(!Arrays.asList(AVAILABLE_METHODS).contains(encodingMethod))
             throw new IllegalArgumentException("Availble methods are : " + Arrays.toString(AVAILABLE_METHODS));
-        final int N = Integer.parseInt(args[6]);
-        final int K = Integer.parseInt(args[7]);
-        final int Q = Integer.parseInt(args[8]);
+        final int selectedMethod = Arrays.asList(AVAILABLE_METHODS).indexOf(encodingMethod);
+        final String uidColumn = args[6];
+        final int N = Integer.parseInt(args[7]);
+        final int K = Integer.parseInt(args[8]);
+        final int Q = Integer.parseInt(args[9]);
 
         conf.set(INPUT_SCHEMA_KEY, inputSchema.toString());
-        conf.set(OUTPUT_SCHEMA_KEY, encodingSchema.toString());
+        conf.set(INPUT_UID_COLUMN, uidColumn);
+        conf.set(ENCODING_SCHEMA_KEY, encodingSchema.toString());
         conf.setStrings(ENCODING_COLUMNS_KEY, columns);
-        conf.set(ENCODING_METHOD_KEY,encodingMethod);
         conf.setInt(N_KEY, N);
         conf.setInt(K_KEY,K);
         conf.setInt(Q_KEY,Q);
 
         // validate schema encoding
-        boolean valid = false;
-        int selectedMethod = Arrays.asList(AVAILABLE_METHODS).indexOf(encodingMethod);
+        String description = JOB_DESCRIPTION + " (input-path=" + shortenUrl(input.toString()) +
+                ",  output-path=" + shortenUrl(encodingOutput.toString())  +")";
+        BaseBFEncoding encoding;
         switch(selectedMethod) {
             case 0 :
-                valid = (new SimpleBFEncoding(inputSchema,encodingSchema,columns,N,K,Q)).validateEncodingSchema();
+                encoding = new SimpleBFEncoding(inputSchema,encodingSchema,uidColumn,Arrays.asList(columns),N,K,Q);
+                description += " " + encoding.toString();
                 break;
             case 1 :
-                valid = (new FieldBFEncoding(inputSchema,encodingSchema,columns,N,K,Q)).validateEncodingSchema();
+                encoding = new FieldBFEncoding(inputSchema,encodingSchema,uidColumn,Arrays.asList(columns),N,K,Q);
+                description += " " + encoding.toString();
                 break;
             case 2 :
-                valid = (new RowBFEncoding(inputSchema,encodingSchema,columns,N,K,Q)).validateEncodingSchema();
+                encoding = new RowBFEncoding(inputSchema,encodingSchema,uidColumn,Arrays.asList(columns),N,K,Q);
+                description += " " + encoding.toString();
                 break;
+            default:
+                throw new BFEncodingException("Invalid method selection : \"" + selectedMethod +"\".");
         }
-        if(!valid) throw new EncodingAvroSchemaException("Encoding schema is not appropriate for input schema (.");
-
-        // set description
-        final String description = JOB_DESCRIPTION + " (input-path=" + shortenUrl(input.toString()) + ", columns=" +
-                Arrays.toString(columns) + ", encoding-method=" + encodingMethod + "(N="+ N + ",K=" + K + ",Q=" + Q +
-                "), output-path=" + shortenUrl(encodingOutput.toString()) + ")";
+        boolean valid = encoding.validateEncodingSchema();
+        if(!valid) throw new BFEncodingException("Encoding schema is not appropriate for input schema.");
 
         // setup map only job
         Job job = Job.getInstance(conf);
@@ -101,7 +106,20 @@ public class EncodeDatasetTool extends Configured implements Tool {
         job.setInputFormatClass(AvroKeyInputFormat.class);
 
         // setup mapper
-        job.setMapperClass(EncodeDatasetMapper.class);
+        switch(selectedMethod) {
+            case 0 :
+                job.setMapperClass(SimpleBFEncodingMapper.class);
+                break;
+            case 1 :
+                job.setMapperClass(FieldBFEEncodingMapper.class);
+                break;
+            case 2 :
+                job.setMapperClass(RowBFEncodingMapper.class);
+                break;
+            default:
+                throw new BFEncodingException("Invalid method selection : \"" + selectedMethod +"\".");
+        }
+
         AvroJob.setMapOutputKeySchema(job, encodingSchema);
 
         // setup output

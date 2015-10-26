@@ -4,12 +4,10 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.mapreduce.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.hadoop.hive.HiveOperations;
-import org.springframework.data.hadoop.mapreduce.JobRunner;
 import org.springframework.data.hadoop.mapreduce.ToolRunner;
 import org.springframework.stereotype.Service;
 

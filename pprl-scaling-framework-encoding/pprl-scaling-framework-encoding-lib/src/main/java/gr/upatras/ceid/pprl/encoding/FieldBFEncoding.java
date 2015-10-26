@@ -3,54 +3,46 @@ package gr.upatras.ceid.pprl.encoding;
 import org.apache.avro.Schema;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-public class FieldBFEncoding extends SimpleBFEncoding{
+public class FieldBFEncoding extends BaseBFEncoding{
 
-    public FieldBFEncoding(String[] columns, int n, int k ,int q) {
-        super(columns, n, k, q);
+
+    public FieldBFEncoding(Schema schema, String uidColumnName, List<String> selectedColumnNames, int N, int K, int Q)
+            throws BFEncodingException {
+        super(schema, uidColumnName, selectedColumnNames, N, K, Q);
     }
 
-    public FieldBFEncoding(Schema schema, String[] columns, int n, int k, int q) {
-        super(schema, columns, n, k, q);
+    public FieldBFEncoding(Schema schema, Schema encodingSchema, String uidColumnName, List<String> selectedColumnNames,
+                           int n, int k, int q) throws BFEncodingException {
+        super(schema, encodingSchema, uidColumnName, selectedColumnNames, n, k, q);
     }
 
-    public FieldBFEncoding(Schema schema, Schema encodingSchema,
-                           String[] columns, int n, int k , int q) {
-        super(schema, encodingSchema, columns, n, k, q);
+    protected String getName() {
+        return "_FBF" + super.getName();
     }
 
-    public String getName() {
-        return String.format("_FBF_%d_%d_%d_",N,K,Q);
-    }
-
-    protected void setupEncodingSchemaFields() {
-        final List<Schema.Field> fields = schema.getFields();
-        final List<Schema.Field> outFields = new ArrayList<Schema.Field>();
-        for(Schema.Field f : fields) {
-            if(!columns.contains(f.name())) {
-                outFields.add(new Schema.Field(f.name(),f.schema(),f.doc(),f.defaultValue(),f.order()));
-            }
+    @Override
+    public void generateEncodingColumnNames() throws BFEncodingException {
+        super.generateEncodingColumnNames();
+        encodingColumnNames = new ArrayList<String>();
+        final StringBuilder sb = new StringBuilder("enc");
+        sb.append(getName());
+        for(String column : selectedColumnNames) {
+            final StringBuilder nsb = new StringBuilder(sb.toString());
+            nsb.append(column).append("_");
+            nsb.deleteCharAt(nsb.lastIndexOf("_"));
+            encodingColumnNames.add(nsb.toString());
         }
-        for(String column : columns)
-            outFields.add(getEncodingField(Collections.singletonList(column)));
-        encodingSchema.setFields(outFields);
     }
 
-    protected boolean validateEncodingSchemaFields() {
+    @Override
+    public Object encode(Object obj, Class<?> clz) {
+        return null;
+    }
 
-        final List<Schema.Field> fields = schema.getFields();
-        final List<Schema.Field> encFields = encodingSchema.getFields();
-
-        for (Schema.Field f : encFields) {
-            boolean properEnc = false;
-            for(String column : columns) properEnc |= f.name().contains(column);
-            if(properEnc) continue;
-            if(!fields.contains(f)) {
-                return false;
-            }
-        }
-        return true;
+    @Override
+    public String toString() {
+        return "FBFEncoding" + super.toString();
     }
 }

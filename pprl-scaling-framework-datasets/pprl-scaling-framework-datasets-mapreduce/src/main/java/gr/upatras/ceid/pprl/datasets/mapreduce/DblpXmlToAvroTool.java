@@ -41,9 +41,10 @@ public class DblpXmlToAvroTool extends Configured implements Tool {
         final Path output = new Path(args[1]);
         conf.setStrings(MultiTagXmlInputFormat.TAGS_KEY, TAGS);
 
-        // set description
+        // set description and log it
         final String description = JOB_DESCRIPTION + "(input : " + shortenUrl(input.toString()) +
                 ", output : " + shortenUrl(output.toString()) + ")";
+        LOG.info("Running :" + description);
 
         // setup map only job
         Job job = Job.getInstance(conf);

@@ -69,12 +69,9 @@ public class DblpXmlToAvroMRTest {
 
         // Mapper/Reducer
         mapDriver = MapDriver.newMapDriver(new DblpXmlToAvroMapper());
-        mapDriver.getConfiguration().setStrings("io.serializations",
-                newSerializationClasses(mapDriver.getConfiguration().getStrings("io.serializations")));
-        mapDriver.getConfiguration().setStrings("avro.serialization.key.writer.schema",
+        AvroSerialization.addToConfiguration(mapDriver.getConfiguration());
+        mapDriver.getConfiguration().set("avro.serialization.key.writer.schema",
                 DblpPublication.getClassSchema().toString(true));
-        mapDriver.getConfiguration().setStrings("avro.serialization.value.writer.schema",
-                Schema.create(Schema.Type.NULL).toString(true));
     }
 
     @Test
@@ -84,12 +81,5 @@ public class DblpXmlToAvroMRTest {
                 new AvroKey<DblpPublication>(new DblpPublication(EXPECTED_KEY,EXPECTED_AUTHOR,EXPECTED_TITLE,EXPECTED_YEAR)),
                 NullWritable.get());
         mapDriver.runTest();
-    }
-
-    private String[] newSerializationClasses(final String[] strings) {
-        String[] newStrings = new String[strings.length + 1];
-        System.arraycopy(strings, 0, newStrings, 0, strings.length);
-        newStrings[newStrings.length - 1] = AvroSerialization.class.getName();
-        return newStrings;
     }
 }

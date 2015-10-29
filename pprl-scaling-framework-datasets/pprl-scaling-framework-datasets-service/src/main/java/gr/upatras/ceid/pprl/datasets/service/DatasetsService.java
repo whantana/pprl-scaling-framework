@@ -204,7 +204,7 @@ public class DatasetsService {
     }
 
     private void removeSuccessFile(final Path path) throws IOException {
-        final Path p = new Path(path + "/_SUCESS");
+        final Path p = new Path(path + "/_SUCCESS");
         if(pprlClusterHdfs.exists(p)) pprlClusterHdfs.delete(p,false);
     }
 }

@@ -1,0 +1,24 @@
+{
+  "type" : "record",
+  "name" : "Encoding_RBF_1024_30_2_DblpPublication",
+  "namespace" : "encoding.RBF.1024.30.2.gr.upatras.ceid.pprl.datasets.avro.dblp",
+  "doc" : "PPRL Encoding(_RBF_1024_30_2_) : DblpPublication",
+  "fields" : [ {
+    "name" : "key",
+    "type" : "string",
+    "doc" : "DBLP key i.e /journals/acta/Author99"
+  }, {
+    "name" : "year",
+    "type" : "string",
+    "doc" : "Year of publication"
+  }, {
+    "name" : "enc_RBF_1024_30_2_author_title",
+    "type" : {
+      "type" : "fixed",
+      "name" : "enc_RBF_1024_30_2_author_title",
+      "namespace" : "",
+      "size" : 128
+    },
+    "doc" : "Encoding(_RBF_1024_30_2_) of column(s) enc_RBF_1024_30_2_author_title"
+  } ]
+}

@@ -1,13 +1,14 @@
 package gr.upatras.ceid.pprl.encoding;
 
 import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericData;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 
 public class SimpleBFEncoding extends BaseBFEncoding{
-
 
     public SimpleBFEncoding(Schema schema, String uidColumnName, List<String> selectedColumnNames,
                             int N, int K, int Q) throws BFEncodingException {
@@ -33,8 +34,23 @@ public class SimpleBFEncoding extends BaseBFEncoding{
         encodingColumnNames = Collections.singletonList(sb.toString());
     }
 
-    @Override
-    public Object encode(Object obj, Class<?> clz) {
-        return null;
+    public String getEncodingColumnName() { return encodingColumnNames.get(0);}
+
+    public Schema.Field getEncodingColumn() {
+        return encodingColumns.get(0);
+    }
+
+    public GenericData.Fixed encode(Object obj, Class<?> clz, Schema encodingFieldSchema)
+            throws UnsupportedOperationException {
+        throw new UnsupportedOperationException("Not supported for " + getClass().getSimpleName());
+    }
+
+    public GenericData.Fixed encode(List<Object> objs, List<Class<?>> clzz, Schema encodingFieldSchema) {
+//        byte[] randomBytes = new byte[(int) Math.ceil(N / 8)];
+//        (new Random()).nextBytes(randomBytes);
+//        return new GenericData.Fixed(encodingFieldSchema,randomBytes);
+        byte[] one = new byte[(int) Math.ceil(N / 8)];
+        one[0] = (byte) 1;
+        return new GenericData.Fixed(encodingFieldSchema,one);
     }
 }

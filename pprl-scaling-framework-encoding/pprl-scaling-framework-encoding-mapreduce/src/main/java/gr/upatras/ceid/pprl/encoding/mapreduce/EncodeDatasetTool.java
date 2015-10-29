@@ -25,13 +25,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static gr.upatras.ceid.pprl.encoding.EncodingAvroSchemaUtil.loadAvroSchemaFromHdfs;
-import static gr.upatras.ceid.pprl.encoding.mapreduce.BaseEncodeMapper.*;
+import static gr.upatras.ceid.pprl.encoding.mapreduce.BaseBFEncodingMapper.*;
 
 public class EncodeDatasetTool extends Configured implements Tool {
 
     private static final String JOB_DESCRIPTION = "Encode Dataset";
 
-    private static final String[] AVAILABLE_METHODS = {"SFB","FBF","RBF"};
+    private static final String[] AVAILABLE_METHODS = {"SBF","FBF","RBF"};
 
     private static final Logger LOG = LoggerFactory.getLogger(EncodeDatasetTool.class);
 
@@ -43,8 +43,8 @@ public class EncodeDatasetTool extends Configured implements Tool {
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
         if (args.length != 10) {
-            LOG.error("Usage: EncodeDatasetTool <input-path> <input-schema> <encoding-path> <encoding-schema>" +
-                    "\n\t <col0,col1,...,colN> <uid_col> <SBF|FBF|RBF> <N> <Q> <K>");
+            LOG.error(" Usage: EncodeDatasetTool <input-path> <input-schema> <encoding-path> <encoding-schema>" +
+                    "\n\t <col0,col1,...,colN> <uid_col> <SBF|FBF|RBF> <N> <K> <Q>");
             return -1;
         }
 
@@ -54,17 +54,17 @@ public class EncodeDatasetTool extends Configured implements Tool {
         final Path encodingOutput = new Path(args[2]);
         final Schema encodingSchema = loadAvroSchemaFromHdfs(new Path(args[3]), conf);
         final String[] columns = args[4].split(",");
-        final String encodingMethod = args[5];
+        final String uidColumn = args[5];
+        final String encodingMethod = args[6];
         if(!Arrays.asList(AVAILABLE_METHODS).contains(encodingMethod))
-            throw new IllegalArgumentException("Availble methods are : " + Arrays.toString(AVAILABLE_METHODS));
+            throw new IllegalArgumentException("Error : " + encodingMethod + " Availble methods are : " + Arrays.toString(AVAILABLE_METHODS));
         final int selectedMethod = Arrays.asList(AVAILABLE_METHODS).indexOf(encodingMethod);
-        final String uidColumn = args[6];
         final int N = Integer.parseInt(args[7]);
         final int K = Integer.parseInt(args[8]);
         final int Q = Integer.parseInt(args[9]);
 
         conf.set(INPUT_SCHEMA_KEY, inputSchema.toString());
-        conf.set(INPUT_UID_COLUMN, uidColumn);
+        conf.set(INPUT_UID_COLUMN_KEY, uidColumn);
         conf.set(ENCODING_SCHEMA_KEY, encodingSchema.toString());
         conf.setStrings(ENCODING_COLUMNS_KEY, columns);
         conf.setInt(N_KEY, N);
@@ -111,7 +111,7 @@ public class EncodeDatasetTool extends Configured implements Tool {
                 job.setMapperClass(SimpleBFEncodingMapper.class);
                 break;
             case 1 :
-                job.setMapperClass(FieldBFEEncodingMapper.class);
+                job.setMapperClass(FieldBFEncodingMapper.class);
                 break;
             case 2 :
                 job.setMapperClass(RowBFEncodingMapper.class);

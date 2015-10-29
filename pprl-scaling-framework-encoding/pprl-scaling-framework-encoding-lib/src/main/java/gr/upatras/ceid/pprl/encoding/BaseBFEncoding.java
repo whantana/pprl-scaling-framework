@@ -1,19 +1,25 @@
 package gr.upatras.ceid.pprl.encoding;
 
 import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericData;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public abstract class BaseBFEncoding {
-    protected Schema schema;
-    protected Schema encodingSchema;
+
     protected String uidColumnName;
     protected List<String> selectedColumnNames;
     protected List<String> encodingColumnNames;
+
+    protected Schema schema;
     protected List<Schema.Field> restColumns;
     protected List<Schema.Field> selectedColumns;
+
+    protected Schema encodingSchema;
     protected List<Schema.Field> encodingColumns;
+
     protected int N;
     protected int K;
     protected int Q;
@@ -23,6 +29,8 @@ public abstract class BaseBFEncoding {
         this.schema = schema;
         this.uidColumnName = uidColumnName;
         this.selectedColumnNames = selectedColumnNames;
+        if(this.selectedColumnNames.contains(this.uidColumnName))
+            throw new BFEncodingException("uid column cannot be selected for encoding.");
 
         this.N = N;
         this.K = K;
@@ -90,10 +98,11 @@ public abstract class BaseBFEncoding {
         }
 
         for (String name : encodingColumnNames) {
-            encodingColumns.add(new Schema.Field(name, Schema.createFixed(
-                    name, null, null,
-                    (int) Math.ceil(N / 8)),
-                    String.format("Encoding(%s) of column(s) %s", getName(), name),null));
+            encodingColumns.add(
+                    new Schema.Field(name, Schema.createFixed(
+                            name, null, null,
+                            (int) Math.ceil(N / 8)),
+                            String.format("Encoding(%s) of column(s) %s", getName(), name), null));
         }
     }
 
@@ -120,11 +129,11 @@ public abstract class BaseBFEncoding {
         return true;
     }
 
-    public abstract Object encode(Object obj, Class<?> clz);
+    public abstract GenericData.Fixed encode(Object obj, Class<?> clz, Schema encodingFieldSchema);
 
-    public Schema getSchema() {
-        return schema;
-    }
+    public abstract GenericData.Fixed encode(List<Object> objs, List<Class<?>> clzz, Schema encodingFieldSchema);
+
+    public Schema getSchema() { return schema; }
 
     public Schema getEncodingSchema() {
         return encodingSchema;

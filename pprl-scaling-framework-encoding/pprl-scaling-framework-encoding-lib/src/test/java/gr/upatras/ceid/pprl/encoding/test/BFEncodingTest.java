@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -27,9 +28,9 @@ public class BFEncodingTest {
     private static final int K = 30;
     private static final int Q = 2;
 
-    private static String[] SBF_ENCODING_SCHEMA_NAMES = {"/dblp.avsc","/enc_sbf_"+ N +"_"+ K +"_"+"dblp.avsc"};
-    private static String[] RBF_ENCODING_SCHEMA_NAMES = {"/dblp.avsc","/enc_rbf_"+ N +"_"+ K +"_"+"dblp.avsc"};
-    private static String[] FBF_ENCODING_SCHEMA_NAMES = {"/dblp.avsc","/enc_fbf_"+ N +"_"+ K +"_"+"dblp.avsc"};
+    private static String[] SBF_ENCODING_SCHEMA_NAMES = {"/dblp.avsc","/enc_sbf_"+ N +"_"+ K +"_" + Q + "_" + "dblp.avsc"};
+    private static String[] RBF_ENCODING_SCHEMA_NAMES = {"/dblp.avsc","/enc_rbf_"+ N +"_"+ K +"_" + Q + "_" + "dblp.avsc"};
+    private static String[] FBF_ENCODING_SCHEMA_NAMES = {"/dblp.avsc","/enc_fbf_"+ N +"_"+ K +"_" + Q + "_" + "dblp.avsc"};
 
     @Before
     public void setUp() throws URISyntaxException {
@@ -115,5 +116,39 @@ public class BFEncodingTest {
                 schema, encodingSchema,UID_COLUMN,
                 Arrays.asList(COLUMNS),N, K, Q);
         assertTrue(rbfe.validateEncodingSchema());
+    }
+
+    @Test
+    public void test7() throws URISyntaxException, IOException, BFEncodingException {
+        RowBFEncoding rbfe = new RowBFEncoding(
+                EncodingAvroSchemaUtil.loadAvroSchemaFromFile(schemaFile),
+                EncodingAvroSchemaUtil.loadAvroSchemaFromFile(new File(getClass().getResource(RBF_ENCODING_SCHEMA_NAMES[1]).toURI())),
+                UID_COLUMN,
+                Arrays.asList(COLUMNS),N, K, Q);
+
+        SimpleBFEncoding sbfe = new SimpleBFEncoding(
+                EncodingAvroSchemaUtil.loadAvroSchemaFromFile(schemaFile),
+                EncodingAvroSchemaUtil.loadAvroSchemaFromFile(new File(getClass().getResource(SBF_ENCODING_SCHEMA_NAMES[1]).toURI())),
+                UID_COLUMN,
+                Arrays.asList(COLUMNS),N, K, Q);
+
+        FieldBFEncoding fbfe = new FieldBFEncoding(
+                EncodingAvroSchemaUtil.loadAvroSchemaFromFile(schemaFile),
+                EncodingAvroSchemaUtil.loadAvroSchemaFromFile(new File(getClass().getResource(FBF_ENCODING_SCHEMA_NAMES[1]).toURI())),
+                UID_COLUMN,
+                Arrays.asList(COLUMNS),N, K, Q);
+
+        assertEquals(rbfe.getEncodingColumnNames().size(), 1);
+        assertEquals(sbfe.getEncodingColumnNames().size(), 1);
+        assertEquals(fbfe.getEncodingColumnNames().size(), 2);
+
+        assertEquals(rbfe.getEncodingColumns().size(), 1);
+        assertEquals(sbfe.getEncodingColumns().size(), 1);
+        assertEquals(fbfe.getEncodingColumns().size(), 2);
+
+        for (String s : fbfe.getSelectedColumnNames()) {
+            assertTrue(fbfe.getEncodingColumnNames().get(fbfe.getSelectedColumnNames().indexOf(s)).contains(s));
+            assertTrue(fbfe.getEncodingColumns().contains(fbfe.getEncodingColumnForName(s)));
+        }
     }
 }

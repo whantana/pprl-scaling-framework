@@ -3,6 +3,7 @@ package gr.upatras.ceid.pprl.datasets.test;
 import gr.upatras.ceid.pprl.datasets.service.DatasetsService;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.hadoop.test.context.HadoopDelegatingSmartContextLoader;
@@ -16,12 +17,12 @@ import java.net.URISyntaxException;
 
 import static org.junit.Assert.*;
 
+// TODO MiniCluster needs a miniHive server for testing
+// TODO upload file with permissions service.uploadFileToHdfs(localFile,destination,Permissions);
+@Ignore
 @ContextConfiguration(locations = "classpath:META-INF/spring/datasets-context.xml", loader = HadoopDelegatingSmartContextLoader.class)
 @MiniHadoopCluster(nodes = 1, id = "PPRL-Build")
 public class DatasetsServiceTest extends AbstractMapReduceTests {
-
-    // TODO MiniCluster needs a miniHive server for testing
-    // TODO upload file with permissions service.uploadFileToHdfs(localFile,destination,Permissions);
 
     @Autowired
     private DatasetsService service;

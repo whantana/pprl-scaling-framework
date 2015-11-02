@@ -3,12 +3,11 @@
     <parent>
         <artifactId>pprl-scaling-framework</artifactId>
         <groupId>gr.upatras.ceid</groupId>
-        <version>1.0-SNAPSHOT</version>
+        <version>0.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>pprl-scaling-framework-matching</artifactId>
-    <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Matching - PPRL Scaling Framework</name>

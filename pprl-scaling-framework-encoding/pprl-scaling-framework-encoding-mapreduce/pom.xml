@@ -7,11 +7,10 @@
     <parent>
         <groupId>gr.upatras.ceid</groupId>
         <artifactId>pprl-scaling-framework-encoding</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <version>0.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>pprl-scaling-framework-encoding-mapreduce</artifactId>
-    <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Encoding (mapreduce) - PPRL Scaling Framework</name>

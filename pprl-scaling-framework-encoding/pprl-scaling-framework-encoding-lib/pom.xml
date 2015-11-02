@@ -7,12 +7,10 @@
     <parent>
         <groupId>gr.upatras.ceid</groupId>
         <artifactId>pprl-scaling-framework-encoding</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <version>0.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>pprl-scaling-framework-encoding-lib</artifactId>
-    <version>1.0-SNAPSHOT</version>
-
     <packaging>jar</packaging>
 
     <name>Encoding (lib) - PPRL Scaling Framework</name>

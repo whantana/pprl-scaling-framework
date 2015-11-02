@@ -13,8 +13,6 @@ public class Main {
 	 * @throws IOException
 	 */
 	public static void main(String[] args) throws IOException {
-		// TODO get home dir with kerberos credentials
-		// before starting shell a check up with the cluster is needed
 		Bootstrap.main(args);
 	}
 }

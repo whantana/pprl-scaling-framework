@@ -21,6 +21,13 @@ public class ShellBannerProvider extends DefaultBannerProvider {
     @Value("${hive.host}")
     private String hiveHost;
 
+    @Value("${build.version")
+    private String buildVersion;
+
+    @Value("${build.date")
+    private String buildDate;
+
+
     @Value("${spring.profiles.active}")
     private String springProfile;
 
@@ -30,8 +37,9 @@ public class ShellBannerProvider extends DefaultBannerProvider {
     }
 
     public String getVersion() {
-		return "1.0.0" + springProfile;
-	} // TODO do proper version from maven "MAJOR.MINOR-build-profile
+        return String.format("version:%s | build date:%s | profile:%s",buildVersion,
+                buildDate,springProfile);
+	}
 
 	public String getWelcomeMessage() {
         return "Welcome \"" + username + "\" to PPRL Framework CLI. " +

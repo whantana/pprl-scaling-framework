@@ -44,7 +44,7 @@ public class DatasetsService {
     }
 
     public void importDataset(final File localDatasetFile, final File localSchemaFile, final String datasetName)
-            throws IOException {
+            throws IOException, SQLException {
         try {
             final Path dataset = makeDatasetDirectory(datasetName, true);
             LOG.info("Dataset : " + datasetName + ", Path : " + dataset + ".");
@@ -52,16 +52,16 @@ public class DatasetsService {
             LOG.info("Dataset : " + datasetName + ", Avro Data files Path : " + files + ".");
             final Path schema = uploadFileToHdfs(localSchemaFile, new Path(dataset + "/schema"));
             LOG.info("Dataset : " + datasetName + ", Avro Schema Path : " + schema + ".");
-//            makeDatasetTable(datasetName, files, schema);
-//            LOG.info("Dataset : " + datasetName + ", table is ready.");
+            makeDatasetTable(datasetName, files, schema);
+            LOG.info("Dataset : " + datasetName + ", table is ready.");
         } catch (IOException e) {
             LOG.error(e.getMessage());
             throw e;
         }
-//        catch (SQLException e) {
-//            LOG.error(e.getMessage());
-//            throw e;
-//        }
+        catch (SQLException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        }
     }
     public void importDblpXmlDataset(final File localDatasetFile, final File localSchemaFile, final String datasetName)
             throws Exception {
@@ -77,8 +77,8 @@ public class DatasetsService {
             runDblpXmlToAvroTool(input, files);
             removeSuccessFile(files);
             LOG.info("Dataset : " + datasetName + ", Running XML to Avro MapReduce job.");
-//            makeDatasetTable(datasetName, files, schema);
-//            LOG.info("Dataset : " + datasetName + ", table is ready.");
+            makeDatasetTable(datasetName, files, schema);
+            LOG.info("Dataset : " + datasetName + ", table is ready.");
         } catch (InterruptedException e) {
             LOG.error(e.getMessage());
             throw e;
@@ -93,9 +93,15 @@ public class DatasetsService {
             throw e;
         }
     }
-    public void listDatasets(){}
-    public void sampleOfDataset(final String datasetName){}
-    public void dropDataset(final String datasetName, final boolean completeDrop){}
+    public void listDatasets() {
+        // TODO implement me
+    }
+    public void sampleOfDataset(final String datasetName) {
+        // TODO implement me
+    }
+    public void dropDataset(final String datasetName, final boolean completeDrop) {
+        // TODO implement me
+    }
 
     public Path makeDatasetDirectory(final String datasetName, final boolean makeDirs)
             throws IOException {

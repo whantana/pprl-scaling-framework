@@ -14,7 +14,7 @@ public class ShellHistoryProvider extends DefaultHistoryFileNameProvider {
 	private String username;
 
 	public String getHistoryFileName() {
-		return username + ".pprl.shell.log";
+		return "." + username + ".pprl.shell.log";
 	}
 }
 

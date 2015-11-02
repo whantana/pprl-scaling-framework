@@ -7,11 +7,13 @@
 
     <!-- import context -->
     <import resource="classpath*:/META-INF/spring/datasets-context.xml"/>
+    <import resource="classpath*:/META-INF/spring/encoding-context.xml"/>
+
+    <context:property-placeholder location="classpath:version.properties"/>
 
     <!-- scan the provider package -->
     <context:component-scan base-package="gr.upatras.ceid.pprl.shell.provider"/>
 
     <!-- scan the command packages -->
     <context:component-scan base-package="gr.upatras.ceid.pprl.shell.command"/>
-
 </beans>

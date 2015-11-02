@@ -20,5 +20,4 @@
 
     <!-- component scan on service package-->
     <context:component-scan base-package="gr.upatras.ceid.pprl.datasets.service" />
-
 </beans>

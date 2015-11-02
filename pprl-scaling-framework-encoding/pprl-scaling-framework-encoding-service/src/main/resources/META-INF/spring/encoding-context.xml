@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:hdp="http://www.springframework.org/schema/hadoop"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!-- import context -->
+    <import resource="classpath*:/META-INF/spring/base-context.xml"/>
+
+    <!-- component scan on service package-->
+    <context:component-scan base-package="gr.upatras.ceid.pprl.encoding.service" />
+</beans>

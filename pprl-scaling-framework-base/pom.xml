@@ -15,13 +15,4 @@
 
     <name>Base - PPRL Scaling Framework</name>
     <url>https://github.com/whantana/pprl-scaling-framework</url>
-
-    <dependencies>
-       <!-- Hive Dependencies -->
-        <dependency>
-            <groupId>org.apache.hive</groupId>
-            <artifactId>hive-jdbc</artifactId>
-            <version>${hive.version}</version>
-        </dependency>
-    </dependencies>
 </project>

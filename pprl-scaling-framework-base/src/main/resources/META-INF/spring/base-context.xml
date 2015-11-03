@@ -13,9 +13,7 @@
     <!-- property place holder-->
     <context:property-placeholder
             location="classpath:hadoop-${spring.profiles.active}.properties,
-                      classpath:hive-${spring.profiles.active}.properties,
-                      classpath:hadoop.properties,
-                      classpath:hive.properties"
+                      classpath:hadoop.properties"
             ignore-unresolvable="true"/>
 
     <!-- hadoop configuration-->
@@ -30,13 +28,4 @@
 
     <!-- hdfs configuration -->
     <hdp:file-system id="pprlClusterHdfs" configuration-ref="pprlClusterHadoopConfiguration"/>
-
-    <!-- hive configuration -->
-    <hdp:hive-client-factory id="pprlhiveClientFactory" hive-data-source-ref="pprlhiveDataSource"/>
-    <bean id="pprlhiveDriver" class="org.apache.hive.jdbc.HiveDriver"/>
-    <bean id="pprlhiveDataSource" class="org.springframework.jdbc.datasource.SimpleDriverDataSource">
-        <constructor-arg name="driver" ref="pprlhiveDriver"/>
-        <constructor-arg name="url" value="${hive.url}"/>
-    </bean>
-    <hdp:hive-template id="pprlhiveTemplate" hive-client-factory-ref="pprlhiveClientFactory"/>
 </beans>

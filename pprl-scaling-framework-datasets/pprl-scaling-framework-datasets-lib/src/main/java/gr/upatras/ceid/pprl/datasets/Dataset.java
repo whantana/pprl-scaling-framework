@@ -106,7 +106,7 @@ public class Dataset {
 
     @Override
     public String toString() {
-        return String.format("%s:[%s,%s,%s]",
+        return String.format("[%s][%s,%s,%s]",
                 name,basePath,avroPath,avroSchemaPath);
     }
 }

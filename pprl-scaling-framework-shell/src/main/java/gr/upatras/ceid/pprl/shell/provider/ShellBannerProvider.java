@@ -18,9 +18,6 @@ public class ShellBannerProvider extends DefaultBannerProvider {
     @Value("${hadoop.host}")
     private String hadoopHost;
 
-    @Value("${hive.host}")
-    private String hiveHost;
-
     @Value("${build.version")
     private String buildVersion;
 
@@ -43,6 +40,6 @@ public class ShellBannerProvider extends DefaultBannerProvider {
 
 	public String getWelcomeMessage() {
         return "Welcome \"" + username + "\" to PPRL Framework CLI. " +
-                "\nHadoop Host : "+ hadoopHost + ", Hive Host : " + hiveHost + ". You can type \'help\' to get started.";
+                "\nPPRL Hadoop Site : "+ hadoopHost + ". You can type \'help\' to get started.";
     }
 }

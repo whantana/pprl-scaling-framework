@@ -9,18 +9,12 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.hadoop.hive.HiveOperations;
 import org.springframework.data.hadoop.mapreduce.ToolRunner;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Service
 public class DatasetsService {
@@ -31,24 +25,13 @@ public class DatasetsService {
     @Autowired
     private ToolRunner dblpXmlToAvroToolRunner;
 
-    private HiveOperations hiveOperations;
-
-//    private Path usersDatasetsFile;
-
     private static final Logger LOG = LoggerFactory.getLogger(DatasetsService.class);
 
     private static final FsPermission ONLY_OWNER_PERMISSION
             = new FsPermission(FsAction.ALL, FsAction.NONE, FsAction.NONE, false);
 
-	private static final Pattern HDFS_URL_PATTERN = Pattern.compile("(.*://).*?(/.*)");
-
-    @Autowired
-    public DatasetsService(final HiveOperations hiveOperations) {
-        this.hiveOperations = hiveOperations;
-    }
-
 //    public void loadDatasets() throws IOException {
-//        usersDatasetsFile = new Path(pprlClusterHdfs.getHomeDirectory() + "/.pprl_datasets");
+//        private Path usersDatasetsFile = new Path(pprlClusterHdfs.getHomeDirectory() + "/.pprl_datasets");
 //        if(pprlClusterHdfs.exists(usersDatasetsFile)) {
 //            LOG.info("Loading Datasets from file");
 //        }
@@ -59,17 +42,15 @@ public class DatasetsService {
 //    }
 
     public void importDataset(final File localAvroFile, final File localAvroSchemaFile, final String datasetName)
-            throws IOException, SQLException, DatasetException {
+            throws IOException, DatasetException {
         try {
             final Dataset dataset = new Dataset(datasetName, pprlClusterHdfs.getHomeDirectory());
             dataset.buildOnFS(pprlClusterHdfs);
             uploadFileToHdfs(localAvroFile, dataset.getAvroPath());
             uploadFileToHdfs(localAvroSchemaFile, dataset.getAvroSchemaPath());
-//            makeDatasetTable(datasetName, files, schema); TODO : WHAT ABOUT HIVE?
             LOG.info("Dataset : " + datasetName + ", Base path       : " + dataset.getBasePath());
             LOG.info("Dataset : " + datasetName + ", Avro path       : " + dataset.getAvroPath());
             LOG.info("Dataset : " + datasetName + ", AvroSchema Path : " + dataset.getAvroSchemaPath());
-//            LOG.info("Dataset : " + datasetName + ", table is ready.");
         } catch (IOException e) {
             LOG.error(e.getMessage());
             throw e;
@@ -130,35 +111,6 @@ public class DatasetsService {
         // TODO implement me
     }
 
-    private Path makeDatasetDirectory(final String datasetName, final boolean makeDirs)
-            throws IOException {
-        try {
-            final Path path = new Path(pprlClusterHdfs.getHomeDirectory() + "/" + datasetName);
-
-            if (pprlClusterHdfs.exists(path)) {
-                LOG.debug("Path : " + path + " already exists. Deleting it.");
-                pprlClusterHdfs.delete(path, true);
-            }
-
-            pprlClusterHdfs.mkdirs(path, ONLY_OWNER_PERMISSION);
-            LOG.debug("Path : " + path + " created with permissions " + ONLY_OWNER_PERMISSION);
-            if (makeDirs) {
-                LOG.debug("Path : " + path + ". Creating subdirectories.");
-                final Path dataDirectory = new Path(path + "/avro");
-                final Path schemaDirectory = new Path(path + "/schema");
-                pprlClusterHdfs.mkdirs(dataDirectory, ONLY_OWNER_PERMISSION);
-                pprlClusterHdfs.mkdirs(schemaDirectory, ONLY_OWNER_PERMISSION);
-                LOG.debug("Path : " + path + ". Created subdirectories [" +
-                        dataDirectory + " " + ONLY_OWNER_PERMISSION  + "," +
-                        schemaDirectory + " " + ONLY_OWNER_PERMISSION  + "].");
-            }
-            return path;
-        } catch (IOException e) {
-            LOG.error(e.getMessage());
-            throw e;
-        }
-    }
-
     private Path uploadFileToHdfs(final File file, final Path path)
             throws IOException {
         return uploadFileToHdfs(file, path, ONLY_OWNER_PERMISSION);
@@ -202,33 +154,6 @@ public class DatasetsService {
             LOG.error(e.getMessage());
             throw e;
         }
-    }
-
-    private List<String> makeDatasetTable(final String datasetName, final Path avroPath, final Path schemaPath)
-            throws SQLException, IOException {
-
-		final String properAvroPath = pprlClusterHdfs.isDirectory(avroPath) ? avroPath.toString() : avroPath.getParent().toString();
-		
-		final Matcher schemaMatcher = HDFS_URL_PATTERN.matcher(schemaPath.toString());
-		final Matcher avroMatcher = HDFS_URL_PATTERN.matcher(properAvroPath);
-		
-		if (!schemaMatcher.matches() || !avroMatcher.matches()) {
-			LOG.error("hdfs path shortening regex does not match on : " + schemaPath.toString() +".");
-			LOG.error("hdfs path shortening regex does not match on : " + properAvroPath +".");
-			return null;
-		}
-		
-		final String schemaLocation = schemaMatcher.group(1) + schemaMatcher.group(2);
-		final String avroLocation = avroMatcher.group(1) + avroMatcher.group(2);
-
-		final Map<String, String> parameters = new HashMap<String, String>();
-        parameters.put("tableName", datasetName);
-        parameters.put("avroLocation", avroLocation);
-        parameters.put("schemaLocation", schemaLocation);
-        LOG.debug("Running hive query (import-avro-hive.hql) parameters : " + parameters + ".");
-        final List<String> values = hiveOperations.query("classpath:import-avro-hive.hql", parameters);
-        LOG.debug("Hive query (import-avro-hive.hql) done. Values : " + values + ".");
-        return values;
     }
 
     private void removeSuccessFile(final Path path) throws IOException {

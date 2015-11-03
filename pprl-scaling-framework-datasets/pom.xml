@@ -16,6 +16,7 @@
     <url>https://github.com/whantana/pprl-scaling-framework</url>
 
     <modules>
+        <module>pprl-scaling-framework-datasets-lib</module>
         <module>pprl-scaling-framework-datasets-mapreduce</module>
         <module>pprl-scaling-framework-datasets-service</module>
     </modules>

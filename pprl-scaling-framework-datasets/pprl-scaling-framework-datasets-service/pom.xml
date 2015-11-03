@@ -26,6 +26,11 @@
         </dependency>
         <dependency>
             <groupId>gr.upatras.ceid</groupId>
+            <artifactId>pprl-scaling-framework-datasets-lib</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>gr.upatras.ceid</groupId>
             <artifactId>pprl-scaling-framework-datasets-mapreduce</artifactId>
             <version>${project.version}</version>
         </dependency>

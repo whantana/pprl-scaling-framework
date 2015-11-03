@@ -19,5 +19,5 @@
                      libs="file://${app.repo}/avro-mapred-1.7.6-cdh5.4.0-hadoop2.jar"/>
 
     <!-- component scan on service package-->
-    <context:component-scan base-package="gr.upatras.ceid.pprl.datasets.service" />
+    <context:component-scan base-package="gr.upatras.ceid.pprl.datasets.service"/>
 </beans>

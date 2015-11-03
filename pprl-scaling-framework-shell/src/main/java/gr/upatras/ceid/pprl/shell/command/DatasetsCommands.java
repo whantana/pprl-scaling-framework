@@ -50,6 +50,10 @@ public class DatasetsCommands implements CommandMarker {
         return true;
     }
 
+    @CliAvailabilityIndicator({"datasets get_stats"})
+    public boolean datasetsStatsAvailability() {
+        return true;
+    }
 
     @CliCommand(value = "datasets import", help = "Import a local avro file and schema on the PPRL site.")
     public String datasetsImportCommand(
@@ -60,16 +64,19 @@ public class DatasetsCommands implements CommandMarker {
             @CliOption(key = {"name"}, mandatory = false, help = "(Optional) name of dataset.")
             final String name) {
 
-        LOG.info("Importing local AVRO dataset.");
+
         final File avroFile = new File(avroPath);
         if (!avroFile.exists()) return "Error. Path \"" + avroPath + "\" does not exist.";
-        LOG.info("Selected data file for import \"" + avroPath + "\".");
         final File schemaFile = new File(schemaFilePath);
         if (!schemaFile.exists()) return "Error. Path \"" + schemaFilePath + "\" does not exist.";
-        LOG.info("Selected schema file for import \"" + schemaFilePath + "\".");
         final String datasetName = (name!=null) ? name :
                 avroFile.getName().substring(0, avroFile.getName().lastIndexOf('.'));
-        LOG.info("Imported Dataset name \"" + datasetName + "\"");
+
+        LOG.info("Importing local AVRO dataset :");
+        LOG.info("\tSelected data file for import   : " + avroFile.getAbsolutePath());
+        LOG.info("\tSelected schema file for import : " + schemaFile.getAbsolutePath());
+        LOG.info("\tImported Dataset name           : " + datasetName);
+
         try {
             service.importDataset(avroFile,schemaFile,datasetName);
         } catch (Exception e) {
@@ -86,16 +93,19 @@ public class DatasetsCommands implements CommandMarker {
             final String schemaFilePath,
             @CliOption(key = {"name"}, mandatory = false, help = "(Optional) name of dataset.")
             final String name) {
-        LOG.info("Importing local DBLP(XML) dataset.");
+
         final File dblpFile = new File(dblpPath);
         if (!dblpFile.exists()) return "Error. Path \"" + dblpPath + "\" does not exist.";
-        LOG.info("Selected data file for import \"" + dblpPath + "\".");
         final File schemaFile = new File(schemaFilePath);
         if (!schemaFile.exists()) return "Error. Path \"" + schemaFilePath + "\" does not exist.";
-        LOG.info("Selected schema file for import \"" + schemaFilePath + "\".");
         final String datasetName = (name!=null) ? name :
-                dblpFile.getName().substring(0, dblpFile.getName().lastIndexOf('.'));
-        LOG.info("Imported Dataset with name \"" + datasetName + "\"");
+                        dblpFile.getName().substring(0, dblpFile.getName().lastIndexOf('.'));
+
+        LOG.info("Importing local DBLP(XML) dataset : ");
+        LOG.info("\tSelected data file for import   :" + dblpFile.getAbsolutePath());
+        LOG.info("\tSelected schema file for import :" + schemaFile.getAbsolutePath());
+        LOG.info("\tImported Dataset name           :" + datasetName);
+
         try {
             service.importDblpXmlDataset(dblpFile,schemaFile,datasetName);
         } catch (Exception e) {
@@ -106,8 +116,8 @@ public class DatasetsCommands implements CommandMarker {
 
     @CliCommand(value = "datasets list", help = "List user's imported datasets on the PPRL site.")
     public String datasetsListCommand() {
-        LOG.info("Listing datasets");
-        return "DONE";
+        LOG.info("Listing user's imported datasets :");
+        return "NOT IMPLEMENTED";
     }
 
     @CliCommand(value = "datasets drop", help = "Drop user's imported datasets on the PPRL site.")
@@ -120,7 +130,7 @@ public class DatasetsCommands implements CommandMarker {
         if(!deleteFilesStr.equals("YES") && !deleteFilesStr.equals("NO")) return "Error. Please provide \"YES\" or \"NO\".";
         boolean deleteFiles = deleteFilesStr.equals("YES");
         LOG.info("Droping dataset with name \"" + name + "\" (DELETE FILES AS WELL ?" + deleteFilesStr +").");
-        return "DONE";
+        return "NOT IMPLEMENTED";
     }
 
     @CliCommand(value = "datasets drop_all", help = "Drop user's imported datasets on the PPRL site.")
@@ -131,12 +141,12 @@ public class DatasetsCommands implements CommandMarker {
         if(!deleteFilesStr.equals("YES") && !deleteFilesStr.equals("NO")) return "Error. Please provide \"YES\" or \"NO\".";
         boolean deleteFiles = deleteFilesStr.equals("YES");
         LOG.info("Droping all datasets (DELETE FILES AS WELL ?" + deleteFiles +").");
-        return "DONE";
+        return "NOT IMPLEMENTED";
     }
 
     @CliCommand(value = "datasets sample", help = "Sample a user's imported dataset.")
     public String datasetsSampleCommand(
-            @CliOption(key = {"name"}, mandatory = true, help = "Sample rows from an imported dataset")
+            @CliOption(key = {"name"}, mandatory = true, help = "Name of the imported dataset to be sampled.")
             final String name,
             @CliOption(key = {"count"}, mandatory = false, help = "Rows count (default : 10).",
                     specifiedDefaultValue="10")
@@ -147,7 +157,14 @@ public class DatasetsCommands implements CommandMarker {
         } catch (NumberFormatException nfe) {
             return "Error." + nfe.getMessage();
         }
-        LOG.info("Taking random sample of dataset \"" + name  +"\" . Rows : " + count + ".");
-        return "DONE";
+        LOG.info("Taking random sample of dataset \"" + name  +"\" . Rows : " + count + " :");
+        return "NOT IMPLEMENTED";
+    }
+
+    @CliCommand(value = "datasets get_stats", help = "Retrieve useful statistics of a user's imported dataset.")
+    public String datasetsStatsCommand(
+        @CliOption(key = {"name"}, mandatory = true, help = "Name of the imported dataset.")
+        final String name) {
+        return "NOT IMPLEMENTED";
     }
 }

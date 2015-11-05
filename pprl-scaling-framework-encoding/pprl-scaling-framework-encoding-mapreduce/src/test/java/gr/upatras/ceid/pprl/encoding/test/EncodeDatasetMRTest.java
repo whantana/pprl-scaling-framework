@@ -123,7 +123,7 @@ public class EncodeDatasetMRTest {
     }
 
     @Test
-    public void testEncodeDatasetMappers() throws IOException {
+    public void test1() throws IOException {
         mapDriverSBE.withInput(new AvroKey<GenericRecord>(inputRecord), NullWritable.get());
         mapDriverSBE.withOutput(new AvroKey<GenericRecord>(outRecordSBF), NullWritable.get());
         mapDriverSBE.runTest();

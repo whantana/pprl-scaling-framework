@@ -46,7 +46,7 @@ public class MultiTagXmlInputFormatTest {
     }
 
     @Test
-    public void testMultiTagXmlInputFormat1() throws IOException, InterruptedException {
+    public void test1() throws IOException, InterruptedException {
         conf.setStrings(MultiTagXmlInputFormat.TAGS_KEY,
                 "article","phdthesis","mastersthesis");
         MultiTagXmlInputFormat inputFormat = ReflectionUtils.newInstance(MultiTagXmlInputFormat.class, conf);
@@ -66,7 +66,7 @@ public class MultiTagXmlInputFormatTest {
     }
 
     @Test
-    public void testMultiTagXmlInputFormat2() throws IOException, InterruptedException {
+    public void test2() throws IOException, InterruptedException {
         conf.setStrings(MultiTagXmlInputFormat.TAGS_KEY, "article","phdthesis");
         MultiTagXmlInputFormat inputFormat = ReflectionUtils.newInstance(MultiTagXmlInputFormat.class, conf);
         TaskAttemptContext context = new TaskAttemptContextImpl(conf, new TaskAttemptID());
@@ -82,7 +82,7 @@ public class MultiTagXmlInputFormatTest {
     }
 
     @Test
-    public void testMultiTagXmlInputFormat3() throws IOException, InterruptedException {
+    public void test3() throws IOException, InterruptedException {
         conf.setStrings(MultiTagXmlInputFormat.TAGS_KEY, "mastersthesis");
         MultiTagXmlInputFormat inputFormat = ReflectionUtils.newInstance(MultiTagXmlInputFormat.class, conf);
         TaskAttemptContext context = new TaskAttemptContextImpl(conf, new TaskAttemptID());
@@ -99,7 +99,7 @@ public class MultiTagXmlInputFormatTest {
     }
 
     @Test
-    public void testMultiTagXmlInputFormat4() throws IOException, InterruptedException {
+    public void test4() throws IOException, InterruptedException {
         conf.setStrings(MultiTagXmlInputFormat.TAGS_KEY, "asdf","foo","mastersthesis");
         MultiTagXmlInputFormat inputFormat = ReflectionUtils.newInstance(MultiTagXmlInputFormat.class, conf);
         TaskAttemptContext context = new TaskAttemptContextImpl(conf, new TaskAttemptID());
@@ -116,7 +116,7 @@ public class MultiTagXmlInputFormatTest {
     }
 
     @Test
-    public void testMultiTagXmlInputFormat5() throws IOException, InterruptedException {
+    public void test5() throws IOException, InterruptedException {
         conf.setStrings(MultiTagXmlInputFormat.TAGS_KEY, "asdf");
         MultiTagXmlInputFormat inputFormat = ReflectionUtils.newInstance(MultiTagXmlInputFormat.class, conf);
         TaskAttemptContext context = new TaskAttemptContextImpl(conf, new TaskAttemptID());
@@ -133,7 +133,7 @@ public class MultiTagXmlInputFormatTest {
     }
 
     @Test
-    public void testMultiTagXmlInputFormat6() throws IOException, InterruptedException {
+    public void test6() throws IOException, InterruptedException {
         conf.setStrings(MultiTagXmlInputFormat.TAGS_KEY, "article","phdthesis");
         MultiTagXmlInputFormat inputFormat = ReflectionUtils.newInstance(MultiTagXmlInputFormat.class, conf);
         TaskAttemptContext context = new TaskAttemptContextImpl(conf, new TaskAttemptID());

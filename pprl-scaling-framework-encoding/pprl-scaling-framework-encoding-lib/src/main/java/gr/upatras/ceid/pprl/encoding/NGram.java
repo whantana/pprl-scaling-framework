@@ -49,11 +49,7 @@ public class NGram {
         //System.out.println(" a="+a);
         return map;      
     }
-    
-    
-    
-    
-    
+
     public static void main(String[] args) {
         List<String> al=getGrams("john",2);
         HashMap<String,Integer> map=getHashBigrams();
@@ -66,10 +62,6 @@ public class NGram {
         for (String s: al) {
             bigram[map.get(s)]=1;   
             System.out.println(map.get(s)+" "+s);
-            
         }
-        
     }
-    
-     
 }

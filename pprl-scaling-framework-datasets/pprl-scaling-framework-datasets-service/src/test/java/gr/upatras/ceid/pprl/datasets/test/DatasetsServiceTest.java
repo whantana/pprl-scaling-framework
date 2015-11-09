@@ -1,5 +1,6 @@
 package gr.upatras.ceid.pprl.datasets.test;
 
+import gr.upatras.ceid.pprl.datasets.Dataset;
 import gr.upatras.ceid.pprl.datasets.DatasetException;
 import gr.upatras.ceid.pprl.datasets.service.DatasetsService;
 import org.apache.hadoop.fs.Path;
@@ -57,8 +58,10 @@ public class DatasetsServiceTest extends AbstractMapReduceTests{
         checkForDatasetsFile();
         multiFileImport();
         getSampleFromMulti();
+//        saveSamples(); TODO : user.dir must be injected for running completing this test
     }
-//
+
+//    TODO : Look into mini yarn cluster tests for running the dblp import mr tool
 //    @Test
 //    public void test4() throws Exception {
 //        checkForDatasetsFile();
@@ -95,7 +98,7 @@ public class DatasetsServiceTest extends AbstractMapReduceTests{
 
     private void checkForDatasetsFile() throws IOException {
         if(datasetsFile == null ) {
-            datasetsFile = new Path(getFileSystem().getHomeDirectory() + "/" + ".pprl_datasets");
+            datasetsFile = new Path(getFileSystem().getHomeDirectory() + "/" + DatasetsService.DATASETS_FILE);
             LOG.info("Setting datasets file : {}",datasetsFile);
         }
         assertTrue(getFileSystem().exists(datasetsFile));
@@ -163,6 +166,13 @@ public class DatasetsServiceTest extends AbstractMapReduceTests{
         LOG.info("Sample(13) of da_int:");
         for(String sample : service.sampleOfDataset("da_int",13)) LOG.info("\t{}", sample);
     }
+
+    private void saveSamples() throws DatasetException, IOException {
+        service.saveSampleOfDataset("random1", 5,"random1_sample");
+        service.saveSampleOfDataset("random2", 5,"random2_sample");
+        service.saveSampleOfDataset("da_int",5,"daint_sample");
+    }
+
 
     private void dblpImport() throws Exception {
         File localDblpXml = new File(getClass().getResource("/dblp_sample.xml").toURI());

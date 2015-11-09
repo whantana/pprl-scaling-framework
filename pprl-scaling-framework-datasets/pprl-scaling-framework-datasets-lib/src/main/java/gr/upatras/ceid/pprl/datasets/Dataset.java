@@ -25,8 +25,7 @@ import java.util.TreeSet;
 public class Dataset {
 
     private static final Logger LOG = LoggerFactory.getLogger(Dataset.class);
-    private static final FsPermission ONLY_OWNER_PERMISSION
-            = new FsPermission(FsAction.ALL, FsAction.NONE, FsAction.NONE, false);
+    private static final String ENCODINGS_FILE=".pprl_encodings";
 
     private String name;
     private Path basePath;
@@ -66,18 +65,18 @@ public class Dataset {
         return avroSchemaPath;
     }
 
-    public void buildOnFS(final FileSystem fs)
+    public void buildOnFS(final FileSystem fs, FsPermission permission)
             throws IOException, DatasetException {
-        buildOnFS(fs,true);
+        buildOnFS(fs,true,permission);
     }
 
-    public void buildOnFS(final FileSystem fs, final boolean makeSubDirs )
+    public void buildOnFS(final FileSystem fs, final boolean makeSubDirs, FsPermission permission )
             throws IOException, DatasetException {
-        buildOnFS(fs,makeSubDirs,makeSubDirs,true);
+        buildOnFS(fs,makeSubDirs,makeSubDirs,true,permission);
     }
 
     public void buildOnFS(final FileSystem fs, final boolean makeAvroDir,
-                          final boolean makeSchemaDir , final boolean overwrite)
+                          final boolean makeSchemaDir , final boolean overwrite, FsPermission permission)
             throws IOException, DatasetException{
 
         boolean datasetExists = existsOnFS(fs,true);
@@ -88,21 +87,23 @@ public class Dataset {
             throw new DatasetException("Dataset base path already exists!");
         }
 
-        fs.mkdirs(basePath, ONLY_OWNER_PERMISSION);
+        fs.mkdirs(basePath, permission);
         LOG.info("Making base path at {} created with permissions {}.",
-                basePath, ONLY_OWNER_PERMISSION);
+                basePath, permission);
 
         if (makeAvroDir) {
-            fs.mkdirs(avroPath, ONLY_OWNER_PERMISSION);
+            fs.mkdirs(avroPath, permission);
             LOG.info("Making data path at {} created with permissions {}.",
-                    avroPath, ONLY_OWNER_PERMISSION);
+                    avroPath, permission);
         }
 
         if (makeSchemaDir) {
-            fs.mkdirs(avroSchemaPath, ONLY_OWNER_PERMISSION);
+            fs.mkdirs(avroSchemaPath, permission);
             LOG.info("Making schema path at {} created with permissions {}.",
-                    avroSchemaPath, ONLY_OWNER_PERMISSION);
+                    avroSchemaPath, permission);
         }
+
+        fs.createNewFile(new Path(basePath + "/" + ENCODINGS_FILE));
     }
 
     public boolean existsOnFS(final FileSystem fs, final boolean checkOnlyBasePath)

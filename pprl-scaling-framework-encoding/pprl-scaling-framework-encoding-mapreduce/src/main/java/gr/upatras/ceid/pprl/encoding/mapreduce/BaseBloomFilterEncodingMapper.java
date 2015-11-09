@@ -1,8 +1,7 @@
 package gr.upatras.ceid.pprl.encoding.mapreduce;
 
-import gr.upatras.ceid.pprl.encoding.BaseBFEncoding;
+import gr.upatras.ceid.pprl.encoding.BaseBloomFilterEncoding;
 import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.hadoop.conf.Configuration;
@@ -16,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 
-public class BaseBFEncodingMapper extends Mapper<AvroKey<GenericRecord>, NullWritable, AvroKey<GenericRecord>, NullWritable> {
+public class BaseBloomFilterEncodingMapper extends Mapper<AvroKey<GenericRecord>, NullWritable, AvroKey<GenericRecord>, NullWritable> {
 
     public static final String INPUT_SCHEMA_KEY = "pprl.encoding.input.schema";
     public static final String INPUT_UID_COLUMN_KEY = "pprl.encoding.input.column";
@@ -41,7 +40,7 @@ public class BaseBFEncodingMapper extends Mapper<AvroKey<GenericRecord>, NullWri
     protected int K;
     protected int Q;
 
-    protected BaseBFEncoding encoding;
+    protected BaseBloomFilterEncoding encoding;
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {

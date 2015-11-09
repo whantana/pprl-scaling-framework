@@ -7,25 +7,24 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
-public class FieldBFEncoding extends BaseBFEncoding {
+public class MultiBloomFilterEncoding extends BaseBloomFilterEncoding {
 
     private Map<String,Schema.Field> nameToFieldMap;
 
-    public FieldBFEncoding(Schema schema, String uidColumnName, List<String> selectedColumnNames, int N, int K, int Q)
-            throws BFEncodingException {
+    public MultiBloomFilterEncoding(Schema schema, String uidColumnName, List<String> selectedColumnNames, int N, int K, int Q)
+            throws BloomFilterEncodingException {
         super(schema, uidColumnName, selectedColumnNames, N, K, Q);
     }
 
-    public FieldBFEncoding(Schema schema, Schema encodingSchema, String uidColumnName, List<String> selectedColumnNames,
-                           int n, int k, int q) throws BFEncodingException {
+    public MultiBloomFilterEncoding(Schema schema, Schema encodingSchema, String uidColumnName, List<String> selectedColumnNames,
+                                    int n, int k, int q) throws BloomFilterEncodingException {
         super(schema, encodingSchema, uidColumnName, selectedColumnNames, n, k, q);
         initMap();
     }
 
     protected String getName() {
-        return "_FBF" + super.getName();
+        return "_MULTI" + super.getName();
     }
 
     public void initMap() {
@@ -35,15 +34,15 @@ public class FieldBFEncoding extends BaseBFEncoding {
                 if(f.name().contains(s)) { nameToFieldMap.put(s,f); break;}
     }
 
-    public Schema.Field getEncodingColumnForName(String name) throws BFEncodingException {
-        if(nameToFieldMap == null) throw new BFEncodingException("Map not initialized.");
+    public Schema.Field getEncodingColumnForName(String name) throws BloomFilterEncodingException {
+        if(nameToFieldMap == null) throw new BloomFilterEncodingException("Map not initialized.");
         Schema.Field f = nameToFieldMap.get(name);
-        if(f == null) throw new BFEncodingException("Map not initialized properly!.");
+        if(f == null) throw new BloomFilterEncodingException("Map not initialized properly!.");
         return f;
     }
 
     @Override
-    public void generateEncodingColumnNames() throws BFEncodingException {
+    public void generateEncodingColumnNames() throws BloomFilterEncodingException {
         super.generateEncodingColumnNames();
         encodingColumnNames = new ArrayList<String>();
         final StringBuilder sb = new StringBuilder("enc");
@@ -57,9 +56,6 @@ public class FieldBFEncoding extends BaseBFEncoding {
     }
 
     public GenericData.Fixed encode(Object obj, Class<?> clz, Schema encodingFieldSchema) {
-//        byte[] randomBytes = new byte[(int) Math.ceil(N / 8)];
-//        (new Random()).nextBytes(randomBytes);
-//        return new GenericData.Fixed(encodingFieldSchema,randomBytes);
         byte[] one = new byte[(int) Math.ceil(N / 8)];
         one[0] = (byte) 1;
         return new GenericData.Fixed(encodingFieldSchema,one);

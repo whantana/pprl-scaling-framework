@@ -1,7 +1,7 @@
 package gr.upatras.ceid.pprl.encoding.mapreduce;
 
-import gr.upatras.ceid.pprl.encoding.BFEncodingException;
-import gr.upatras.ceid.pprl.encoding.SimpleBFEncoding;
+import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
+import gr.upatras.ceid.pprl.encoding.RowBloomFilterEncoding;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
@@ -9,17 +9,17 @@ import org.apache.avro.mapred.AvroKey;
 import org.apache.hadoop.io.NullWritable;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
-public class SimpleBFEncodingMapper extends BaseBFEncodingMapper {
+public class RowBloomFilterEncodingMapper extends BaseBloomFilterEncodingMapper {
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
         try {
-            encoding = new SimpleBFEncoding(inputSchema, outputSchema, uidColumn, encodingColumns, N, K, Q);
-        } catch (BFEncodingException e) {
+            encoding = new RowBloomFilterEncoding(inputSchema,outputSchema,uidColumn,encodingColumns,N,K,Q);
+        } catch (BloomFilterEncodingException e) {
             throw new IOException(e.getCause());
         }
     }
@@ -33,8 +33,8 @@ public class SimpleBFEncodingMapper extends BaseBFEncodingMapper {
         // selected for encoding columns
         List<Object> objs = new ArrayList<Object>();
         List<Class<?>> clzz = new ArrayList<Class<?>>();
-        final String fieldName = ((SimpleBFEncoding) encoding).getEncodingColumnName();
-        Schema fieldSchema = ((SimpleBFEncoding) encoding).getEncodingColumn().schema();
+        final String fieldName = ((RowBloomFilterEncoding) encoding).getEncodingColumnName();
+        Schema fieldSchema = ((RowBloomFilterEncoding) encoding).getEncodingColumn().schema();
         for (Schema.Field field : encoding.getSelectedColumns()) {
             objs.add(record.get(field.name()));
             clzz.add(SUPPORTED_TYPES.get(field.schema().getType()));

@@ -5,27 +5,26 @@ import org.apache.avro.generic.GenericData;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
+
+public class RowBloomFilterEncoding extends BaseBloomFilterEncoding {
 
 
-public class SimpleBFEncoding extends BaseBFEncoding{
-
-    public SimpleBFEncoding(Schema schema, String uidColumnName, List<String> selectedColumnNames,
-                            int N, int K, int Q) throws BFEncodingException {
+    public RowBloomFilterEncoding(Schema schema, String uidColumnName, List<String> selectedColumnNames,
+                                  int N, int K, int Q) throws BloomFilterEncodingException {
         super(schema, uidColumnName, selectedColumnNames, N, K, Q);
     }
 
-    public SimpleBFEncoding(Schema schema, Schema encodingSchema, String uidColumnName, List<String> selectedColumnNames,
-                            int n, int k, int q) throws BFEncodingException {
+    public RowBloomFilterEncoding(Schema schema, Schema encodingSchema, String uidColumnName, List<String> selectedColumnNames,
+                                  int n, int k, int q) throws BloomFilterEncodingException {
         super(schema, encodingSchema, uidColumnName, selectedColumnNames, n, k, q);
     }
 
     protected String getName() {
-        return "_SBF" + super.getName();
+        return "_ROW" + super.getName();
     }
 
     @Override
-    public void generateEncodingColumnNames() throws BFEncodingException {
+    public void generateEncodingColumnNames() throws BloomFilterEncodingException {
         super.generateEncodingColumnNames();
         StringBuilder sb = new StringBuilder("enc");
         sb.append(getName());
@@ -34,14 +33,16 @@ public class SimpleBFEncoding extends BaseBFEncoding{
         encodingColumnNames = Collections.singletonList(sb.toString());
     }
 
-    public String getEncodingColumnName() { return encodingColumnNames.get(0);}
+    public String getEncodingColumnName() {
+        return encodingColumnNames.get(0);
+    }
 
     public Schema.Field getEncodingColumn() {
         return encodingColumns.get(0);
     }
 
     public GenericData.Fixed encode(Object obj, Class<?> clz, Schema encodingFieldSchema)
-            throws UnsupportedOperationException {
+            throws UnsupportedOperationException{
         throw new UnsupportedOperationException("Not supported for " + getClass().getSimpleName());
     }
 

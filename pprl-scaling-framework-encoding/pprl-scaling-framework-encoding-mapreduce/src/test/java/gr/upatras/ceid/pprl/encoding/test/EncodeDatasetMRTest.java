@@ -1,16 +1,15 @@
 package gr.upatras.ceid.pprl.encoding.test;
 
 import gr.upatras.ceid.pprl.encoding.EncodingAvroSchemaUtil;
-import gr.upatras.ceid.pprl.encoding.mapreduce.BaseBFEncodingMapper;
-import gr.upatras.ceid.pprl.encoding.mapreduce.FieldBFEncodingMapper;
-import gr.upatras.ceid.pprl.encoding.mapreduce.RowBFEncodingMapper;
-import gr.upatras.ceid.pprl.encoding.mapreduce.SimpleBFEncodingMapper;
+import gr.upatras.ceid.pprl.encoding.mapreduce.BaseBloomFilterEncodingMapper;
+import gr.upatras.ceid.pprl.encoding.mapreduce.MultiBloomFilterEncodingMapper;
+import gr.upatras.ceid.pprl.encoding.mapreduce.RowBloomFilterEncodingMapper;
+import gr.upatras.ceid.pprl.encoding.mapreduce.SimpleBloomFilterEncodingMapper;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.hadoop.io.AvroSerialization;
 import org.apache.avro.mapred.AvroKey;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapDriver;
 import org.junit.Before;
@@ -21,7 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
-import static gr.upatras.ceid.pprl.encoding.mapreduce.BaseBFEncodingMapper.*;
+import static gr.upatras.ceid.pprl.encoding.mapreduce.BaseBloomFilterEncodingMapper.*;
 
 // TODO MRUnit messes up the two schemas seriliazation
 @Ignore
@@ -71,7 +70,7 @@ public class EncodeDatasetMRTest {
         outRecordSBF.put("year", EXPECTED_YEAR);
         outRecordSBF.put("enc_SBF_1024_30_2_author_title",
                 new GenericData.Fixed(sbes.getField("enc_SBF_1024_30_2_author_title").schema(),ONE));
-        mapDriverSBE = setupMapDriver(new SimpleBFEncodingMapper(),s, sbes);
+        mapDriverSBE = setupMapDriver(new SimpleBloomFilterEncodingMapper(),s, sbes);
 
         Schema rbes = EncodingAvroSchemaUtil.loadAvroSchemaFromFile(
                 new File(getClass().getResource("/enc_rbf_1024_30_2_dblp.avsc").toURI()));
@@ -80,7 +79,7 @@ public class EncodeDatasetMRTest {
         outRecordRBF.put("year", EXPECTED_YEAR);
         outRecordRBF.put("enc_RBF_1024_30_2_author_title",
                 new GenericData.Fixed(rbes.getField("enc_RBF_1024_30_2_author_title").schema(),ONE));
-        mapDriverRBE = setupMapDriver(new RowBFEncodingMapper(),s, rbes);
+        mapDriverRBE = setupMapDriver(new RowBloomFilterEncodingMapper(),s, rbes);
 
 
         Schema fbes = EncodingAvroSchemaUtil.loadAvroSchemaFromFile(
@@ -92,11 +91,11 @@ public class EncodeDatasetMRTest {
                 new GenericData.Fixed(fbes.getField("enc_FBF_1024_30_2_author").schema(),ONE));
         outRecordFBF.put("enc_FBF_1024_30_2_title",
                 new GenericData.Fixed(fbes.getField("enc_FBF_1024_30_2_title").schema(),ONE));
-        mapDriverFBE = setupMapDriver(new FieldBFEncodingMapper(),s, fbes);
+        mapDriverFBE = setupMapDriver(new MultiBloomFilterEncodingMapper(),s, fbes);
     }
 
     public MapDriver<AvroKey<GenericRecord>,NullWritable,AvroKey<GenericRecord>,NullWritable> setupMapDriver(
-                            BaseBFEncodingMapper mapper,Schema input, Schema output) throws IOException {
+                            BaseBloomFilterEncodingMapper mapper,Schema input, Schema output) throws IOException {
 
 
         MapDriver<AvroKey<GenericRecord>,NullWritable,AvroKey<GenericRecord>,NullWritable> mapDriver =

@@ -25,7 +25,7 @@ public class DatasetsCommands implements CommandMarker {
     @Autowired
     private DatasetsService service;
 
-    @CliCommand(value = "dat_import", help = "Import a local avro file and schema on the PPRL site.")
+    @CliCommand(value = "dat_import", help = "Import local avro file(s) and schema on the PPRL site.")
     public String datasetsImportCommand(
             @CliOption(key = {"avro_file"}, mandatory = false, help = "Local data avro file.")
             final String avroPath,
@@ -33,7 +33,7 @@ public class DatasetsCommands implements CommandMarker {
             final String avroPaths,
             @CliOption(key = {"schema_file"}, mandatory = true, help = "Local schema avro file.")
             final String schemaFilePath,
-            @CliOption(key = {"name"}, mandatory = true, help = "(Optional) Dataset name.")
+            @CliOption(key = {"name"}, mandatory = true, help = "Dataset name.")
             final String name) {
 
         final File schemaFile = new File(schemaFilePath);
@@ -80,7 +80,7 @@ public class DatasetsCommands implements CommandMarker {
         return "DONE";
     }
 
-    @CliCommand(value = "dat_import_dblp", help = "Import the dblp.xml file on the PPRL site.")
+    @CliCommand(value = "dat_import_dblp", help = "Import DBLP XML file(s) on the PPRL site.")
     public String datasetsImportDblpCommand(
             @CliOption(key = {"dblp_file"}, mandatory = false, help = "Local dblp file (XML format).")
             final String dblpPath,
@@ -88,7 +88,7 @@ public class DatasetsCommands implements CommandMarker {
             final String dblpPaths,
             @CliOption(key = {"schema_file"}, mandatory = true, help = "Local schema avro file.")
             final String schemaFilePath,
-            @CliOption(key = {"name"}, mandatory = false, help = "(Optional) Dataset name.")
+            @CliOption(key = {"name"}, mandatory = true, help = "Dataset name.")
             final String name) {
 
         final File schemaFile = new File(schemaFilePath);
@@ -196,18 +196,20 @@ public class DatasetsCommands implements CommandMarker {
     public String datasetsSampleCommand(
             @CliOption(key = {"name"}, mandatory = true, help = "Dataset name.")
             final String name,
-            @CliOption(key = {"size"}, mandatory = false, help = "Sampe size (default : 10).",
-                    specifiedDefaultValue="10")
-            final String str) {
+            @CliOption(key = {"size"}, mandatory = false, help = "Sampe size (default : 10).", specifiedDefaultValue="10")
+            final String sizeStr,
+            @CliOption(key = {"sampleName"}, mandatory = false, help = "If provided sample is saved at current working directory")
+            final String sampleName) {
         int size = 10;
         try{
-            size = Integer.parseInt(str);
+            size = Integer.parseInt(sizeStr);
         } catch (NumberFormatException nfe) {
             return "Error." + nfe.getMessage();
         }
         LOG.info("Taking random sample of dataset {}. Rows : {} :",name,size);
         try {
-            final List<String> records = service.sampleOfDataset(name,size);
+            final List<String> records = (sampleName != null) ? service.saveSampleOfDataset(name,size,sampleName) :
+                    service.sampleOfDataset(name,size);
             for(String record : records) LOG.info("\t{}",record);
         } catch (DatasetException e) {
             return "Error." + e.getMessage();

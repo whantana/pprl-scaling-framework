@@ -10,5 +10,5 @@ public class EncodedDataset extends Dataset {
         super(name, basePath, avroPath, avroSchemaPath);
     }
 
-    // todo more! (Refactor encodings as well)
+    // TODO more! (Refactor encodings as well)
 }

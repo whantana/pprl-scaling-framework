@@ -1,10 +1,10 @@
 package gr.upatras.ceid.pprl.encoding.mapreduce;
 
-import gr.upatras.ceid.pprl.encoding.BFEncodingException;
-import gr.upatras.ceid.pprl.encoding.BaseBFEncoding;
-import gr.upatras.ceid.pprl.encoding.FieldBFEncoding;
-import gr.upatras.ceid.pprl.encoding.RowBFEncoding;
-import gr.upatras.ceid.pprl.encoding.SimpleBFEncoding;
+import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
+import gr.upatras.ceid.pprl.encoding.BaseBloomFilterEncoding;
+import gr.upatras.ceid.pprl.encoding.MultiBloomFilterEncoding;
+import gr.upatras.ceid.pprl.encoding.RowBloomFilterEncoding;
+import gr.upatras.ceid.pprl.encoding.SimpleBloomFilterEncoding;
 import org.apache.avro.Schema;
 import org.apache.avro.mapreduce.AvroJob;
 import org.apache.avro.mapreduce.AvroKeyInputFormat;
@@ -25,26 +25,26 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static gr.upatras.ceid.pprl.encoding.EncodingAvroSchemaUtil.loadAvroSchemaFromHdfs;
-import static gr.upatras.ceid.pprl.encoding.mapreduce.BaseBFEncodingMapper.*;
+import static gr.upatras.ceid.pprl.encoding.mapreduce.BaseBloomFilterEncodingMapper.*;
 
-public class EncodeDatasetTool extends Configured implements Tool {
+public class EncodeAvroTool extends Configured implements Tool {
 
     private static final String JOB_DESCRIPTION = "Encode Dataset";
 
-    private static final String[] AVAILABLE_METHODS = {"SBF","FBF","RBF"};
+    private static final String[] AVAILABLE_METHODS = {"SIMPLE","MULTI","ROW"};
 
-    private static final Logger LOG = LoggerFactory.getLogger(EncodeDatasetTool.class);
+    private static final Logger LOG = LoggerFactory.getLogger(EncodeAvroTool.class);
 
 
     public int run(String[] args) throws InterruptedException, IOException, ClassNotFoundException,
-            BFEncodingException {
+            BloomFilterEncodingException {
 
         // get args
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
         if (args.length != 10) {
             LOG.error(" Usage: EncodeDatasetTool <input-path> <input-schema> <encoding-path> <encoding-schema>" +
-                    "\n\t <col0,col1,...,colN> <uid_col> <SBF|FBF|RBF> <N> <K> <Q>");
+                    "\n\t <col0,col1,...,colN> <uid_col> <SIMPLE|MULTI|ROW> <N> <K> <Q>");
             return -1;
         }
 
@@ -74,29 +74,29 @@ public class EncodeDatasetTool extends Configured implements Tool {
         // validate schema encoding
         String description = JOB_DESCRIPTION + " (input-path=" + shortenUrl(input.toString()) +
                 ",  output-path=" + shortenUrl(encodingOutput.toString())  +")";
-        BaseBFEncoding encoding;
+        BaseBloomFilterEncoding encoding;
         switch(selectedMethod) {
             case 0 :
-                encoding = new SimpleBFEncoding(inputSchema,encodingSchema,uidColumn,Arrays.asList(columns),N,K,Q);
+                encoding = new SimpleBloomFilterEncoding(inputSchema,encodingSchema,uidColumn,Arrays.asList(columns),N,K,Q);
                 description += " " + encoding.toString();
                 break;
             case 1 :
-                encoding = new FieldBFEncoding(inputSchema,encodingSchema,uidColumn,Arrays.asList(columns),N,K,Q);
+                encoding = new MultiBloomFilterEncoding(inputSchema,encodingSchema,uidColumn,Arrays.asList(columns),N,K,Q);
                 description += " " + encoding.toString();
                 break;
             case 2 :
-                encoding = new RowBFEncoding(inputSchema,encodingSchema,uidColumn,Arrays.asList(columns),N,K,Q);
+                encoding = new RowBloomFilterEncoding(inputSchema,encodingSchema,uidColumn,Arrays.asList(columns),N,K,Q);
                 description += " " + encoding.toString();
                 break;
             default:
-                throw new BFEncodingException("Invalid method selection : \"" + selectedMethod +"\".");
+                throw new BloomFilterEncodingException("Invalid method selection : \"" + selectedMethod +"\".");
         }
         boolean valid = encoding.validateEncodingSchema();
-        if(!valid) throw new BFEncodingException("Encoding schema is not appropriate for input schema.");
+        if(!valid) throw new BloomFilterEncodingException("Encoding schema is not appropriate for input schema.");
 
         // setup map only job
         Job job = Job.getInstance(conf);
-        job.setJarByClass(EncodeDatasetTool.class);
+        job.setJarByClass(EncodeAvroTool.class);
         job.setJobName(description);
         job.setNumReduceTasks(0);
 
@@ -108,16 +108,16 @@ public class EncodeDatasetTool extends Configured implements Tool {
         // setup mapper
         switch(selectedMethod) {
             case 0 :
-                job.setMapperClass(SimpleBFEncodingMapper.class);
+                job.setMapperClass(SimpleBloomFilterEncodingMapper.class);
                 break;
             case 1 :
-                job.setMapperClass(FieldBFEncodingMapper.class);
+                job.setMapperClass(MultiBloomFilterEncodingMapper.class);
                 break;
             case 2 :
-                job.setMapperClass(RowBFEncodingMapper.class);
+                job.setMapperClass(RowBloomFilterEncodingMapper.class);
                 break;
             default:
-                throw new BFEncodingException("Invalid method selection : \"" + selectedMethod +"\".");
+                throw new BloomFilterEncodingException("Invalid method selection : \"" + selectedMethod +"\".");
         }
 
         AvroJob.setMapOutputKeySchema(job, encodingSchema);
@@ -132,7 +132,7 @@ public class EncodeDatasetTool extends Configured implements Tool {
 
 
     public static void main(String[] args) throws Exception {
-        int res = ToolRunner.run(new EncodeDatasetTool(), args);
+        int res = ToolRunner.run(new EncodeAvroTool(), args);
         System.exit(res);
     }
 

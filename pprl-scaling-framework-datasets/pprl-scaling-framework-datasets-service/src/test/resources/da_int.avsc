@@ -1,0 +1,12 @@
+{
+  "type" : "record",
+  "name" : "DaInt",
+  "namespace" : "da.int",
+  "fields" : [ {
+    "name"  : "daInteger",
+    "type"  : "int",
+	"order" : "ascending",
+    "doc"   : "DaInt"
+  }],
+  "doc:" : "Something random"
+}

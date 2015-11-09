@@ -49,18 +49,18 @@ public class DatasetsService implements InitializingBean {
         LOG.info("Service is now initialized. Found {} datasets on the PPRL site.", datasets.size());
     }
 
-    public void importDataset(final File localAvroFile, final File localAvroSchemaFile, final String datasetName)
+
+    public void importDataset(final String datasetName, final File localAvroSchemaFile, final File... localAvroFiles)
             throws IOException, DatasetException {
         try {
             final Dataset dataset = new Dataset(datasetName, pprlClusterHdfs.getHomeDirectory());
             dataset.buildOnFS(pprlClusterHdfs);
-            uploadFileToHdfs(localAvroFile, dataset.getAvroPath());
-            uploadFileToHdfs(localAvroSchemaFile, dataset.getAvroSchemaPath());
+            uploadFileToHdfs(dataset.getAvroPath(),localAvroFiles);
+            uploadFileToHdfs(dataset.getAvroSchemaPath(),localAvroSchemaFile);
             LOG.info("Dataset : {}, Base path       : {}", datasetName, dataset.getBasePath());
             LOG.info("Dataset : {}, Avro path       : {}", datasetName, dataset.getAvroPath());
             LOG.info("Dataset : {}, Avro Schema Path : {}", datasetName, dataset.getAvroSchemaPath());
             addToDatasets(dataset);
-            LOG.info("Dataset : {}, Added to users datasets.", datasetName);
         } catch (IOException e) {
             LOG.error(e.getMessage());
             throw e;
@@ -70,15 +70,15 @@ public class DatasetsService implements InitializingBean {
         }
     }
 
-    public void importDblpXmlDataset(final File localDatasetFile, final File localSchemaFile, final String datasetName)
+    public void importDblpXmlDataset(final String datasetName, final File localAvroSchemaFile, final File... localDblpFiles)
             throws Exception {
         try {
             final Dataset dataset = new Dataset(datasetName, pprlClusterHdfs.getHomeDirectory());
             dataset.buildOnFS(pprlClusterHdfs, false, true, true);
-            final Path input = uploadFileToHdfs(localDatasetFile, new Path(dataset.getBasePath() + "/xml"));
-            uploadFileToHdfs(localSchemaFile, dataset.getAvroSchemaPath());
+            final Path input = new Path(dataset.getBasePath() + "/xml");
+            uploadFileToHdfs(input,localDblpFiles);
+            uploadFileToHdfs(dataset.getAvroSchemaPath(),localDblpFiles);
             final Path output = dataset.getAvroPath();
-            LOG.info("Running XML to Avro MapReduce job for dataset : " + datasetName + ".");
             LOG.info("Dataset : {}, Base path       : {}", datasetName, dataset.getBasePath());
             LOG.info("Dataset : {}, XML path        : {}", datasetName, input);
             LOG.info("Dataset : {}, Avro path       : {}", datasetName, output);
@@ -86,7 +86,6 @@ public class DatasetsService implements InitializingBean {
             runDblpXmlToAvroTool(input, output);
             removeSuccessFile(output);
             addToDatasets(dataset);
-            LOG.info("Dataset : {}, Added to users datasets.", datasetName);
         } catch (InterruptedException e) {
             LOG.error(e.getMessage());
             throw e;
@@ -116,17 +115,19 @@ public class DatasetsService implements InitializingBean {
         final Dataset dataset = findDatasetByName(datasetName);
         final List<String> sample = new ArrayList<String>(sampleSize);
 
-        dataset.getReader(pprlClusterHdfs);
-        GenericRecord record = dataset.getNextRecord();
-        do {
-            if ((new java.util.Random()).nextBoolean())
+        Dataset.DatasetRecordReader reader = dataset.getReader(pprlClusterHdfs);
+        while(reader.hasNext()) {
+            GenericRecord record = reader.next();
+            if ((new java.util.Random()).nextBoolean()) {
                 if (!sample.contains(record.toString())) {
+                    LOG.debug("Adding Record");
                     sample.add(record.toString());
                     sampleSize--;
-                    if(sampleSize==0) break;
-                }
-            record = dataset.getNextRecord();
-        } while (record != null);
+                    if (sampleSize == 0) break;
+                } else LOG.debug("Not adding record (already in)");
+            } else LOG.debug("Not adding record");
+        }
+        reader.close();
 
         return sample;
     }
@@ -154,24 +155,25 @@ public class DatasetsService implements InitializingBean {
         return description;
     }
 
-    private Path uploadFileToHdfs(final File file, final Path path)
+    private void uploadFileToHdfs(final Path path, final File...files)
             throws IOException {
-        return uploadFileToHdfs(file, path, ONLY_OWNER_PERMISSION);
+        uploadFileToHdfs(path, ONLY_OWNER_PERMISSION,files);
     }
 
-    private Path uploadFileToHdfs(final File file, final Path path, final FsPermission permission)
+    private void uploadFileToHdfs(final Path path, final FsPermission permission, final File...files)
             throws IOException {
         try {
-            final Path source = new Path(file.toURI());
-            final Path destination;
-            if (!pprlClusterHdfs.exists(path)) pprlClusterHdfs.mkdirs(path, permission);
-            else pprlClusterHdfs.delete(path, true);
-
-            destination = new Path(path + "/" + file.getName());
-            pprlClusterHdfs.copyFromLocalFile(source, destination);
-            pprlClusterHdfs.setPermission(destination, permission);
-            LOG.debug("File : {} copiedFromLocalFile to path {}", file.getAbsolutePath(), destination);
-            return destination;
+            if(!pprlClusterHdfs.exists(path)) {
+                LOG.error("Path {} does not exist.");
+                throw new IOException("Path {} does not exist.");
+            }
+            for(File file : files) {
+                final Path source = new Path(file.toURI());
+                final Path destination = new Path(path + "/" + file.getName());
+                pprlClusterHdfs.copyFromLocalFile(source, destination);
+                pprlClusterHdfs.setPermission(destination, permission);
+                LOG.debug("File : {} copiedFromLocalFile to path {}", file.getAbsolutePath(), destination);
+            }
         } catch (IOException e) {
             LOG.error(e.getMessage());
             throw e;
@@ -255,11 +257,13 @@ public class DatasetsService implements InitializingBean {
     private void addToDatasets(final Dataset d) throws IOException {
         if (!datasets.contains(d)) datasets.add(d);
         saveDatasets();
+        LOG.info("Dataset : {}, Added to datasets.", d.getName());
     }
 
     private void removeFromDatasets(final Dataset d) throws IOException {
         if (datasets.contains(d)) datasets.remove(d);
         saveDatasets();
+        LOG.info("Dataset : {}, Removed from datasets.", d.getName());
     }
 
     private Dataset findDatasetByName(final String datasetName) throws DatasetException {

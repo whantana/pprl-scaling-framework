@@ -3,26 +3,22 @@ package gr.upatras.ceid.pprl.datasets;
 import org.apache.avro.Schema;
 import org.apache.avro.file.DataFileReader;
 import org.apache.avro.file.FileReader;
-import org.apache.avro.file.SeekableFileInput;
-import org.apache.avro.file.SeekableInput;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.io.DatumReader;
 import org.apache.avro.mapred.FsInput;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -38,8 +34,7 @@ public class Dataset {
     private Path avroSchemaPath;
 
     private Schema schema;
-    private List<FileReader<GenericRecord>> fileReaders;
-    private int selectedFR;
+    private DatasetRecordReader reader;
 
     public Dataset(final String name, final Path userHomeDirectory) {
         this(name,
@@ -57,10 +52,6 @@ public class Dataset {
 
     public String getName() {
         return name;
-    }
-
-    public void setName(final String name) {
-        this.name = name;
     }
 
     public Path getBasePath() {
@@ -163,50 +154,86 @@ public class Dataset {
 
     public Schema getSchema(final FileSystem fs) throws IOException, DatasetException {
         if(schema == null)  {
-            FileStatus[] status = fs.listStatus(avroSchemaPath);
-            if(status.length != 1) throw new DatasetException("Schema path must contain only one schema file");
-            if(!status[0].isFile()) throw new DatasetException("Schema path must contain only one schema file");
-            schema = (new Schema.Parser()).parse(fs.open(status[0].getPath()));
+            FileStatus[] statuses = fs.listStatus(avroSchemaPath);
+            if(statuses.length > 1) {
+                LOG.warn("Schema path should not contain more than one schema file. Found {}.", statuses.length);
+                for(FileStatus s : statuses) {
+                    if(s.isFile()) schema = (new Schema.Parser()).parse(fs.open(s.getPath()));
+                    if(schema != null) break;
+                }
+            } else if (statuses.length == 1){
+                FileStatus s = statuses[0];
+                if(s.isFile()) schema = (new Schema.Parser()).parse(fs.open(s.getPath()));
+            }
         }
+
+        if(schema == null) {
+            LOG.error("No valid schema file found");
+            throw new DatasetException("No valid schema file found");
+        }
+
         return schema;
     }
 
-    public FileReader<GenericRecord> getReader(final FileSystem fs) throws IOException, DatasetException {
-        if(fileReaders == null) {
-            fileReaders = new ArrayList<FileReader<GenericRecord>>();
-            final SortedSet<Path> paths = new TreeSet<Path>();
-            for (FileStatus s : fs.listStatus(avroPath))
-                if(s.isFile() && s.getPath().toString().endsWith(".avro")) paths.add(s.getPath());
 
-            LOG.debug("Found {} files",paths.size());
-            for(Path p : paths) {
-                LOG.debug("Found File {}",p);
-                fileReaders.add(DataFileReader.openReader(
-                        new FsInput(p, fs.getConf()), new GenericDatumReader<GenericRecord>(getSchema(fs))));
-            }
-
-
-            selectedFR = 0;
-            return fileReaders.get(selectedFR);
-        }
-        if(selectedFR >= fileReaders.size()) throw new DatasetException("Run out of readers");
-
-        return fileReaders.get(selectedFR);
+    public DatasetRecordReader getReader(final FileSystem fs) throws IOException, DatasetException {
+        if(reader == null) reader = new DatasetRecordReader(fs,schema,avroPath);
+        return reader;
     }
 
-    public GenericRecord getNextRecord() throws DatasetException, IOException {
-        // TODO write test for multiple file case
-        if(fileReaders == null) throw new DatasetException("Run out of readers");
-        if(selectedFR >= fileReaders.size()) throw new DatasetException("Run out of readers");
+    public class DatasetRecordReader implements Iterator<GenericRecord>,Closeable {
+        private final Logger LOG = LoggerFactory.getLogger(DatasetRecordReader.class);
+        private List<FileReader<GenericRecord>> fileReaders;
+        private int current;
 
-        if(fileReaders.get(selectedFR).iterator().hasNext())
-            return fileReaders.get(selectedFR).iterator().next();
-        else
-            fileReaders.get(selectedFR).close();
+        public DatasetRecordReader(final FileSystem fs, final Schema schema,final Path parentPath)
+                throws IOException {
+            final SortedSet<Path> paths = new TreeSet<Path>();
+            int count = 0;
+            for (FileStatus s : fs.listStatus(parentPath))
+                if(s.isFile() && s.getPath().toString().endsWith(".avro")) { count++; paths.add(s.getPath()); }
+            LOG.debug("Found {} files to read",count);
 
-        selectedFR++;
-        if(selectedFR >= fileReaders.size()) return null;
+            fileReaders = new ArrayList<FileReader<GenericRecord>>();
+            for(Path p : paths) {
+                LOG.debug("Creating reader for file {}",p);
+                fileReaders.add(DataFileReader.openReader(
+                        new FsInput(p, fs.getConf()), new GenericDatumReader<GenericRecord>(schema)));
+            }
+            current = 0;
+        }
 
-        return fileReaders.get(selectedFR).iterator().next();
+        public void close() throws IOException {
+            fileReaders.get(current).close();
+            for(FileReader f :fileReaders)
+                if(f != null) f.close();
+        }
+
+        public boolean hasNext() {
+            if(fileReaders.get(current).hasNext()) return true;
+            if(current < fileReaders.size()) {
+                try {
+                    fileReaders.get(current).close();
+                } catch (IOException e) {
+                    LOG.error("Can't close this!");
+                }
+                LOG.debug("Moving readers {} -> {}",current,current+1);
+                LOG.debug("Before : {}",fileReaders.get(current));
+                current++;
+                LOG.debug("After current : {} hasNext ? {} ",fileReaders.get(current),
+                        fileReaders.get(current).hasNext());
+                return fileReaders.get(current).hasNext();
+            }
+            return false;
+        }
+
+        public GenericRecord next() {
+            LOG.debug("Current reader : {}",current);
+            return  fileReaders.get(current).next();
+        }
+
+        public void remove() {
+            throw new UnsupportedOperationException("Not supported");
+        }
     }
 }

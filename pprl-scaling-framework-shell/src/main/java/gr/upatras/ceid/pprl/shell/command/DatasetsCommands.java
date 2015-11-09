@@ -1,6 +1,7 @@
 package gr.upatras.ceid.pprl.shell.command;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import gr.upatras.ceid.pprl.datasets.DatasetException;
@@ -9,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.shell.core.CommandMarker;
-import org.springframework.shell.core.annotation.CliAvailabilityIndicator;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
 import org.springframework.stereotype.Component;
@@ -25,108 +25,117 @@ public class DatasetsCommands implements CommandMarker {
     @Autowired
     private DatasetsService service;
 
-    @CliAvailabilityIndicator({"datasets import"})
-    public boolean datasetsImportAvailability() {
-        return true;
-    }
-
-    @CliAvailabilityIndicator({"datasets import_dblp"})
-    public boolean datasetsImportDblpAvailability() {
-        return true;
-    }
-
-    @CliAvailabilityIndicator({"datasets list"})
-    public boolean datasetsListAvailability() {
-        return true;
-    }
-
-    @CliAvailabilityIndicator({"datasets drop"})
-    public boolean datasetsDropAvailability() {
-        return true;
-    }
-
-    @CliAvailabilityIndicator({"datasets drop_all"})
-    public boolean datasetsDropAllAvailability() {
-        return true;
-    }
-
-    @CliAvailabilityIndicator({"datasets sample"})
-    public boolean datasetsSampleAvailability() {
-        return true;
-    }
-
-    @CliAvailabilityIndicator({"datasets get_stats"})
-    public boolean datasetsStatsAvailability() {
-        return true;
-    }
-
-    @CliAvailabilityIndicator({"datasets describe"})
-    public boolean datasetsDescribeAvailability() {
-        return true;
-    }
-
-
-    @CliCommand(value = "datasets import", help = "Import a local avro file and schema on the PPRL site.")
+    @CliCommand(value = "dat_import", help = "Import a local avro file and schema on the PPRL site.")
     public String datasetsImportCommand(
-            @CliOption(key = {"avro_file"}, mandatory = true, help = "Local data avro file.")
+            @CliOption(key = {"avro_file"}, mandatory = false, help = "Local data avro file.")
             final String avroPath,
+            @CliOption(key = {"avro_files"}, mandatory = false, help = "Local data avro files (comma separated).")
+            final String avroPaths,
             @CliOption(key = {"schema_file"}, mandatory = true, help = "Local schema avro file.")
             final String schemaFilePath,
-            @CliOption(key = {"name"}, mandatory = false, help = "(Optional) Dataset name.")
+            @CliOption(key = {"name"}, mandatory = true, help = "(Optional) Dataset name.")
             final String name) {
 
-
-        final File avroFile = new File(avroPath);
-        if (!avroFile.exists()) return "Error. Path \"" + avroPath + "\" does not exist.";
         final File schemaFile = new File(schemaFilePath);
         if (!schemaFile.exists()) return "Error. Path \"" + schemaFilePath + "\" does not exist.";
-        final String datasetName = (name!=null) ? name :
-                avroFile.getName().substring(0, avroFile.getName().lastIndexOf('.'));
-        // TODO check name [a-zA-Z0-9]
+
+        boolean avroFileProvided = (avroPath != null);
+        boolean avroFilesProvided = (avroPaths != null);
+        if(avroFileProvided && avroFilesProvided)
+            return "Error. Please provided either single or multiple files as input";
+        if(!(avroFileProvided || avroFilesProvided))
+            return "Error. Please provided either single or multiple files as input";
+
+        File[] avroFiles;
+        if(avroFileProvided) {
+            avroFiles = new File[1];
+            avroFiles[0] = new File(avroPath);
+            if (!avroFiles[0].exists()) return "Error. Path \"" + avroPath + "\" does not exist.";
+        }
+        else {
+            if(!avroPaths.contains(",")) return "Error. Paths provided must be comma separated.";
+            final String[] paths = avroPaths.split(",");
+            avroFiles = new File[paths.length];
+            for (int i = 0; i < paths.length; i++) {
+                avroFiles[i] = new File(paths[i]);
+                if (!avroFiles[i].exists()) return "Error. Path \"" + paths[i] + "\" does not exist.";
+            }
+        }
+
+        final String[] absolutePaths = new String[avroFiles.length];
+        for (int i = 0; i < avroFiles.length; i++) absolutePaths[i] = avroFiles[i].getAbsolutePath();
+
+        if(!name.matches("^[a-zA-Z0-9]*$")) return "Error. Dataset name must contain only alphanumeric characters.";
 
         LOG.info("Importing local AVRO dataset :");
-        LOG.info("\tSelected data file for import   : {}",avroFile.getAbsolutePath());
+        LOG.info("\tImported Dataset name           : {}",name);
+        LOG.info("\tSelected data files for import : {}",Arrays.toString(absolutePaths));
         LOG.info("\tSelected schema file for import : {}",schemaFile.getAbsolutePath());
-        LOG.info("\tImported Dataset name           : {}",datasetName);
 
         try {
-            service.importDataset(avroFile,schemaFile,datasetName);
+            service.importDataset(name,schemaFile,avroFiles);
         } catch (Exception e) {
             return "Error." + e.getMessage();
         }
         return "DONE";
     }
 
-    @CliCommand(value = "datasets import_dblp", help = "Import the dblp.xml file on the PPRL site.")
+    @CliCommand(value = "dat_import_dblp", help = "Import the dblp.xml file on the PPRL site.")
     public String datasetsImportDblpCommand(
-            @CliOption(key = {"dblp_file"}, mandatory = true, help = "Local dblp file (XML format).")
+            @CliOption(key = {"dblp_file"}, mandatory = false, help = "Local dblp file (XML format).")
             final String dblpPath,
+            @CliOption(key = {"dblp_files"}, mandatory = false, help = "Local dblp files (XML format).")
+            final String dblpPaths,
             @CliOption(key = {"schema_file"}, mandatory = true, help = "Local schema avro file.")
             final String schemaFilePath,
             @CliOption(key = {"name"}, mandatory = false, help = "(Optional) Dataset name.")
             final String name) {
 
-        final File dblpFile = new File(dblpPath);
-        if (!dblpFile.exists()) return "Error. Path \"" + dblpPath + "\" does not exist.";
         final File schemaFile = new File(schemaFilePath);
         if (!schemaFile.exists()) return "Error. Path \"" + schemaFilePath + "\" does not exist.";
-        final String datasetName = (name!=null) ? name :
-                        dblpFile.getName().substring(0, dblpFile.getName().lastIndexOf('.'));
 
-        LOG.info("Importing local DBLP(XML) dataset : ");
-        LOG.info("\tSelected data file for import   : {}",dblpFile.getAbsolutePath());
+        boolean dblpFileProvided = (dblpPath != null);
+        boolean dblpFilesProvided = (dblpPaths != null);
+        if(dblpFileProvided && dblpFilesProvided)
+            return "Error. Please provided either single or multiple files as input";
+        if(!(dblpFileProvided || dblpFilesProvided))
+            return "Error. Please provided either single or multiple files as input";
+
+        File[] dblpFiles;
+        if(dblpFileProvided) {
+            dblpFiles = new File[1];
+            dblpFiles[0] = new File(dblpPath);
+            if (!dblpFiles[0].exists()) return "Error. Path \"" + dblpPath + "\" does not exist.";
+        }
+        else {
+            if(!dblpPaths.contains(",")) return "Error. Paths provided must be comma separated.";
+            final String[] paths = dblpPaths.split(",");
+            dblpFiles = new File[paths.length];
+            for (int i = 0; i < paths.length; i++) {
+                dblpFiles[i] = new File(paths[i]);
+                if (!dblpFiles[i].exists()) return "Error. Path \"" + paths[i] + "\" does not exist.";
+            }
+        }
+
+        final String[] absolutePaths = new String[dblpFiles.length];
+        for (int i = 0; i < dblpFiles.length; i++) absolutePaths[i] = dblpFiles[i].getAbsolutePath();
+
+        if(!name.matches("^[a-zA-Z0-9]*$")) return "Error. Dataset name must contain only alphanumeric characters.";
+
+        LOG.info("Importing local DBLP(XML) dataset :");
+        LOG.info("\tImported Dataset name           : {}",name);
+        LOG.info("\tSelected data files for import : {}",Arrays.toString(absolutePaths));
         LOG.info("\tSelected schema file for import : {}",schemaFile.getAbsolutePath());
-        LOG.info("\tImported Dataset name           : {}",datasetName);
 
         try {
-            service.importDblpXmlDataset(dblpFile,schemaFile,datasetName);
+            service.importDblpXmlDataset(name,schemaFile,dblpFiles);
         } catch (Exception e) {
             return "Error." + e.getMessage();
         }
         return "DONE";
     }
 
-    @CliCommand(value = "datasets list", help = "List user's imported datasets on the PPRL site.")
+    @CliCommand(value = "dat_list", help = "List user's imported datasets on the PPRL site.")
     public String datasetsListCommand() {
         LOG.info("Listing user's imported datasets ( name => path) :");
         final List<String> names = service.listDatasets();
@@ -141,7 +150,7 @@ public class DatasetsCommands implements CommandMarker {
         return "DONE";
     }
 
-    @CliCommand(value = "datasets drop", help = "Drop user's imported datasets on the PPRL site.")
+    @CliCommand(value = "dat_drop", help = "Drop user's imported datasets on the PPRL site.")
     public String datasetsDropCommand(
             @CliOption(key = {"name"}, mandatory = true, help = "Dataset name.")
             final String name,
@@ -161,7 +170,7 @@ public class DatasetsCommands implements CommandMarker {
         return "DONE";
     }
 
-    @CliCommand(value = "datasets drop_all", help = "Drop user's imported datasets on the PPRL site.")
+    @CliCommand(value = "dat_drop_all", help = "Drop user's imported datasets on the PPRL site.")
     public String datasetsDropAllCommand(
             @CliOption(key = {"delete_files"}, mandatory = false, help = "YES or NO (default) to completelly drop dataset directory.",
                     specifiedDefaultValue="NO")
@@ -183,7 +192,7 @@ public class DatasetsCommands implements CommandMarker {
         return "DONE";
     }
 
-    @CliCommand(value = "datasets sample", help = "Sample a user's imported dataset.")
+    @CliCommand(value = "dat_sample", help = "Sample a user's imported dataset.")
     public String datasetsSampleCommand(
             @CliOption(key = {"name"}, mandatory = true, help = "Dataset name.")
             final String name,
@@ -199,7 +208,7 @@ public class DatasetsCommands implements CommandMarker {
         LOG.info("Taking random sample of dataset {}. Rows : {} :",name,size);
         try {
             final List<String> records = service.sampleOfDataset(name,size);
-            for(String record : records) LOG.info("\t{}",record); // TODO make this pretty
+            for(String record : records) LOG.info("\t{}",record);
         } catch (DatasetException e) {
             return "Error." + e.getMessage();
         } catch (IOException e) {
@@ -208,16 +217,16 @@ public class DatasetsCommands implements CommandMarker {
         return "DONE";
     }
 
-    @CliCommand(value = "datasets get_stats", help = "Retrieve useful statistics of the imported dataset.")
+    @CliCommand(value = "dat_get_stats", help = "Retrieve useful statistics of the imported dataset.")
     public String datasetsStatsCommand(
-        @CliOption(key = {"name"}, mandatory = true, help = "Dataset name.")
-        final String name) {
+            @CliOption(key = {"name"}, mandatory = true, help = "Dataset name.")
+            final String name) {
         LOG.info("Column stats for dataset {} : ",name);
         return "NOT IMPLEMENTED";
     }
 
 
-    @CliCommand(value = "datasets describe", help = "Get Aro schema of the imported dataset.")
+    @CliCommand(value = "dat_describe", help = "Get Aro schema of the imported dataset.")
     public String datasetsDescribeCommand(
             @CliOption(key = {"name"}, mandatory = true, help = "Dataset name.")
             final String name) {

@@ -41,9 +41,6 @@ public class DatasetsService implements InitializingBean {
 
     public static final String DATASETS_FILE=".pprl_datasets";
 
-    @Value("${user.dir}")  // TODO inject diffrent value for testing and shell
-    private String userdir;
-
     @Autowired
     private FileSystem pprlClusterHdfs;
 
@@ -56,7 +53,6 @@ public class DatasetsService implements InitializingBean {
         checkSite();
         loadDatasets();
         LOG.info("Service is now initialized. Found {} datasets on the PPRL site.", datasets.size());
-        LOG.info("user.dir={}",userdir);
     }
 
     public void importDataset(final String datasetName, final File localAvroSchemaFile, final File... localAvroFiles)
@@ -129,36 +125,32 @@ public class DatasetsService implements InitializingBean {
         return sampleStr;
     }
 
-    public List<String> saveSampleOfDataset(final String datasetName, int sampleSize,final String sampleName)
+    public List<String> saveSampleOfDataset(final String datasetName, int sampleSize,
+                                            final File sampleSchemaFile, final File sampleDataFile)
             throws DatasetException, IOException {
         final List<String> sampleStr = new ArrayList<String>(sampleSize);
         final Dataset dataset = findDatasetByName(datasetName);
         final Schema schema = dataset.getSchema(pprlClusterHdfs);
         final List<GenericRecord> sample = sampleOfDataset(dataset, sampleSize);
-        saveSampleOfDataset(sample,schema,sampleName);
+        saveSampleOfDataset(sample,schema,sampleSchemaFile,sampleDataFile);
         for(GenericRecord record : sample)
             sampleStr.add(record.toString());
         return sampleStr;
     }
 
     public void saveSampleOfDataset(final List<GenericRecord> sampleOfDataset,final Schema schema,
-                                    final String sampleName)
+                                    final File sampleSchemaFile, final File sampleDataFile)
             throws IOException, DatasetException {
-        final File schemaFile = new File(userdir,sampleName + ".avsc");
-        schemaFile.createNewFile();
-        final PrintWriter schemaWriter = new PrintWriter(schemaFile);
+        final PrintWriter schemaWriter = new PrintWriter(sampleSchemaFile);
         schemaWriter.print(schema.toString(true));
         schemaWriter.close();
-        LOG.info("Schema saved at : {}",schemaFile.getAbsolutePath());
 
-        final File dataSampleFile = new File(userdir,sampleName + ".avro");
         DataFileWriter<GenericRecord> writer =
                 new DataFileWriter<GenericRecord>(new GenericDatumWriter<GenericRecord>(schema));
-        DataFileWriter<GenericRecord> sampleWriter = writer.create(schema,dataSampleFile);
+        DataFileWriter<GenericRecord> sampleWriter = writer.create(schema,sampleDataFile);
         for(GenericRecord record : sampleOfDataset)
             sampleWriter.append(record);
         sampleWriter.close();
-        LOG.info("Data saved at : {}",dataSampleFile.getAbsolutePath());
     }
 
     public List<GenericRecord> sampleOfDataset(final Dataset dataset, int sampleSize)

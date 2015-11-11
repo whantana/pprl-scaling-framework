@@ -200,17 +200,23 @@ public class DatasetsCommands implements CommandMarker {
             final String sizeStr,
             @CliOption(key = {"sampleName"}, mandatory = false, help = "If provided sample is saved at current working directory")
             final String sampleName) {
-        int size = 10;
         try{
-            size = Integer.parseInt(sizeStr);
+            int size = Integer.parseInt(sizeStr);
+            if(size < 1) throw new NumberFormatException("Sample size must be greater than zero.");
+            final List<String> records;
+            if(sampleName != null) {
+                final File sampleSchemaFile = new File(sampleName + ".avsc");
+                sampleSchemaFile.createNewFile();
+                final File sampleDataFile = new File(sampleName + ".avro");
+                sampleDataFile.createNewFile();
+                records = service.saveSampleOfDataset(name,size,sampleSchemaFile,sampleDataFile);
+                LOG.info("Schema saved at : {}",sampleSchemaFile.getAbsolutePath());
+                LOG.info("Data saved at : {}",sampleDataFile.getAbsolutePath());
+            } else records = service.sampleOfDataset(name,size);
+            LOG.info("Random sample of dataset {}. sample size : {} :",name,size);
+            for(String record : records) LOG.info("\t{}",record);
         } catch (NumberFormatException nfe) {
             return "Error." + nfe.getMessage();
-        }
-        LOG.info("Taking random sample of dataset {}. Rows : {} :",name,size);
-        try {
-            final List<String> records = (sampleName != null) ? service.saveSampleOfDataset(name,size,sampleName) :
-                    service.sampleOfDataset(name,size);
-            for(String record : records) LOG.info("\t{}",record);
         } catch (DatasetException e) {
             return "Error." + e.getMessage();
         } catch (IOException e) {

@@ -55,7 +55,7 @@
         <dependency>
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-hadoop-test</artifactId>
-            <version>${spring.data.hadoop.version}</version>
+            <version>${spring.data.hadoop.test.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -77,10 +77,11 @@
         <mr.unit.version>1.1.0</mr.unit.version>
         <junit.version>4.12</junit.version>
         <slf4j.version>1.7.12</slf4j.version>
-        <spring.framework.version>4.2.2.BUILD-SNAPSHOT</spring.framework.version>
+        <spring.framework.version>4.2.2.RELEASE</spring.framework.version>
         <spring.boot.version>1.2.5.RELEASE</spring.boot.version>
-        <spring.data.hadoop.version>2.3.0.BUILD-SNAPSHOT</spring.data.hadoop.version>
+        <spring.data.hadoop.version>2.3.0.M3</spring.data.hadoop.version>
         <spring.test.version>${spring.framework.version}</spring.test.version>
+        <spring.data.hadoop.test.version>2.3.0.M3</spring.data.hadoop.test.version>
         <spring.shell.version>1.1.0.RELEASE</spring.shell.version>
     </properties>
 

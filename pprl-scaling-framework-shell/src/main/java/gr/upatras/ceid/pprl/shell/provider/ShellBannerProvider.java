@@ -18,10 +18,10 @@ public class ShellBannerProvider extends DefaultBannerProvider {
     @Value("${hadoop.host}")
     private String hadoopHost;
 
-    @Value("${build.version")
+    @Value("${build.version}")
     private String buildVersion;
 
-    @Value("${build.date")
+    @Value("${build.date}")
     private String buildDate;
 
 

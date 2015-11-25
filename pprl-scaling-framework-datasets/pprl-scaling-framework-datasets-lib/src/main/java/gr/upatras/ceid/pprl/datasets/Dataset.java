@@ -6,16 +6,24 @@ import org.apache.avro.file.FileReader;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.FsInput;
+import org.apache.commons.net.util.Base64;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.hadoop.io.Writable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -24,16 +32,12 @@ import java.util.TreeSet;
 
 public class Dataset {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Dataset.class);
-    private static final String ENCODINGS_FILE=".pprl_encodings";
+    protected String name;
+    protected Path basePath;
+    protected Path avroPath;
+    protected Path avroSchemaPath;
 
-    private String name;
-    private Path basePath;
-    private Path avroPath;
-    private Path avroSchemaPath;
-
-    private Schema schema;
-    private DatasetRecordReader reader;
+    protected transient Schema schema;
 
     public Dataset(final String name, final Path userHomeDirectory) {
         this(name,
@@ -81,29 +85,20 @@ public class Dataset {
 
         boolean datasetExists = existsOnFS(fs,true);
         if (datasetExists && overwrite) {
-            LOG.info("Overwriting dataset found at {}",name,basePath);
             fs.delete(basePath, true);
         } else if(datasetExists) {
             throw new DatasetException("Dataset base path already exists!");
         }
 
         fs.mkdirs(basePath, permission);
-        LOG.info("Making base path at {} created with permissions {}.",
-                basePath, permission);
 
         if (makeAvroDir) {
             fs.mkdirs(avroPath, permission);
-            LOG.info("Making data path at {} created with permissions {}.",
-                    avroPath, permission);
         }
 
         if (makeSchemaDir) {
             fs.mkdirs(avroSchemaPath, permission);
-            LOG.info("Making schema path at {} created with permissions {}.",
-                    avroSchemaPath, permission);
         }
-
-        fs.createNewFile(new Path(basePath + "/" + ENCODINGS_FILE));
     }
 
     public boolean existsOnFS(final FileSystem fs, final boolean checkOnlyBasePath)
@@ -114,19 +109,22 @@ public class Dataset {
                 fs.exists(avroSchemaPath);
     }
 
-    @Override
-    public String toString() {
+    public static String toString(final Dataset dataset) {
+        if(!dataset.isValid()) return null;
         return String.format("%s => %s %s %s",
-                name,basePath,avroPath,avroSchemaPath);
+                dataset.getName(), dataset.getBasePath(),
+                dataset.getAvroPath(), dataset.getAvroSchemaPath());
     }
 
     public static Dataset fromString(final String s) {
         final String[] parts = s.split(" => ");
-        final String name = parts[0];
-        final String[] partss = parts[1].split(" ");
-        final Path basePath = new Path(partss[0]);
-        final Path avroPath = new Path(partss[1]);
-        final Path avroSchemaPath = new Path(partss[2]);
+        if(parts.length != 2) return null;
+        String name = parts[0];
+        final String[] paths = parts[1].split(" ");
+        if(paths.length != 3) return null;
+        Path basePath = new Path(paths[0]);
+        Path avroPath = new Path(paths[1]);
+        Path avroSchemaPath = new Path(paths[2]);
         return new Dataset(name,basePath,avroPath,avroSchemaPath);
     }
 
@@ -141,7 +139,6 @@ public class Dataset {
         if (!basePath.equals(dataset.basePath)) return false;
         if (!avroPath.equals(dataset.avroPath)) return false;
         return avroSchemaPath.equals(dataset.avroSchemaPath);
-
     }
 
     @Override
@@ -153,13 +150,13 @@ public class Dataset {
         return result;
     }
 
-    public Schema getSchema(final FileSystem fs) throws IOException, DatasetException {
+    public Schema getSchema(final FileSystem fs) throws IOException {
         if(schema == null)  {
             FileStatus[] statuses = fs.listStatus(avroSchemaPath);
             if(statuses.length > 1) {
-                LOG.warn("Schema path should not contain more than one schema file. Found {}.", statuses.length);
                 for(FileStatus s : statuses) {
-                    if(s.isFile()) schema = (new Schema.Parser()).parse(fs.open(s.getPath()));
+                    if(s.isFile() && s.getPath().getName().endsWith(".avsc"))
+                        schema = (new Schema.Parser()).parse(fs.open(s.getPath()));
                     if(schema != null) break;
                 }
             } else if (statuses.length == 1){
@@ -168,18 +165,35 @@ public class Dataset {
             }
         }
 
-        if(schema == null) {
-            LOG.error("No valid schema file found");
-            throw new DatasetException("No valid schema file found");
-        }
-
         return schema;
+    }
+
+    public Path getSchemaFile(final FileSystem fs) throws IOException {
+        FileStatus[] statuses = fs.listStatus(avroSchemaPath);
+        if(statuses.length > 1) {
+            for(FileStatus s : statuses) {
+                if(s.isFile() && s.getPath().getName().endsWith(".avsc")) return s.getPath();
+            }
+        }
+        FileStatus s = statuses[0];
+        if(s.isFile() && s.getPath().getName().endsWith(".avsc")) return s.getPath();
+        else return null;
     }
 
 
     public DatasetRecordReader getReader(final FileSystem fs) throws IOException, DatasetException {
-        if(reader == null) reader = new DatasetRecordReader(fs,schema,avroPath);
-        return reader;
+        if(schema == null) {
+            getSchema(fs);
+            if (schema == null) {
+                throw new DatasetException("Schema cannot be null");
+            }
+        }
+        return new DatasetRecordReader(fs,schema,avroPath);
+    }
+
+    public boolean isValid() {
+        return (name != null) & (basePath != null) &
+               (avroPath != null) & (avroSchemaPath != null);
     }
 
     public class DatasetRecordReader implements Iterator<GenericRecord>,Closeable {
@@ -205,7 +219,8 @@ public class Dataset {
         }
 
         public void close() throws IOException {
-            fileReaders.get(current).close();
+            if(current < fileReaders.size())
+                fileReaders.get(current).close();
             for(FileReader f :fileReaders)
                 if(f != null) f.close();
         }
@@ -221,6 +236,7 @@ public class Dataset {
                 LOG.debug("Moving readers {} -> {}",current,current+1);
                 LOG.debug("Before : {}",fileReaders.get(current));
                 current++;
+                if(current >= fileReaders.size()) return false;
                 LOG.debug("After current : {} hasNext ? {} ",fileReaders.get(current),
                         fileReaders.get(current).hasNext());
                 return fileReaders.get(current).hasNext();

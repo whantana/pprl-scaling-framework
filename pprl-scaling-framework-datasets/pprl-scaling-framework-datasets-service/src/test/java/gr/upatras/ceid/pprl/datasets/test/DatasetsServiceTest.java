@@ -1,6 +1,5 @@
 package gr.upatras.ceid.pprl.datasets.test;
 
-import gr.upatras.ceid.pprl.datasets.Dataset;
 import gr.upatras.ceid.pprl.datasets.DatasetException;
 import gr.upatras.ceid.pprl.datasets.service.DatasetsService;
 import org.apache.hadoop.fs.Path;
@@ -58,7 +57,7 @@ public class DatasetsServiceTest extends AbstractMapReduceTests{
         checkForDatasetsFile();
         multiFileImport();
         getSampleFromMulti();
-//        saveSamples(); TODO : user.dir must be injected for running completing this test
+        saveSamples();
     }
 
 //    TODO : Look into mini yarn cluster tests for running the dblp import mr tool
@@ -88,7 +87,7 @@ public class DatasetsServiceTest extends AbstractMapReduceTests{
 
     private void list() {
         int i = 1;
-        for(String s : service.listDatasets())
+        for(String s : service.listDatasets(false))
             LOG.info("{}.Dataset : {} ",i++,s);
     }
 
@@ -98,32 +97,31 @@ public class DatasetsServiceTest extends AbstractMapReduceTests{
 
     private void checkForDatasetsFile() throws IOException {
         if(datasetsFile == null ) {
-            datasetsFile = new Path(getFileSystem().getHomeDirectory() + "/" + DatasetsService.DATASETS_FILE);
+            datasetsFile = service.getUserDatasetsFile();
             LOG.info("Setting datasets file : {}",datasetsFile);
         }
         assertTrue(getFileSystem().exists(datasetsFile));
         long len = getFileSystem().getFileStatus(datasetsFile).getLen();
         LOG.info("Checking datasets file size : {} bytes",len);
-        datasetsCount = service.listDatasets().size();
+        datasetsCount = service.listDatasets(true).size();
         LOG.info("Found {} datasets.",datasetsCount);
 
     }
 
     private void importLocalAvro() throws IOException, DatasetException, URISyntaxException {
-        File localAvroFile = new File(getClass().getResource("/random.avro").toURI());
-        File localAvroSchemaFile = new File(getClass().getResource("/random.avsc").toURI());
+        File localAvroFile = new File(getClass().getResource("/random/avro/random.avro").toURI());
+        File localAvroSchemaFile = new File(getClass().getResource("/random/schema/random.avsc").toURI());
         service.importDataset("random",localAvroSchemaFile,localAvroFile);
         datasetsCount++;
-        assertEquals(datasetsCount,service.listDatasets().size());
+        assertEquals(datasetsCount,service.listDatasets(true).size());
         long len = getFileSystem().getFileStatus(datasetsFile).getLen();
         LOG.info("After import datasets file size : {} bytes",len);
-
     }
 
     private void dropDataset() throws IOException, DatasetException {
         service.dropDataset("random", false);
         datasetsCount--;
-        assertEquals(datasetsCount, service.listDatasets().size());
+        assertEquals(datasetsCount, service.listDatasets(true).size());
         long len = getFileSystem().getFileStatus(datasetsFile).getLen();
         LOG.info("After drop datasets file size : {} bytes",len);
         assertTrue(getFileSystem().exists(new Path(getFileSystem().getHomeDirectory() + "/random")));
@@ -139,25 +137,25 @@ public class DatasetsServiceTest extends AbstractMapReduceTests{
     }
 
     private void doubleImport() throws IOException, DatasetException, URISyntaxException {
-        File localAvroFile = new File(getClass().getResource("/random.avro").toURI());
-        File localAvroSchemaFile = new File(getClass().getResource("/random.avsc").toURI());
+        File localAvroFile = new File(getClass().getResource("/random/avro/random.avro").toURI());
+        File localAvroSchemaFile = new File(getClass().getResource("/random/schema/random.avsc").toURI());
         service.importDataset("random1",localAvroSchemaFile,localAvroFile);
         service.importDataset("random2",localAvroSchemaFile,localAvroFile);
         datasetsCount += 2;
-        assertEquals(datasetsCount, service.listDatasets().size());
+        assertEquals(datasetsCount, service.listDatasets(true).size());
         long len = getFileSystem().getFileStatus(datasetsFile).getLen();
         LOG.info("After double import datasets file size : {} bytes",len);
     }
 
     private void multiFileImport() throws URISyntaxException, IOException, DatasetException {
-        File localAvroSchemaFile = new File(getClass().getResource("/da_int.avsc").toURI());
+        File localAvroSchemaFile = new File(getClass().getResource("/da_int/schema/da_int.avsc").toURI());
         File[] localAvroFiles = new File[4];
         for (int i = 1; i <= 4; i++) {
-            localAvroFiles[i-1] = new File(getClass().getResource(String.format("/da_int_%d.avro", i)).toURI());
+            localAvroFiles[i-1] = new File(getClass().getResource(String.format("/da_int/avro/da_int_%d.avro", i)).toURI());
         }
         service.importDataset("da_int",localAvroSchemaFile,localAvroFiles);
         datasetsCount++;
-        assertEquals(datasetsCount, service.listDatasets().size());
+        assertEquals(datasetsCount, service.listDatasets(true).size());
         long len = getFileSystem().getFileStatus(datasetsFile).getLen();
         LOG.info("After import datasets file size : {} bytes",len);
     }
@@ -167,19 +165,38 @@ public class DatasetsServiceTest extends AbstractMapReduceTests{
         for(String sample : service.sampleOfDataset("da_int",13)) LOG.info("\t{}", sample);
     }
 
-    private void saveSamples() throws DatasetException, IOException {
-        service.saveSampleOfDataset("random1", 5,"random1_sample");
-        service.saveSampleOfDataset("random2", 5,"random2_sample");
-        service.saveSampleOfDataset("da_int",5,"daint_sample");
+    private void saveSamples() throws DatasetException, IOException, URISyntaxException {
+        String parent = new File(getClass().getResource("/random/avro").toURI()).getParent();
+        File[] random1_sample_files = {
+                new File(parent,"random1_sample.avsc"),
+                new File(parent,"random1_sample.avro")
+        };
+        random1_sample_files[0].createNewFile();
+        random1_sample_files[1].createNewFile();
+        service.saveSampleOfDataset("random1", 5, random1_sample_files[0], random1_sample_files[1]);
+        File[] random2_sample_files = {
+                new File(parent,"random2_sample.avsc"),
+                new File(parent,"random2_sample.avro")
+        };
+        random2_sample_files[0].createNewFile();
+        random2_sample_files[1].createNewFile();
+        service.saveSampleOfDataset("random2", 5, random2_sample_files[0], random2_sample_files[1]);
+        File[] da_int_sample = {
+                new File(parent,"da_int_sample.avsc"),
+                new File(parent,"da_int_sample.avro")
+        };
+        da_int_sample[0].createNewFile();
+        da_int_sample[1].createNewFile();
+        service.saveSampleOfDataset("da_int", 5, da_int_sample[0], da_int_sample[1]);
     }
 
 
     private void dblpImport() throws Exception {
-        File localDblpXml = new File(getClass().getResource("/dblp_sample.xml").toURI());
-        File localAvroSchemaFile = new File(getClass().getResource("/dblp_sample.avsc").toURI());
+        File localDblpXml = new File(getClass().getResource("/dblp/xml/dblp_sample.xml").toURI());
+        File localAvroSchemaFile = new File(getClass().getResource("/dblp/schema/dblp_sample.avsc").toURI());
         service.importDblpXmlDataset("dblp",localAvroSchemaFile,localDblpXml);
         datasetsCount++;
-        assertEquals(datasetsCount, service.listDatasets().size());
+        assertEquals(datasetsCount, service.listDatasets(true).size());
     }
 
     private void dblpDescirbe() throws DatasetException, IOException {

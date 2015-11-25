@@ -27,124 +27,84 @@ public class DatasetsCommands implements CommandMarker {
 
     @CliCommand(value = "dat_import", help = "Import local avro file(s) and schema on the PPRL site.")
     public String datasetsImportCommand(
-            @CliOption(key = {"avro_file"}, mandatory = false, help = "Local data avro file.")
-            final String avroPath,
-            @CliOption(key = {"avro_files"}, mandatory = false, help = "Local data avro files (comma separated).")
+            @CliOption(key = {"avro_files"}, mandatory = true, help = "Local data avro files (comma separated) or including directory.")
             final String avroPaths,
             @CliOption(key = {"schema_file"}, mandatory = true, help = "Local schema avro file.")
             final String schemaFilePath,
             @CliOption(key = {"name"}, mandatory = true, help = "Dataset name.")
             final String name) {
 
-        final File schemaFile = new File(schemaFilePath);
-        if (!schemaFile.exists()) return "Error. Path \"" + schemaFilePath + "\" does not exist.";
-
-        boolean avroFileProvided = (avroPath != null);
-        boolean avroFilesProvided = (avroPaths != null);
-        if(avroFileProvided && avroFilesProvided)
-            return "Error. Please provided either single or multiple files as input";
-        if(!(avroFileProvided || avroFilesProvided))
-            return "Error. Please provided either single or multiple files as input";
-
-        File[] avroFiles;
-        if(avroFileProvided) {
-            avroFiles = new File[1];
-            avroFiles[0] = new File(avroPath);
-            if (!avroFiles[0].exists()) return "Error. Path \"" + avroPath + "\" does not exist.";
-        }
-        else {
-            if(!avroPaths.contains(",")) return "Error. Paths provided must be comma separated.";
-            final String[] paths = avroPaths.split(",");
-            avroFiles = new File[paths.length];
-            for (int i = 0; i < paths.length; i++) {
-                avroFiles[i] = new File(paths[i]);
-                if (!avroFiles[i].exists()) return "Error. Path \"" + paths[i] + "\" does not exist.";
-            }
-        }
-
-        final String[] absolutePaths = new String[avroFiles.length];
-        for (int i = 0; i < avroFiles.length; i++) absolutePaths[i] = avroFiles[i].getAbsolutePath();
-
-        if(!name.matches("^[a-zA-Z0-9]*$")) return "Error. Dataset name must contain only alphanumeric characters.";
-
-        LOG.info("Importing local AVRO dataset :");
-        LOG.info("\tImported Dataset name           : {}",name);
-        LOG.info("\tSelected data files for import : {}",Arrays.toString(absolutePaths));
-        LOG.info("\tSelected schema file for import : {}",schemaFile.getAbsolutePath());
-
         try {
-            service.importDataset(name,schemaFile,avroFiles);
-        } catch (Exception e) {
-            return "Error." + e.getMessage();
+            final File schemaFile = new File(schemaFilePath);
+            if (!schemaFile.exists()) return "Error. Path \"" + schemaFilePath + "\" does not exist.";
+
+            final File[] avroFiles = CommandUtils.retrieveFiles(avroPaths);
+
+            final String[] absolutePaths = new String[avroFiles.length];
+            for (int i = 0; i < avroFiles.length; i++) absolutePaths[i] = avroFiles[i].getAbsolutePath();
+
+            if (!name.matches("^[a-z_A-Z][a-z_A-Z0-9]*$"))
+                return "Error. Dataset name must contain only alphanumeric characters and underscores.";
+
+            LOG.info("Importing local AVRO dataset :");
+            LOG.info("\tImported Dataset name           : {}", name);
+            LOG.info("\tSelected data files for import  : {}", Arrays.toString(absolutePaths));
+            LOG.info("\tSelected schema file for import : {}", schemaFile.getAbsolutePath());
+
+            service.importDataset(name, schemaFile, avroFiles);
+            return "DONE";
+        } catch (DatasetException e) {
+            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+        } catch (IOException e) {
+            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
         }
-        return "DONE";
     }
 
     @CliCommand(value = "dat_import_dblp", help = "Import DBLP XML file(s) on the PPRL site.")
     public String datasetsImportDblpCommand(
-            @CliOption(key = {"dblp_file"}, mandatory = false, help = "Local dblp file (XML format).")
-            final String dblpPath,
-            @CliOption(key = {"dblp_files"}, mandatory = false, help = "Local dblp files (XML format).")
+            @CliOption(key = {"dblp_files"}, mandatory = true, help = "Local dblp files (XML format) .")
             final String dblpPaths,
             @CliOption(key = {"schema_file"}, mandatory = true, help = "Local schema avro file.")
             final String schemaFilePath,
             @CliOption(key = {"name"}, mandatory = true, help = "Dataset name.")
             final String name) {
-
-        final File schemaFile = new File(schemaFilePath);
-        if (!schemaFile.exists()) return "Error. Path \"" + schemaFilePath + "\" does not exist.";
-
-        boolean dblpFileProvided = (dblpPath != null);
-        boolean dblpFilesProvided = (dblpPaths != null);
-        if(dblpFileProvided && dblpFilesProvided)
-            return "Error. Please provided either single or multiple files as input";
-        if(!(dblpFileProvided || dblpFilesProvided))
-            return "Error. Please provided either single or multiple files as input";
-
-        File[] dblpFiles;
-        if(dblpFileProvided) {
-            dblpFiles = new File[1];
-            dblpFiles[0] = new File(dblpPath);
-            if (!dblpFiles[0].exists()) return "Error. Path \"" + dblpPath + "\" does not exist.";
-        }
-        else {
-            if(!dblpPaths.contains(",")) return "Error. Paths provided must be comma separated.";
-            final String[] paths = dblpPaths.split(",");
-            dblpFiles = new File[paths.length];
-            for (int i = 0; i < paths.length; i++) {
-                dblpFiles[i] = new File(paths[i]);
-                if (!dblpFiles[i].exists()) return "Error. Path \"" + paths[i] + "\" does not exist.";
-            }
-        }
-
-        final String[] absolutePaths = new String[dblpFiles.length];
-        for (int i = 0; i < dblpFiles.length; i++) absolutePaths[i] = dblpFiles[i].getAbsolutePath();
-
-        if(!name.matches("^[a-zA-Z0-9]*$")) return "Error. Dataset name must contain only alphanumeric characters.";
-
-        LOG.info("Importing local DBLP(XML) dataset :");
-        LOG.info("\tImported Dataset name           : {}",name);
-        LOG.info("\tSelected data files for import : {}",Arrays.toString(absolutePaths));
-        LOG.info("\tSelected schema file for import : {}",schemaFile.getAbsolutePath());
-
         try {
-            service.importDblpXmlDataset(name,schemaFile,dblpFiles);
+
+            final File schemaFile = new File(schemaFilePath);
+            if (!schemaFile.exists()) return "Error. Path \"" + schemaFilePath + "\" does not exist.";
+
+            final File[] dblpFiles = CommandUtils.retrieveFiles(dblpPaths);
+
+            final String[] absolutePaths = new String[dblpFiles.length];
+            for (int i = 0; i < dblpFiles.length; i++) absolutePaths[i] = dblpFiles[i].getAbsolutePath();
+
+            if (!name.matches("^[a-z_A-Z][a-z_A-Z0-9]*$"))
+                return "Error. Dataset name must contain only alphanumeric characters and underscores.";
+
+            LOG.info("Importing local DBLP(XML) dataset :");
+            LOG.info("\tImported Dataset name           : {}", name);
+            LOG.info("\tSelected data files for import  : {}", Arrays.toString(absolutePaths));
+            LOG.info("\tSelected schema file for import : {}", schemaFile.getAbsolutePath());
+
+            service.importDblpXmlDataset(name, schemaFile, dblpFiles);
+            return "DONE";
+        } catch (IOException e) {
+            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
         } catch (Exception e) {
-            return "Error." + e.getMessage();
+            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
         }
-        return "DONE";
     }
 
     @CliCommand(value = "dat_list", help = "List user's imported datasets on the PPRL site.")
     public String datasetsListCommand() {
-        LOG.info("Listing user's imported datasets ( name => path) :");
-        final List<String> names = service.listDatasets();
-        if(names.isEmpty()) {
+        final List<String> datasetsStrings = service.listDatasets(false);
+        if(datasetsStrings.isEmpty()) {
             LOG.info("\tThere are no datasets imported yet.");
             return "DONE";
         }
         int i = 1;
-        for(String s : names) {
+        LOG.info("Listing user's imported datasets :");
+        for(String s : datasetsStrings) {
             LOG.info("\t{}) {}",i++,s);
         }
         return "DONE";
@@ -154,75 +114,79 @@ public class DatasetsCommands implements CommandMarker {
     public String datasetsDropCommand(
             @CliOption(key = {"name"}, mandatory = true, help = "Dataset name.")
             final String name,
-            @CliOption(key = {"delete_files"}, mandatory = false, help = "YES or NO (default) to completelly drop dataset directory.",
-                    specifiedDefaultValue="NO")
+            @CliOption(key = {"delete_files"}, mandatory = false, help = "(Optional) YES or NO (default) to completelly drop dataset directory.")
             final String deleteFilesStr) {
-        if(!deleteFilesStr.equals("YES") && !deleteFilesStr.equals("NO")) return "Error. Please provide \"YES\" or \"NO\".";
-        boolean deleteFiles = deleteFilesStr.equals("YES");
-        LOG.info("Droping dataset with name \"{}\" (DELETE FILES AS WELL ? {} ).",name,deleteFilesStr);
         try {
-            service.dropDataset(name,deleteFiles);
-        } catch (IOException e) {
-            return "Error." + e.getMessage();
+            boolean deleteFiles = false;
+            if (deleteFilesStr != null) {
+                if (!deleteFilesStr.equals("YES") && !deleteFilesStr.equals("NO"))
+                    return "Error. Please provide \"YES\" or \"NO\".";
+                deleteFiles = deleteFilesStr.equals("YES");
+            }
+            LOG.info("Droping dataset with name \"{}\" (DELETE FILES AS WELL ? {} ).", name, (deleteFiles ? "YES" : "NO"));
+            service.dropDataset(name, deleteFiles);
+            return "DONE";
         } catch (DatasetException e) {
-            return "Error." + e.getMessage();
+            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+        } catch (IOException e) {
+            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
         }
-        return "DONE";
     }
 
     @CliCommand(value = "dat_drop_all", help = "Drop user's imported datasets on the PPRL site.")
     public String datasetsDropAllCommand(
-            @CliOption(key = {"delete_files"}, mandatory = false, help = "YES or NO (default) to completelly drop dataset directory.",
-                    specifiedDefaultValue="NO")
+            @CliOption(key = {"delete_files"}, mandatory = false, help = "(Optional) YES or NO (default) to completelly drop dataset directory.")
             final String deleteFilesStr) {
-        if(!deleteFilesStr.equals("YES") && !deleteFilesStr.equals("NO")) return "Error. Please provide \"YES\" or \"NO\".";
-        boolean deleteFiles = deleteFilesStr.equals("YES");
-        LOG.info("Droping all datasets (DELETE FILES AS WELL ?" + deleteFiles +").");
-        final List<String> names = service.listDatasets();
-        try{
-            for(String name : names) {
-                LOG.info("Droping \"{}\".",name);
+        try {
+            boolean deleteFiles = false;
+            if (deleteFilesStr != null) {
+                if (!deleteFilesStr.equals("YES") && !deleteFilesStr.equals("NO"))
+                    return "Error. Please provide \"YES\" or \"NO\".";
+                deleteFiles = deleteFilesStr.equals("YES");
+            }
+            LOG.info("Droping all datasets (DELETE FILES AS WELL ? {} ).", (deleteFiles ? "YES" : "NO"));
+            final List<String> names = service.listDatasets(true);
+            for (String name : names) {
+                LOG.info("Droping \"{}\".", name);
                 service.dropDataset(name, deleteFiles);
             }
-        } catch (IOException e) {
-            return "Error." + e.getMessage();
+            return "DONE";
         } catch (DatasetException e) {
-            return "Error." + e.getMessage();
+            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+        } catch (IOException e) {
+            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
         }
-        return "DONE";
     }
 
-    @CliCommand(value = "dat_sample", help = "Sample a user's imported dataset.")
+    @CliCommand(value = "dat_sample", help = "Sample a dataset.")
     public String datasetsSampleCommand(
             @CliOption(key = {"name"}, mandatory = true, help = "Dataset name.")
             final String name,
-            @CliOption(key = {"size"}, mandatory = false, help = "Sampe size (default : 10).", specifiedDefaultValue="10")
+            @CliOption(key = {"size"}, mandatory = false, help = "(Optional) Sample size (default : 10).")
             final String sizeStr,
-            @CliOption(key = {"sampleName"}, mandatory = false, help = "If provided sample is saved at current working directory")
+            @CliOption(key = {"sampleName"}, mandatory = false, help = "(Optional) If provided sample is saved at current working directory")
             final String sampleName) {
-        try{
-            int size = Integer.parseInt(sizeStr);
-            if(size < 1) throw new NumberFormatException("Sample size must be greater than zero.");
+        try {
+            int size = (sizeStr != null) ? Integer.parseInt(sizeStr) : 10;
+            if (size < 1) throw new NumberFormatException("Sample size must be greater than zero.");
             final List<String> records;
-            if(sampleName != null) {
+            if (sampleName != null) {
                 final File sampleSchemaFile = new File(sampleName + ".avsc");
                 sampleSchemaFile.createNewFile();
                 final File sampleDataFile = new File(sampleName + ".avro");
                 sampleDataFile.createNewFile();
-                records = service.saveSampleOfDataset(name,size,sampleSchemaFile,sampleDataFile);
-                LOG.info("Schema saved at : {}",sampleSchemaFile.getAbsolutePath());
-                LOG.info("Data saved at : {}",sampleDataFile.getAbsolutePath());
-            } else records = service.sampleOfDataset(name,size);
-            LOG.info("Random sample of dataset {}. sample size : {} :",name,size);
-            for(String record : records) LOG.info("\t{}",record);
-        } catch (NumberFormatException nfe) {
-            return "Error." + nfe.getMessage();
+                records = service.saveSampleOfDataset(name, size, sampleSchemaFile, sampleDataFile);
+                LOG.info("Schema saved at : {} .", sampleSchemaFile.getAbsolutePath());
+                LOG.info("Data saved at   : {} .", sampleDataFile.getAbsolutePath());
+            } else records = service.sampleOfDataset(name, size);
+            LOG.info("Random sample of dataset \"{}\". Sample size : {} :", name, size);
+            for (String record : records) LOG.info("\t{}", record);
+            return "DONE";
         } catch (DatasetException e) {
-            return "Error." + e.getMessage();
+            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
         } catch (IOException e) {
-            return "Error." + e.getMessage();
+            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
         }
-        return "DONE";
     }
 
     @CliCommand(value = "dat_get_stats", help = "Retrieve useful statistics of the imported dataset.")
@@ -238,17 +202,18 @@ public class DatasetsCommands implements CommandMarker {
     public String datasetsDescribeCommand(
             @CliOption(key = {"name"}, mandatory = true, help = "Dataset name.")
             final String name) {
-        LOG.info("Schema description for dataset {} : ",name);
-        try{
-            Map<String,String> desc = service.describeDataset(name);
-            for(Map.Entry<String,String> e : desc.entrySet()) {
-                LOG.info("{} : {}",e.getKey(),e.getValue());
+        try {
+            Map<String, String> desc = service.describeDataset(name);
+            int i = 1;
+            LOG.info("Schema description for dataset \"{}\" : ", name);
+            for (Map.Entry<String, String> e : desc.entrySet()) {
+                LOG.info("\t{}.{} : {}", i++, e.getKey(), e.getValue());
             }
+            return "DONE";
         } catch (DatasetException e) {
-            return "Error." + e.getMessage();
+            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
         } catch (IOException e) {
-            return "Error." + e.getMessage();
+            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
         }
-        return "DONE";
     }
 }

@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.hadoop.mapreduce.ToolRunner;
 import org.springframework.stereotype.Service;
 
@@ -34,23 +33,27 @@ import java.util.Map;
 @Service
 public class DatasetsService implements InitializingBean {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DatasetsService.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(DatasetsService.class);
 
-    private static final FsPermission ONLY_OWNER_PERMISSION
+    protected static final FsPermission ONLY_OWNER_PERMISSION
             = new FsPermission(FsAction.ALL, FsAction.NONE, FsAction.NONE, false);
 
-    public static final String DATASETS_FILE=".pprl_datasets";
-
     @Autowired
-    private FileSystem pprlClusterHdfs;
+    protected FileSystem pprlClusterHdfs;
 
     @Autowired
     private ToolRunner dblpXmlToAvroToolRunner;
 
-    private List<Dataset> datasets = new ArrayList<Dataset>();
+    protected List<Dataset> datasets = new ArrayList<Dataset>();
+    protected Path userDatasetsFile;
+
+    public Path getUserDatasetsFile() {
+        return userDatasetsFile;
+    }
 
     public void afterPropertiesSet() throws Exception {
         checkSite();
+        userDatasetsFile = new Path(pprlClusterHdfs.getHomeDirectory() + "/.pprl_datasets");
         loadDatasets();
         LOG.info("Service is now initialized. Found {} datasets on the PPRL site.", datasets.size());
     }
@@ -62,8 +65,8 @@ public class DatasetsService implements InitializingBean {
             dataset.buildOnFS(pprlClusterHdfs,ONLY_OWNER_PERMISSION);
             uploadFileToHdfs(dataset.getAvroPath(),localAvroFiles);
             uploadFileToHdfs(dataset.getAvroSchemaPath(),localAvroSchemaFile);
-            LOG.info("Dataset : {}, Base path       : {}", datasetName, dataset.getBasePath());
-            LOG.info("Dataset : {}, Avro path       : {}", datasetName, dataset.getAvroPath());
+            LOG.info("Dataset : {}, Base path        : {}", datasetName, dataset.getBasePath());
+            LOG.info("Dataset : {}, Avro path        : {}", datasetName, dataset.getAvroPath());
             LOG.info("Dataset : {}, Avro Schema Path : {}", datasetName, dataset.getAvroSchemaPath());
             addToDatasets(dataset);
         } catch (IOException e) {
@@ -82,11 +85,11 @@ public class DatasetsService implements InitializingBean {
             dataset.buildOnFS(pprlClusterHdfs, false, true, true, ONLY_OWNER_PERMISSION);
             final Path input = new Path(dataset.getBasePath() + "/xml");
             uploadFileToHdfs(input,localDblpFiles);
-            uploadFileToHdfs(dataset.getAvroSchemaPath(),localDblpFiles);
+            uploadFileToHdfs(dataset.getAvroSchemaPath(),localAvroSchemaFile);
             final Path output = dataset.getAvroPath();
-            LOG.info("Dataset : {}, Base path       : {}", datasetName, dataset.getBasePath());
-            LOG.info("Dataset : {}, XML path        : {}", datasetName, input);
-            LOG.info("Dataset : {}, Avro path       : {}", datasetName, output);
+            LOG.info("Dataset : {}, Base path        : {}", datasetName, dataset.getBasePath());
+            LOG.info("Dataset : {}, XML path         : {}", datasetName, input);
+            LOG.info("Dataset : {}, Avro path        : {}", datasetName, output);
             LOG.info("Dataset : {}, Avro Schema Path : {}", datasetName, dataset.getAvroSchemaPath());
             runDblpXmlToAvroTool(input, output);
             removeSuccessFile(output);
@@ -109,11 +112,27 @@ public class DatasetsService implements InitializingBean {
         }
     }
 
-    public List<String> listDatasets() {
-        final List<String> names = new ArrayList<String>();
-        for (Dataset dataset : datasets)
-            names.add(dataset.getName());
-        return names;
+    public void uploadFileToHdfs(final Path path, final File...files)
+            throws IOException {
+        uploadFileToHdfs(path, ONLY_OWNER_PERMISSION,files);
+    }
+
+    public List<String> listDatasets(final boolean onlyName) {
+        final List<String> strings = new ArrayList<String>();
+        if(onlyName) {
+            for (Dataset dataset : datasets) strings.add(dataset.getName());
+            return strings;
+        }
+        for (Dataset dataset : datasets) {
+            StringBuilder sb = new StringBuilder("name : ");
+            sb.append(dataset.getName());
+            List<String> paths = new ArrayList<String>();
+            paths.add(dataset.getAvroPath().toString());
+            paths.add(dataset.getAvroSchemaPath().toString());
+            sb.append(" | paths : ").append(paths);
+            strings.add(sb.toString());
+        }
+        return strings;
     }
 
     public List<String> sampleOfDataset(final String datasetName, int sampleSize) throws DatasetException, IOException {
@@ -138,7 +157,39 @@ public class DatasetsService implements InitializingBean {
         return sampleStr;
     }
 
-    public void saveSampleOfDataset(final List<GenericRecord> sampleOfDataset,final Schema schema,
+    public void dropDataset(final String datasetName, final boolean completeDrop)
+            throws IOException, DatasetException {
+        Dataset dataset = findDatasetByName(datasetName);
+        if (completeDrop) {
+            pprlClusterHdfs.delete(dataset.getAvroSchemaPath(), true);
+            pprlClusterHdfs.delete(dataset.getAvroPath(), true);
+            if(pprlClusterHdfs.listStatus(dataset.getBasePath()).length == 0)
+                pprlClusterHdfs.delete(dataset.getBasePath(), true);
+        }
+        removeFromDatasets(dataset);
+    }
+
+    public Map<String, String> describeDataset(final String datasetName) throws DatasetException,
+            IOException {
+        final Dataset dataset = findDatasetByName(datasetName);
+        final Schema s = dataset.getSchema(pprlClusterHdfs);
+        final Map<String, String> description = new HashMap<String, String>();
+        for (Schema.Field f : s.getFields())
+            description.put(f.name(), f.schema().getType().toString());
+        return description;
+    }
+
+    public Dataset findDatasetByName(final String datasetName) throws DatasetException {
+        for (Dataset dataset : datasets) if (dataset.getName().equals(datasetName)) return dataset;
+        throw new DatasetException("Cannot find dataset with name " + datasetName);
+    }
+
+    public void generateDatasetStats(final String datasetName) throws DatasetException {
+        Dataset dataset = findDatasetByName(datasetName);
+        // TODO implement me
+    }
+
+    protected void saveSampleOfDataset(final List<GenericRecord> sampleOfDataset,final Schema schema,
                                     final File sampleSchemaFile, final File sampleDataFile)
             throws IOException, DatasetException {
         final PrintWriter schemaWriter = new PrintWriter(sampleSchemaFile);
@@ -153,7 +204,7 @@ public class DatasetsService implements InitializingBean {
         sampleWriter.close();
     }
 
-    public List<GenericRecord> sampleOfDataset(final Dataset dataset, int sampleSize)
+    protected List<GenericRecord> sampleOfDataset(final Dataset dataset, int sampleSize)
             throws IOException, DatasetException {
         final List<GenericRecord> sample = new ArrayList<GenericRecord>(sampleSize);
         Dataset.DatasetRecordReader reader = dataset.getReader(pprlClusterHdfs);
@@ -170,35 +221,7 @@ public class DatasetsService implements InitializingBean {
         return sample;
     }
 
-    public void dropDataset(final String datasetName, final boolean completeDrop)
-            throws IOException, DatasetException {
-        Dataset dataset = findDatasetByName(datasetName);
-        if (completeDrop) pprlClusterHdfs.delete(dataset.getBasePath(), true);
-        removeFromDatasets(dataset);
-    }
-
-    public void generateDatasetStats(final String datasetName) throws DatasetException {
-        Dataset dataset = findDatasetByName(datasetName);
-
-        // TODO implement me
-    }
-
-    public Map<String, String> describeDataset(final String datasetName) throws DatasetException,
-            IOException {
-        final Dataset dataset = findDatasetByName(datasetName);
-        final Schema s = dataset.getSchema(pprlClusterHdfs);
-        final Map<String, String> description = new HashMap<String, String>();
-        for (Schema.Field f : s.getFields())
-            description.put(f.name(), f.schema().getType().toString());
-        return description;
-    }
-
-    private void uploadFileToHdfs(final Path path, final File...files)
-            throws IOException {
-        uploadFileToHdfs(path, ONLY_OWNER_PERMISSION,files);
-    }
-
-    private void uploadFileToHdfs(final Path path, final FsPermission permission, final File...files)
+    protected void uploadFileToHdfs(final Path path, final FsPermission permission, final File...files)
             throws IOException {
         try {
             if(!pprlClusterHdfs.exists(path)) {
@@ -239,7 +262,7 @@ public class DatasetsService implements InitializingBean {
         }
     }
 
-    private void removeSuccessFile(final Path path) throws IOException {
+    protected void removeSuccessFile(final Path path) throws IOException {
         final Path p = new Path(path + "/_SUCCESS");
         if (pprlClusterHdfs.exists(p)) {
             pprlClusterHdfs.delete(p, false);
@@ -247,19 +270,18 @@ public class DatasetsService implements InitializingBean {
         }
     }
 
-    private void checkSite() throws DatasetException, IOException {
+    protected void checkSite() throws DatasetException, IOException {
         final Path homeDirectory = pprlClusterHdfs.getHomeDirectory();
         if (!pprlClusterHdfs.exists(homeDirectory)) {
             LOG.error("Cannot find Home directory on pprl site");
             throw new DatasetException("Cannot find Home directory on pprl site");
         }
-        if (!pprlClusterHdfs.getFileStatus(homeDirectory).getPermission().equals(ONLY_OWNER_PERMISSION)) {
-            LOG.warn("Home directories permissinos should be {}",ONLY_OWNER_PERMISSION);
-        }
+        if (!pprlClusterHdfs.getFileStatus(homeDirectory).getPermission().equals(ONLY_OWNER_PERMISSION))
+            LOG.warn("Home directories permissions should be {}",ONLY_OWNER_PERMISSION);
     }
 
-    private void loadDatasets() throws IOException {
-        final Path userDatasetsFile = new Path(pprlClusterHdfs.getHomeDirectory() + "/" + DATASETS_FILE);
+    protected void loadDatasets() throws IOException {
+        LOG.debug("Loading datasets from " + userDatasetsFile);
         if (pprlClusterHdfs.exists(userDatasetsFile)) {
             final BufferedReader br =
                     new BufferedReader(new InputStreamReader(pprlClusterHdfs.open(userDatasetsFile)));
@@ -268,7 +290,8 @@ public class DatasetsService implements InitializingBean {
                 line = br.readLine();
                 while (line != null) {
                     LOG.debug("read line : {}", line);
-                    datasets.add(Dataset.fromString(line));
+                    Dataset dataset = Dataset.fromString(line);
+                    if(dataset != null ) datasets.add(dataset);
                     line = br.readLine();
                 }
             } finally {
@@ -277,35 +300,34 @@ public class DatasetsService implements InitializingBean {
         } else FileSystem.create(pprlClusterHdfs, userDatasetsFile, ONLY_OWNER_PERMISSION);
     }
 
-    private void saveDatasets() throws IOException {
-        final Path userDatasetsFile = new Path(pprlClusterHdfs.getHomeDirectory() + "/" + DATASETS_FILE);
-        if (!pprlClusterHdfs.exists(userDatasetsFile)) throw new IOException("users dtatset file does not exist");
+    protected void saveDatasets() throws IOException {
+        LOG.debug("Saving datasets to " + userDatasetsFile);
+        if (!pprlClusterHdfs.exists(userDatasetsFile))
+            FileSystem.create(pprlClusterHdfs, userDatasetsFile, ONLY_OWNER_PERMISSION);
         final BufferedWriter bw =
                 new BufferedWriter(new OutputStreamWriter(pprlClusterHdfs.create(userDatasetsFile)));
         try {
             for (Dataset dataset : datasets) {
-                LOG.debug("Writing line : {}", dataset.toString());
-                bw.write(dataset.toString() + "\n");
+                final String line = Dataset.toString(dataset);
+                if (line != null) {
+                    LOG.debug("Writing line : {}", line);
+                    bw.write(line + "\n");
+                }
             }
         } finally {
             bw.close();
         }
     }
 
-    private void addToDatasets(final Dataset d) throws IOException {
+    protected void addToDatasets(final Dataset d) throws IOException {
         if (!datasets.contains(d)) datasets.add(d);
         saveDatasets();
-        LOG.info("Dataset : {}, Added to datasets.", d.getName());
+        LOG.debug("Dataset : {}, Added to datasets.", d.getName());
     }
 
-    private void removeFromDatasets(final Dataset d) throws IOException {
+    protected void removeFromDatasets(final Dataset d) throws IOException {
         if (datasets.contains(d)) datasets.remove(d);
         saveDatasets();
-        LOG.info("Dataset : {}, Removed from datasets.", d.getName());
-    }
-
-    private Dataset findDatasetByName(final String datasetName) throws DatasetException {
-        for (Dataset dataset : datasets) if (dataset.getName().equals(datasetName)) return dataset;
-        throw new DatasetException("Cannot find dataset with name" + datasetName);
+        LOG.debug("Dataset : {}, Removed from datasets.", d.getName());
     }
 }

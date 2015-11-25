@@ -2,38 +2,78 @@ package gr.upatras.ceid.pprl.encoding;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public abstract class BaseBloomFilterEncoding {
 
-    protected String uidColumnName;
+    public static final Map<String,Class> AVAILABLE_METHODS;
+    static {
+        AVAILABLE_METHODS = new HashMap<String,Class>();
+        AVAILABLE_METHODS.put("SIMPLE", SimpleBloomFilterEncoding.class);
+        AVAILABLE_METHODS.put("MULTI", MultiBloomFilterEncoding.class);
+        AVAILABLE_METHODS.put("ROW", RowBloomFilterEncoding.class);
+    }
+
+    public static final Map<Schema.Type,Class<?>> SUPPORTED_TYPES = new HashMap<Schema.Type,Class<?>>();
+    static {
+        SUPPORTED_TYPES.put(Schema.Type.INT,Integer.class);
+        SUPPORTED_TYPES.put(Schema.Type.LONG,Long.class);
+        SUPPORTED_TYPES.put(Schema.Type.STRING,String.class);
+    }
+
     protected List<String> selectedColumnNames;
-    protected List<String> encodingColumnNames;
 
     protected Schema schema;
     protected List<Schema.Field> restColumns;
     protected List<Schema.Field> selectedColumns;
 
     protected Schema encodingSchema;
-    protected List<Schema.Field> encodingColumns;
+    protected List<Schema.Field> restEncodingColumns;
 
     protected int N;
     protected int K;
     protected int Q;
 
-    public BaseBloomFilterEncoding(Schema schema, String uidColumnName, List<String> selectedColumnNames,
-                                   int N, int K, int Q) throws BloomFilterEncodingException {
-        this.schema = schema;
-        this.uidColumnName = uidColumnName;
-        this.selectedColumnNames = selectedColumnNames;
-        if(this.selectedColumnNames.contains(this.uidColumnName))
-            throw new BloomFilterEncodingException("uid column cannot be selected for encoding.");
-
+    public BaseBloomFilterEncoding(int N, int K, int Q) {
         this.N = N;
         this.K = K;
         this.Q = Q;
+    }
+
+    public BaseBloomFilterEncoding(List<String> selectedColumnNames, int N, int K, int Q) {
+        this(N,K,Q);
+        this.selectedColumnNames = selectedColumnNames;
+    }
+
+    public BaseBloomFilterEncoding(Schema schema, List<String> selectedColumnNames,
+                                   int N, int K, int Q) {
+        this(selectedColumnNames, N,K,Q);
+        this.schema = schema;
+    }
+
+    public BaseBloomFilterEncoding(Schema schema, Schema encodingSchema, List<String> selectedColumnNames,
+                                   int N, int K, int Q) {
+        this(schema,selectedColumnNames, N,K,Q);
+        this.encodingSchema = encodingSchema;
+    }
+
+    public BaseBloomFilterEncoding(Schema encodingSchema, int N, int K, int Q) {
+        this(N,K,Q);
+        this.encodingSchema = encodingSchema;
+    }
+
+
+
+    protected void splitSchemaColumns() throws BloomFilterEncodingException {
+        if (schema == null) throw new BloomFilterEncodingException("Schema is not set.");
+        if (selectedColumnNames == null) throw new BloomFilterEncodingException("Selected column names not set.");
 
         restColumns = new ArrayList<Schema.Field>();
         selectedColumns = new ArrayList<Schema.Field>();
@@ -44,122 +84,65 @@ public abstract class BaseBloomFilterEncoding {
                 restColumns.add(f);
             }
         }
-
-        generateEncodingColumnNames();
-
-        this.encodingSchema = null;
-        this.encodingColumns = null;
     }
 
-    public BaseBloomFilterEncoding(Schema schema, Schema encodingSchema, String uidColumnName, List<String> selectedColumnNames,
-                                   int n, int k, int q) throws BloomFilterEncodingException {
-        this(schema, uidColumnName, selectedColumnNames, n, k, q);
-
-        this.encodingSchema = encodingSchema;
-
-        encodingColumns = new ArrayList<Schema.Field>();
-        for (Schema.Field f : this.encodingSchema.getFields())
-            if (encodingColumnNames.contains(f.name())) encodingColumns.add(f);
-    }
-
-    protected String getName() {
-        return String.format("_%d_%d_%d_", N, K, Q);
-    }
-
-    protected void generateEncodingColumnNames() throws BloomFilterEncodingException {
-        if (selectedColumnNames == null) throw new BloomFilterEncodingException("Selected column names not set.");
-        if (encodingColumnNames != null) throw new BloomFilterEncodingException("Encoding column names already set.");
-    }
-
-    public void makeEncodingSchema() throws BloomFilterEncodingException {
-        if (encodingSchema != null) throw new BloomFilterEncodingException("Encoding schema already set.");
-
+    public void generateEncodingSchema() throws BloomFilterEncodingException {
         encodingSchema = Schema.createRecord(
-                String.format("Encoding%s%s", getName(), schema.getName()),
-                String.format("PPRL Encoding(%s) : %s", getName(), schema.getName()),
-                ("encoding" + getName().replace("_", ".") + schema.getNamespace()),
+                String.format("Encoding_%s_%s", getName().replace("|", "_").toLowerCase() , schema.getName()),
+                String.format("PPRL Encoding of schema with name %s", schema.getName()),
+                ("encoding." + getName().replace("|", ".").toLowerCase() + "." +schema.getNamespace()),
                 false);
 
-        makeEncodingColumns();
-        encodingSchema.setFields(encodingColumns);
+        final List<Schema.Field> fields = generateEncodingSchemaFields();
+        encodingSchema.setFields(fields);
     }
 
-    private void makeEncodingColumns() throws BloomFilterEncodingException {
-        if (encodingColumns != null) throw new BloomFilterEncodingException("Encoding columns already set.");
-        if (encodingColumnNames == null) throw new BloomFilterEncodingException("Encoding column names are not set.");
-
-        final List<Schema.Field> fields = schema.getFields();
-        encodingColumns = new ArrayList<Schema.Field>();
-        for (Schema.Field f : fields) {
-            if (!selectedColumnNames.contains(f.name())) {
-                encodingColumns.add(new Schema.Field(f.name(), f.schema(), f.doc(), f.defaultValue(), f.order()));
-            }
-        }
-
-        for (String name : encodingColumnNames) {
-            encodingColumns.add(
-                    new Schema.Field(name, Schema.createFixed(
-                            name, null, null,
-                            (int) Math.ceil(N / 8)),
-                            String.format("Encoding(%s) of column(s) %s", getName(), name), null));
-        }
+    public String getName() {
+        StringBuilder nsb = new StringBuilder(getSmallName());
+        if(selectedColumnNames != null)
+            for (String columnName : selectedColumnNames) nsb.append("|").append(columnName);
+        return nsb.toString();
     }
 
-    public boolean validateEncodingSchema() throws BloomFilterEncodingException {
-        if(schema == null) throw new BloomFilterEncodingException("Schema is not set.");
-        if(encodingSchema == null) throw new BloomFilterEncodingException("Encoding schema is not set.");
-
+    public boolean validateEncodingSchema() throws BloomFilterEncodingException{
         boolean properName = encodingSchema.getName().equals(
-            String.format("Encoding%s%s", getName(), schema.getName()));
+                String.format("Encoding_%s_%s", getName().replace("|", "_").toLowerCase() , schema.getName()));
         boolean properdoc = encodingSchema.getDoc().equals(
-            String.format("PPRL Encoding(%s) : %s", getName(), schema.getName()));
+                String.format("PPRL Encoding of schema with name %s", schema.getName()));
         boolean properNamespace = encodingSchema.getNamespace().equals(
-            "encoding" + getName().replace("_", ".")  + schema.getNamespace());
-        return validateEncodingColumns() & properName & properdoc & properNamespace;
+                "encoding." + getName().replace("|", ".").toLowerCase() + "." +schema.getNamespace());
+
+        boolean properEncodingColumns = validateEncodingSchemaFields();
+
+        return properEncodingColumns & properName & properdoc & properNamespace;
     }
 
-    public boolean validateEncodingColumns() throws BloomFilterEncodingException {
-        if (encodingColumns == null) throw new BloomFilterEncodingException("Encoding columns already set.");
+    public abstract void setupFromEncodingSchema();
 
-        for(Schema.Field f : encodingSchema.getFields()) {
-            if(restColumns.contains(f)) continue;
-            if(!encodingColumns.contains(f)) return false;
-        }
-        return true;
-    }
+    public abstract void createEncodingFields() throws BloomFilterEncodingException;
+
+    protected abstract List<Schema.Field> generateEncodingSchemaFields() throws BloomFilterEncodingException;
+
+    public abstract boolean validateEncodingSchemaFields() throws BloomFilterEncodingException;
+
+    public abstract String getSmallName();
 
     public abstract GenericData.Fixed encode(Object obj, Class<?> clz, Schema encodingFieldSchema);
 
     public abstract GenericData.Fixed encode(List<Object> objs, List<Class<?>> clzz, Schema encodingFieldSchema);
 
-    public Schema getSchema() { return schema; }
+    public Schema getSchema() {
+        return schema;
+    }
 
     public Schema getEncodingSchema() {
         return encodingSchema;
     }
 
-    public String getUidColumnName() {
-        return uidColumnName;
-    }
-
-    public List<String> getSelectedColumnNames() {
+    public List<String> getSelectedColumnNames() throws BloomFilterEncodingException {
+        if(selectedColumnNames == null)
+            throw new BloomFilterEncodingException("selectedColumnNames is null.");
         return selectedColumnNames;
-    }
-
-    public List<String> getEncodingColumnNames() {
-        return encodingColumnNames;
-    }
-
-    public List<Schema.Field> getRestColumns() {
-        return restColumns;
-    }
-
-    public List<Schema.Field> getSelectedColumns() {
-        return selectedColumns;
-    }
-
-    public List<Schema.Field> getEncodingColumns() {
-        return encodingColumns;
     }
 
     public int getN() {
@@ -170,18 +153,55 @@ public abstract class BaseBloomFilterEncoding {
         return K;
     }
 
-    public int getQ() {
-        return Q;
+    public int getQ() { return Q; }
+
+    public List<Schema.Field> getRestColumns() throws BloomFilterEncodingException {
+        if(restColumns == null)
+            throw new BloomFilterEncodingException("restColumns is null.");
+        return restColumns;
     }
 
-    @Override
-    public String toString() {
-        return "{" +
-                "selectedColumnNames=" + selectedColumnNames +
-                ", encodingColumnNames=" + encodingColumnNames +
-                ", N=" + N +
-                ", K=" + K +
-                ", Q=" + Q +
-                '}';
+    public List<Schema.Field> getSelectedColumns() throws BloomFilterEncodingException {
+        if(selectedColumns == null)
+            throw new BloomFilterEncodingException("selectedColumns is null.");
+        return selectedColumns;
+    }
+
+    public List<Schema.Field> getRestEncodingColumns() throws BloomFilterEncodingException {
+        if(restEncodingColumns == null)
+            throw new BloomFilterEncodingException("restEncodingColumns is null.");
+        return restEncodingColumns;
+    }
+
+    public void setSchema(Schema schema) { this.schema = schema; }
+
+    public void setEncodingSchema(Schema encodingSchema) {
+        this.encodingSchema = encodingSchema;
+    }
+
+    public void setSelectedColumnNames(List<String> selectedColumnNames) { this.selectedColumnNames = selectedColumnNames; }
+
+    public static String toString(final BaseBloomFilterEncoding encoding) {
+        return encoding.getName();
+    }
+
+    public static BaseBloomFilterEncoding fromString(final String s) {
+        String[] parts = s.split("|");
+        final String method = parts[0];
+        if (!BaseBloomFilterEncoding.AVAILABLE_METHODS.containsKey(method)) return null;
+
+        final int N = Integer.parseInt(parts[1]);
+        final int K = Integer.parseInt(parts[2]);
+        final int Q = Integer.parseInt(parts[3]);
+        if (parts.length == 4) {
+            if (method.equals("SIMPLE")) return new SimpleBloomFilterEncoding(N, K, Q);
+            else if (method.equals("ROW")) return new RowBloomFilterEncoding(N, K, Q);
+            else return new MultiBloomFilterEncoding(N, K, Q);
+        }
+        final List<String> selectedColumnNames = new ArrayList<String>();
+        selectedColumnNames.addAll(Arrays.asList(parts).subList(4, parts.length));
+        if (method.equals("SIMPLE")) return new SimpleBloomFilterEncoding(selectedColumnNames, N, K, Q);
+        else if (method.equals("ROW")) return new RowBloomFilterEncoding(selectedColumnNames, N, K, Q);
+        else return new MultiBloomFilterEncoding(selectedColumnNames, N, K, Q);
     }
 }

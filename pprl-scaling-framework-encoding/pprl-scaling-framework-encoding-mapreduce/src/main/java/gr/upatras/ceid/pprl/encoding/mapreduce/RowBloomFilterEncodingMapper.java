@@ -1,5 +1,6 @@
 package gr.upatras.ceid.pprl.encoding.mapreduce;
 
+import gr.upatras.ceid.pprl.encoding.BaseBloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
 import gr.upatras.ceid.pprl.encoding.RowBloomFilterEncoding;
 import org.apache.avro.Schema;
@@ -17,16 +18,18 @@ public class RowBloomFilterEncodingMapper extends BaseBloomFilterEncodingMapper 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
+        encoding = new RowBloomFilterEncoding(inputSchema,outputSchema,selectedColumnsNames,N,K,Q);
         try {
-            encoding = new RowBloomFilterEncoding(inputSchema,outputSchema,uidColumn,encodingColumns,N,K,Q);
+            encoding.createEncodingFields();
+            selectedColumns = encoding.getSelectedColumns();
+            restColumns = encoding.getRestColumns();
         } catch (BloomFilterEncodingException e) {
-            throw new IOException(e.getCause());
+            throw new InterruptedException(e.getMessage());
         }
     }
 
     @Override
     protected void map(AvroKey<GenericRecord> key, NullWritable value, Context context) throws IOException, InterruptedException {
-
         final GenericRecord record = key.datum();
         final GenericRecord encodingRecord = new GenericData.Record(encoding.getEncodingSchema());
 
@@ -35,14 +38,14 @@ public class RowBloomFilterEncodingMapper extends BaseBloomFilterEncodingMapper 
         List<Class<?>> clzz = new ArrayList<Class<?>>();
         final String fieldName = ((RowBloomFilterEncoding) encoding).getEncodingColumnName();
         Schema fieldSchema = ((RowBloomFilterEncoding) encoding).getEncodingColumn().schema();
-        for (Schema.Field field : encoding.getSelectedColumns()) {
+        for (Schema.Field field : selectedColumns) {
             objs.add(record.get(field.name()));
-            clzz.add(SUPPORTED_TYPES.get(field.schema().getType()));
+            clzz.add(BaseBloomFilterEncoding.SUPPORTED_TYPES.get(field.schema().getType()));
         }
         encodingRecord.put(fieldName, encoding.encode(objs, clzz, fieldSchema));
 
         // rest of columns
-        for (Schema.Field field : encoding.getRestColumns()) {
+        for(Schema.Field field : restColumns) {
             Object obj = record.get(field.name());
             encodingRecord.put(field.name(), obj);
         }

@@ -1,6 +1,5 @@
 package gr.upatras.ceid.pprl.encoding.test;
 
-import gr.upatras.ceid.pprl.encoding.EncodingAvroSchemaUtil;
 import gr.upatras.ceid.pprl.encoding.mapreduce.BaseBloomFilterEncodingMapper;
 import gr.upatras.ceid.pprl.encoding.mapreduce.MultiBloomFilterEncodingMapper;
 import gr.upatras.ceid.pprl.encoding.mapreduce.RowBloomFilterEncodingMapper;
@@ -17,6 +16,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
@@ -56,7 +57,7 @@ public class EncodeDatasetMRTest {
     public void setUp() throws IOException, URISyntaxException {
 
         // input record
-        final Schema s = EncodingAvroSchemaUtil.loadAvroSchemaFromFile(
+        final Schema s = loadAvroSchemaFromFile(
                 new File(getClass().getResource("/dblp.avsc").toURI()));
         inputRecord = new GenericData.Record(s);
         inputRecord.put("key", EXPECTED_KEY);
@@ -64,7 +65,7 @@ public class EncodeDatasetMRTest {
         inputRecord.put("title", EXPECTED_TITLE);
         inputRecord.put("year", EXPECTED_YEAR);
 
-        Schema sbes = EncodingAvroSchemaUtil.loadAvroSchemaFromFile(new File(getClass().getResource("/enc_sbf_1024_30_2_dblp.avsc").toURI()));
+        Schema sbes = loadAvroSchemaFromFile(new File(getClass().getResource("/enc_sbf_1024_30_2_dblp.avsc").toURI()));
         outRecordSBF = new GenericData.Record(sbes);
         outRecordSBF.put("key",EXPECTED_KEY);
         outRecordSBF.put("year", EXPECTED_YEAR);
@@ -72,7 +73,7 @@ public class EncodeDatasetMRTest {
                 new GenericData.Fixed(sbes.getField("enc_SBF_1024_30_2_author_title").schema(),ONE));
         mapDriverSBE = setupMapDriver(new SimpleBloomFilterEncodingMapper(),s, sbes);
 
-        Schema rbes = EncodingAvroSchemaUtil.loadAvroSchemaFromFile(
+        Schema rbes = loadAvroSchemaFromFile(
                 new File(getClass().getResource("/enc_rbf_1024_30_2_dblp.avsc").toURI()));
         outRecordRBF = new GenericData.Record(rbes);
         outRecordRBF.put("key",EXPECTED_KEY);
@@ -82,7 +83,7 @@ public class EncodeDatasetMRTest {
         mapDriverRBE = setupMapDriver(new RowBloomFilterEncodingMapper(),s, rbes);
 
 
-        Schema fbes = EncodingAvroSchemaUtil.loadAvroSchemaFromFile(
+        Schema fbes = loadAvroSchemaFromFile(
                 new File(getClass().getResource("/enc_fbf_1024_30_2_dblp.avsc").toURI()));
         outRecordFBF = new GenericData.Record(fbes);
         outRecordFBF.put("key",EXPECTED_KEY);
@@ -111,9 +112,9 @@ public class EncodeDatasetMRTest {
 
 
         mapDriver.getConfiguration().set(INPUT_SCHEMA_KEY, input.toString());
-        mapDriver.getConfiguration().set(ENCODING_SCHEMA_KEY, output.toString());
-        mapDriver.getConfiguration().set(INPUT_UID_COLUMN_KEY, UID_COLUMN);
-        mapDriver.getConfiguration().setStrings(ENCODING_COLUMNS_KEY, COLUMNS);
+        mapDriver.getConfiguration().set(OUTPUT_SCHEMA_KEY, output.toString());
+        mapDriver.getConfiguration().set(UID_COLUMN_KEY, UID_COLUMN);
+        mapDriver.getConfiguration().setStrings(SELECTED_COLUMNS_KEY, COLUMNS);
         mapDriver.getConfiguration().setInt(N_KEY, N);
         mapDriver.getConfiguration().setInt(K_KEY, K);
         mapDriver.getConfiguration().setInt(Q_KEY,Q);
@@ -134,5 +135,18 @@ public class EncodeDatasetMRTest {
         mapDriverFBE.withInput(new AvroKey<GenericRecord>(inputRecord), NullWritable.get());
         mapDriverFBE.withOutput(new AvroKey<GenericRecord>(outRecordFBF), NullWritable.get());
         mapDriverFBE.runTest();
+    }
+
+    private static Schema loadAvroSchemaFromFile(final File schemaFile) throws IOException {
+        FileInputStream fis = new FileInputStream(schemaFile);
+        Schema schema = (new Schema.Parser()).parse(fis);
+        fis.close();
+        return schema;
+    }
+
+    private static void saveAvroSchemaToFile(final Schema schema,final File schemaFile) throws IOException {
+        FileOutputStream fos = new FileOutputStream(schemaFile,false);
+        fos.write(schema.toString(true).getBytes());
+        fos.close();
     }
 }

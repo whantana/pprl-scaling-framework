@@ -1,15 +1,18 @@
 package gr.upatras.ceid.pprl.encoding.test;
 
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
-import gr.upatras.ceid.pprl.encoding.EncodingAvroSchemaUtil;
 import gr.upatras.ceid.pprl.encoding.MultiBloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.RowBloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.SimpleBloomFilterEncoding;
 import org.apache.avro.Schema;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Arrays;
@@ -19,6 +22,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class BloomFilterEncodingTest {
+
+    private static Logger LOG = LoggerFactory.getLogger(BloomFilterEncodingTest.class);
 
     private File schemaFile;
 
@@ -30,7 +35,7 @@ public class BloomFilterEncodingTest {
 
     private static String[] SBF_ENCODING_SCHEMA_NAMES = {"/dblp.avsc","/enc_simple_"+ N +"_"+ K +"_" + Q + "_" + "dblp.avsc"};
     private static String[] RBF_ENCODING_SCHEMA_NAMES = {"/dblp.avsc","/enc_row_"+ N +"_"+ K +"_" + Q + "_" + "dblp.avsc"};
-    private static String[] FBF_ENCODING_SCHEMA_NAMES = {"/dblp.avsc","/enc_multi_"+ N +"_"+ K +"_" + Q + "_" + "dblp.avsc"};
+    private static String[] MBF_ENCODING_SCHEMA_NAMES = {"/dblp.avsc","/enc_multi_"+ N +"_"+ K +"_" + Q + "_" + "dblp.avsc"};
 
     @Before
     public void setUp() throws URISyntaxException {
@@ -39,116 +44,179 @@ public class BloomFilterEncodingTest {
 
     @Test
     public void test1() throws URISyntaxException, IOException, InterruptedException, BloomFilterEncodingException {
-        final Schema schema = EncodingAvroSchemaUtil.loadAvroSchemaFromFile(schemaFile);
+        final Schema schema = loadAvroSchemaFromFile(schemaFile);
         assertNotNull(schema);
         SimpleBloomFilterEncoding sbfe =
-                new SimpleBloomFilterEncoding(schema,UID_COLUMN, Arrays.asList(COLUMNS),N, K, Q);
-        sbfe.makeEncodingSchema();
+                new SimpleBloomFilterEncoding(schema, Arrays.asList(COLUMNS),N, K, Q);
+        sbfe.createEncodingFields();
+        sbfe.generateEncodingSchema();
         assertTrue(sbfe.validateEncodingSchema());
-        EncodingAvroSchemaUtil.saveAvroSchemaToFile(
-                sbfe.getEncodingSchema(),new File(schemaFile.getParent() + "/" + SBF_ENCODING_SCHEMA_NAMES[1]));
+        saveAvroSchemaToFile(
+                sbfe.getEncodingSchema(), new File(schemaFile.getParent() + "/" + SBF_ENCODING_SCHEMA_NAMES[1]));
     }
 
 
     @Test
     public void test2() throws URISyntaxException, IOException, InterruptedException, BloomFilterEncodingException {
-        final Schema schema = EncodingAvroSchemaUtil.loadAvroSchemaFromFile(schemaFile);
+        final Schema schema = loadAvroSchemaFromFile(schemaFile);
         assertNotNull(schema);
         final Schema encodingSchema =
-                EncodingAvroSchemaUtil.loadAvroSchemaFromFile(new File(getClass().getResource(SBF_ENCODING_SCHEMA_NAMES[1]).toURI()));
+                loadAvroSchemaFromFile(new File(getClass().getResource(SBF_ENCODING_SCHEMA_NAMES[1]).toURI()));
         assertNotNull(encodingSchema);
         assertNotNull("Schema is null", encodingSchema);
         SimpleBloomFilterEncoding sbfe = new SimpleBloomFilterEncoding(
-                schema, encodingSchema,UID_COLUMN,
-                Arrays.asList(COLUMNS),N, K, Q);
+                schema, encodingSchema, Arrays.asList(COLUMNS),N, K, Q);
+        sbfe.createEncodingFields();
         assertTrue(sbfe.validateEncodingSchema());
     }
 
     @Test
     public void test3() throws URISyntaxException, IOException, InterruptedException, BloomFilterEncodingException {
-        final Schema schema = EncodingAvroSchemaUtil.loadAvroSchemaFromFile(schemaFile);
+        final Schema schema = loadAvroSchemaFromFile(schemaFile);
         assertNotNull(schema);
-        MultiBloomFilterEncoding fbfe =
-                new MultiBloomFilterEncoding(schema,UID_COLUMN, Arrays.asList(COLUMNS),N, K, Q);
-        fbfe.makeEncodingSchema();
-        assertTrue(fbfe.validateEncodingSchema());
-        EncodingAvroSchemaUtil.saveAvroSchemaToFile(
-                fbfe.getEncodingSchema(),new File(schemaFile.getParent() + "/" + FBF_ENCODING_SCHEMA_NAMES[1]));
+        MultiBloomFilterEncoding mbfe = new MultiBloomFilterEncoding(schema, Arrays.asList(COLUMNS),N, K, Q);
+        mbfe.createEncodingFields();
+        mbfe.generateEncodingSchema();
+        assertTrue(mbfe.validateEncodingSchema());
+        saveAvroSchemaToFile(
+                mbfe.getEncodingSchema(), new File(schemaFile.getParent() + "/" + MBF_ENCODING_SCHEMA_NAMES[1]));
     }
 
 
     @Test
     public void test4() throws URISyntaxException, IOException, InterruptedException, BloomFilterEncodingException {
-        final Schema schema = EncodingAvroSchemaUtil.loadAvroSchemaFromFile(schemaFile);
+        final Schema schema = loadAvroSchemaFromFile(schemaFile);
         assertNotNull(schema);
         final Schema encodingSchema =
-                EncodingAvroSchemaUtil.loadAvroSchemaFromFile(new File(getClass().getResource(FBF_ENCODING_SCHEMA_NAMES[1]).toURI()));
+                loadAvroSchemaFromFile(new File(getClass().getResource(MBF_ENCODING_SCHEMA_NAMES[1]).toURI()));
         assertNotNull(encodingSchema);
         assertNotNull("Schema is null", encodingSchema);
-        MultiBloomFilterEncoding fbfe = new MultiBloomFilterEncoding(
-                schema, encodingSchema,UID_COLUMN,
-                Arrays.asList(COLUMNS),N, K, Q);
-        assertTrue(fbfe.validateEncodingSchema());
+        MultiBloomFilterEncoding mbfe = new MultiBloomFilterEncoding(
+                schema, encodingSchema, Arrays.asList(COLUMNS),N, K, Q);
+        mbfe.createEncodingFields();
+        assertTrue(mbfe.validateEncodingSchema());
     }
 
     @Test
     public void test5() throws URISyntaxException, IOException, InterruptedException, BloomFilterEncodingException {
-        final Schema schema = EncodingAvroSchemaUtil.loadAvroSchemaFromFile(schemaFile);
+        final Schema schema = loadAvroSchemaFromFile(schemaFile);
         assertNotNull(schema);
         RowBloomFilterEncoding rbfe =
-                new RowBloomFilterEncoding(schema,UID_COLUMN, Arrays.asList(COLUMNS),N, K, Q);
-        rbfe.makeEncodingSchema();
+                new RowBloomFilterEncoding(schema,Arrays.asList(COLUMNS),N, K, Q);
+        rbfe.createEncodingFields();
+        rbfe.generateEncodingSchema();
         assertTrue(rbfe.validateEncodingSchema());
-        EncodingAvroSchemaUtil.saveAvroSchemaToFile(
-                rbfe.getEncodingSchema(),new File(schemaFile.getParent() + "/" + RBF_ENCODING_SCHEMA_NAMES[1]));
+        saveAvroSchemaToFile(
+                rbfe.getEncodingSchema(), new File(schemaFile.getParent() + "/" + RBF_ENCODING_SCHEMA_NAMES[1]));
     }
 
 
     @Test
     public void test6() throws URISyntaxException, IOException, InterruptedException, BloomFilterEncodingException {
-        final Schema schema = EncodingAvroSchemaUtil.loadAvroSchemaFromFile(schemaFile);
+        final Schema schema = loadAvroSchemaFromFile(schemaFile);
         assertNotNull(schema);
         final Schema encodingSchema =
-                EncodingAvroSchemaUtil.loadAvroSchemaFromFile(new File(getClass().getResource(RBF_ENCODING_SCHEMA_NAMES[1]).toURI()));
+                loadAvroSchemaFromFile(new File(getClass().getResource(RBF_ENCODING_SCHEMA_NAMES[1]).toURI()));
         assertNotNull(encodingSchema);
         assertNotNull("Schema is null", encodingSchema);
         RowBloomFilterEncoding rbfe = new RowBloomFilterEncoding(
-                schema, encodingSchema,UID_COLUMN,
-                Arrays.asList(COLUMNS),N, K, Q);
+                schema, encodingSchema,Arrays.asList(COLUMNS),N, K, Q);
+        rbfe.createEncodingFields();
         assertTrue(rbfe.validateEncodingSchema());
     }
 
     @Test
-    public void test7() throws URISyntaxException, IOException, BloomFilterEncodingException {
+    public void test7() throws IOException, URISyntaxException, BloomFilterEncodingException {
+        final Schema schema = loadAvroSchemaFromFile(schemaFile);
+        assertNotNull(schema);
+        Schema encodingSchema;
+        encodingSchema =
+                loadAvroSchemaFromFile(new File(getClass().getResource(RBF_ENCODING_SCHEMA_NAMES[1]).toURI()));
+        assertNotNull(encodingSchema);
+        assertNotNull("Schema is null", encodingSchema);
         RowBloomFilterEncoding rbfe = new RowBloomFilterEncoding(
-                EncodingAvroSchemaUtil.loadAvroSchemaFromFile(schemaFile),
-                EncodingAvroSchemaUtil.loadAvroSchemaFromFile(new File(getClass().getResource(RBF_ENCODING_SCHEMA_NAMES[1]).toURI())),
-                UID_COLUMN,
-                Arrays.asList(COLUMNS),N, K, Q);
+                schema, encodingSchema,Arrays.asList(COLUMNS),N, K, Q);
+        encodingSchema =
+                loadAvroSchemaFromFile(new File(getClass().getResource(MBF_ENCODING_SCHEMA_NAMES[1]).toURI()));
+        assertNotNull(encodingSchema);
+        assertNotNull("Schema is null", encodingSchema);
+        MultiBloomFilterEncoding mbfe = new MultiBloomFilterEncoding(
+                schema, encodingSchema, Arrays.asList(COLUMNS),N, K, Q);
+        encodingSchema =
+                loadAvroSchemaFromFile(new File(getClass().getResource(SBF_ENCODING_SCHEMA_NAMES[1]).toURI()));
+        assertNotNull(encodingSchema);
+        assertNotNull("Schema is null", encodingSchema);
+        SimpleBloomFilterEncoding sbfe = new SimpleBloomFilterEncoding(
+                schema, encodingSchema, Arrays.asList(COLUMNS),N, K, Q);
+
+        rbfe.setupFromEncodingSchema();
+        LOG.info(rbfe.getSmallName());
+        LOG.info(rbfe.getName());
+        LOG.info(rbfe.getEncodingColumnName());
+        LOG.info(rbfe.getEncodingColumn().toString());
+        LOG.info(rbfe.getRestEncodingColumns().toString());
+        assertTrue(rbfe.validateEncodingSchema());
+
+        mbfe.setupFromEncodingSchema();
+        LOG.info(mbfe.getSmallName());
+        LOG.info(mbfe.getName());
+        LOG.info(mbfe.getEncodingColumnForName(COLUMNS[0]).toString());
+        LOG.info(mbfe.getEncodingColumnForName(COLUMNS[1]).toString());
+        LOG.info(mbfe.getRestEncodingColumns().toString());
+        assertTrue(mbfe.validateEncodingSchema());
+
+        sbfe.setupFromEncodingSchema();
+        LOG.info(sbfe.getSmallName());
+        LOG.info(sbfe.getName());
+        LOG.info(sbfe.getEncodingColumnName());
+        LOG.info(sbfe.getEncodingColumn().toString());
+        LOG.info(sbfe.getRestEncodingColumns().toString());
+        assertTrue(sbfe.validateEncodingSchema());
+    }
+
+    @Test
+    public void test8() throws IOException, URISyntaxException, BloomFilterEncodingException {
+        RowBloomFilterEncoding rbfe = new RowBloomFilterEncoding(
+                        loadAvroSchemaFromFile(new File(getClass().getResource(RBF_ENCODING_SCHEMA_NAMES[1]).toURI())),N, K, Q);
 
         SimpleBloomFilterEncoding sbfe = new SimpleBloomFilterEncoding(
-                EncodingAvroSchemaUtil.loadAvroSchemaFromFile(schemaFile),
-                EncodingAvroSchemaUtil.loadAvroSchemaFromFile(new File(getClass().getResource(SBF_ENCODING_SCHEMA_NAMES[1]).toURI())),
-                UID_COLUMN,
-                Arrays.asList(COLUMNS),N, K, Q);
+                loadAvroSchemaFromFile(new File(getClass().getResource(SBF_ENCODING_SCHEMA_NAMES[1]).toURI())),N, K, Q);
 
-        MultiBloomFilterEncoding fbfe = new MultiBloomFilterEncoding(
-                EncodingAvroSchemaUtil.loadAvroSchemaFromFile(schemaFile),
-                EncodingAvroSchemaUtil.loadAvroSchemaFromFile(new File(getClass().getResource(FBF_ENCODING_SCHEMA_NAMES[1]).toURI())),
-                UID_COLUMN,
-                Arrays.asList(COLUMNS),N, K, Q);
+        MultiBloomFilterEncoding mbfe = new MultiBloomFilterEncoding(
+                loadAvroSchemaFromFile(new File(getClass().getResource(MBF_ENCODING_SCHEMA_NAMES[1]).toURI())),N, K, Q);
 
-        assertEquals(rbfe.getEncodingColumnNames().size(), 1);
-        assertEquals(sbfe.getEncodingColumnNames().size(), 1);
-        assertEquals(fbfe.getEncodingColumnNames().size(), 2);
+        rbfe.setupFromEncodingSchema();
+        LOG.info(rbfe.getSmallName());
+        LOG.info(rbfe.getName());
+        LOG.info(rbfe.getEncodingColumnName());
+        LOG.info(rbfe.getEncodingColumn().toString());
+        LOG.info(rbfe.getRestEncodingColumns().toString());
 
-        assertEquals(rbfe.getEncodingColumns().size(), 1);
-        assertEquals(sbfe.getEncodingColumns().size(), 1);
-        assertEquals(fbfe.getEncodingColumns().size(), 2);
+        mbfe.setupFromEncodingSchema();
+        LOG.info(mbfe.getSmallName());
+        LOG.info(mbfe.getName());
+        LOG.info(mbfe.getEncodingColumnForName(COLUMNS[0]).toString());
+        LOG.info(mbfe.getEncodingColumnForName(COLUMNS[1]).toString());
+        LOG.info(mbfe.getRestEncodingColumns().toString());
 
-        for (String s : fbfe.getSelectedColumnNames()) {
-            assertTrue(fbfe.getEncodingColumnNames().get(fbfe.getSelectedColumnNames().indexOf(s)).contains(s));
-            assertTrue(fbfe.getEncodingColumns().contains(fbfe.getEncodingColumnForName(s)));
-        }
+        sbfe.setupFromEncodingSchema();
+        LOG.info(sbfe.getSmallName());
+        LOG.info(sbfe.getName());
+        LOG.info(sbfe.getEncodingColumnName());
+        LOG.info(sbfe.getEncodingColumn().toString());
+        LOG.info(sbfe.getRestEncodingColumns().toString());
+    }
+    
+    private static Schema loadAvroSchemaFromFile(final File schemaFile) throws IOException {
+        FileInputStream fis = new FileInputStream(schemaFile);
+        Schema schema = (new Schema.Parser()).parse(fis);
+        fis.close();
+        return schema;
+    }
+
+    private static void saveAvroSchemaToFile(final Schema schema,final File schemaFile) throws IOException {
+        FileOutputStream fos = new FileOutputStream(schemaFile,false);
+        fos.write(schema.toString(true).getBytes());
+        fos.close();
     }
 }

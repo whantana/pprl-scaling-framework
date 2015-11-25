@@ -1,16 +1,14 @@
 package gr.upatras.ceid.pprl.encoding.mapreduce;
 
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
-import gr.upatras.ceid.pprl.encoding.BaseBloomFilterEncoding;
-import gr.upatras.ceid.pprl.encoding.MultiBloomFilterEncoding;
-import gr.upatras.ceid.pprl.encoding.RowBloomFilterEncoding;
-import gr.upatras.ceid.pprl.encoding.SimpleBloomFilterEncoding;
 import org.apache.avro.Schema;
 import org.apache.avro.mapreduce.AvroJob;
 import org.apache.avro.mapreduce.AvroKeyInputFormat;
 import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.GenericOptionsParser;
@@ -19,21 +17,28 @@ import org.apache.hadoop.util.ToolRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static gr.upatras.ceid.pprl.encoding.EncodingAvroSchemaUtil.loadAvroSchemaFromHdfs;
-import static gr.upatras.ceid.pprl.encoding.mapreduce.BaseBloomFilterEncodingMapper.*;
+import static gr.upatras.ceid.pprl.encoding.mapreduce.BaseBloomFilterEncodingMapper.INPUT_SCHEMA_KEY;
+import static gr.upatras.ceid.pprl.encoding.mapreduce.BaseBloomFilterEncodingMapper.OUTPUT_SCHEMA_KEY;
+import static gr.upatras.ceid.pprl.encoding.mapreduce.BaseBloomFilterEncodingMapper.UID_COLUMN_KEY;
+import static gr.upatras.ceid.pprl.encoding.mapreduce.BaseBloomFilterEncodingMapper.SELECTED_COLUMNS_KEY;
+import static gr.upatras.ceid.pprl.encoding.mapreduce.BaseBloomFilterEncodingMapper.N_KEY;
+import static gr.upatras.ceid.pprl.encoding.mapreduce.BaseBloomFilterEncodingMapper.K_KEY;
+import static gr.upatras.ceid.pprl.encoding.mapreduce.BaseBloomFilterEncodingMapper.Q_KEY;
 
-public class EncodeAvroTool extends Configured implements Tool {
+public class EncodeDatasetTool extends Configured implements Tool {
 
     private static final String JOB_DESCRIPTION = "Encode Dataset";
 
     private static final String[] AVAILABLE_METHODS = {"SIMPLE","MULTI","ROW"};
 
-    private static final Logger LOG = LoggerFactory.getLogger(EncodeAvroTool.class);
+    private static final Logger LOG = LoggerFactory.getLogger(EncodeDatasetTool.class);
 
 
     public int run(String[] args) throws InterruptedException, IOException, ClassNotFoundException,
@@ -49,11 +54,15 @@ public class EncodeAvroTool extends Configured implements Tool {
         }
 
         // set confuguration and params
-        final Path input = new Path(args[0]);
-        final Schema inputSchema = loadAvroSchemaFromHdfs(new Path(args[1]), conf);
-        final Path encodingOutput = new Path(args[2]);
-        final Schema encodingSchema = loadAvroSchemaFromHdfs(new Path(args[3]), conf);
-        final String[] columns = args[4].split(",");
+        final Path inputDataPath = new Path(args[0]);
+        final Path inputSchemaPath = new Path(args[1]);
+        final Schema inputSchema =
+                loadAvroSchemaFromHdfs(FileSystem.get(conf), inputSchemaPath);
+        final Path outputDataPath = new Path(args[2]);
+        final Path outputSchemaPath = new Path(args[3]);
+        final Schema outputSchema =
+                loadAvroSchemaFromHdfs(FileSystem.get(conf), outputSchemaPath);
+        final String[] encodingColumns = args[4].split(",");
         final String uidColumn = args[5];
         final String encodingMethod = args[6];
         if(!Arrays.asList(AVAILABLE_METHODS).contains(encodingMethod))
@@ -64,45 +73,30 @@ public class EncodeAvroTool extends Configured implements Tool {
         final int Q = Integer.parseInt(args[9]);
 
         conf.set(INPUT_SCHEMA_KEY, inputSchema.toString());
-        conf.set(INPUT_UID_COLUMN_KEY, uidColumn);
-        conf.set(ENCODING_SCHEMA_KEY, encodingSchema.toString());
-        conf.setStrings(ENCODING_COLUMNS_KEY, columns);
+        conf.set(OUTPUT_SCHEMA_KEY, outputSchema.toString());
+        conf.set(UID_COLUMN_KEY, uidColumn);
+        conf.setStrings(SELECTED_COLUMNS_KEY, encodingColumns);
         conf.setInt(N_KEY, N);
         conf.setInt(K_KEY,K);
         conf.setInt(Q_KEY,Q);
 
         // validate schema encoding
-        String description = JOB_DESCRIPTION + " (input-path=" + shortenUrl(input.toString()) +
-                ",  output-path=" + shortenUrl(encodingOutput.toString())  +")";
-        BaseBloomFilterEncoding encoding;
-        switch(selectedMethod) {
-            case 0 :
-                encoding = new SimpleBloomFilterEncoding(inputSchema,encodingSchema,uidColumn,Arrays.asList(columns),N,K,Q);
-                description += " " + encoding.toString();
-                break;
-            case 1 :
-                encoding = new MultiBloomFilterEncoding(inputSchema,encodingSchema,uidColumn,Arrays.asList(columns),N,K,Q);
-                description += " " + encoding.toString();
-                break;
-            case 2 :
-                encoding = new RowBloomFilterEncoding(inputSchema,encodingSchema,uidColumn,Arrays.asList(columns),N,K,Q);
-                description += " " + encoding.toString();
-                break;
-            default:
-                throw new BloomFilterEncodingException("Invalid method selection : \"" + selectedMethod +"\".");
-        }
-        boolean valid = encoding.validateEncodingSchema();
-        if(!valid) throw new BloomFilterEncodingException("Encoding schema is not appropriate for input schema.");
+        String description = JOB_DESCRIPTION + " ("
+                + String.format(" N=%d, K=%d, Q=%d",N,K,Q) + ", method=" + encodingMethod + ","
+                + "input-path=" + shortenUrl(inputDataPath.toString()) + ", "
+                + "input-schema-path=" + shortenUrl(inputSchemaPath.toString()) + ", "
+                + "output-path=" + shortenUrl(outputDataPath.toString()) + ", "
+                + "output-schema-path=" + shortenUrl(outputDataPath.toString()) + ")";
 
         // setup map only job
         Job job = Job.getInstance(conf);
-        job.setJarByClass(EncodeAvroTool.class);
+        job.setJarByClass(EncodeDatasetTool.class);
         job.setJobName(description);
         job.setNumReduceTasks(0);
 
         // setup input
-        AvroKeyInputFormat.setInputPaths(job,input);
-        AvroJob.setInputKeySchema(job,inputSchema);
+        AvroKeyInputFormat.setInputPaths(job,inputDataPath);
+        AvroJob.setInputKeySchema(job, inputSchema);
         job.setInputFormatClass(AvroKeyInputFormat.class);
 
         // setup mapper
@@ -116,14 +110,12 @@ public class EncodeAvroTool extends Configured implements Tool {
             case 2 :
                 job.setMapperClass(RowBloomFilterEncodingMapper.class);
                 break;
-            default:
-                throw new BloomFilterEncodingException("Invalid method selection : \"" + selectedMethod +"\".");
         }
 
-        AvroJob.setMapOutputKeySchema(job, encodingSchema);
+        AvroJob.setMapOutputKeySchema(job, outputSchema);
 
         // setup output
-        AvroKeyOutputFormat.setOutputPath(job, encodingOutput);
+        AvroKeyOutputFormat.setOutputPath(job, outputDataPath);
         job.setOutputFormatClass(AvroKeyOutputFormat.class);
 
         // run job
@@ -132,7 +124,7 @@ public class EncodeAvroTool extends Configured implements Tool {
 
 
     public static void main(String[] args) throws Exception {
-        int res = ToolRunner.run(new EncodeAvroTool(), args);
+        int res = ToolRunner.run(new EncodeDatasetTool(), args);
         System.exit(res);
     }
 
@@ -147,5 +139,12 @@ public class EncodeAvroTool extends Configured implements Tool {
             if(m.matches()) return m.group(1);
             else return url;
         }
+    }
+
+    public static Schema loadAvroSchemaFromHdfs(final FileSystem fs,final Path schemaPath) throws IOException {
+        FSDataInputStream fsdis = fs.open(schemaPath);
+        Schema schema = (new Schema.Parser()).parse(fsdis);
+        fsdis.close();
+        return schema;
     }
 }

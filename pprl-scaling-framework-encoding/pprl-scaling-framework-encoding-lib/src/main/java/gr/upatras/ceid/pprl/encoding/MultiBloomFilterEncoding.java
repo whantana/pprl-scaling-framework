@@ -2,8 +2,6 @@ package gr.upatras.ceid.pprl.encoding;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;

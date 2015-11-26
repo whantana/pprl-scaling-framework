@@ -1,176 +1,219 @@
-package gr.upatras.ceid.pprl.encoding; /**
- *
- * @author dimkar
- */
-/**
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option) any
- * later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+package gr.upatras.ceid.pprl.encoding;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.math.BigInteger;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.BitSet;
 import java.util.HashSet;
+import java.util.Set;
 
 public class BloomFilter {
 
+    private static final String SECRET_KEY = "ZIKRETQI";
+    private static final Mac hmacmd5;
+    private static final Mac hmacsha1;
+    static {
+        Mac tmp;
+        Mac tmp1;
+        try {
+            tmp = Mac.getInstance("HmacMD5");
+            tmp.init(new SecretKeySpec(SECRET_KEY.getBytes(), "HmacMD5"));
+            tmp1 = Mac.getInstance("HmacSHA1");
+            tmp1.init(new SecretKeySpec(SECRET_KEY.getBytes(), "HmacSHA1"));
+        } catch (NoSuchAlgorithmException e) {
+            tmp = null;
+            tmp1 = null;
+        } catch (InvalidKeyException e) {
+            tmp = null;
+            tmp1 = null;
+        }
+        hmacmd5 = tmp;
+        hmacsha1 = tmp1;
+    }
+
     private BitSet bitset;
-    private int bitSetSize;
-    private int bitsSet = 0;
-    private int numberOfAddedElements;  // number of elements actually added to the Bloom filter
-    private int k; // number of hash functions
-    private int grams;
-    static final Charset charset = Charset.forName("UTF-8"); // encoding used for storing hash values as strings
+    private int N;
+    private int K;
+    private int addedElementsCount;
+    private int onesCount;
+    private int zeroesCount;
 
-    public BloomFilter(String s, int length, int k, int grams, boolean padded) {
-        this.bitSetSize = length;
-        this.bitset = new BitSet(bitSetSize);
-        this.k = k;
-        this.grams = grams;
-        this.bitsSet = 0;
-        encode(s, true);
+    public BloomFilter(final int N, final int K) {
+        this.N = N;
+        this.K = K;
+        addedElementsCount = 0;
+        onesCount = 0;
+        zeroesCount = N;
+        bitset = new BitSet(N);
     }
 
-    public double getProbability(){
-        return Math.pow((1-1.0/this.bitSetSize),this.k*this.numberOfAddedElements);
+
+    public double calcFPP(){
+        return Math.pow((1 - Math.exp(-K * (double) addedElementsCount / (double) N)), K);
     }
-    
-    
-    
-    
-    public void addElement(String s) {
-        //word=binascii.a2b_qp(qgram) # convert to binary
-
-        String mykey = "zuxujesw";
-        String hex1 = "";
-        String hex2 = "";
-        try {
-            Mac mac = Mac.getInstance("HmacSHA1");
-            SecretKeySpec secret = new SecretKeySpec(mykey.getBytes(), "HmacSHA1");
-            mac.init(secret);
-            byte[] digest = mac.doFinal(s.getBytes());
-            //for (byte b1 : s.getBytes()) {
-              //  System.out.println(s+" "+b1);
-            //}
-            
-            
-            String enc1 = new String(digest);
-
-            for (byte b : digest) {
-                //System.out.println(b);
-                hex1 = hex1 + String.format("%02x", b);
-                //System.out.println(hex1);
-                
-            }
 
 
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
+    public static int[] createHashesV1(final byte[] data,int N,int K) {
+        byte[] sha1Digest = hmacsha1.doFinal(data);
+        byte[] md5Digest = hmacmd5.doFinal(data);
+        final BigInteger SHA1 = new BigInteger(sha1Digest);
+        final BigInteger MD5 = new BigInteger(md5Digest);
+        final int[] hashes = new int[K];
+        for (int i = 0; i < K; i++) {
+            final BigInteger I = new BigInteger(String.valueOf(i));
+            final BigInteger RES =
+                    MD5.multiply(I).add(SHA1).mod(new BigInteger(String.valueOf(N)));
+            hashes[i] = Math.abs(RES.intValue());
+
         }
+        return hashes;
+    }
 
+    public static int[] createHashesV2(final byte[] data,int N,int K) {
+        int k = 0;
+        byte salt = 0;
+        final int[] hashes = new int[K];
 
-        try {
-            Mac mac = Mac.getInstance("HmacMD5");
-            SecretKeySpec secret = new SecretKeySpec(mykey.getBytes(), "HmacMD5");
-            mac.init(secret);
-            byte[] digest = mac.doFinal(s.getBytes());
-            String enc2 = new String(digest);
-
-            //System.out.println(s+" h0="+Hex.encodeHexString(digest));
-
-            for (byte b : digest) {
-                hex2 = hex2 + String.format("%02x", b);
+        while(k < K) {
+            byte[] md5Digest;
+            synchronized (hmacmd5) {
+                hmacmd5.update(salt);
+                salt++;
+                md5Digest = hmacmd5.doFinal(data);
             }
-
-
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
-
-
-        // convert hash key to integer
-        BigInteger h1 = new BigInteger(hex1, 16);
-        BigInteger h2 = new BigInteger(hex2, 16);
-
-        for (int i = 0; i < k; i++) {
-            BigInteger bigi = new BigInteger(i + "");
-            BigInteger res = h2.multiply(bigi).add(h1).mod(new BigInteger(this.bitSetSize + ""));
-            int position = res.intValue();
-            if (!bitset.get(position)) {
-                bitsSet++;
+            for (int i = 0; i < md5Digest.length/4 && k < K; i++,k++) {
+                int h = 0;
+                for (int j = (i*4); j < (i*4)+4; j++) {
+                    h <<= 8;
+                    h |= ((int) md5Digest[j]) & 0xFF;
+                }
+                hashes[k] = Math.abs(h % N);
             }
-
-            bitset.set(position);
         }
-        numberOfAddedElements++;
+        return hashes;
+    }
+
+    public int[] addData(final byte[] data) {
+        final int[] positions = createHashesV1(data,N,K);
+
+        for(int position : positions) {
+            if(!bitset.get(position)) { 
+                onesCount++; zeroesCount--;
+                setBit(position);
+            }
+        }
+        addedElementsCount++;
+        return positions;
+    }
+
+    public int getN() {
+        return N;
+    }
+
+
+    public int getK() {
+        return K;
+    }
+
+
+    public int getAddedElementsCount() {
+        return addedElementsCount;
+    }
+
+
+    public int getOnesCount() {
+        return onesCount;
+    }
+
+    public int getZeroesCount() {
+        return zeroesCount;
+    }
+
+    public BitSet getBitset() {
+        return bitset;
+    }
+
+    public byte[] getBytes() {
+        return bitset.toByteArray();
+    }
+
+    public double calcBitsPerElement() {
+        return this.N / (double)addedElementsCount;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        BloomFilter that = (BloomFilter) o;
+
+        if (N != that.N) return false;
+        if (K != that.K) return false;
+        if (addedElementsCount != that.addedElementsCount) return false;
+        if (onesCount != that.onesCount) return false;
+        if (zeroesCount != that.zeroesCount) return false;
+        return bitset.equals(that.bitset);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = bitset.hashCode();
+        result = 31 * result + N;
+        result = 31 * result + K;
+        result = 31 * result + addedElementsCount;
+        result = 31 * result + onesCount;
+        result = 31 * result + zeroesCount;
+        return result;
     }
 
     @Override
     public String toString() {
-        StringBuffer s = new StringBuffer();
-        for (int i = 0; i < this.bitSetSize; i++) {
-            if (bitset.get(i)) {
-                s.append("1");
-            } else {
-                s.append("0");
-            }
+        StringBuilder sb = new StringBuilder("MSB -> ");
+        byte[] bytes = getBytes();
+        for (int i = bytes.length-1; i >= 0 ; i--) {
+            sb.append(String.format("%8s",
+                    Integer.toBinaryString(bytes[i] & 0xFF)).replace(' ', '0'));
         }
-        return s.toString();
+        sb.append(" <- LSB");
+        return sb.toString();
+    }
+
+    public String toHexString() {
+        return toHexString(getBytes());
+    }
+
+    public static String toHexString(final byte[] bytes) {
+        StringBuilder sb = new StringBuilder("0x");
+        for (int i = bytes.length-1; i >= 0 ; i--)
+            sb.append(String.format("%02x", bytes[i] & 0xFF));
+        return sb.toString();
     }
 
     public int[] toInt() {
-        int[] s = new int[this.bitSetSize];
-        for (int i = 0; i < this.bitSetSize; i++) {
-            if (bitset.get(i)) {
-                s[i] = 1;
-            } else {
-                s[i] = 0;
-            }
-        }
+        int[] s = new int[N];
+        for (int i = 0; i < N; i++)
+            s[i] = bitset.get(i) ? 1 : 0;
         return s;
     }
 
-     public int countZeros() {
-        int s=0;
-        for (int i = 0; i < this.bitSetSize; i++) 
-            if (! bitset.get(i)) 
-                s=s+1;
-        return s;
-    }
-    
-    
-    
-    public HashSet<Integer> toSet() {
-        HashSet<Integer> s = new HashSet();
-        for (int i = 0; i < this.bitSetSize; i++) {
-            if (bitset.get(i)) {
-                s.add(i);
-            }
+    public Set<Integer> toSetOnes() {
+        Set<Integer> set = new HashSet<Integer>();
+        for (int i = 0; i < N; i++) {
+            if (bitset.get(i)) set.add(i);
         }
-        return s;
+        return set;
     }
 
-    public HashSet<Integer> toSet0() {
-        HashSet<Integer> s = new HashSet();
-        for (int i = 0; i < this.bitSetSize; i++) {
-            if (!bitset.get(i)) {
-                s.add(i);
-            }
+    public Set<Integer> toSetZeroes() {
+        Set<Integer> set = new HashSet<Integer>();
+        for (int i = 0; i < N; i++) {
+            if (!bitset.get(i)) set.add(i);
         }
-        return s;
+        return set;
     }
 
     public boolean getBit(int bit) {
@@ -181,46 +224,14 @@ public class BloomFilter {
         bitset.set(bit, value);
     }
 
-    public BitSet getBitSet() {
-        return bitset;
+    public void setBit(int bit) {
+        setBit(bit, true);
     }
 
-    public int size() {
-        return this.bitSetSize;
-    }
-
-    public int count() {
-        return this.numberOfAddedElements;
-    }
-
-    public int sumOfElements() {
-        return this.bitsSet;
-    }
-
-    public void encode(String s, boolean padded) {
-        if (padded) {
-            s = "_" + s + "_";
-        }
-        ArrayList<String> ngrams = NGram.getGrams(s, this.grams);
-        for (String gram : ngrams) {
-            addElement(gram);
-        }
-    }
- 
-     public static BitSet toBitSet(String bf){
-        BitSet bs=new BitSet(bf.length());
-        for (int i=0;i<bf.length();i++){
-             if (bf.charAt(i) == '1')
-                 bs.set(i);
-        }
-        return bs;
-    }
-    
-    public static void main(String[] args) {
-        BloomFilter bf = new BloomFilter("Sommerson", 500, 15, 2, true);
-        System.out.println(bf.toString());
-
-
-
+    public void clear() {
+        for (int i = 0; i < N; i++) setBit(i,false);
+        onesCount = 0;
+        zeroesCount = N;
+        addedElementsCount = 0;
     }
 }

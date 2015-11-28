@@ -15,7 +15,7 @@ public class BenchmarkHashingMethods {
     private static final int K = 30;
     private static final int Q = 2;
     private static final int ITERATIONS = 4;
-    private static final long BYTES_LIMIT = 100*1024; // for each iteration for each K we read the BYTE_LIMIT.
+    private static final long BYTES_LIMIT = 1024*1024; // 1MB limit for each iteration for each K
     private static final int MAX_PROGRESS = 3*K*ITERATIONS;
     private static final char[] CHARSET_AZ_09_ = "_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".toCharArray();
     private static final Random random = new SecureRandom();
@@ -43,6 +43,8 @@ public class BenchmarkHashingMethods {
             System.out.println("Benchmark timings saved at " + file.getAbsolutePath());
             writer.close();
         }
+
+        hdfsBlkSizeBenchmark();
     }
 
     private static String randomQgram() {
@@ -146,9 +148,8 @@ public class BenchmarkHashingMethods {
                     while (bytesRead < maxSize) {
                         final String qgram = randomQgram();
                         if(!map.containsKey(qgram)) {
-                            int[] hashes = BloomFilter.createHashesV1(qgram.getBytes("UTF-8"), N, k);
+                            map.put(qgram,BloomFilter.createHashesV1(qgram.getBytes("UTF-8"), N, k));
                             totalBytesHashed += Q;
-                            map.put(qgram,hashes);
                         }
                         bytesRead += Q;
                     }
@@ -192,8 +193,7 @@ public class BenchmarkHashingMethods {
                     while (bytesRead < maxSize) {
                         final String qgram = randomQgram();
                         if(!map.containsKey(qgram)) {
-                            int[] hashes = BloomFilter.createHashesV2(qgram.getBytes("UTF-8"), N, k);
-                            map.put(qgram,hashes);
+                            map.put(qgram,BloomFilter.createHashesV2(qgram.getBytes("UTF-8"), N, k));
                             totalBytesHashed += Q;
                         }
                         bytesRead += Q;
@@ -215,6 +215,73 @@ public class BenchmarkHashingMethods {
         return millis;
     }
 
+    private static void hdfsBlkSizeBenchmark() throws UnsupportedEncodingException {
 
-    // TODO benchmark the 128 MB of data for K=30, ITERATION = 1,
+        long maxBytes = 64*BYTES_LIMIT; //64 MB
+
+        BloomFilter.createHashesV1(randomQgram().getBytes("UTF-8"), N, K);
+        BloomFilter.createHashesV1(randomQgram().getBytes("UTF-8"), N, K);
+        {
+            long bytesRead = 0;
+            long start = System.currentTimeMillis();
+            while (bytesRead < maxBytes) {
+                BloomFilter.createHashesV1(randomQgram().getBytes("UTF-8"), N, K);
+                bytesRead += Q;
+            }
+            long end = System.currentTimeMillis();
+            long millis = end - start;
+            System.out.print("createHashesV1 : ");
+            System.out.println("Time took " + millis/1000 + " seconds. Read " + bytesRead + " bytes.");
+        }
+        {
+            long bytesRead = 0;
+            long start = System.currentTimeMillis();
+            while (bytesRead < maxBytes) {
+                BloomFilter.createHashesV2(randomQgram().getBytes("UTF-8"), N, K);
+                bytesRead += Q;
+            }
+            long end = System.currentTimeMillis();
+            long millis = end - start;
+            System.out.print("createHashesV2 : ");
+            System.out.println("Time took " + millis/1000 + " seconds. Read " + bytesRead + " bytes.");
+        }
+        {
+            long bytesRead = 0;
+            long bytesHashed = 0;
+            long start = System.currentTimeMillis();
+            Map<String, int[]> map = new TreeMap<String,int[]>();
+            while (bytesRead < maxBytes) {
+                String qGram = randomQgram();
+                if(!map.containsKey(qGram)) {
+                    map.put(qGram,BloomFilter.createHashesV1(qGram.getBytes("UTF"), N, K));
+                    bytesHashed += Q;
+                }
+                bytesRead += Q;
+            }
+            System.out.print("Map backed createHashesV1 : ");
+            long end = System.currentTimeMillis();
+            long millis = end - start;
+            System.out.println("Time took " + millis/1000 + " seconds. Read " + bytesRead + " bytes." +
+                    " Hashed " + bytesHashed + " bytes");
+        }
+        {
+            long bytesRead = 0;
+            long bytesHashed = 0;
+            long start = System.currentTimeMillis();
+            Map<String, int[]> map = new TreeMap<String,int[]>();
+            while (bytesRead < maxBytes) {
+                String qGram = randomQgram();
+                if(!map.containsKey(qGram)) {
+                    map.put(qGram,BloomFilter.createHashesV2(qGram.getBytes("UTF"), N, K));
+                    bytesHashed += Q;
+                }
+                bytesRead += Q;
+            }
+            long end = System.currentTimeMillis();
+            long millis = end - start;
+            System.out.print("Map backed createHashesV2 : ");
+            System.out.println("Time took " + millis / 1000 + " seconds. Read " + bytesRead + " bytes." +
+                    " Hashed " + bytesHashed + " bytes");
+        }
+    }
 }

@@ -62,7 +62,7 @@ public class RowBloomFilterEncoding extends BaseBloomFilterEncoding {
 
         encodingColumn = new Schema.Field(encodingColumnName, Schema.createFixed(
                 encodingColumnName, null, null,
-                (int) Math.ceil(N / 8)),
+                (int) Math.ceil(N/(double)8)),
                 String.format("Encoding(%s) of column(s) %s", getSmallName(), selectedColumnNames), null);
 
         restEncodingColumns = new ArrayList<Schema.Field>();
@@ -114,7 +114,7 @@ public class RowBloomFilterEncoding extends BaseBloomFilterEncoding {
 
     @Override
     public GenericData.Fixed encode(Object[] objs, Schema.Type[] types, Schema encodingFieldSchema) {
-        byte[] one = new byte[(int) Math.ceil(N / 8)];
+        byte[] one = new byte[(int) Math.ceil(N/(double)8)];
         one[0] = (byte) 1;
         return new GenericData.Fixed(encodingFieldSchema,one);
     }

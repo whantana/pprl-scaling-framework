@@ -39,7 +39,7 @@ public class EncodeDatasetMRTest {
     private static final int K = 30;
     private static final int Q = 2;
 
-    private static final byte[] ONE = new byte[(int) Math.ceil(N / 8)];
+    private static final byte[] ONE = new byte[(int) Math.ceil(N/(double)8)];
     static { ONE[0] = (byte) 1; }
 
     private GenericRecord inputRecord;

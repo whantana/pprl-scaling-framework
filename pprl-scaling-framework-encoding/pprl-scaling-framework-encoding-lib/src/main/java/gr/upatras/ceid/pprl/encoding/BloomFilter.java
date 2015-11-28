@@ -5,7 +5,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.BitSet;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -33,17 +33,17 @@ public class BloomFilter {
         hmacsha1 = tmp1;
     }
 
-    private BitSet bitset;
     private int N;
     private int K;
     private int addedElementsCount;
     private int onesCount;
     private int zeroesCount;
+    private byte[] byteArray;
 
     public BloomFilter(final int N, final int K) {
         this.N = N;
         this.K = K;
-        this.bitset = new BitSet(N);
+        byteArray = new byte[(int) Math.ceil(N/(double)8)];
         addedElementsCount = 0;
         onesCount = 0;
         zeroesCount = N;
@@ -99,9 +99,9 @@ public class BloomFilter {
         final int[] positions = createHashesV1(data,N,K);
 
         for(int position : positions) {
-            if(!bitset.get(position)) { 
+            if(!getBit(position,byteArray)) {
                 onesCount++; zeroesCount--;
-                setBit(position);
+                setBit(position,byteArray);
             }
         }
         addedElementsCount++;
@@ -131,12 +131,8 @@ public class BloomFilter {
         return zeroesCount;
     }
 
-    public BitSet getBitset() {
-        return bitset;
-    }
-
-    public byte[] getBytes() {
-        return bitset.toByteArray(); // TODO weird stuff happening here : see http://stackoverflow.com/questions/6197411/converting-from-bitset-to-byte-array
+    public byte[] getByteArray() {
+        return byteArray;
     }
 
     public double calcBitsPerElement() {
@@ -155,13 +151,13 @@ public class BloomFilter {
         if (addedElementsCount != that.addedElementsCount) return false;
         if (onesCount != that.onesCount) return false;
         if (zeroesCount != that.zeroesCount) return false;
-        return bitset.equals(that.bitset);
+        return Arrays.equals(byteArray, that.byteArray);
 
     }
 
     @Override
     public int hashCode() {
-        int result = bitset.hashCode();
+        int result = byteArray.hashCode();
         result = 31 * result + N;
         result = 31 * result + K;
         result = 31 * result + addedElementsCount;
@@ -173,17 +169,14 @@ public class BloomFilter {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("MSB -> ");
-        byte[] bytes = getBytes();
-        for (int i = bytes.length-1; i >= 0 ; i--) {
-            sb.append(String.format("%8s",
-                    Integer.toBinaryString(bytes[i] & 0xFF)).replace(' ', '0'));
-        }
+        for (int i = byteArray.length-1; i >= 0 ; i--)
+            sb.append(Integer.toBinaryString(byteArray[i] & 255 | 256).substring(1));
         sb.append(" <- LSB");
         return sb.toString();
     }
 
     public String toHexString() {
-        return toHexString(getBytes());
+        return toHexString(byteArray);
     }
 
     public static String toHexString(final byte[] bytes) {
@@ -193,17 +186,10 @@ public class BloomFilter {
         return sb.toString();
     }
 
-    public int[] toInt() {
-        int[] s = new int[N];
-        for (int i = 0; i < N; i++)
-            s[i] = bitset.get(i) ? 1 : 0;
-        return s;
-    }
-
     public Set<Integer> toSetOnes() {
         Set<Integer> set = new HashSet<Integer>();
         for (int i = 0; i < N; i++) {
-            if (bitset.get(i)) set.add(i);
+            if (getBit(i, byteArray)) set.add(i);
         }
         return set;
     }
@@ -211,27 +197,60 @@ public class BloomFilter {
     public Set<Integer> toSetZeroes() {
         Set<Integer> set = new HashSet<Integer>();
         for (int i = 0; i < N; i++) {
-            if (!bitset.get(i)) set.add(i);
+            if (!getBit(i, byteArray)) set.add(i);
         }
         return set;
     }
 
+    public int countOnes() {
+        int ones = 0;
+        for (int i = 0; i < N; i++) {
+            if (getBit(i, byteArray)) ones++;
+        }
+        return ones;
+    }
+
+    public int countZeroes() {
+        int zeroes = 0;
+        for (int i = 0; i < N; i++) {
+            if (!getBit(i, byteArray)) zeroes++;
+        }
+        return zeroes;
+    }
+
     public boolean getBit(int bit) {
-        return bitset.get(bit);
+        return getBit(bit,byteArray);
     }
 
     public void setBit(int bit, boolean value) {
-        bitset.set(bit, value);
+        if(value) setBit(bit,byteArray);
+        else unSetBit(bit,byteArray);
     }
 
     public void setBit(int bit) {
         setBit(bit, true);
     }
 
+    public void clearBit(int bit) {
+        setBit(bit, false);
+    }
+
     public void clear() {
-        bitset.clear();
+        for(int i = 0 ; i < byteArray.length ; i++) byteArray[i] = 0;
         addedElementsCount = 0;
         onesCount = 0;
         zeroesCount = N;
+    }
+
+    private static boolean getBit(int i, byte[] bytes) {
+        return ((bytes[i/8] & (1<<(i%8))) != 0);
+    }
+
+    private static void setBit(int i, byte[] bytes) {
+        bytes[i/8] = (byte) (bytes[i/8]  | (1<<(i%8)));
+    }
+
+    private static void unSetBit(int i, byte[] bytes) {
+        bytes[i/8] = (byte) (bytes[i/8]  & ~(1 << (i%8)));
     }
 }

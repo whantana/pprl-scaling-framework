@@ -81,7 +81,7 @@ public class MultiBloomFilterEncoding extends BaseBloomFilterEncoding {
             String encodingColumnName = nsb.toString();
             Schema.Field encodingColumn = new Schema.Field(encodingColumnName, Schema.createFixed(
                     encodingColumnName, null, null,
-                    (int) Math.ceil(N / 8)),  // TODO Remember dynamic sizing
+                    (int) Math.ceil(N/(double)8)),  // TODO Remember dynamic sizing
                     String.format("Encoding(%s) of column %s", getName(), column), null);
 
             encodingNamesToColumnsMap.put(encodingColumnName, encodingColumn);
@@ -127,7 +127,7 @@ public class MultiBloomFilterEncoding extends BaseBloomFilterEncoding {
     @Override
     public GenericData.Fixed encode(Object obj, Schema.Type type, Schema encodingFieldSchema) {
         //TODO Remember dynamic sizing
-        byte[] one = new byte[(int) Math.ceil(N / 8)];
+        byte[] one = new byte[(int) Math.ceil(N/(double)8)];
         one[0] = (byte) 1;
         return new GenericData.Fixed(encodingFieldSchema,one);
     }

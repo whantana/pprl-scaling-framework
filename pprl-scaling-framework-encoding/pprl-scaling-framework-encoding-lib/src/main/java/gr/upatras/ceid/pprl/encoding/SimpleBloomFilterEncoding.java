@@ -59,7 +59,7 @@ public class SimpleBloomFilterEncoding extends BaseBloomFilterEncoding {
 
         encodingColumn = new Schema.Field(encodingColumnName, Schema.createFixed(
                 encodingColumnName, null, null,
-                (int) Math.ceil(N / 8)),
+                (int) Math.ceil(N/(double)8)),
                 String.format("Encoding(%s) of column(s) %s", getSmallName(), selectedColumnNames), null);
 
         restEncodingColumns = new ArrayList<Schema.Field>();
@@ -139,6 +139,6 @@ public class SimpleBloomFilterEncoding extends BaseBloomFilterEncoding {
             }
             for(String qGram : qGrams) bloomFilter.addData(qGram.getBytes("UTF-8"));
         }
-        return new GenericData.Fixed(encodingFieldSchema,bloomFilter.getBytes());
+        return new GenericData.Fixed(encodingFieldSchema,bloomFilter.getByteArray());
     }
 }

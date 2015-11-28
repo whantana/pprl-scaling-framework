@@ -28,7 +28,7 @@ public class EncodingCommands implements CommandMarker {
     @Autowired
     private EncodingService service;
 
-    private Set<String> AVAILABLE_ENCODING_METHODS;
+    private List<String> AVAILABLE_ENCODING_METHODS;
 
     @CliCommand(value = "enc_list", help = "List user encodings on the PPRL site.")
     public String encodingListCommand(

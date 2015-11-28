@@ -2,8 +2,6 @@ package gr.upatras.ceid.pprl.encoding;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -109,13 +107,13 @@ public class RowBloomFilterEncoding extends BaseBloomFilterEncoding {
     }
 
     @Override
-    public GenericData.Fixed encode(Object obj, Class<?> clz, Schema encodingFieldSchema)
+    public GenericData.Fixed encode(Object obj, Schema.Type type, Schema encodingFieldSchema)
             throws UnsupportedOperationException{
         throw new UnsupportedOperationException("Not supported for " + getClass().getSimpleName());
     }
 
     @Override
-    public GenericData.Fixed encode(List<Object> objs, List<Class<?>> clzz, Schema encodingFieldSchema) {
+    public GenericData.Fixed encode(Object[] objs, Schema.Type[] types, Schema encodingFieldSchema) {
         byte[] one = new byte[(int) Math.ceil(N / 8)];
         one[0] = (byte) 1;
         return new GenericData.Fixed(encodingFieldSchema,one);

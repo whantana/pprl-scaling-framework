@@ -3,7 +3,6 @@ package gr.upatras.ceid.pprl.datasets.test;
 import gr.upatras.ceid.pprl.datasets.avro.dblp.DblpPublication;
 import gr.upatras.ceid.pprl.datasets.input.MultiTagXmlInputFormat;
 import gr.upatras.ceid.pprl.datasets.mapreduce.DblpXmlToAvroMapper;
-import org.apache.avro.Schema;
 import org.apache.avro.hadoop.io.AvroSerialization;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.hadoop.conf.Configuration;

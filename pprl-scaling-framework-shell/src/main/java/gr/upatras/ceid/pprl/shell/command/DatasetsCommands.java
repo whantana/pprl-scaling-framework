@@ -1,9 +1,5 @@
 package gr.upatras.ceid.pprl.shell.command;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-
 import gr.upatras.ceid.pprl.datasets.DatasetException;
 import gr.upatras.ceid.pprl.datasets.service.DatasetsService;
 import org.slf4j.Logger;
@@ -15,6 +11,9 @@ import org.springframework.shell.core.annotation.CliOption;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 @Component

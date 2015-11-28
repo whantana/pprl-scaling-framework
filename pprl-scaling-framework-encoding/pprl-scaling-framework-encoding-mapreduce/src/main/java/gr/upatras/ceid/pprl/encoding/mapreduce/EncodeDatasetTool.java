@@ -17,20 +17,12 @@ import org.apache.hadoop.util.ToolRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static gr.upatras.ceid.pprl.encoding.mapreduce.BaseBloomFilterEncodingMapper.INPUT_SCHEMA_KEY;
-import static gr.upatras.ceid.pprl.encoding.mapreduce.BaseBloomFilterEncodingMapper.OUTPUT_SCHEMA_KEY;
-import static gr.upatras.ceid.pprl.encoding.mapreduce.BaseBloomFilterEncodingMapper.UID_COLUMN_KEY;
-import static gr.upatras.ceid.pprl.encoding.mapreduce.BaseBloomFilterEncodingMapper.SELECTED_COLUMNS_KEY;
-import static gr.upatras.ceid.pprl.encoding.mapreduce.BaseBloomFilterEncodingMapper.N_KEY;
-import static gr.upatras.ceid.pprl.encoding.mapreduce.BaseBloomFilterEncodingMapper.K_KEY;
-import static gr.upatras.ceid.pprl.encoding.mapreduce.BaseBloomFilterEncodingMapper.Q_KEY;
+import static gr.upatras.ceid.pprl.encoding.mapreduce.BaseBloomFilterEncodingMapper.*;
 
 public class EncodeDatasetTool extends Configured implements Tool {
 

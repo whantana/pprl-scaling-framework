@@ -2,9 +2,8 @@ package gr.upatras.ceid.pprl.encoding;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,22 +12,28 @@ public class SimpleBloomFilterEncoding extends BaseBloomFilterEncoding {
 
     private Schema.Field encodingColumn;
 
+    private BloomFilter bloomFilter;
+
     public SimpleBloomFilterEncoding(int N, int K, int Q) {
         super(N, K, Q);
+        bloomFilter = new BloomFilter(N,K);
     }
 
     public SimpleBloomFilterEncoding(List<String> selectedColumnNames, int N, int K, int Q) {
         super(selectedColumnNames, N, K, Q);
+        bloomFilter = new BloomFilter(N,K);
     }
 
     public SimpleBloomFilterEncoding(Schema schema, List<String> selectedColumnNames,
                                      int N, int K, int Q) {
         super(schema,selectedColumnNames, N, K, Q);
+        bloomFilter = new BloomFilter(N,K);
     }
 
     public SimpleBloomFilterEncoding(Schema schema, Schema encodingSchema, List<String> selectedColumnNames,
                                      int N, int K, int Q) {
         super(schema, encodingSchema, selectedColumnNames, N, K, Q);
+        bloomFilter = new BloomFilter(N,K);
     }
 
     public SimpleBloomFilterEncoding(Schema encodingSchema, int N, int K, int Q) {
@@ -109,14 +114,31 @@ public class SimpleBloomFilterEncoding extends BaseBloomFilterEncoding {
     }
 
     @Override
-    public GenericData.Fixed encode(Object obj, Class<?> clz, Schema encodingFieldSchema)
+    public GenericData.Fixed encode(Object obj, Schema.Type type, Schema encodingFieldSchema)
             throws UnsupportedOperationException {
         throw new UnsupportedOperationException("Not supported for " + getClass().getSimpleName());
     }
     @Override
-    public GenericData.Fixed encode(List<Object> objs, List<Class<?>> clzz, Schema encodingFieldSchema) {
-        byte[] one = new byte[(int) Math.ceil(N / 8)];
-        one[0] = (byte) 1;
-        return new GenericData.Fixed(encodingFieldSchema,one);
+    public GenericData.Fixed encode(Object[] objs, Schema.Type[] types, Schema encodingFieldSchema)
+            throws UnsupportedEncodingException {
+        bloomFilter.clear();
+        for (int i = 0; i < objs.length ; i++) {
+            Object obj = objs[i];
+            Schema.Type type = types[i];
+            String[] qGrams;
+            switch(type) {
+                case STRING:
+                    qGrams = QGram.generateQGrams((String) obj,Q);
+                    break;
+                case BOOLEAN:
+                    qGrams = QGram.generateQGrams((Boolean) obj,Q);
+                    break;
+                default:
+                    qGrams =  QGram.generateQGrams((Number) obj,Q);
+                    break;
+            }
+            for(String qGram : qGrams) bloomFilter.addData(qGram.getBytes("UTF-8"));
+        }
+        return new GenericData.Fixed(encodingFieldSchema,bloomFilter.getBytes());
     }
 }

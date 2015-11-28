@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.charset.Charset;
 import java.util.Map;
-import java.util.Random;
 import java.util.TreeMap;
 
 public class BloomFilterTest {
@@ -27,9 +26,12 @@ public class BloomFilterTest {
             "Pellentesque hendrerit, enim in vehicula egestas, orci velit venenatis elit, eget fringilla dolor lacus " +
             "a justo. Aenean eros massa, vulputate sed posuere et, pulvinar tincidunt mauris.";
 
+    private static final int N = 1024;
+    private static final int K = 30;
+
     @Test
     public void test1() {
-        final BloomFilter bloomFilter = new BloomFilter(1024,30);
+        final BloomFilter bloomFilter = new BloomFilter(N,K);
         LOG.info("before FPP={}", bloomFilter.calcFPP());
         final Map<String,Integer> bigramsHashed = new TreeMap<String,Integer>();
         final Map<String,int[]> bigramsPositionsHashed = new TreeMap<String,int[]>();
@@ -50,4 +52,18 @@ public class BloomFilterTest {
         LOG.info("#bitstring : {}",bloomFilter.toString());
         LOG.info("after inserts FPP={}", bloomFilter.calcFPP());
     }
+
+//    @Test
+//    public void test2() {
+//        for (int n = 1; n <= N; n++) {
+//            final BloomFilter bloomFilter = new BloomFilter(n,K);
+//            //bloomFilter.addData("sh1t".getBytes());
+//            final int expectedSize = (int) Math.ceil((double) n / 8);
+//            final int actualSize = (int) Math.ceil((double)bloomFilter.getBitset().length()/8);
+//            LOG.info(String.format("For n=%d , expected.size=%d vs actual.size=%d",
+//                    n,expectedSize,actualSize));
+//
+//            //assertEquals((int) Math.ceil((double) n / 8), bloomFilter.getBytes().length);
+//        }
+//    }
 }

@@ -10,8 +10,6 @@ import org.apache.avro.mapred.AvroKey;
 import org.apache.hadoop.io.NullWritable;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.ArrayList;
 
 public class SimpleBloomFilterEncodingMapper extends BaseBloomFilterEncodingMapper {
 
@@ -34,15 +32,18 @@ public class SimpleBloomFilterEncodingMapper extends BaseBloomFilterEncodingMapp
         final GenericRecord encodingRecord = new GenericData.Record(encoding.getEncodingSchema());
 
         // selected for encoding columns
-        List<Object> objs = new ArrayList<Object>();
-        List<Class<?>> clzz = new ArrayList<Class<?>>();
+        final Object[] objs = new Object[selectedColumns.size()];
+        final Schema.Type[] types = new Schema.Type[selectedColumnsNames.size()];
+        int i = 0;
+        for (Schema.Field field : selectedColumns) {
+            if(!BaseBloomFilterEncoding.SUPPORTED_TYPES.contains(field.schema().getType())) continue;
+            objs[i] = record.get(field.name());
+            types[i] = field.schema().getType();
+            i++;
+        }
         final String fieldName = ((SimpleBloomFilterEncoding) encoding).getEncodingColumnName();
         Schema fieldSchema = ((SimpleBloomFilterEncoding) encoding).getEncodingColumn().schema();
-        for (Schema.Field field : selectedColumns) {
-            objs.add(record.get(field.name()));
-            clzz.add(BaseBloomFilterEncoding.SUPPORTED_TYPES.get(field.schema().getType()));
-        }
-        encodingRecord.put(fieldName, encoding.encode(objs, clzz, fieldSchema));
+        encodingRecord.put(fieldName, encoding.encode(objs, types, fieldSchema));
 
         // rest of columns
         for(Schema.Field field : restColumns) {

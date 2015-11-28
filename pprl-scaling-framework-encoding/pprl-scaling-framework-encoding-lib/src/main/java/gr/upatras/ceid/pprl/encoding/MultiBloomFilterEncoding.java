@@ -125,14 +125,15 @@ public class MultiBloomFilterEncoding extends BaseBloomFilterEncoding {
     }
 
     @Override
-    public GenericData.Fixed encode(Object obj, Class<?> clz, Schema encodingFieldSchema) {
+    public GenericData.Fixed encode(Object obj, Schema.Type type, Schema encodingFieldSchema) {
+        //TODO Remember dynamic sizing
         byte[] one = new byte[(int) Math.ceil(N / 8)];
         one[0] = (byte) 1;
         return new GenericData.Fixed(encodingFieldSchema,one);
     }
 
     @Override
-    public GenericData.Fixed encode(List<Object> objs, List<Class<?>> clzz, Schema encodingFieldSchema)
+    public GenericData.Fixed encode(Object[] objs, Schema.Type[] types, Schema encodingFieldSchema)
             throws UnsupportedOperationException {
         throw new UnsupportedOperationException("Not supported for " + getClass().getSimpleName());
     }

@@ -43,10 +43,10 @@ public class BloomFilter {
     public BloomFilter(final int N, final int K) {
         this.N = N;
         this.K = K;
+        this.bitset = new BitSet(N);
         addedElementsCount = 0;
         onesCount = 0;
         zeroesCount = N;
-        bitset = new BitSet(N);
     }
 
 
@@ -62,7 +62,7 @@ public class BloomFilter {
         final BigInteger MD5 = new BigInteger(md5Digest);
         final int[] hashes = new int[K];
         for (int i = 0; i < K; i++) {
-            final BigInteger I = new BigInteger(String.valueOf(i));
+            final BigInteger I = new BigInteger(String.valueOf(i+1)); // TODO ask about i and i+1
             final BigInteger RES =
                     MD5.multiply(I).add(SHA1).mod(new BigInteger(String.valueOf(N)));
             hashes[i] = Math.abs(RES.intValue());
@@ -136,7 +136,7 @@ public class BloomFilter {
     }
 
     public byte[] getBytes() {
-        return bitset.toByteArray();
+        return bitset.toByteArray(); // TODO weird stuff happening here : see http://stackoverflow.com/questions/6197411/converting-from-bitset-to-byte-array
     }
 
     public double calcBitsPerElement() {
@@ -229,9 +229,9 @@ public class BloomFilter {
     }
 
     public void clear() {
-        for (int i = 0; i < N; i++) setBit(i,false);
+        bitset.clear();
+        addedElementsCount = 0;
         onesCount = 0;
         zeroesCount = N;
-        addedElementsCount = 0;
     }
 }

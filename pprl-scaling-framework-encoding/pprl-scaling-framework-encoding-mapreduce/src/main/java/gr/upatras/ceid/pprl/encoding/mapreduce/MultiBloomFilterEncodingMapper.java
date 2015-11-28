@@ -10,7 +10,6 @@ import org.apache.avro.mapred.AvroKey;
 import org.apache.hadoop.io.NullWritable;
 
 import java.io.IOException;
-import java.util.List;
 
 public class MultiBloomFilterEncodingMapper extends BaseBloomFilterEncodingMapper {
 
@@ -33,12 +32,13 @@ public class MultiBloomFilterEncodingMapper extends BaseBloomFilterEncodingMappe
         final GenericRecord encodingRecord = new GenericData.Record(encoding.getEncodingSchema());
 
         for(Schema.Field field : selectedColumns) {
+            if(!BaseBloomFilterEncoding.SUPPORTED_TYPES.contains(field.schema().getType())) continue;
             Object obj = record.get(field.name());
-            Class<?> cls = BaseBloomFilterEncoding.SUPPORTED_TYPES.get(field.schema().getType());
+            Schema.Type type = field.schema().getType();
             Schema.Field encodingField = ((MultiBloomFilterEncoding) encoding).getEncodingColumnForName(field.name());
             String encodingFieldName = encodingField.name();
             Schema fieldSchema = encodingField.schema();
-            encodingRecord.put(encodingFieldName, encoding.encode(obj,cls,fieldSchema));
+            encodingRecord.put(encodingFieldName, encoding.encode(obj, type, fieldSchema));
         }
 
         // rest of columns

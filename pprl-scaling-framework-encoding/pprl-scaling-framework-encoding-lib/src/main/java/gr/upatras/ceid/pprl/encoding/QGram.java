@@ -14,7 +14,7 @@ public class QGram {
 
         int len = finalString.length();
         int qGramsCount = len - Q + 1;
-        if(qGramsCount < 1) return null;
+        if(qGramsCount < 1) return new String[0];
         String[] qGrams = new String[qGramsCount];
         for (int i = 0; i < qGramsCount; i++)
             qGrams[i] = finalString.substring(i, i + Q);
@@ -28,7 +28,20 @@ public class QGram {
 
         int len = finalString.length();
         int qGramsCount = len - Q + 1;
-        if(qGramsCount < 1) return null;
+        if(qGramsCount < 1) return new String[0];
+        String[] qGrams = new String[qGramsCount];
+        for (int i = 0; i < qGramsCount; i++)
+            qGrams[i] = finalString.substring(i, i + Q);
+
+        return qGrams;
+    }
+
+    public static String[] generateQGrams(final Boolean bool, int Q) {
+        String string = bool ? "T":"F";
+        String finalString = "_" + string + "_";
+        int len = finalString.length();
+        int qGramsCount = len - Q + 1;
+        if(qGramsCount < 1) return new String[0];
         String[] qGrams = new String[qGramsCount];
         for (int i = 0; i < qGramsCount; i++)
             qGrams[i] = finalString.substring(i, i + Q);

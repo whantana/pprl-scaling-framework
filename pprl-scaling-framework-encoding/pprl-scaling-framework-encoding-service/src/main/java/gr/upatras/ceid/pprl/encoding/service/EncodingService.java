@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -59,8 +60,8 @@ public class EncodingService extends DatasetsService {
         LOG.info("Service is now initialized. Found {} datasets on the PPRL site.", datasets.size());
     }
 
-    public Set<String> listSupportedEncodingMethodsNames() {
-        return BaseBloomFilterEncoding.AVAILABLE_METHODS.keySet();
+    public List<String> listSupportedEncodingMethodsNames() {
+        return BaseBloomFilterEncoding.AVAILABLE_METHODS;
     }
 
     public List<String> listDatasets(final boolean onlyName) {
@@ -410,17 +411,13 @@ public class EncodingService extends DatasetsService {
     }
 
     private GenericRecord encodeRecord(final GenericRecord record, final BaseBloomFilterEncoding encoding)
-            throws BloomFilterEncodingException {
+            throws BloomFilterEncodingException, UnsupportedEncodingException {
         final GenericRecord encodingRecord = new GenericData.Record(encoding.getEncodingSchema());
         if (encoding instanceof SimpleBloomFilterEncoding ||
                 encoding instanceof RowBloomFilterEncoding) {
 
-            List<Object> objs = new ArrayList<Object>();
-            List<Class<?>> clzz = new ArrayList<Class<?>>();
-
             String fieldName;
             Schema fieldSchema;
-
             if(encoding instanceof RowBloomFilterEncoding) {
                 fieldName = ((RowBloomFilterEncoding) encoding).getEncodingColumnName();
                 fieldSchema = ((RowBloomFilterEncoding) encoding).getEncodingColumn().schema();
@@ -429,14 +426,18 @@ public class EncodingService extends DatasetsService {
                 fieldName = ((SimpleBloomFilterEncoding) encoding).getEncodingColumnName();
                 fieldSchema = ((SimpleBloomFilterEncoding) encoding).getEncodingColumn().schema();
             }
-
             LOG.debug("encode record : fieldName {} , fieldSchema {}",fieldName,fieldSchema);
 
+            final Object[] objs = new Object[encoding.getSelectedColumns().size()];
+            final Schema.Type[] types = new Schema.Type[encoding.getSelectedColumns().size()];
+            int i = 0;
             for (Schema.Field field : encoding.getSelectedColumns()) {
-                objs.add(record.get(field.name()));
-                clzz.add(BaseBloomFilterEncoding.SUPPORTED_TYPES.get(field.schema().getType()));
+                if(!BaseBloomFilterEncoding.SUPPORTED_TYPES.contains(field.schema().getType())) continue;
+                objs[i] = record.get(field.name());
+                types[i] = field.schema().getType();
+                i++;
             }
-            encodingRecord.put(fieldName, encoding.encode(objs, clzz, fieldSchema));
+            encodingRecord.put(fieldName, encoding.encode(objs, types, fieldSchema));
 
             for(Schema.Field field : encoding.getRestColumns()) {
                 Object obj = record.get(field.name());
@@ -444,13 +445,14 @@ public class EncodingService extends DatasetsService {
             }
         } else {
             for(Schema.Field field : encoding.getSelectedColumns()) {
+                if(!BaseBloomFilterEncoding.SUPPORTED_TYPES.contains(field.schema().getType())) continue;
                 Object obj = record.get(field.name());
-                Class<?> cls = BaseBloomFilterEncoding.SUPPORTED_TYPES.get(field.schema().getType());
+                Schema.Type type = field.schema().getType();
                 Schema.Field encodingField = ((MultiBloomFilterEncoding) encoding).getEncodingColumnForName(field.name());
                 String fieldName = encodingField.name();
                 Schema fieldSchema = encodingField.schema();
                 LOG.debug("encode record : fieldName {} , fieldSchema {}",fieldName,fieldSchema);
-                encodingRecord.put(fieldName, encoding.encode(obj,cls,fieldSchema));
+                encodingRecord.put(fieldName, encoding.encode(obj,type,fieldSchema));
             }
             for(Schema.Field field : encoding.getRestColumns()) {
                 Object obj = record.get(field.name());
@@ -472,7 +474,7 @@ public class EncodingService extends DatasetsService {
 
     private List<EncodedDataset> filterEncodedDatasetsByMethodName(final String methodName)
             throws BloomFilterEncodingException {
-        if(!BaseBloomFilterEncoding.AVAILABLE_METHODS.containsKey(methodName))
+        if(!BaseBloomFilterEncoding.AVAILABLE_METHODS.contains(methodName))
             throw new BloomFilterEncodingException("Unsupported method name : " + methodName);
         final List<EncodedDataset> encodedDatasets = new ArrayList<EncodedDataset>();
         for(Dataset d : datasets) {
@@ -486,7 +488,7 @@ public class EncodingService extends DatasetsService {
     private List<EncodedDataset> filterEncodedDatasetsByNames(final String datasetName, final String methodName)
             throws BloomFilterEncodingException {
 
-        if(!BaseBloomFilterEncoding.AVAILABLE_METHODS.containsKey(methodName))
+        if(!BaseBloomFilterEncoding.AVAILABLE_METHODS.contains(methodName))
             throw new BloomFilterEncodingException("Unsupported method name : " + methodName);
 
         final List<EncodedDataset> encodedDatasets = new ArrayList<EncodedDataset>();

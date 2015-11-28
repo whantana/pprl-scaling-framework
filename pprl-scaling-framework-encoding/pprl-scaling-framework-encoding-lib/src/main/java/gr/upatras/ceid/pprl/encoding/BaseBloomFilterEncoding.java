@@ -2,30 +2,29 @@ package gr.upatras.ceid.pprl.encoding;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public abstract class BaseBloomFilterEncoding {
 
-    public static final Map<String,Class> AVAILABLE_METHODS;
+    public static final List<String> AVAILABLE_METHODS = new ArrayList<String>();
     static {
-        AVAILABLE_METHODS = new HashMap<String,Class>();
-        AVAILABLE_METHODS.put("SIMPLE", SimpleBloomFilterEncoding.class);
-        AVAILABLE_METHODS.put("MULTI", MultiBloomFilterEncoding.class);
-        AVAILABLE_METHODS.put("ROW", RowBloomFilterEncoding.class);
+        AVAILABLE_METHODS.add("SIMPLE");
+        AVAILABLE_METHODS.add("MULTI");
+        AVAILABLE_METHODS.add("ROW");
     }
 
-    public static final Map<Schema.Type,Class<?>> SUPPORTED_TYPES = new HashMap<Schema.Type,Class<?>>();
+    public static final List<Schema.Type> SUPPORTED_TYPES = new ArrayList<Schema.Type>();
     static {
-        SUPPORTED_TYPES.put(Schema.Type.INT,Integer.class);
-        SUPPORTED_TYPES.put(Schema.Type.LONG,Long.class);
-        SUPPORTED_TYPES.put(Schema.Type.STRING,String.class);
+        SUPPORTED_TYPES.add(Schema.Type.INT);
+        SUPPORTED_TYPES.add(Schema.Type.LONG);
+        SUPPORTED_TYPES.add(Schema.Type.FLOAT);
+        SUPPORTED_TYPES.add(Schema.Type.DOUBLE);
+        SUPPORTED_TYPES.add(Schema.Type.BOOLEAN);
+        SUPPORTED_TYPES.add(Schema.Type.STRING);
     }
 
     protected List<String> selectedColumnNames;
@@ -127,9 +126,9 @@ public abstract class BaseBloomFilterEncoding {
 
     public abstract String getSmallName();
 
-    public abstract GenericData.Fixed encode(Object obj, Class<?> clz, Schema encodingFieldSchema);
+    public abstract GenericData.Fixed encode(Object obj, Schema.Type type, Schema encodingFieldSchema);
 
-    public abstract GenericData.Fixed encode(List<Object> objs, List<Class<?>> clzz, Schema encodingFieldSchema);
+    public abstract GenericData.Fixed encode(Object[] objs, Schema.Type[] types, Schema encodingFieldSchema) throws UnsupportedEncodingException;
 
     public Schema getSchema() {
         return schema;
@@ -188,7 +187,7 @@ public abstract class BaseBloomFilterEncoding {
     public static BaseBloomFilterEncoding fromString(final String s) {
         String[] parts = s.split("|");
         final String method = parts[0];
-        if (!BaseBloomFilterEncoding.AVAILABLE_METHODS.containsKey(method)) return null;
+        if (!BaseBloomFilterEncoding.AVAILABLE_METHODS.contains(method)) return null;
 
         final int N = Integer.parseInt(parts[1]);
         final int K = Integer.parseInt(parts[2]);

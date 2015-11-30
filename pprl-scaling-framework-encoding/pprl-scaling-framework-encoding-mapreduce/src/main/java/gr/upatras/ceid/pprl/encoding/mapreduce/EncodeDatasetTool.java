@@ -41,7 +41,7 @@ public class EncodeDatasetTool extends Configured implements Tool {
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
         if (args.length != 10) {
             LOG.error(" Usage: EncodeDatasetTool <input-path> <input-schema> <encoding-path> <encoding-schema>" +
-                    "\n\t <col0,col1,...,colN> <uid_col> <SIMPLE|MULTI|ROW> <N> <K> <Q>");
+                    "\n<col0,col1,...,colN> <uid_col> <SIMPLE|MULTI|ROW> <N> <K> <Q>");
             return -1;
         }
 
@@ -72,7 +72,7 @@ public class EncodeDatasetTool extends Configured implements Tool {
         conf.setInt(K_KEY,K);
         conf.setInt(Q_KEY,Q);
 
-        // validate schema encoding
+        // set description
         String description = JOB_DESCRIPTION + " ("
                 + String.format(" N=%d, K=%d, Q=%d",N,K,Q) + ", method=" + encodingMethod + ","
                 + "input-path=" + shortenUrl(inputDataPath.toString()) + ", "
@@ -133,7 +133,7 @@ public class EncodeDatasetTool extends Configured implements Tool {
         }
     }
 
-    public static Schema loadAvroSchemaFromHdfs(final FileSystem fs,final Path schemaPath) throws IOException {
+    private static Schema loadAvroSchemaFromHdfs(final FileSystem fs,final Path schemaPath) throws IOException {
         FSDataInputStream fsdis = fs.open(schemaPath);
         Schema schema = (new Schema.Parser()).parse(fsdis);
         fsdis.close();

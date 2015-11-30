@@ -261,11 +261,11 @@ public class EncodingService extends DatasetsService {
                                       final List<String> columns, final String uidColumn,
                                       final String methodName,
                                       final int N, final int K, final int Q) throws Exception {
-        LOG.debug("input={} , inputSchema={}",input,inputSchema);
-        LOG.debug("output={} , outputSchema={}",output,outputSchema);
-        LOG.debug("selected column names={}", columns);
-        LOG.debug("uidColumn=",uidColumn);
-        LOG.debug("method = {} (" + N + ", " + K +", " + Q + ")",methodName);
+        LOG.info("input={} , inputSchema={}", input, inputSchema);
+        LOG.info("output={} , outputSchema={}", output, outputSchema);
+        LOG.info("selected column names={}", columns);
+        LOG.info("uidColumn=", uidColumn);
+        LOG.info("method = {} (" + N + ", " + K + ", " + Q + ")", methodName);
 
         final String[] args = new String[10];
         args[0] = input.toString();
@@ -299,6 +299,12 @@ public class EncodingService extends DatasetsService {
                                 final Set<File> avroFiles, final File schemaFile,
                                 final File encodedFile, final File encodedSchemaFile)
             throws IOException, BloomFilterEncodingException {
+
+        LOG.info("Encoding local file(s)     : {}",avroFiles);
+        LOG.info("Encoding local schema file : {}",schemaFile);
+        LOG.info("Selected columns to encode : {}",selectedColumnNames);
+        LOG.info("method = {} (" + N + ", " + K + ", " + Q + ")", methodName);
+
         final Schema schema = loadAvroSchemaFromFile(schemaFile);
 
         BaseBloomFilterEncoding encoding;
@@ -317,11 +323,6 @@ public class EncodingService extends DatasetsService {
         }
         encoding.createEncodingFields();
         encoding.generateEncodingSchema();
-
-        LOG.info("Encoding local file(s)     : {}",avroFiles);
-        LOG.info("Encoding local schema file : {}",schemaFile);
-        LOG.info("Selected columns to encode : {}",selectedColumnNames);
-        LOG.info("Encoding method            : {}", encoding.toString());
 
         final PrintWriter schemaWriter = new PrintWriter(encodedSchemaFile);
         schemaWriter.print(encoding.getEncodingSchema().toString(true));
@@ -435,6 +436,8 @@ public class EncodingService extends DatasetsService {
                 if(!BaseBloomFilterEncoding.SUPPORTED_TYPES.contains(field.schema().getType())) continue;
                 objs[i] = record.get(field.name());
                 types[i] = field.schema().getType();
+                LOG.debug("obj[ " + i + "]" + objs[i].getClass());
+                LOG.debug("type[ " + i + "]" + types[i].getClass());
                 i++;
             }
             encodingRecord.put(fieldName, encoding.encode(objs, types, fieldSchema));
@@ -448,6 +451,8 @@ public class EncodingService extends DatasetsService {
                 if(!BaseBloomFilterEncoding.SUPPORTED_TYPES.contains(field.schema().getType())) continue;
                 Object obj = record.get(field.name());
                 Schema.Type type = field.schema().getType();
+                LOG.debug("obj " + obj.getClass());
+                LOG.debug("type " + type.getClass());
                 Schema.Field encodingField = ((MultiBloomFilterEncoding) encoding).getEncodingColumnForName(field.name());
                 String fieldName = encodingField.name();
                 Schema fieldSchema = encodingField.schema();

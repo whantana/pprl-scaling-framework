@@ -2,6 +2,7 @@ package gr.upatras.ceid.pprl.encoding;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
+import org.apache.avro.util.Utf8;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -128,7 +129,10 @@ public class SimpleBloomFilterEncoding extends BaseBloomFilterEncoding {
             String[] qGrams;
             switch(type) {
                 case STRING:
-                    qGrams = QGram.generateQGrams((String) obj,Q);
+                    if(obj instanceof Utf8)
+                        qGrams = QGram.generateQGrams(obj.toString(),Q);
+                    else
+                        qGrams = QGram.generateQGrams((String)obj,Q);
                     break;
                 case BOOLEAN:
                     qGrams = QGram.generateQGrams((Boolean) obj,Q);

@@ -91,7 +91,7 @@ public class EncodingServiceTest  extends AbstractMapReduceTests {
 
     @Test
     public void test3() throws URISyntaxException, BloomFilterEncodingException, DatasetException, IOException {
-        saveSamples();
+        getSampleAndEncodeIt();
     }
 
     private void getSample(String name,int size) throws DatasetException, IOException {
@@ -177,35 +177,44 @@ public class EncodingServiceTest  extends AbstractMapReduceTests {
         LOG.info("After drop encoded datasets file size : {} bytes",len);
     }
 
-    private void saveSamples() throws DatasetException, IOException, URISyntaxException, BloomFilterEncodingException {
+    private void getSampleAndEncodeIt() throws DatasetException, IOException, URISyntaxException, BloomFilterEncodingException {
         String parent = new File(getClass().getResource("/dblp/avro").toURI()).getParent();
         File[] dblp = {
                 new File(parent,"sample.avsc"),
                 new File(parent,"sample.avro")
         };
+
         dblp[0].createNewFile();
         dblp[1].createNewFile();
         datasetsService.saveSampleOfDataset("dblp", 5, dblp[0], dblp[1]);
+
         File[] enc_1 = {
-            new File(parent,"enc_1.avsc"),
-            new File(parent,"enc_1.avro")
+                new File(parent,"enc_SIMPLE.avsc"),
+                new File(parent,"enc_SIMPLE.avro")
         };
+        enc_1[0].createNewFile();
+        enc_1[1].createNewFile();
         File[] enc_2 = {
-                    new File(parent,"enc_2.avsc"),
-                    new File(parent,"enc_2.avro")
-                };
+                new File(parent,"enc_MULTI.avsc"),
+                new File(parent,"enc_MULTI.avro")
+        };
+        enc_2[0].createNewFile();
+        enc_2[1].createNewFile();
         File[] enc_3 = {
-                    new File(parent,"enc_3.avsc"),
-                    new File(parent,"enc_3.avro")
-                };
+                new File(parent,"enc_ROW.avsc"),
+                new File(parent,"enc_ROW.avro")
+        };
+        enc_3[0].createNewFile();
+        enc_3[1].createNewFile();
+
         Set<File> files = new TreeSet<File>();
         files.add(dblp[1]);
 
-        encodingService.encodeLocalFile(Arrays.asList("author"),
+        encodingService.encodeLocalFile(Arrays.asList("author","title"),
                 "SIMPLE", 1024, 30, 2, files, dblp[0], enc_1[1], enc_1[0]);
-        encodingService.encodeLocalFile(Arrays.asList("author"),
+        encodingService.encodeLocalFile(Arrays.asList("author","title"),
                 "MULTI", 1024, 30, 2, files, dblp[0], enc_2[1], enc_2[0]);
-        encodingService.encodeLocalFile(Arrays.asList("author"),
+        encodingService.encodeLocalFile(Arrays.asList("author","title"),
                 "ROW", 1024, 30, 2, files, dblp[0], enc_3[1], enc_3[0]);
     }
 

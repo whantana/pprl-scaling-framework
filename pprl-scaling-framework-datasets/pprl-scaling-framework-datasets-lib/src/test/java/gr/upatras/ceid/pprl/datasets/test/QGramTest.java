@@ -1,7 +1,7 @@
-package gr.upatras.ceid.pprl.encoding.test;
+package gr.upatras.ceid.pprl.datasets.test;
 
 
-import gr.upatras.ceid.pprl.encoding.QGram;
+import gr.upatras.ceid.pprl.datasets.QGramUtil;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,8 +13,6 @@ import java.util.TreeMap;
 public class QGramTest {
 
     private static Logger LOG = LoggerFactory.getLogger(QGramTest.class);
-
-
 
     private static final String LOREM_IPSUM = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. " +
             "Suspendisse ultrices, felis ut vestibulum fringilla, massa tellus blandit lacus, ac faucibus ipsum" +
@@ -31,13 +29,13 @@ public class QGramTest {
     @Test
     public void test1() {
         final String small = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
-        String[] unigrams = QGram.generateQGrams(small, 1);
+        String[] unigrams = QGramUtil.generateQGrams(small, 1);
         if(unigrams==null) {LOG.error("unigrams == null"); return;}
         LOG.info("Small unigrams count = {}",unigrams.length);
-        String[] bigrams = QGram.generateQGrams(small, 2);
+        String[] bigrams = QGramUtil.generateQGrams(small, 2);
         if(bigrams==null) {LOG.error("bigrams == null"); return;}
         LOG.info("Small bigrams count = {}",bigrams.length);
-        String[] trigrams = QGram.generateQGrams(small, 3);
+        String[] trigrams = QGramUtil.generateQGrams(small, 3);
         if(trigrams==null) {LOG.error("trigrams == null"); return;}
         LOG.info("Small trigrams count = {}",trigrams.length);
     }
@@ -45,7 +43,7 @@ public class QGramTest {
     @Test
     public void test2() {
         Map<String,Integer> bigramsHashed = new TreeMap<String,Integer>();
-        String[] bigrams = QGram.generateQGrams(LOREM_IPSUM, 2);
+        String[] bigrams = QGramUtil.generateQGrams(LOREM_IPSUM, 2);
         if(bigrams == null) {LOG.error("bigrams == null"); return;}
         for(String s : bigrams) {
             if(bigramsHashed.containsKey(s)) bigramsHashed.put(s, bigramsHashed.get(s) + 1);
@@ -84,17 +82,17 @@ public class QGramTest {
         ints[2] = big;
         ints[3] = negative;
         for(int i : ints) {
-            String[] unigrams = QGram.generateQGrams(i, 1);
+            String[] unigrams = QGramUtil.generateQGrams(i, 1);
             if(unigrams != null) {
                 LOG.info("for int={}, unigrams count = {}", i, unigrams.length);
                 LOG.info("{}", Arrays.toString(unigrams));
             }
-            String[] bigrams = QGram.generateQGrams(i, 2);
+            String[] bigrams = QGramUtil.generateQGrams(i, 2);
             if(bigrams != null) {
                 LOG.info("for int={}, bigrams count = {}", i, bigrams.length);
                 LOG.info("{}", Arrays.toString(bigrams));
             }
-            String[] trigrams = QGram.generateQGrams(i, 3);
+            String[] trigrams = QGramUtil.generateQGrams(i, 3);
             if(trigrams != null) {
                 LOG.info("for int={}, trigrams count = {}", i, trigrams.length);
                 LOG.info("{}", Arrays.toString(trigrams));
@@ -114,17 +112,17 @@ public class QGramTest {
         dbls[2] = big;
         dbls[3] = negative;
         for(double i : dbls) {
-            String[] unigrams = QGram.generateQGrams(i, 1);
+            String[] unigrams = QGramUtil.generateQGrams(i, 1);
             if(unigrams != null) {
                 LOG.info("for int={}, unigrams count = {}", i, unigrams.length);
                 LOG.info("{}", Arrays.toString(unigrams));
             }
-            String[] bigrams = QGram.generateQGrams(i, 2);
+            String[] bigrams = QGramUtil.generateQGrams(i, 2);
             if(bigrams != null) {
                 LOG.info("for int={}, bigrams count = {}", i, bigrams.length);
                 LOG.info("{}", Arrays.toString(bigrams));
             }
-            String[] trigrams = QGram.generateQGrams(i, 3);
+            String[] trigrams = QGramUtil.generateQGrams(i, 3);
             if(trigrams != null) {
                 LOG.info("for int={}, trigrams count = {}", i, trigrams.length);
                 LOG.info("{}", Arrays.toString(trigrams));

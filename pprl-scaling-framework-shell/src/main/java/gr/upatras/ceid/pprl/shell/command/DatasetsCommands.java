@@ -188,12 +188,38 @@ public class DatasetsCommands implements CommandMarker {
         }
     }
 
-    @CliCommand(value = "dat_get_stats", help = "Retrieve useful statistics of the imported dataset.")
-    public String datasetsStatsCommand(
+    @CliCommand(value = "dat_calc_stats", help = "Calculate useful statistics of the imported dataset.")
+    public String datasetsCalcStatsCommand(
             @CliOption(key = {"name"}, mandatory = true, help = "Dataset name.")
-            final String name) {
-        LOG.info("Column stats for dataset {} : ",name);
-        return "NOT IMPLEMENTED";
+            final String name,
+            @CliOption(key= {"Q"}, mandatory = false, help = "(Optional) Q for Q-Grams. Default value is 2.")
+            final String Qstr) throws DatasetException {
+        try {
+            int Q = (Qstr == null) ? 2 : Integer.parseInt(Qstr);
+            LOG.info("Calculating stats : [Average field length, Avergage {}-gram count] for dataset {}", Q, name);
+            final String hdfsPath = service.calculateDatasetStats(name, Q);
+            LOG.info("Calculated Stats stored at {}.", hdfsPath);
+            return "DONE";
+        } catch (Exception e) {
+            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+        }
+    }
+
+    @CliCommand(value = "dat_read_stats", help = "Read useful statistics of the imported dataset.")
+    public String datasetsReadStatsCommand(
+            @CliOption(key = {"name"}, mandatory = true, help = "Dataset name.")
+            final String name,
+            @CliOption(key= {"Q"}, mandatory = false, help = "(Optional) Q for Q-Grams. Default value is 2.")
+            final String Qstr) throws DatasetException {
+        try {
+            int Q = (Qstr == null) ? 2 : Integer.parseInt(Qstr);
+            LOG.info("Reading stats for dataset %s on %-grams", name , Q);
+            final String reply = service.readDatasetStats(name, Q);
+            LOG.info(reply);
+            return "DONE";
+        } catch (Exception e) {
+            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+        }
     }
 
 

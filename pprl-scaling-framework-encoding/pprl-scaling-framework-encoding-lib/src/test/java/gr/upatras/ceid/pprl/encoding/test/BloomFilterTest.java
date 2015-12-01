@@ -1,7 +1,7 @@
 package gr.upatras.ceid.pprl.encoding.test;
 
+import gr.upatras.ceid.pprl.datasets.QGramUtil;
 import gr.upatras.ceid.pprl.encoding.BloomFilter;
-import gr.upatras.ceid.pprl.encoding.QGram;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +39,7 @@ public class BloomFilterTest {
         final BloomFilter bloomFilter = new BloomFilter(N,K);
         LOG.info("before FPP={}", bloomFilter.calcFPP());
         Set<String> distinctBigrams = new TreeSet<String>();
-        String[] bigrams = QGram.generateQGrams(LOREM_IPSUM, 2);
+        String[] bigrams = QGramUtil.generateQGrams(LOREM_IPSUM, 2);
         if(bigrams == null) { LOG.error("bigrams is null"); return; }
         for(String bigram : bigrams) {
             bloomFilter.addData(bigram.getBytes(Charset.forName("UTF-8")));

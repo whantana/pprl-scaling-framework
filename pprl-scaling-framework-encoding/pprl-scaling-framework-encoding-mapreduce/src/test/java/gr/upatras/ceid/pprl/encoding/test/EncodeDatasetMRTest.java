@@ -143,10 +143,4 @@ public class EncodeDatasetMRTest {
         fis.close();
         return schema;
     }
-
-    private static void saveAvroSchemaToFile(final Schema schema,final File schemaFile) throws IOException {
-        FileOutputStream fos = new FileOutputStream(schemaFile,false);
-        fos.write(schema.toString(true).getBytes());
-        fos.close();
-    }
 }

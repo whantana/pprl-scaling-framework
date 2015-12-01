@@ -1,5 +1,6 @@
 package gr.upatras.ceid.pprl.encoding;
 
+import gr.upatras.ceid.pprl.datasets.QGramUtil;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.util.Utf8;
@@ -130,15 +131,15 @@ public class SimpleBloomFilterEncoding extends BaseBloomFilterEncoding {
             switch(type) {
                 case STRING:
                     if(obj instanceof Utf8)
-                        qGrams = QGram.generateQGrams(obj.toString(),Q);
+                        qGrams = QGramUtil.generateQGrams(obj.toString(), Q);
                     else
-                        qGrams = QGram.generateQGrams((String)obj,Q);
+                        qGrams = QGramUtil.generateQGrams((String) obj, Q);
                     break;
                 case BOOLEAN:
-                    qGrams = QGram.generateQGrams((Boolean) obj,Q);
+                    qGrams = QGramUtil.generateQGrams((Boolean) obj, Q);
                     break;
                 default:
-                    qGrams =  QGram.generateQGrams((Number) obj,Q);
+                    qGrams =  QGramUtil.generateQGrams((Number) obj, Q);
                     break;
             }
             for(String qGram : qGrams) bloomFilter.addData(qGram.getBytes("UTF-8"));

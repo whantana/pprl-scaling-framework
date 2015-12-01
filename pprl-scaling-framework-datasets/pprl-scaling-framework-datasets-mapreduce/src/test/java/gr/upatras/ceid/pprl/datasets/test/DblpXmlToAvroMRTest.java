@@ -42,7 +42,7 @@ public class DblpXmlToAvroMRTest {
     @Before
     public void setUp() throws URISyntaxException, IOException, InterruptedException {
         // find test file
-        final URL resourceUrl = getClass().getResource("/dblp_sample.xml");
+        final URL resourceUrl = getClass().getResource("/dblp.xml");
         assertNotNull("Test file missing", resourceUrl);
         File testFile = new File(resourceUrl.toURI());
         assertNotNull("Test file missing",testFile);

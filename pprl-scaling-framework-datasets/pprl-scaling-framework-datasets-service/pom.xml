@@ -72,6 +72,21 @@
                                     <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
                                 </artifactItem>
                                 <artifactItem>
+                                    <groupId>gr.upatras.ceid</groupId>
+                                    <artifactId>pprl-scaling-framework-datasets-lib</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.apache.avro</groupId>
+                                    <artifactId>avro-mapred</artifactId>
+                                    <version>${avro.version}</version>
+                                    <classifier>hadoop2</classifier>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
                                     <groupId>org.apache.avro</groupId>
                                     <artifactId>avro-mapred</artifactId>
                                     <version>${avro.version}</version>

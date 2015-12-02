@@ -127,21 +127,7 @@ public class SimpleBloomFilterEncoding extends BaseBloomFilterEncoding {
         for (int i = 0; i < objs.length ; i++) {
             Object obj = objs[i];
             Schema.Type type = types[i];
-            String[] qGrams;
-            switch(type) {
-                case STRING:
-                    if(obj instanceof Utf8)
-                        qGrams = QGramUtil.generateQGrams(obj.toString(), Q);
-                    else
-                        qGrams = QGramUtil.generateQGrams((String) obj, Q);
-                    break;
-                case BOOLEAN:
-                    qGrams = QGramUtil.generateQGrams((Boolean) obj, Q);
-                    break;
-                default:
-                    qGrams =  QGramUtil.generateQGrams((Number) obj, Q);
-                    break;
-            }
+            String[] qGrams = QGramUtil.generateQGrams(obj,type,Q);
             for(String qGram : qGrams) bloomFilter.addData(qGram.getBytes("UTF-8"));
         }
         return new GenericData.Fixed(encodingFieldSchema,bloomFilter.getByteArray());

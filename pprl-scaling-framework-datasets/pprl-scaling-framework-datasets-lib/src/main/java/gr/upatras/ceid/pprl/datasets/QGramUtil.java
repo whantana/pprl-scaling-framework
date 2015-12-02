@@ -1,8 +1,26 @@
 package gr.upatras.ceid.pprl.datasets;
 
-public class QGramUtil {
+import org.apache.avro.Schema;
 
-    public static int calcQgramsCount(final String string, int Q) {
+public class QGramUtil {
+    
+    public static int calcQgramsCount(final Object obj, final Schema.Type type, final int Q) {
+        switch(type) {
+            case BOOLEAN:
+                return calcQgramsCount((Boolean) obj, Q);
+            case STRING:
+                return calcQgramsCount(String.valueOf(obj), Q);
+            case INT:
+            case LONG:
+            case DOUBLE:
+            case FLOAT:
+                return calcQgramsCount((Number) obj, Q);
+            default:
+                return 0;
+        }
+    }
+
+    public static int calcQgramsCount(final String string, final int Q) {
         String onlyAlnum = string.replaceAll("[^\\pL\\pN\\s]+", " ");
         String onlyCapitals = onlyAlnum.toUpperCase();
         String replaceSpaces = onlyCapitals.replaceAll("\\s+","_");
@@ -14,7 +32,7 @@ public class QGramUtil {
         return  finalString.length() - Q + 1;
     }
 
-    public static int calcQgramsCount(final Number number, int Q) {
+    public static int calcQgramsCount(final Number number, final int Q) {
         String string = String.valueOf(number);
         String onlyNumbers = string.replaceAll("[^\\pN\\s]+", "_");
         String finalString = (!onlyNumbers.startsWith("_")) ? "" +
@@ -24,13 +42,29 @@ public class QGramUtil {
         return  finalString.length() - Q + 1;
     }
 
-    public static int calcQgramsCount(final Boolean bool, int Q) {
-        String string = bool ? "T":"F";
+    public static int calcQgramsCount(final Boolean bool, final int Q) {
+        String string = String.valueOf(bool);
         String finalString = "_" + string + "_";
         return finalString.length() - Q + 1;
     }
 
-    public static String[] generateQGrams(final String string, int Q) {
+    public static String[] generateQGrams(final Object obj, final Schema.Type type, final int Q) {
+        switch(type) {
+            case BOOLEAN:
+                return generateQGrams((Boolean) obj, Q);
+            case STRING:
+                return generateQGrams(String.valueOf(obj), Q);
+            case INT:
+            case LONG:
+            case DOUBLE:
+            case FLOAT:
+                return generateQGrams((Number) obj,Q);
+            default:
+                return new String[0];
+        }
+    }
+
+    public static String[] generateQGrams(final String string, final int Q) {
         String onlyAlnum = string.replaceAll("[^\\pL\\pN\\s]+", " ");
         String onlyCapitals = onlyAlnum.toUpperCase();
         String replaceSpaces = onlyCapitals.replaceAll("\\s+","_");
@@ -48,7 +82,7 @@ public class QGramUtil {
         return qGrams;
     }
 
-    public static String[] generateQGrams(final Number number, int Q) {
+    public static String[] generateQGrams(final Number number, final int Q) {
         String string = String.valueOf(number);
         String onlyNumbers = string.replaceAll("[^\\pN\\s]+", "_");
         String finalString = (!onlyNumbers.startsWith("_")) ? "" +
@@ -64,7 +98,7 @@ public class QGramUtil {
         return qGrams;
     }
 
-    public static String[] generateQGrams(final Boolean bool, int Q) {
+    public static String[] generateQGrams(final Boolean bool, final int Q) {
         String string = bool ? "T":"F";
         String finalString = "_" + string + "_";
         int len = finalString.length();

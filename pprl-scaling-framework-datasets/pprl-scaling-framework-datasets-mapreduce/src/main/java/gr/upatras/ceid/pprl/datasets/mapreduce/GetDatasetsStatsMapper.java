@@ -29,37 +29,13 @@ public class GetDatasetsStatsMapper extends Mapper<AvroKey<GenericRecord>, NullW
     @Override
     protected void map(AvroKey<GenericRecord> key, NullWritable value, Context context) throws IOException, InterruptedException {
         final GenericRecord record = key.datum();
-
         for (Schema.Field field : schema.getFields()) {
             record.get(field.name());
             Object obj = record.get(field.name());
             Schema.Type type = field.schema().getType();
-            int fieldLength = -1;
-            int qGramsCount = -1;
-            switch(type) {
-                case BOOLEAN:
-                    fieldLength = 1;
-                    qGramsCount = QGramUtil.calcQgramsCount((Boolean)obj,Q);
-                    break;
-                case STRING:
-                    fieldLength = obj.toString().length();
-                    qGramsCount = QGramUtil.calcQgramsCount(obj.toString(),Q);
-                    break;
-                case INT:
-                case LONG:
-                case DOUBLE:
-                case FLOAT:
-                    fieldLength = String.valueOf(obj).length();
-                    qGramsCount = QGramUtil.calcQgramsCount((Number) obj,Q);
-                    break;
-                default:
-                    break;
-            }
-            if(fieldLength <= 0 || qGramsCount <= 0) continue;
-
             DatasetStatsWritable dsw = new DatasetStatsWritable();
-            dsw.setFieldLength((double)fieldLength);
-            dsw.setFieldQgramCount((double)qGramsCount);
+            dsw.setFieldLength((double)String.valueOf(obj).length());
+            dsw.setFieldQgramCount((double)QGramUtil.calcQgramsCount(obj,type,Q));
             context.write(new Text(field.name()), dsw);
         }
     }

@@ -1,0 +1,16 @@
+{
+  "type" : "record",
+  "name" : "PPRL_Encoding_FBF_1024_30_2_DblpPublication",
+  "namespace" : "encoding.schema.fbf.1024.30.2",
+  "doc" : "PPRL Encoding of DblpPublication",
+  "fields" : [ {
+    "name" : "encoding_field_1024_30_2_author",
+    "type" : {
+      "type" : "fixed",
+      "name" : "encoding_field_1024_30_2_author",
+      "namespace" : "",
+      "size" : 128
+    },
+    "doc" : "Encoding(FBF_1024_30_2) of field author"
+  } ]
+}

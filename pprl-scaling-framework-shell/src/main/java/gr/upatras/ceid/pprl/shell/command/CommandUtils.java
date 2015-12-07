@@ -41,32 +41,19 @@ public class CommandUtils {
         return avroFiles;
     }
 
-    public static String[] retrieveColumns(final String columnsStr) throws IllegalArgumentException {
+    public static String[] retrieveFields(final String fieldsStr) throws IllegalArgumentException {
         String[] columns = null;
-        if (columnsStr != null && columnsStr.contains(",")) {
-            columns = columnsStr.split(",");
+        if (fieldsStr != null && fieldsStr.contains(",")) {
+            columns = fieldsStr.split(",");
             for (String c : columns)
                 if (!c.matches("^[a-z_A-Z][a-z_A-Z0-9]*$"))
-                    throw new IllegalArgumentException("Column names must contain only alphanumeric characters and underscores.");
-        } else if (columnsStr != null) {
-            if (!columnsStr.matches("^[a-z_A-Z][a-z_A-Z0-9]*$"))
-                throw new IllegalArgumentException("Column names must contain only alphanumeric characters and underscores.");
+                    throw new IllegalArgumentException("Field names must contain only alphanumeric characters and underscores.");
+        } else if (fieldsStr != null) {
+            if (!fieldsStr.matches("^[a-z_A-Z][a-z_A-Z0-9]*$"))
+                throw new IllegalArgumentException("Field names must contain only alphanumeric characters and underscores.");
             columns = new String[1];
-            columns[0] = columnsStr;
+            columns[0] = fieldsStr;
         }
         return columns;
-    }
-
-    public static String retrieveName(final String name, final String methodName , int N, int K, int Q,
-                                      final String[] columns) {
-        if (name == null) {
-            String finalName = String.format("enc_%s_%d_%d_%d", methodName, N, K, Q);
-            if (columns != null) for (String column : columns) finalName += "_" + column;
-            return finalName;
-        } else {
-            if (!name.matches("^[a-z_A-Z][a-z_A-Z0-9]*$"))
-                return "Error. Encoded Dataset name must contain only alphanumeric characters and underscores.";
-            return name;
-        }
     }
 }

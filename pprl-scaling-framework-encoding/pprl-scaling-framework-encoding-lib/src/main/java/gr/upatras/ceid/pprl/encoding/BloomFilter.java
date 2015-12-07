@@ -12,27 +12,9 @@ import java.util.Set;
 public class BloomFilter {
 
     private static final String SECRET_KEY = "ZIKRETQI";
-    private static final Mac hmacmd5;
-    private static final Mac hmacsha1;
-    static {
-        Mac tmp;
-        Mac tmp1;
-        try {
-            tmp = Mac.getInstance("HmacMD5");
-            tmp.init(new SecretKeySpec(SECRET_KEY.getBytes(), "HmacMD5"));
-            tmp1 = Mac.getInstance("HmacSHA1");
-            tmp1.init(new SecretKeySpec(SECRET_KEY.getBytes(), "HmacSHA1"));
-        } catch (NoSuchAlgorithmException e) {
-            tmp = null;
-            tmp1 = null;
-        } catch (InvalidKeyException e) {
-            tmp = null;
-            tmp1 = null;
-        }
-        hmacmd5 = tmp;
-        hmacsha1 = tmp1;
-    }
 
+    private final Mac HMAC_MD5;
+    private final Mac HMAC_SHA1;
     private int N;
     private int K;
     private int addedElementsCount;
@@ -40,13 +22,18 @@ public class BloomFilter {
     private int zeroesCount;
     private byte[] byteArray;
 
-    public BloomFilter(final int N, final int K) {
+    public BloomFilter(final int N, final int K)
+            throws NoSuchAlgorithmException, InvalidKeyException {
         this.N = N;
         this.K = K;
         byteArray = new byte[(int) Math.ceil(N/(double)8)];
         addedElementsCount = 0;
         onesCount = 0;
         zeroesCount = N;
+        HMAC_MD5 = Mac.getInstance("HmacMD5");
+        HMAC_MD5.init(new SecretKeySpec(SECRET_KEY.getBytes(), "HmacMD5"));
+        HMAC_SHA1 = Mac.getInstance("HmacSHA1");
+        HMAC_SHA1.init(new SecretKeySpec(SECRET_KEY.getBytes(), "HmacSHA1"));
     }
 
 
@@ -54,10 +41,17 @@ public class BloomFilter {
         return Math.pow((1 - Math.exp(-K * (double) addedElementsCount / (double) N)), K);
     }
 
+    public Mac getHmacMD5() {
+        return HMAC_MD5;
+    }
 
-    public static int[] createHashesV1(final byte[] data,int N,int K) {
-        byte[] sha1Digest = hmacsha1.doFinal(data);
-        byte[] md5Digest = hmacmd5.doFinal(data);
+    public Mac getHmacSHA1() {
+        return HMAC_SHA1;
+    }
+
+    public static int[] createHashesV1(final byte[] data,int N,int K, final Mac HMAC_MD5, final Mac HMAC_SHA1) {
+        byte[] sha1Digest = HMAC_SHA1.doFinal(data);
+        byte[] md5Digest = HMAC_MD5.doFinal(data);
         final BigInteger SHA1 = new BigInteger(sha1Digest);
         final BigInteger MD5 = new BigInteger(md5Digest);
         final int[] hashes = new int[K];
@@ -71,18 +65,16 @@ public class BloomFilter {
         return hashes;
     }
 
-    public static int[] createHashesV2(final byte[] data,int N,int K) {
+    public static int[] createHashesV2(final byte[] data,int N,int K, final Mac HMAC_MD5) {
         int k = 0;
         byte salt = 0;
         final int[] hashes = new int[K];
 
         while(k < K) {
             byte[] md5Digest;
-            synchronized (hmacmd5) {
-                hmacmd5.update(salt);
-                salt++;
-                md5Digest = hmacmd5.doFinal(data);
-            }
+            HMAC_MD5.update(salt);
+            salt++;
+            md5Digest = HMAC_MD5.doFinal(data);
             for (int i = 0; i < md5Digest.length/4 && k < K; i++,k++) {
                 int h = 0;
                 for (int j = (i*4); j < (i*4)+4; j++) {
@@ -96,12 +88,16 @@ public class BloomFilter {
     }
 
     public int[] addData(final byte[] data) {
-        final int[] positions = createHashesV1(data,N,K);
+        final int[] positions = createHashesV1(data,N,K,getHmacMD5(),getHmacSHA1());
+        //final int[] positions = createHashesV2(data,N,K,getHmacMD5());
+        return setPositions(positions);
+    }
 
+    public int[] setPositions(final int[] positions) {
         for(int position : positions) {
-            if(!getBit(position,byteArray)) {
+            if(!getBit(position)) {
                 onesCount++; zeroesCount--;
-                setBit(position,byteArray);
+                setBit(position);
             }
         }
         addedElementsCount++;

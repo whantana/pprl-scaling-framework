@@ -7,6 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.Charset;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -35,7 +37,7 @@ public class BloomFilterTest {
     private static final int K = 2;
 
     @Test
-    public void test1() {
+    public void test1() throws InvalidKeyException, NoSuchAlgorithmException {
         final BloomFilter bloomFilter = new BloomFilter(N,K);
         LOG.info("before FPP={}", bloomFilter.calcFPP());
         Set<String> distinctBigrams = new TreeSet<String>();

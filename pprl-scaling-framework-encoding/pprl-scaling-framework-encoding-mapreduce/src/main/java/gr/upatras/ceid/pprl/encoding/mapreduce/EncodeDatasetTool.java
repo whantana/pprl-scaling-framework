@@ -1,5 +1,6 @@
 package gr.upatras.ceid.pprl.encoding.mapreduce;
 
+import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
 import org.apache.avro.Schema;
 import org.apache.avro.mapreduce.AvroJob;
@@ -22,13 +23,9 @@ import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static gr.upatras.ceid.pprl.encoding.mapreduce.BaseBloomFilterEncodingMapper.*;
-
 public class EncodeDatasetTool extends Configured implements Tool {
 
     private static final String JOB_DESCRIPTION = "Encode Dataset";
-
-    private static final String[] AVAILABLE_METHODS = {"SIMPLE","MULTI","ROW"};
 
     private static final Logger LOG = LoggerFactory.getLogger(EncodeDatasetTool.class);
 
@@ -40,8 +37,10 @@ public class EncodeDatasetTool extends Configured implements Tool {
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
         if (args.length != 10) {
-            LOG.error(" Usage: EncodeDatasetTool <input-path> <input-schema> <encoding-path> <encoding-schema>" +
-                    "\n<col0,col1,...,colN> <uid_col> <SIMPLE|MULTI|ROW> <N> <K> <Q>");
+            LOG.error(" Usage: EncodeDatasetTool <input-path> <input-schema> <encoding-path> <encoding-schema>\n" +
+                    "\t<sel_field_1,sel_field_2,...,sel_field_M>\n" +
+                    "\t<rest_field_1,rest_field_2,...,rest_field_R>\n" +
+                    "\t<FBF|RBF> <N_1,N_2,...,N_M> <K> <Q>");
             return -1;
         }
 
@@ -50,31 +49,41 @@ public class EncodeDatasetTool extends Configured implements Tool {
         final Path inputSchemaPath = new Path(args[1]);
         final Schema inputSchema =
                 loadAvroSchemaFromHdfs(FileSystem.get(conf), inputSchemaPath);
+
         final Path outputDataPath = new Path(args[2]);
         final Path outputSchemaPath = new Path(args[3]);
         final Schema outputSchema =
                 loadAvroSchemaFromHdfs(FileSystem.get(conf), outputSchemaPath);
-        final String[] encodingColumns = args[4].split(",");
-        final String uidColumn = args[5];
-        final String encodingMethod = args[6];
-        if(!Arrays.asList(AVAILABLE_METHODS).contains(encodingMethod))
-            throw new IllegalArgumentException("Error : " + encodingMethod + " Availble methods are : " + Arrays.toString(AVAILABLE_METHODS));
-        final int selectedMethod = Arrays.asList(AVAILABLE_METHODS).indexOf(encodingMethod);
-        final int N = Integer.parseInt(args[7]);
+
+        final String[] selectedFielNames = args[4].split(",");
+        final String[] restFieldNames = args[5].split(",");
+        final String methodName = args[6];
+        if(!BloomFilterEncoding.AVAILABLE_METHODS.contains(methodName))
+            throw new IllegalArgumentException("Error : " + methodName +
+                    " Availble methods are : " + BloomFilterEncoding.AVAILABLE_METHODS);
+        final int[] N = new int[args[7].split(",").length];
+        if(N.length != selectedFielNames.length)
+            throw new IllegalArgumentException("Error : N count must agree with selected field names count.");
+        final String[] Nstr = new String[N.length];
+        for (int i = 0; i < N.length; i++) {
+            N[i] = Integer.parseInt(args[7].split(",")[i]);
+            Nstr[i] = args[7].split(",")[i];
+        }
         final int K = Integer.parseInt(args[8]);
         final int Q = Integer.parseInt(args[9]);
 
-        conf.set(INPUT_SCHEMA_KEY, inputSchema.toString());
-        conf.set(OUTPUT_SCHEMA_KEY, outputSchema.toString());
-        conf.set(UID_COLUMN_KEY, uidColumn);
-        conf.setStrings(SELECTED_COLUMNS_KEY, encodingColumns);
-        conf.setInt(N_KEY, N);
-        conf.setInt(K_KEY,K);
-        conf.setInt(Q_KEY,Q);
+        conf.set(BloomFilterEncodingMapper.METHOD_NAME_KEY, methodName);
+        conf.set(BloomFilterEncodingMapper.INPUT_SCHEMA_KEY, inputSchema.toString());
+        conf.set(BloomFilterEncodingMapper.OUTPUT_SCHEMA_KEY, outputSchema.toString());
+        conf.setStrings(BloomFilterEncodingMapper.SELECTED_FIELDS_KEY, selectedFielNames);
+        conf.setStrings(BloomFilterEncodingMapper.REST_FIELDS_KEY, restFieldNames);
+        conf.setStrings(BloomFilterEncodingMapper.N_KEY, Nstr);
+        conf.setInt(BloomFilterEncodingMapper.K_KEY,K);
+        conf.setInt(BloomFilterEncodingMapper.Q_KEY,Q);
 
         // set description
         String description = JOB_DESCRIPTION + " ("
-                + String.format(" N=%d, K=%d, Q=%d",N,K,Q) + ", method=" + encodingMethod + ","
+                + String.format(" N=%s, K=%d, Q=%d",Arrays.toString(N),K,Q) + ", method=" + methodName + ","
                 + "input-path=" + shortenUrl(inputDataPath.toString()) + ", "
                 + "input-schema-path=" + shortenUrl(inputSchemaPath.toString()) + ", "
                 + "output-path=" + shortenUrl(outputDataPath.toString()) + ", "
@@ -92,18 +101,7 @@ public class EncodeDatasetTool extends Configured implements Tool {
         job.setInputFormatClass(AvroKeyInputFormat.class);
 
         // setup mapper
-        switch(selectedMethod) {
-            case 0 :
-                job.setMapperClass(SimpleBloomFilterEncodingMapper.class);
-                break;
-            case 1 :
-                job.setMapperClass(MultiBloomFilterEncodingMapper.class);
-                break;
-            case 2 :
-                job.setMapperClass(RowBloomFilterEncodingMapper.class);
-                break;
-        }
-
+        job.setMapperClass(BloomFilterEncodingMapper.class);
         AvroJob.setMapOutputKeySchema(job, outputSchema);
 
         // setup output

@@ -11,9 +11,7 @@ public class DatasetStatsWritable implements Writable {
     private double fieldLength;
     private double fieldQgramCount;
 
-    public DatasetStatsWritable(){
-
-    }
+    public DatasetStatsWritable(){}
 
     public DatasetStatsWritable(double fieldLength,double fieldQgramCount){
         this.fieldLength = fieldLength;

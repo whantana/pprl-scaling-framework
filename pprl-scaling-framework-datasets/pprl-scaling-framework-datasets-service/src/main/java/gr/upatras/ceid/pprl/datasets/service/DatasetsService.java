@@ -6,7 +6,6 @@ import org.apache.avro.Schema;
 import org.apache.avro.file.DataFileWriter;
 import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsAction;
@@ -364,7 +363,7 @@ public class DatasetsService implements InitializingBean {
             LOG.warn("Home directories permissions should be {}",ONLY_OWNER_PERMISSION);
     }
 
-    protected void loadDatasets() throws IOException {
+    protected void loadDatasets() throws IOException, DatasetException {
         LOG.debug("Loading datasets from " + userDatasetsFile);
         if (pprlClusterHdfs.exists(userDatasetsFile)) {
             final BufferedReader br =
@@ -375,7 +374,7 @@ public class DatasetsService implements InitializingBean {
                 while (line != null) {
                     LOG.debug("read line : {}", line);
                     Dataset dataset = Dataset.fromString(line);
-                    if(dataset != null ) datasets.add(dataset);
+                    datasets.add(dataset);
                     line = br.readLine();
                 }
             } finally {
@@ -384,7 +383,7 @@ public class DatasetsService implements InitializingBean {
         } else FileSystem.create(pprlClusterHdfs, userDatasetsFile, ONLY_OWNER_PERMISSION);
     }
 
-    protected void saveDatasets() throws IOException {
+    protected void saveDatasets() throws IOException, DatasetException {
         LOG.debug("Saving datasets to " + userDatasetsFile);
         if (!pprlClusterHdfs.exists(userDatasetsFile))
             FileSystem.create(pprlClusterHdfs, userDatasetsFile, ONLY_OWNER_PERMISSION);
@@ -393,23 +392,21 @@ public class DatasetsService implements InitializingBean {
         try {
             for (Dataset dataset : datasets) {
                 final String line = Dataset.toString(dataset);
-                if (line != null) {
-                    LOG.debug("Writing line : {}", line);
-                    bw.write(line + "\n");
-                }
+                LOG.debug("Writing line : {}", line);
+                bw.write(line + "\n");
             }
         } finally {
             bw.close();
         }
     }
 
-    protected void addToDatasets(final Dataset d) throws IOException {
+    protected void addToDatasets(final Dataset d) throws IOException, DatasetException {
         if (!datasets.contains(d)) datasets.add(d);
         saveDatasets();
         LOG.debug("Dataset : {}, Added to datasets.", d.getName());
     }
 
-    protected void removeFromDatasets(final Dataset d) throws IOException {
+    protected void removeFromDatasets(final Dataset d) throws IOException, DatasetException {
         if (datasets.contains(d)) datasets.remove(d);
         saveDatasets();
         LOG.debug("Dataset : {}, Removed from datasets.", d.getName());

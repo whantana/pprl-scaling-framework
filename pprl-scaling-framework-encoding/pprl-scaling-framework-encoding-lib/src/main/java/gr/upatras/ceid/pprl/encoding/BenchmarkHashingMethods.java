@@ -1,9 +1,13 @@
 package gr.upatras.ceid.pprl.encoding;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Map;
 import java.util.Random;
@@ -19,6 +23,29 @@ public class BenchmarkHashingMethods {
     private static final int MAX_PROGRESS = 3*K*ITERATIONS;
     private static final char[] CHARSET_AZ_09_ = "_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".toCharArray();
     private static final Random random = new SecureRandom();
+
+    private static final Mac HMAC_MD5;
+    private static final Mac HMAC_SHA1;
+    private static final String SECRET_KEY = "MYZIKRETQI";
+    static {
+        Mac tmp;
+        Mac tmp1;
+        try {
+            tmp = Mac.getInstance("HmacMD5");
+            tmp.init(new SecretKeySpec(SECRET_KEY.getBytes(), "HmacMD5"));
+            tmp1 = Mac.getInstance("HmacSHA1");
+            tmp1.init(new SecretKeySpec(SECRET_KEY.getBytes(), "HmacSHA1"));
+        } catch (NoSuchAlgorithmException e) {
+            tmp = null;
+            tmp1 = null;
+        } catch (InvalidKeyException e) {
+            tmp = null;
+            tmp1 = null;
+        }
+        HMAC_MD5 = tmp;
+        HMAC_SHA1 = tmp1;
+    }
+
 
     public static void main(String[] args) throws IOException {
         System.out.format("Running benchmarks (ITERATIONS=%d,N=%d,K={1:%d},Q=%d)\n", ITERATIONS, N, K, Q);
@@ -57,7 +84,7 @@ public class BenchmarkHashingMethods {
 
 
     private static long[][] benchmarkCreateHashesV1() throws UnsupportedEncodingException {
-        for (int i = 0; i < 3; i++) BloomFilter.createHashesV1(randomQgram().getBytes("UTF-8"), N, 2);
+        for (int i = 0; i < 3; i++) BloomFilter.createHashesV1(randomQgram().getBytes("UTF-8"), N, 2, HMAC_MD5, HMAC_SHA1);
 
         int progress = 0;
         long totalBytesRead = 0;
@@ -72,7 +99,7 @@ public class BenchmarkHashingMethods {
                     long bytesRead = 0;
                     long before = System.currentTimeMillis();
                     while (bytesRead < maxSize) {
-                        BloomFilter.createHashesV1(randomQgram().getBytes("UTF-8"), N, k);
+                        BloomFilter.createHashesV1(randomQgram().getBytes("UTF-8"), N, k, HMAC_MD5, HMAC_SHA1);
                         bytesRead += Q;
                     }
                     long after = System.currentTimeMillis();
@@ -91,7 +118,7 @@ public class BenchmarkHashingMethods {
     }
 
     private static long[][] benchmarkCreateHashesV2() throws UnsupportedEncodingException {
-        for (int i = 0; i < 3; i++) BloomFilter.createHashesV2(randomQgram().getBytes("UTF-8"), N, 2);
+        for (int i = 0; i < 3; i++) BloomFilter.createHashesV2(randomQgram().getBytes("UTF-8"), N, 2, HMAC_MD5);
 
         int progress = 0;
         long totalBytesRead = 0;
@@ -106,7 +133,7 @@ public class BenchmarkHashingMethods {
                     long bytesRead = 0;
                     long before = System.currentTimeMillis();
                     while (bytesRead < maxSize) {
-                        BloomFilter.createHashesV2(randomQgram().getBytes("UTF-8"), N, k);
+                        BloomFilter.createHashesV2(randomQgram().getBytes("UTF-8"), N, k, HMAC_MD5);
                         bytesRead += Q;
                     }
                     long after = System.currentTimeMillis();
@@ -127,7 +154,7 @@ public class BenchmarkHashingMethods {
 
     private static long[][] benchmarkCreateHashesV1MapBacked() throws UnsupportedEncodingException {
 
-        for (int i = 0; i < 3; i++) BloomFilter.createHashesV1(randomQgram().getBytes("UTF-8"), N, 2);
+        for (int i = 0; i < 3; i++) BloomFilter.createHashesV1(randomQgram().getBytes("UTF-8"), N, 2, HMAC_MD5, HMAC_SHA1);
 
         Map<String,int[]> map = new TreeMap<String,int[]>();
 
@@ -148,7 +175,7 @@ public class BenchmarkHashingMethods {
                     while (bytesRead < maxSize) {
                         final String qgram = randomQgram();
                         if(!map.containsKey(qgram)) {
-                            map.put(qgram,BloomFilter.createHashesV1(qgram.getBytes("UTF-8"), N, k));
+                            map.put(qgram,BloomFilter.createHashesV1(qgram.getBytes("UTF-8"), N, k, HMAC_MD5, HMAC_SHA1));
                             totalBytesHashed += Q;
                         }
                         bytesRead += Q;
@@ -172,7 +199,7 @@ public class BenchmarkHashingMethods {
 
     private static long[][] benchmarkCreateHashesV2MapBacked() throws UnsupportedEncodingException {
 
-        for (int i = 0; i < 3; i++) BloomFilter.createHashesV2(randomQgram().getBytes("UTF-8"), N, 2);
+        for (int i = 0; i < 3; i++) BloomFilter.createHashesV2(randomQgram().getBytes("UTF-8"), N, 2, HMAC_MD5);
 
         Map<String,int[]> map = new TreeMap<String,int[]>();
 
@@ -193,7 +220,7 @@ public class BenchmarkHashingMethods {
                     while (bytesRead < maxSize) {
                         final String qgram = randomQgram();
                         if(!map.containsKey(qgram)) {
-                            map.put(qgram,BloomFilter.createHashesV2(qgram.getBytes("UTF-8"), N, k));
+                            map.put(qgram,BloomFilter.createHashesV2(qgram.getBytes("UTF-8"), N, k, HMAC_MD5));
                             totalBytesHashed += Q;
                         }
                         bytesRead += Q;
@@ -219,13 +246,13 @@ public class BenchmarkHashingMethods {
 
         long maxBytes = 64*BYTES_LIMIT; //64 MB
 
-        BloomFilter.createHashesV1(randomQgram().getBytes("UTF-8"), N, K);
-        BloomFilter.createHashesV1(randomQgram().getBytes("UTF-8"), N, K);
+        BloomFilter.createHashesV1(randomQgram().getBytes("UTF-8"), N, K, HMAC_MD5, HMAC_SHA1);
+        BloomFilter.createHashesV1(randomQgram().getBytes("UTF-8"), N, K, HMAC_MD5, HMAC_SHA1);
         {
             long bytesRead = 0;
             long start = System.currentTimeMillis();
             while (bytesRead < maxBytes) {
-                BloomFilter.createHashesV1(randomQgram().getBytes("UTF-8"), N, K);
+                BloomFilter.createHashesV1(randomQgram().getBytes("UTF-8"), N, K, HMAC_MD5, HMAC_SHA1);
                 bytesRead += Q;
             }
             long end = System.currentTimeMillis();
@@ -237,7 +264,7 @@ public class BenchmarkHashingMethods {
             long bytesRead = 0;
             long start = System.currentTimeMillis();
             while (bytesRead < maxBytes) {
-                BloomFilter.createHashesV2(randomQgram().getBytes("UTF-8"), N, K);
+                BloomFilter.createHashesV2(randomQgram().getBytes("UTF-8"), N, K, HMAC_MD5);
                 bytesRead += Q;
             }
             long end = System.currentTimeMillis();
@@ -253,7 +280,7 @@ public class BenchmarkHashingMethods {
             while (bytesRead < maxBytes) {
                 String qGram = randomQgram();
                 if(!map.containsKey(qGram)) {
-                    map.put(qGram,BloomFilter.createHashesV1(qGram.getBytes("UTF"), N, K));
+                    map.put(qGram,BloomFilter.createHashesV1(qGram.getBytes("UTF"), N, K, HMAC_MD5, HMAC_SHA1));
                     bytesHashed += Q;
                 }
                 bytesRead += Q;
@@ -272,7 +299,7 @@ public class BenchmarkHashingMethods {
             while (bytesRead < maxBytes) {
                 String qGram = randomQgram();
                 if(!map.containsKey(qGram)) {
-                    map.put(qGram,BloomFilter.createHashesV2(qGram.getBytes("UTF"), N, K));
+                    map.put(qGram,BloomFilter.createHashesV2(qGram.getBytes("UTF"), N, K, HMAC_MD5));
                     bytesHashed += Q;
                 }
                 bytesRead += Q;

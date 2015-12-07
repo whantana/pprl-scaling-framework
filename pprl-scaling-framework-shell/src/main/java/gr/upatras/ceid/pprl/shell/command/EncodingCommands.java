@@ -86,17 +86,8 @@ public class EncodingCommands implements CommandMarker {
             @CliOption(key = {"dataset"}, mandatory = false, help = "(Optional) Imported source dataset name " +
                     "this encoding was generated.")
             final String datasetName,
-            @CliOption(key = {"columns"}, mandatory = false, help = "(Optional) If source dataset is provided" +
-                    " must also provide columns that were encoded.")
-            final String columnsStr,
-            @CliOption(key= {"method"}, mandatory = true, help = "One of the following encoding methods : {SIMPLE,ROW,MULTI}.")
-            final String methodName,
-            @CliOption(key= {"N"}, mandatory = false, help = "(Optional) Length of bloom filter. Default value is 1024.")
-            final String Nstr,
-            @CliOption(key= {"K"}, mandatory = false, help = "(Optional) Hash function count. Default value is 30.")
-            final String Kstr,
-            @CliOption(key= {"Q"}, mandatory = false, help = "(Optional) Q for Q-Grams. Default value is 2.")
-            final String Qstr) {
+            @CliOption(key= {"method"}, mandatory = true, help = "One of the following encoding methods : {FBF,RBF}.")
+            final String methodName){
         try {
             final File schemaFile = new File(schemaFilePath);
             if (!schemaFile.exists()) return "Error. Path \"" + schemaFilePath + "\" does not exist.";
@@ -109,36 +100,23 @@ public class EncodingCommands implements CommandMarker {
             if (datasetName != null && !datasetName.matches("^[a-z_A-Z][a-z_A-Z0-9]*$"))
                 return "Error. Source Dataset name must contain only alphanumeric characters and underscores.";
 
-            if (datasetName != null && columnsStr == null) return "Error. Provide columns along side source dataset";
-            if (datasetName == null && columnsStr != null) return "Error. Provide columns along side source dataset";
-
-            final String[] columns = CommandUtils.retrieveColumns(columnsStr);
-
             if(AVAILABLE_ENCODING_METHODS == null)
                 AVAILABLE_ENCODING_METHODS = service.listSupportedEncodingMethodsNames();
             if (!AVAILABLE_ENCODING_METHODS.contains(methodName))
                 return "Error. Method name " + methodName + " is not supported.";
 
-            int N = (Nstr == null) ? 1024 : Integer.parseInt(Nstr);
-            int K = (Kstr == null) ? 30 : Integer.parseInt(Kstr);
-            int Q = (Qstr == null) ? 2 : Integer.parseInt(Qstr);
-
-            final String finalName = CommandUtils.retrieveName(name, methodName, N, K, Q,columns);
-
             LOG.info("Importing local AVRO Encoded Dataset :");
-            LOG.info("\tImported Encoded Dataset name           : {}", finalName);
+            if(name != null) {
+                if (!name.matches("^[a-z_A-Z][a-z_A-Z0-9]*$"))
+                    return "Error. Encoded Dataset name must contain only alphanumeric characters and underscores.";
+                LOG.info("\tImported Encoded Dataset name           : {}", name);
+            }
             LOG.info("\tSelected data files for import          : {}", Arrays.toString(absolutePaths));
             LOG.info("\tSelected schema file for import         : {}", schemaFile.getAbsolutePath());
             if (datasetName != null) LOG.info("\tSelected source dataset name            : {}", datasetName);
-            if (columns != null) LOG.info("\tSelected source dataset encoded columns : {}", Arrays.toString(columns));
-            LOG.info("\tSelected encoding method                : {}, N={}, K={}, Q={}", methodName, N, K, Q);
 
-            if(datasetName == null || columns == null)
-                service.importEncodedDatasets(finalName,
-                        methodName, N, K, Q, schemaFile, avroFiles);
-            else
-                service.importEncodedDatasets(finalName, datasetName, Arrays.asList(columns),
-                        methodName, N, K, Q, schemaFile, avroFiles);
+            service.importEncodedDataset(name, datasetName, methodName, schemaFile, avroFiles);
+
             return "DONE";
         } catch (IOException e) {
             return "Error. " + e.getClass().getName() + " : " + e.getMessage();
@@ -159,11 +137,13 @@ public class EncodingCommands implements CommandMarker {
                     "to be related with the encoding." +
                     " Must be alread on pprl site")
             final String datasetName,
-            @CliOption(key = {"columns"}, mandatory = true, help = "Columns to be encoded")
-            final String columnsStr,
-            @CliOption(key= {"method"}, mandatory = true, help = "One of the following encoding methods : {SIMPLE,ROW,MULTI}.")
+            @CliOption(key = {"selected_fields"}, mandatory = true, help = "Selected fields to be encoded")
+            final String fieldsStr,
+            @CliOption(key = {"rest_fields"}, mandatory = false, help = "(Optional) Rest of fields to be encoded")
+            final String restFieldsStr,
+            @CliOption(key= {"method"}, mandatory = true, help = "One of the following encoding methods : {FBF,RBF}.")
             final String methodName,
-            @CliOption(key= {"N"}, mandatory = false, help = "(Optional) Length of bloom filter. Default value is 1024.")
+            @CliOption(key= {"N"}, mandatory = false, help = "(Optional) Static sizing of Bloom filter. If not set dynamic sizing is enforced.")
             final String Nstr,
             @CliOption(key= {"K"}, mandatory = false, help = "(Optional) Hash function count. Default value is 30.")
             final String Kstr,
@@ -173,26 +153,30 @@ public class EncodingCommands implements CommandMarker {
             if (!datasetName.matches("^[a-z_A-Z][a-z_A-Z0-9]*$"))
                 return "Error. Source Dataset name must contain only alphanumeric characters and underscores.";
 
-            final String[] columns = CommandUtils.retrieveColumns(columnsStr);
+            final String[] selectedFieldNames = CommandUtils.retrieveFields(fieldsStr);
+
+            final String[] restFieldNames;
+            if(restFieldsStr != null) restFieldNames = CommandUtils.retrieveFields(restFieldsStr);
+            else restFieldNames = new String[0];
 
             if(AVAILABLE_ENCODING_METHODS == null)
                 AVAILABLE_ENCODING_METHODS = service.listSupportedEncodingMethodsNames();
             if (!AVAILABLE_ENCODING_METHODS.contains(methodName))
                 return "Error. Method name " + methodName + " is not supported.";
 
-            int N = (Nstr == null) ? 1024 : Integer.parseInt(Nstr);
+            int N = (Nstr == null) ? -1 : Integer.parseInt(Nstr);
             int K = (Kstr == null) ? 30 : Integer.parseInt(Kstr);
             int Q = (Qstr == null) ? 2 : Integer.parseInt(Qstr);
 
-            final String finalName = CommandUtils.retrieveName(name, methodName, N, K, Q,columns);
-
             LOG.info("Encoding dataset stored at the PPRL-site");
-            LOG.info("\tEncoded Dataset name                    : {}", finalName);
+            if(name != null) LOG.info("\tEncoded Dataset name                    : {}", name);
             LOG.info("\tSelected source dataset name            : {}", datasetName);
-            LOG.info("\tSelected source dataset encoded columns : {}", Arrays.toString(columns));
-            LOG.info("\tSelected encoding method                : {}, N={}, K={}, Q={}", methodName, N, K, Q);
+            LOG.info("\tSelected source dataset encoded fields  : {}", Arrays.toString(selectedFieldNames));
+            LOG.info("\tRest source dataset encoded fields      : {}", Arrays.toString(restFieldNames));
+            LOG.info("\tSelected encoding method                : {}, N={}, K={}, Q={}",
+                    methodName, N<0? "dynamic sizing":N, K, Q);
 
-            service.encodeImportedDataset(finalName,datasetName,Arrays.asList(columns),methodName,N,K,Q);
+            service.encodeImportedDataset(name, datasetName, selectedFieldNames, restFieldNames, methodName, N, K, Q);
             return "DONE";
         } catch (IllegalArgumentException e) {
             return "Error. " + e.getClass().getName() + " : " + e.getMessage();
@@ -207,18 +191,20 @@ public class EncodingCommands implements CommandMarker {
             final String avroPaths,
             @CliOption(key = {"schema_file"}, mandatory = true, help = "Local schema avro file.")
             final String schemaFilePath,
-            @CliOption(key = {"columns"}, mandatory = true, help = "Columns to be encoded")
-            final String columnsStr,
             @CliOption(key = {"name"}, mandatory = false, help = "(Optional) Encoded dataset name.")
             final String name,
-            @CliOption(key= {"method"}, mandatory = true, help = "One of the following encoding methods : {SIMPLE,ROW,MULTI}.")
+            @CliOption(key = {"selected_fields"}, mandatory = true, help = "Selected fields to be encoded")
+            final String fieldsStr,
+            @CliOption(key = {"rest_fields"}, mandatory = false, help = "(Optional) Rest of fields to be encoded")
+            final String restFieldsStr,
+            @CliOption(key= {"method"}, mandatory = true, help = "One of the following encoding methods : {FBF,RBF}.")
             final String methodName,
-            @CliOption(key= {"N"}, mandatory = false, help = "(Optional) Length of bloom filter. Default value is 1024.")
+            @CliOption(key= {"N"}, mandatory = false, help = "(Optional) Static sizing of Bloom filter. If not set dynamic sizing is enforced.")
             final String Nstr,
             @CliOption(key= {"K"}, mandatory = false, help = "(Optional) Hash function count. Default value is 30.")
             final String Kstr,
             @CliOption(key= {"Q"}, mandatory = false, help = "(Optional) Q for Q-Grams. Default value is 2.")
-            final String Qstr) {
+            final String Qstr){
         try {
             final File schemaFile = new File(schemaFilePath);
             if (!schemaFile.exists()) return "Error. Path \"" + schemaFilePath + "\" does not exist.";
@@ -228,38 +214,41 @@ public class EncodingCommands implements CommandMarker {
             final String[] absolutePaths = new String[avroFiles.length];
             for (int i = 0; i < avroFiles.length; i++) absolutePaths[i] = avroFiles[i].getAbsolutePath();
 
-            final String[] columns = CommandUtils.retrieveColumns(columnsStr);
+            final String[] selectedFieldNames = CommandUtils.retrieveFields(fieldsStr);
+
+            final String[] restFieldNames;
+            if(restFieldsStr != null) restFieldNames = CommandUtils.retrieveFields(restFieldsStr);
+            else restFieldNames = new String[0];
 
             if(AVAILABLE_ENCODING_METHODS == null)
                 AVAILABLE_ENCODING_METHODS = service.listSupportedEncodingMethodsNames();
             if (!AVAILABLE_ENCODING_METHODS.contains(methodName))
                 return "Error. Method name " + methodName + " is not supported.";
 
-            int N = (Nstr == null) ? 1024 : Integer.parseInt(Nstr);
+            int N = (Nstr == null) ? -1 : Integer.parseInt(Nstr);
             int K = (Kstr == null) ? 30 : Integer.parseInt(Kstr);
             int Q = (Qstr == null) ? 2 : Integer.parseInt(Qstr);
 
-            final String finalName = CommandUtils.retrieveName(name, methodName, N, K, Q,columns);
-
             LOG.info("Encoding local avro files");
-            LOG.info("\tEncoded Dataset name                      : {}", finalName);
+            if(name != null )LOG.info("\tEncoded Dataset name                      : {}", name);
             LOG.info("\tSelected local data files for encoding    : {}", Arrays.toString(absolutePaths));
             LOG.info("\tSelected local schema file for encoding   : {}", schemaFile.getAbsolutePath());
-            LOG.info("\tSelected local data columns to be encoded : {}", Arrays.toString(columns));
-            LOG.info("\tSelected encoding method                  : {}, N={}, K={}, Q={}", methodName, N, K, Q);
+            LOG.info("\tSelected local data fields to be encoded : {}", Arrays.toString(selectedFieldNames));
+            LOG.info("\tRest local data fields                   : {}", Arrays.toString(restFieldNames));
+            LOG.info("\tSelected encoding method                : {}, N={}, K={}, Q={}",
+                    methodName, N<0? "dynamic sizing":N, K, Q);
 
             final Set<File> avroFilesSet = new TreeSet<File>(Arrays.asList(avroFiles));
-            final File encodedFile = new File(finalName + ".avro");
-            final File encodedSchemaFile = new File(finalName + ".avsc");
-            service.encodeLocalFile(Arrays.asList(columns),
+
+            String[] paths = service.encodeLocalFile(name,selectedFieldNames,restFieldNames,
                     methodName, N, K, Q,
-                    avroFilesSet,schemaFile,
-                    encodedFile,encodedSchemaFile);
+                    avroFilesSet,schemaFile);
 
             LOG.info("Encoding local avro files");
-            LOG.info("\tEncoded schema file saved at : {}",encodedSchemaFile.getAbsolutePath());
-            LOG.info("\tEncoded avro file saved at   : {}",encodedFile.getAbsolutePath());
+            LOG.info("\tEncoded schema file saved at : {}", paths[0]);
+            LOG.info("\tEncoded avro file saved at   : {}", paths[1]);
             return "DONE";
+
         } catch (IOException e) {
             return "Error. " + e.getClass().getName() + " : " + e.getMessage();
         } catch (BloomFilterEncodingException e) {

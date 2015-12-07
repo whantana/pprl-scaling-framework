@@ -100,19 +100,20 @@ public class Dataset {
                 fs.exists(avroSchemaPath);
     }
 
-    public static String toString(final Dataset dataset) {
-        if(!dataset.isValid()) return null;
+    public static String toString(final Dataset dataset)
+            throws DatasetException {
+        if(!dataset.isValid()) throw new DatasetException("Dataset is invalid.");
         return String.format("%s => %s %s %s",
                 dataset.getName(), dataset.getBasePath(),
                 dataset.getAvroPath(), dataset.getAvroSchemaPath());
     }
 
-    public static Dataset fromString(final String s) {
+    public static Dataset fromString(final String s) throws DatasetException {
         final String[] parts = s.split(" => ");
-        if(parts.length != 2) return null;
+        if(parts.length != 2) throw new DatasetException("String \"" + s + "\" is invalid dataset string.");
         String name = parts[0];
         final String[] paths = parts[1].split(" ");
-        if(paths.length != 3) return null;
+        if(paths.length != 3) throw new DatasetException("String \"" + s + "\" is invalid dataset string.");
         Path basePath = new Path(paths[0]);
         Path avroPath = new Path(paths[1]);
         Path avroSchemaPath = new Path(paths[2]);

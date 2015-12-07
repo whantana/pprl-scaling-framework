@@ -45,27 +45,31 @@ public class EncodingServiceTest  extends AbstractMapReduceTests {
     private int encodingsCount = 0;
 
     @Test
+    public void test0() throws IOException, BloomFilterEncodingException, URISyntaxException {
+        encodeLocalFile();
+    }
+
+    @Test
     public void test1() throws IOException, DatasetException, URISyntaxException, BloomFilterEncodingException {
         checkForSavingFiles();
 
-        importLocalDatasets("dblp",new String[]{"/dblp/avro/part-m-00000.avro","/dblp/schema/dblp_sample.avsc"});
+        importLocalDatasets("dblp",new String[]{"/dblp/avro/dblp.avro","/dblp/schema/dblp.avsc"});
         importLocalDatasets("random",new String[]{"/random/avro/random.avro","/random/schema/random.avsc"});
         for(String s : datasetsService.listDatasets(false)) {
             LOG.info("\t {}",s);
         }
 
 
-        importOrphanEncodedDataset("enc_orphan","SIMPLE",1024,30,2,
+        importOrphanEncodedDataset("enc_orphan","FBF",
                 new String[]{
-                        "/enc_SIMPLE_1024_30_2_author_title/avro/part-m-00000.avro",
-                        "/enc_SIMPLE_1024_30_2_author_title/schema/enc_SIMPLE_1024_30_2_author_title.avsc"
+                        "/dblp/stat_FBF/avro/stat_FBF.avro",
+                        "/dblp/stat_FBF/schema/stat_FBF.avsc"
                 });
         importNotOrphanEncodedDataset(
-                "enc_SIMPLE_1024_30_2_author_title","dblp",
-                new String[]{"author","title"},"SIMPLE",1024,30,2,
+                "enc_non_orphan","dblp", "FBF",
                 new String[]{
-                        "/enc_SIMPLE_1024_30_2_author_title/avro/part-m-00000.avro",
-                        "/enc_SIMPLE_1024_30_2_author_title/schema/enc_SIMPLE_1024_30_2_author_title.avsc"
+                        "/dblp/stat_FBF/avro/stat_FBF.avro",
+                        "/dblp/stat_FBF/schema/stat_FBF.avsc"
                 }
         );
         for(String s : encodingService.listDatasets(false)) {
@@ -75,8 +79,8 @@ public class EncodingServiceTest  extends AbstractMapReduceTests {
         describe("enc_orphan");
         getSample("enc_orphan",5);
 
-        describe("enc_SIMPLE_1024_30_2_author_title");
-        getSample("enc_SIMPLE_1024_30_2_author_title",5);
+        describe("enc_non_orphan");
+        getSample("enc_non_orphan",5);
     }
 
     @Test
@@ -140,12 +144,11 @@ public class EncodingServiceTest  extends AbstractMapReduceTests {
     }
 
     private void importOrphanEncodedDataset(final String name, final String methodName,
-                                            final int N, final int K, final int Q ,
                                             final String[] paths)
             throws DatasetException, BloomFilterEncodingException, IOException, URISyntaxException {
         File localAvroFile = new File(getClass().getResource(paths[0]).toURI());
         File localAvroSchemaFile = new File(getClass().getResource(paths[1]).toURI());
-        encodingService.importEncodedDatasets(name,methodName,N,K,Q,localAvroSchemaFile,localAvroFile);
+        encodingService.importOrphanEncodedDataset(name,methodName,localAvroSchemaFile,localAvroFile);
         encodingsCount++;
         assertEquals(encodingsCount,encodingService.listDatasets(true).size());
         long len = getFileSystem().getFileStatus(encodingsFile).getLen();
@@ -153,15 +156,12 @@ public class EncodingServiceTest  extends AbstractMapReduceTests {
     }
 
     private void importNotOrphanEncodedDataset(final String name, final String datasetName,
-                                               final String[] columns,
                                                final String methodName,
-                                               final int N, final int K, final int Q ,
                                                final String[] paths)
             throws URISyntaxException, DatasetException, BloomFilterEncodingException, IOException {
         File localAvroFile = new File(getClass().getResource(paths[0]).toURI());
         File localAvroSchemaFile = new File(getClass().getResource(paths[1]).toURI());
-        encodingService.importEncodedDatasets(name, datasetName, Arrays.asList(columns),
-                methodName,N,K,Q,localAvroSchemaFile,localAvroFile);
+        encodingService.importEncodedDataset(name, datasetName, methodName, localAvroSchemaFile, localAvroFile);
         encodingsCount++;
         assertEquals(encodingsCount,encodingService.listDatasets(true).size());
         long len = getFileSystem().getFileStatus(encodingsFile).getLen();
@@ -177,6 +177,23 @@ public class EncodingServiceTest  extends AbstractMapReduceTests {
         LOG.info("After drop encoded datasets file size : {} bytes",len);
     }
 
+    private void encodeLocalFile() throws URISyntaxException, IOException, BloomFilterEncodingException {
+        final String[] dblpPaths = new String[]{"/dblp/avro/dblp.avro","/dblp/schema/dblp.avsc"};
+        final File schemaFile = new File(getClass().getResource(dblpPaths[1]).toURI());
+        Set<File> files = new TreeSet<File>();
+        files.add(new File(getClass().getResource(dblpPaths[0]).toURI()));
+        final String[] SELECTED_FIELDS = new String[]{"author","title"};
+        final String[] REST_FIELDS = new String[]{"key","year"};
+        for(String method : (new String[]{"FBF","RBF"})) {
+            for(int N : (new int[]{1024,500})) {
+                final String[] paths =
+                        encodingService.encodeLocalFile(
+                                null,SELECTED_FIELDS,REST_FIELDS,"FBF",N,30,2,files,schemaFile);
+                LOG.info(Arrays.toString(paths));
+            }
+        }
+    }
+
     private void getSampleAndEncodeIt() throws DatasetException, IOException, URISyntaxException, BloomFilterEncodingException {
         String parent = new File(getClass().getResource("/dblp/avro").toURI()).getParent();
         File[] dblp = {
@@ -186,36 +203,22 @@ public class EncodingServiceTest  extends AbstractMapReduceTests {
 
         dblp[0].createNewFile();
         dblp[1].createNewFile();
-        datasetsService.saveSampleOfDataset("dblp", 5, dblp[0], dblp[1]);
-
-        File[] enc_1 = {
-                new File(parent,"enc_SIMPLE.avsc"),
-                new File(parent,"enc_SIMPLE.avro")
-        };
-        enc_1[0].createNewFile();
-        enc_1[1].createNewFile();
-        File[] enc_2 = {
-                new File(parent,"enc_MULTI.avsc"),
-                new File(parent,"enc_MULTI.avro")
-        };
-        enc_2[0].createNewFile();
-        enc_2[1].createNewFile();
-        File[] enc_3 = {
-                new File(parent,"enc_ROW.avsc"),
-                new File(parent,"enc_ROW.avro")
-        };
-        enc_3[0].createNewFile();
-        enc_3[1].createNewFile();
+        datasetsService.saveSampleOfDataset("dblp", 2, dblp[0], dblp[1]);
 
         Set<File> files = new TreeSet<File>();
         files.add(dblp[1]);
 
-        encodingService.encodeLocalFile(Arrays.asList("author","title"),
-                "SIMPLE", 1024, 30, 2, files, dblp[0], enc_1[1], enc_1[0]);
-        encodingService.encodeLocalFile(Arrays.asList("author","title"),
-                "MULTI", 1024, 30, 2, files, dblp[0], enc_2[1], enc_2[0]);
-        encodingService.encodeLocalFile(Arrays.asList("author","title"),
-                "ROW", 1024, 30, 2, files, dblp[0], enc_3[1], enc_3[0]);
+        final String[] SELECTED_FIELDS = new String[]{"author","title"};
+        final String[] REST_FIELDS = new String[]{"key","year"};
+
+
+        for(String method : (new String[]{"FBF","RBF"})) {
+            for(int n : (new int[]{1024,500})) {
+                final String[] paths =
+                        encodingService.encodeLocalFile(null,SELECTED_FIELDS,REST_FIELDS,"FBF",n,30,2,files,dblp[0]);
+                LOG.info(Arrays.toString(paths));
+            }
+        }
     }
 
 }

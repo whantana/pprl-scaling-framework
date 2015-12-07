@@ -10,7 +10,7 @@ import java.io.IOException;
 public class EncodedDataset extends Dataset {
 
     private String datasetName;
-    private BaseBloomFilterEncoding encoding;
+    private BloomFilterEncoding encoding;
 
     public EncodedDataset(String name,Path userHomeDirectory) {
         super(name, userHomeDirectory);
@@ -34,11 +34,11 @@ public class EncodedDataset extends Dataset {
         return datasetName;
     }
 
-    public BaseBloomFilterEncoding getEncoding() {
+    public BloomFilterEncoding getEncoding() {
         return encoding;
     }
 
-    public void setEncoding(BaseBloomFilterEncoding encoding) {
+    public void setEncoding(BloomFilterEncoding encoding) {
         this.encoding = encoding;
     }
 
@@ -87,24 +87,25 @@ public class EncodedDataset extends Dataset {
         return super.isValid() & (encoding != null);
     }
 
-    public static String toString(final EncodedDataset encodedDataset)  {
-        if(!encodedDataset.isValid()) return null;
+    public static String toString(final EncodedDataset encodedDataset)
+            throws EncodedDatasetException {
+        if(!encodedDataset.isValid()) throw new EncodedDatasetException("Encoded Dataset is not valid.");
         final String datasetName = (encodedDataset.isNotOrphan()) ? encodedDataset.getDatasetName() : null;
-        final BaseBloomFilterEncoding encoding = encodedDataset.getEncoding();
         final String name = encodedDataset.getName();
         final Path basePath = encodedDataset.getBasePath();
         final Path avroPath = encodedDataset.getAvroPath();
         final Path avroSchemaPath = encodedDataset.getAvroSchemaPath();
+        final BloomFilterEncoding encoding = encodedDataset.getEncoding();
         return String.format("%s => %s %s %s => %s",
                 (datasetName !=null )? datasetName + "#" + name : name,
-                basePath,avroPath,avroSchemaPath,
-                BaseBloomFilterEncoding.toString(encoding));
+                basePath,avroPath,avroSchemaPath,encoding.toString());
     }
 
-    public static EncodedDataset fromString(final String s) {
+    public static EncodedDataset fromString(final String s) throws EncodedDatasetException {
         final String[] parts = s.split(" => ");
 
-        if(parts.length != 3) return null;
+        if(parts.length != 3)
+            throw new EncodedDatasetException("String \"" + s + "\" is invalid encoded dataset string.");
 
         final String namePart = parts[0];
         final String pathsPart = parts[1];
@@ -119,9 +120,15 @@ public class EncodedDataset extends Dataset {
         final EncodedDataset encodedDataset = (datasetName == null) ?
                 new EncodedDataset(name,basePath,avroPath,avroSchemaPath) :
                 new EncodedDataset(name,datasetName,basePath,avroPath,avroSchemaPath);
-        final BaseBloomFilterEncoding encoding;
-        encoding = BaseBloomFilterEncoding.fromString(encPart);
-        encodedDataset.setEncoding(encoding);
+
+        try {
+            final BloomFilterEncoding encoding;
+            encoding = BloomFilterEncoding.fromString(encPart);
+            encodedDataset.setEncoding(encoding);
+        } catch (BloomFilterEncodingException e) {
+            throw new EncodedDatasetException(e.getMessage());
+        }
+
         return encodedDataset;
     }
 }

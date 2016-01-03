@@ -44,6 +44,13 @@ public class DatasetStatsWritable implements Writable {
         this.fieldQgramCount = fieldQgramCount;
     }
 
+    public double[] getStats() { return new double[]{fieldLength,fieldQgramCount}; }
+
+    public void setStats(double fl, double fqc) {
+        fieldLength = fl;
+        fieldQgramCount = fqc;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

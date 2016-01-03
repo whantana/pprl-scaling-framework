@@ -15,7 +15,9 @@ import org.springframework.test.context.ContextConfiguration;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -58,6 +60,7 @@ public class DatasetsServiceTest extends AbstractMapReduceTests{
         multiFileImport();
         getSampleFromMulti();
         saveSamples();
+        calcStats();
     }
 
 //    TODO : Look into mini yarn cluster tests for running the dblp import mr tool
@@ -166,51 +169,51 @@ public class DatasetsServiceTest extends AbstractMapReduceTests{
     }
 
     private void saveSamples() throws DatasetException, IOException, URISyntaxException {
-        String parent = new File(getClass().getResource("/random/avro").toURI()).getParent();
-        File[] random1_sample_files = {
-                new File(parent,"random1_sample.avsc"),
-                new File(parent,"random1_sample.avro")
-        };
-        random1_sample_files[0].createNewFile();
-        random1_sample_files[1].createNewFile();
-        service.saveSampleOfDataset("random1", 5, random1_sample_files[0], random1_sample_files[1]);
-        File[] random2_sample_files = {
-                new File(parent,"random2_sample.avsc"),
-                new File(parent,"random2_sample.avro")
-        };
-        random2_sample_files[0].createNewFile();
-        random2_sample_files[1].createNewFile();
-        service.saveSampleOfDataset("random2", 5, random2_sample_files[0], random2_sample_files[1]);
-        File[] da_int_sample = {
-                new File(parent,"da_int_sample.avsc"),
-                new File(parent,"da_int_sample.avro")
-        };
-        da_int_sample[0].createNewFile();
-        da_int_sample[1].createNewFile();
-        service.saveSampleOfDataset("da_int", 5, da_int_sample[0], da_int_sample[1]);
+        service.saveSampleOfDataset("random1", 5, "random1_sample");
+        service.saveSampleOfDataset("random2", 5, "random2_sample");
+        service.saveSampleOfDataset("da_int", 5, "da_int_sample");
+    }
+
+    private void calcStats() throws IOException {
+        File sample1 = new File("random1_sample.avro");
+        File schema1 = new File("random1_sample.avsc");
+        Set<File> files = new HashSet<File>();
+        files.add(sample1);
+        LOG.info("Stats Q=1");
+        final Map<String,double[]> stats1 =
+                service.calculateLocalDataStats(files,schema1,new String[]{"random_int","random_string"},1);
+        for(Map.Entry<String,double[]> entry: stats1.entrySet()) LOG.info("\t{} -> {}",entry.getKey(),entry.getValue());
+        LOG.info("Stats Q=2");
+        final Map<String,double[]> stats2 =
+                service.calculateLocalDataStats(files,schema1,new String[]{"random_int","random_string"},2);
+        for(Map.Entry<String,double[]> entry: stats2.entrySet()) LOG.info("\t{} -> {}",entry.getKey(),entry.getValue());
+        LOG.info("Stats Q=3");
+        final Map<String,double[]> stats3 =
+                service.calculateLocalDataStats(files,schema1,new String[]{"random_int","random_string"},2);
+        for(Map.Entry<String,double[]> entry: stats3.entrySet()) LOG.info("\t{} -> {}",entry.getKey(),entry.getValue());
     }
 
 
-    private void dblpImport() throws Exception {
-        File localDblpXml = new File(getClass().getResource("/dblp/xml/dblp_sample.xml").toURI());
-        File localAvroSchemaFile = new File(getClass().getResource("/dblp/schema/dblp_sample.avsc").toURI());
-        service.importDblpXmlDataset("dblp",localAvroSchemaFile,localDblpXml);
-        datasetsCount++;
-        assertEquals(datasetsCount, service.listDatasets(true).size());
-    }
-
-    private void dblpDescirbe() throws DatasetException, IOException {
-        Map<String,String> schema = service.describeDataset("dblp");
-        for(Map.Entry<String,String> field : schema.entrySet())
-            LOG.info("\t {} {}",field.getKey(),field.getValue());
-    }
-
-    private void dblpSample() throws DatasetException, IOException {
-        LOG.info("Sample(5) of dblp:");
-        for(String sample : service.sampleOfDataset("dblp",5)) LOG.info("\t{}", sample);
-    }
-
-    private void dblpGetStats() {
-        // TODO implement me
-    }
+//    private void dblpImport() throws Exception {
+//        File localDblpXml = new File(getClass().getResource("/dblp/xml/dblp_sample.xml").toURI());
+//        File localAvroSchemaFile = new File(getClass().getResource("/dblp/schema/dblp_sample.avsc").toURI());
+//        service.importDblpXmlDataset("dblp",localAvroSchemaFile,localDblpXml);
+//        datasetsCount++;
+//        assertEquals(datasetsCount, service.listDatasets(true).size());
+//    }
+//
+//    private void dblpDescirbe() throws DatasetException, IOException {
+//        Map<String,String> schema = service.describeDataset("dblp");
+//        for(Map.Entry<String,String> field : schema.entrySet())
+//            LOG.info("\t {} {}",field.getKey(),field.getValue());
+//    }
+//
+//    private void dblpSample() throws DatasetException, IOException {
+//        LOG.info("Sample(5) of dblp:");
+//        for(String sample : service.sampleOfDataset("dblp",5)) LOG.info("\t{}", sample);
+//    }
+//
+//    private void dblpGetStats() {
+//
+//    }
 }

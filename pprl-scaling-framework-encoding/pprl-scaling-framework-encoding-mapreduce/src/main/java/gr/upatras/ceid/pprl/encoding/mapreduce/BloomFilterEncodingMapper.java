@@ -42,7 +42,7 @@ public class BloomFilterEncodingMapper extends Mapper<AvroKey<GenericRecord>, Nu
             inputSchema = (new Schema.Parser()).parse(config.get(INPUT_SCHEMA_KEY));
             outputSchema = (new Schema.Parser()).parse(config.get(OUTPUT_SCHEMA_KEY));
             methodName = config.get(METHOD_NAME_KEY);
-            restFieldNames = config.getStrings(REST_FIELDS_KEY);
+            restFieldNames = config.getStrings(REST_FIELDS_KEY,new String[0]);
             selectedFieldNames = config.getStrings(SELECTED_FIELDS_KEY);
             final String[] Nstr = config.getStrings(N_KEY);
             N = new int[Nstr.length];
@@ -52,7 +52,8 @@ public class BloomFilterEncodingMapper extends Mapper<AvroKey<GenericRecord>, Nu
             K = config.getInt(K_KEY, 30);
             Q = config.getInt(Q_KEY, 2);
 
-            encoding = BloomFilterEncoding.newInstanceOfMethod(methodName);
+            encoding = BloomFilterEncoding.newInstanceOfMethod(methodName,N,K,Q);
+            encoding.setEncodingSchema(outputSchema);
         } catch (BloomFilterEncodingException e) {
             throw new InterruptedException(e.getMessage());
         }
@@ -65,7 +66,7 @@ public class BloomFilterEncodingMapper extends Mapper<AvroKey<GenericRecord>, Nu
         try {
             encodedRecord = BloomFilterEncoding.encodeRecord(
                     record, encoding, inputSchema,
-                    selectedFieldNames, restFieldNames, N, K, Q);
+                    selectedFieldNames, restFieldNames);
         } catch (BloomFilterEncodingException e) {
             throw new InterruptedException(e.getMessage());
         }

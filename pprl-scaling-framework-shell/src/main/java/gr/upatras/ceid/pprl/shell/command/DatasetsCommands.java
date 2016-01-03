@@ -5,6 +5,7 @@ import gr.upatras.ceid.pprl.datasets.service.DatasetsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.shell.core.CommandMarker;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
@@ -15,6 +16,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 @Component
 public class DatasetsCommands implements CommandMarker {
@@ -22,6 +25,7 @@ public class DatasetsCommands implements CommandMarker {
     private static final Logger LOG = LoggerFactory.getLogger(DatasetsCommands.class);
 
     @Autowired
+	@Qualifier("datasetsService")	
     private DatasetsService service;
 
     @CliCommand(value = "dat_import", help = "Import local avro file(s) and schema on the PPRL site.")
@@ -53,9 +57,9 @@ public class DatasetsCommands implements CommandMarker {
             service.importDataset(name, schemaFile, avroFiles);
             return "DONE";
         } catch (DatasetException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         } catch (IOException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         }
     }
 
@@ -88,9 +92,9 @@ public class DatasetsCommands implements CommandMarker {
             service.importDblpXmlDataset(name, schemaFile, dblpFiles);
             return "DONE";
         } catch (IOException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         } catch (Exception e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         }
     }
 
@@ -126,9 +130,9 @@ public class DatasetsCommands implements CommandMarker {
             service.dropDataset(name, deleteFiles);
             return "DONE";
         } catch (DatasetException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         } catch (IOException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         }
     }
 
@@ -151,9 +155,9 @@ public class DatasetsCommands implements CommandMarker {
             }
             return "DONE";
         } catch (DatasetException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         } catch (IOException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         }
     }
 
@@ -170,21 +174,20 @@ public class DatasetsCommands implements CommandMarker {
             if (size < 1) throw new NumberFormatException("Sample size must be greater than zero.");
             final List<String> records;
             if (sampleName != null) {
-                final File sampleSchemaFile = new File(sampleName + ".avsc");
-                sampleSchemaFile.createNewFile();
-                final File sampleDataFile = new File(sampleName + ".avro");
-                sampleDataFile.createNewFile();
-                records = service.saveSampleOfDataset(name, size, sampleSchemaFile, sampleDataFile);
-                LOG.info("Schema saved at : {} .", sampleSchemaFile.getAbsolutePath());
-                LOG.info("Data saved at   : {} .", sampleDataFile.getAbsolutePath());
+                records = service.saveSampleOfDataset(name, size, sampleName);
+                File[] files = new File[2];
+                files[0] = new File(sampleName + ".avsc");
+                if(files[0].exists()) LOG.info("Schema saved at : {} .", files[0].getAbsolutePath());
+                files[1] = new File(sampleName + ".avro");
+                if(files[1].exists()) LOG.info("Data saved at : {} .", files[1].getAbsolutePath());
             } else records = service.sampleOfDataset(name, size);
             LOG.info("Random sample of dataset \"{}\". Sample size : {} :", name, size);
             for (String record : records) LOG.info("\t{}", record);
             return "DONE";
         } catch (DatasetException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         } catch (IOException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         }
     }
 
@@ -201,7 +204,7 @@ public class DatasetsCommands implements CommandMarker {
             LOG.info("Calculated Stats stored at {}.", hdfsPath);
             return "DONE";
         } catch (Exception e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         }
     }
 
@@ -209,16 +212,74 @@ public class DatasetsCommands implements CommandMarker {
     public String datasetsReadStatsCommand(
             @CliOption(key = {"name"}, mandatory = true, help = "Dataset name.")
             final String name,
+            @CliOption(key = {"selected_fields"}, mandatory = false, help = "(Optional) Selected fields for stats")
+            final String fieldsStr,
             @CliOption(key= {"Q"}, mandatory = false, help = "(Optional) Q for Q-Grams. Default value is 2.")
             final String Qstr) throws DatasetException {
         try {
             int Q = (Qstr == null) ? 2 : Integer.parseInt(Qstr);
-            LOG.info("Reading stats for dataset %s on %-grams", name , Q);
-            final String reply = service.readDatasetStats(name, Q);
-            LOG.info(reply);
+            final String[] selectedFieldNames = (fieldsStr != null ) ? CommandUtils.retrieveFields(fieldsStr) :
+                    null;
+            LOG.info("Reading stats : [Average field length, Avergage {}-gram count]" +
+                    " for dataset {} on {}-grams", name , Q,Q);
+            final Map<String,double[]> stats = service.readDatasetStats(name, Q,selectedFieldNames);
+            StringBuilder sb = new StringBuilder();
+            for(Map.Entry<String,double[]> entry : stats.entrySet()) {
+                sb.append(entry.getKey())
+                        .append(" : ")
+                        .append(CommandUtils.prettyStats(entry.getValue())).append("\n");
+            }
+            LOG.info(sb.toString());
             return "DONE";
         } catch (Exception e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
+        }
+    }
+
+    @CliCommand(value = "dat_calc_local_stats", help = "Read useful statistics of a local dataset.")
+    public String datasetsCalcReadLocalStatsCommand(
+            @CliOption(key = {"avro_files"}, mandatory = true, help = "Local data avro files (comma separated) or including directory.")
+            final String avroPaths,
+            @CliOption(key = {"schema_file"}, mandatory = true, help = "Local schema avro file.")
+            final String schemaFilePath,
+            @CliOption(key = {"selected_fields"}, mandatory = false, help = "(Optional) Selected fields for stats")
+            final String fieldsStr,
+            @CliOption(key= {"Q"}, mandatory = false, help = "(Optional) Q for Q-Grams. Default value is 2.")
+            final String Qstr) throws DatasetException {
+        try {
+            final File schemaFile = new File(schemaFilePath);
+            if (!schemaFile.exists()) return "Error. Path \"" + schemaFilePath + "\" does not exist.";
+
+            final File[] avroFiles = CommandUtils.retrieveFiles(avroPaths);
+
+            final String[] absolutePaths = new String[avroFiles.length];
+            for (int i = 0; i < avroFiles.length; i++) absolutePaths[i] = avroFiles[i].getAbsolutePath();
+
+            final String[] selectedFieldNames = (fieldsStr != null ) ? CommandUtils.retrieveFields(fieldsStr) :
+                    null;
+
+            int Q = (Qstr == null) ? 2 : Integer.parseInt(Qstr);
+
+            LOG.info("Calculating [Average field length, Avergage {}-gram count] local AVRO dataset :",Q);
+            LOG.info("\tSelected data files for import  : {}", Arrays.toString(absolutePaths));
+            LOG.info("\tSelected schema file for import : {}", schemaFile.getAbsolutePath());
+            LOG.info("\tReading stats on Q-grams with Q : {}", Q);
+            if(selectedFieldNames!=null) LOG.info("\tSelected fields : {}",
+                    Arrays.toString(selectedFieldNames));
+            LOG.info("\n");
+            final Set<File> avroFilesSet = new TreeSet<File>(Arrays.asList(avroFiles));
+            final Map<String,double[]>
+                    stats = service.calculateLocalDataStats(avroFilesSet, schemaFile, selectedFieldNames, Q);
+            StringBuilder sb = new StringBuilder();
+            for(Map.Entry<String,double[]> entry : stats.entrySet()) {
+                sb.append(entry.getKey())
+                        .append(" : ")
+                        .append(CommandUtils.prettyStats(entry.getValue())).append("\n");
+            }
+            LOG.info(sb.toString());
+            return "DONE";
+        } catch (Exception e) {
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         }
     }
 
@@ -236,9 +297,11 @@ public class DatasetsCommands implements CommandMarker {
             }
             return "DONE";
         } catch (DatasetException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         } catch (IOException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         }
     }
+
+    // TODO a command that prints avro file with schema
 }

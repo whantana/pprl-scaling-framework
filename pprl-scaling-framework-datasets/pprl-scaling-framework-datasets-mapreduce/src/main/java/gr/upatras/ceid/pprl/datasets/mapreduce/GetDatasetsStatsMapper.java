@@ -32,10 +32,10 @@ public class GetDatasetsStatsMapper extends Mapper<AvroKey<GenericRecord>, NullW
             record.get(field.name());
             Object obj = record.get(field.name());
             Schema.Type type = field.schema().getType();
-            DatasetStatsWritable dsw = new DatasetStatsWritable();
-            dsw.setFieldLength((double)String.valueOf(obj).length());
-            dsw.setFieldQgramCount((double)QGramUtil.calcQgramsCount(obj,type,Q));
-            context.write(new Text(field.name()), dsw);
+            context.write(new Text(field.name()), new DatasetStatsWritable(
+                    (double)String.valueOf(obj).length() ,
+                    (double)QGramUtil.calcQgramsCount(obj,type,Q)
+            ));
         }
     }
 }

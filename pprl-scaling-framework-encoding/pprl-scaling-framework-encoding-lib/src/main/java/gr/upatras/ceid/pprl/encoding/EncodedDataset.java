@@ -40,6 +40,7 @@ public class EncodedDataset extends Dataset {
 
     public void setEncoding(BloomFilterEncoding encoding) {
         this.encoding = encoding;
+        this.schema = encoding.getEncodingSchema();
     }
 
     public boolean isOrphan() { return datasetName == null;}

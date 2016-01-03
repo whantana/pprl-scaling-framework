@@ -7,6 +7,7 @@ import gr.upatras.ceid.pprl.encoding.service.EncodingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.shell.core.CommandMarker;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
@@ -26,6 +27,7 @@ public class EncodingCommands implements CommandMarker {
     private static Logger LOG = LoggerFactory.getLogger(EncodingCommands.class);
 
     @Autowired
+	@Qualifier("encodingService")
     private EncodingService service;
 
     private List<String> AVAILABLE_ENCODING_METHODS;
@@ -42,7 +44,7 @@ public class EncodingCommands implements CommandMarker {
                             service.listDatasets(name, method);
 
             if (encodedDatasetsStrings.isEmpty()) {
-                LOG.info("Found no encoded datasets" +
+                LOG.info("\tFound no encoded datasets" +
                         ((name != null || method != null) ? " matching your criteria." : "."));
                 return "DONE";
             }
@@ -56,9 +58,9 @@ public class EncodingCommands implements CommandMarker {
             }
             return "DONE";
         } catch (EncodedDatasetException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         } catch (BloomFilterEncodingException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         }
     }
 
@@ -119,13 +121,13 @@ public class EncodingCommands implements CommandMarker {
 
             return "DONE";
         } catch (IOException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         } catch (IllegalArgumentException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         } catch (BloomFilterEncodingException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         } catch (DatasetException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         }
     }
 
@@ -157,7 +159,7 @@ public class EncodingCommands implements CommandMarker {
 
             final String[] restFieldNames;
             if(restFieldsStr != null) restFieldNames = CommandUtils.retrieveFields(restFieldsStr);
-            else restFieldNames = new String[0];
+            else restFieldNames = null;
 
             if(AVAILABLE_ENCODING_METHODS == null)
                 AVAILABLE_ENCODING_METHODS = service.listSupportedEncodingMethodsNames();
@@ -172,16 +174,17 @@ public class EncodingCommands implements CommandMarker {
             if(name != null) LOG.info("\tEncoded Dataset name                    : {}", name);
             LOG.info("\tSelected source dataset name            : {}", datasetName);
             LOG.info("\tSelected source dataset encoded fields  : {}", Arrays.toString(selectedFieldNames));
-            LOG.info("\tRest source dataset encoded fields      : {}", Arrays.toString(restFieldNames));
+            if(restFieldNames != null)
+                LOG.info("\tRest source dataset encoded fields      : {}", Arrays.toString(restFieldNames));
             LOG.info("\tSelected encoding method                : {}, N={}, K={}, Q={}",
                     methodName, N<0? "dynamic sizing":N, K, Q);
 
             service.encodeImportedDataset(name, datasetName, selectedFieldNames, restFieldNames, methodName, N, K, Q);
             return "DONE";
         } catch (IllegalArgumentException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         } catch (Exception e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         }
     }
 
@@ -250,9 +253,9 @@ public class EncodingCommands implements CommandMarker {
             return "DONE";
 
         } catch (IOException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         } catch (BloomFilterEncodingException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         }
     }
 
@@ -273,9 +276,9 @@ public class EncodingCommands implements CommandMarker {
             service.dropDataset(name, deleteFiles);
             return "DONE";
         } catch (DatasetException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         } catch (IOException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         }
     }
 
@@ -298,9 +301,9 @@ public class EncodingCommands implements CommandMarker {
             }
             return "DONE";
         } catch (DatasetException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         } catch (IOException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         }
     }
 
@@ -317,21 +320,20 @@ public class EncodingCommands implements CommandMarker {
             if (size < 1) throw new NumberFormatException("Sample size must be greater than zero.");
             final List<String> records;
             if (sampleName != null) {
-                final File sampleSchemaFile = new File(sampleName + ".avsc");
-                sampleSchemaFile.createNewFile();
-                final File sampleDataFile = new File(sampleName + ".avro");
-                sampleDataFile.createNewFile();
-                records = service.saveSampleOfDataset(name, size, sampleSchemaFile, sampleDataFile);
-                LOG.info("Schema saved at : {} .", sampleSchemaFile.getAbsolutePath());
-                LOG.info("Data saved at   : {} .", sampleDataFile.getAbsolutePath());
+                records = service.saveSampleOfDataset(name, size, sampleName);
+                File[] files = new File[2];
+                files[0] = new File(sampleName + ".avsc");
+                if(files[0].exists()) LOG.info("Schema saved at : {} .", files[0].getAbsolutePath());
+                files[1] = new File(sampleName + ".avro");
+                if(files[1].exists()) LOG.info("Data saved at : {} .", files[1].getAbsolutePath());
             } else records = service.sampleOfDataset(name, size);
             LOG.info("Random sample of dataset \"{}\". Sample size : {} :", name, size);
             for (String record : records) LOG.info("\t{}", record);
             return "DONE";
         } catch (IOException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         } catch (DatasetException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         }
     }
 
@@ -348,9 +350,9 @@ public class EncodingCommands implements CommandMarker {
             }
             return "DONE";
         } catch (DatasetException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         } catch (IOException e) {
-            return "Error. " + e.getClass().getName() + " : " + e.getMessage();
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         }
     }
 

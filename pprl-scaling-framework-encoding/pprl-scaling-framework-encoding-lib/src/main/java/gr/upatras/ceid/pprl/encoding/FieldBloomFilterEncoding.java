@@ -20,7 +20,7 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
         return "FBF_" + super.getName();
     }
 
-    public String toString() { return getName(); }
+    public String toString() { return "FBF"; }
 
     public GenericData.Fixed encode(final Object obj, final Schema.Type type,
                                     final Schema.Field encodingField,

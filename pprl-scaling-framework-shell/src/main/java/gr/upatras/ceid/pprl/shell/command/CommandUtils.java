@@ -56,4 +56,9 @@ public class CommandUtils {
         }
         return columns;
     }
+
+    public static String prettyStats(final double[] stats) {
+        if(stats.length != 2) throw new IllegalArgumentException("Stats length must be 2");
+        return String.format("[%.2f,%.2f]",stats[0],stats[1]);
+    }
 }

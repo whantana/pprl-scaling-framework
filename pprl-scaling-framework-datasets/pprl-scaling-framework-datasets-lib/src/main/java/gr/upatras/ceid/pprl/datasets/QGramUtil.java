@@ -29,7 +29,8 @@ public class QGramUtil {
         replaceSpaces = (replaceSpaces.endsWith("_")) ?
                 replaceSpaces : replaceSpaces + "_";
         String finalString = replaceSpaces;
-        return  finalString.length() - Q + 1;
+        int qGramCount = finalString.length() - Q + 1;
+        return (qGramCount > 0) ? qGramCount : 0 ;
     }
 
     public static int calcQgramsCount(final Number number, final int Q) {
@@ -39,13 +40,15 @@ public class QGramUtil {
                 "_" + onlyNumbers : onlyNumbers;
         finalString = (!onlyNumbers.endsWith("_")) ?
                 finalString +"_" : finalString;
-        return  finalString.length() - Q + 1;
+        int qGramCount = finalString.length() - Q + 1;
+        return (qGramCount > 0) ? qGramCount : 0 ;
     }
 
     public static int calcQgramsCount(final Boolean bool, final int Q) {
         String string = String.valueOf(bool);
         String finalString = "_" + string + "_";
-        return finalString.length() - Q + 1;
+        int qGramCount = finalString.length() - Q + 1;
+        return (qGramCount > 0) ? qGramCount : 0 ;
     }
 
     public static String[] generateQGrams(final Object obj, final Schema.Type type, final int Q) {

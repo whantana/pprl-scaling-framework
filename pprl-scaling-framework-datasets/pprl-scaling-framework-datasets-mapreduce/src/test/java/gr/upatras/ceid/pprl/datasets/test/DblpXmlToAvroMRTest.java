@@ -23,7 +23,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.net.URL;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -42,9 +41,7 @@ public class DblpXmlToAvroMRTest {
     @Before
     public void setUp() throws URISyntaxException, IOException, InterruptedException {
         // find test file
-        final URL resourceUrl = getClass().getResource("/dblp.xml");
-        assertNotNull("Test file missing", resourceUrl);
-        File testFile = new File(resourceUrl.toURI());
+        File testFile = new File("dblp.xml");
         assertNotNull("Test file missing",testFile);
 
         // set configuration

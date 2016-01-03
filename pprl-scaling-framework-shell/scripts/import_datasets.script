@@ -1,0 +1,10 @@
+dat_list
+dat_import --name random --avro_files pprl-scaling-framework-shell/target/appassembler/data/random/avro/random.avro --schema_file  pprl-scaling-framework-shell/target/appassembler/data/random/schema/random.avsc
+dat_import --name random1 --avro_files pprl-scaling-framework-shell/target/appassembler/data/random/avro --schema_file  pprl-scaling-framework-shell/target/appassembler/data/random/schema/random.avsc
+dat_import --name da_int --avro_files pprl-scaling-framework-shell/target/appassembler/data/da_int/avro --schema_file  pprl-scaling-framework-shell/target/appassembler/data/da_int/schema/da_int.avsc
+dat_import_dblp --dblp_files  pprl-scaling-framework-shell/target/appassembler/data/dblp/xml/dblp_sample.xml --schema_file  pprl-scaling-framework-shell/target/appassembler/data/dblp/schema/dblp_sample.avsc --name dblp
+dat_list
+dat_drop --name random1 --delete_files YES
+dat_list
+
+

@@ -36,10 +36,10 @@ public class EncodeDatasetTool extends Configured implements Tool {
         // get args
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
-        if (args.length != 10) {
+        if (args.length != 10 && args.length != 9) {
             LOG.error(" Usage: EncodeDatasetTool <input-path> <input-schema> <encoding-path> <encoding-schema>\n" +
                     "\t<sel_field_1,sel_field_2,...,sel_field_M>\n" +
-                    "\t<rest_field_1,rest_field_2,...,rest_field_R>\n" +
+                    "\t[<rest_field_1,rest_field_2,...,rest_field_R>]\n" +
                     "\t<FBF|RBF> <N_1,N_2,...,N_M> <K> <Q>");
             return -1;
         }
@@ -56,27 +56,27 @@ public class EncodeDatasetTool extends Configured implements Tool {
                 loadAvroSchemaFromHdfs(FileSystem.get(conf), outputSchemaPath);
 
         final String[] selectedFielNames = args[4].split(",");
-        final String[] restFieldNames = args[5].split(",");
-        final String methodName = args[6];
+        final String[] restFieldNames = (args.length==10) ? args[5].split(",") : null;
+        final String methodName = args[(args.length==10) ? 6 : 5];
         if(!BloomFilterEncoding.AVAILABLE_METHODS.contains(methodName))
             throw new IllegalArgumentException("Error : " + methodName +
                     " Availble methods are : " + BloomFilterEncoding.AVAILABLE_METHODS);
-        final int[] N = new int[args[7].split(",").length];
+        final int[] N = new int[args[(args.length==10) ? 7 : 6].split(",").length];
         if(N.length != selectedFielNames.length)
             throw new IllegalArgumentException("Error : N count must agree with selected field names count.");
         final String[] Nstr = new String[N.length];
         for (int i = 0; i < N.length; i++) {
-            N[i] = Integer.parseInt(args[7].split(",")[i]);
-            Nstr[i] = args[7].split(",")[i];
+            N[i] = Integer.parseInt(args[(args.length==10) ? 7 : 6].split(",")[i]);
+            Nstr[i] = args[(args.length==10) ? 7 : 6].split(",")[i];
         }
-        final int K = Integer.parseInt(args[8]);
-        final int Q = Integer.parseInt(args[9]);
+        final int K = Integer.parseInt(args[(args.length==10) ? 8 : 7]);
+        final int Q = Integer.parseInt(args[(args.length==10) ? 9 : 8]);
 
         conf.set(BloomFilterEncodingMapper.METHOD_NAME_KEY, methodName);
         conf.set(BloomFilterEncodingMapper.INPUT_SCHEMA_KEY, inputSchema.toString());
         conf.set(BloomFilterEncodingMapper.OUTPUT_SCHEMA_KEY, outputSchema.toString());
         conf.setStrings(BloomFilterEncodingMapper.SELECTED_FIELDS_KEY, selectedFielNames);
-        conf.setStrings(BloomFilterEncodingMapper.REST_FIELDS_KEY, restFieldNames);
+        if(restFieldNames != null) conf.setStrings(BloomFilterEncodingMapper.REST_FIELDS_KEY, restFieldNames);
         conf.setStrings(BloomFilterEncodingMapper.N_KEY, Nstr);
         conf.setInt(BloomFilterEncodingMapper.K_KEY,K);
         conf.setInt(BloomFilterEncodingMapper.Q_KEY,Q);

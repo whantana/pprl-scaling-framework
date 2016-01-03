@@ -6,18 +6,24 @@ import org.apache.avro.file.FileReader;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.FsInput;
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.hadoop.io.SequenceFile;
+import org.apache.hadoop.io.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -27,8 +33,7 @@ public class Dataset {
     protected Path basePath;
     protected Path avroPath;
     protected Path avroSchemaPath;
-
-    protected transient Schema schema;
+    protected Schema schema;
 
     public Dataset(final String name, final Path userHomeDirectory) {
         this(name,
@@ -142,7 +147,8 @@ public class Dataset {
         return result;
     }
 
-    public Schema getSchema(final FileSystem fs) throws IOException {
+    public Schema getSchema(final FileSystem fs)
+            throws IOException, DatasetException {
         if(schema == null)  {
             FileStatus[] statuses = fs.listStatus(avroSchemaPath);
             if(statuses.length > 1) {
@@ -151,27 +157,35 @@ public class Dataset {
                         schema = (new Schema.Parser()).parse(fs.open(s.getPath()));
                     if(schema != null) break;
                 }
-            } else if (statuses.length == 1){
-                FileStatus s = statuses[0];
-                if(s.isFile()) schema = (new Schema.Parser()).parse(fs.open(s.getPath()));
-            }
+            } else if (statuses.length != 1)
+                throw new DatasetException("Empty schema path.");
+            FileStatus s = statuses[0];
+            if(s.isFile()) schema = (new Schema.Parser()).parse(fs.open(s.getPath()));
         }
 
         return schema;
     }
 
-    public Path getSchemaFile(final FileSystem fs) throws IOException {
+    public void writeSchemaOnHdfs(final FileSystem fs) throws IOException {
+        if(schema == null) return;
+        final Path schemaPath = new Path(avroSchemaPath + "/" + name + ".avsc");
+        final FSDataOutputStream fsdos = fs.create(schemaPath, true);
+        fsdos.write(schema.toString(true).getBytes());
+        fsdos.close();
+    }
+
+    public Path getSchemaFile(final FileSystem fs)
+            throws IOException, DatasetException {
         FileStatus[] statuses = fs.listStatus(avroSchemaPath);
         if(statuses.length > 1) {
             for(FileStatus s : statuses) {
                 if(s.isFile() && s.getPath().getName().endsWith(".avsc")) return s.getPath();
             }
-        }
+        } else if(statuses.length != 1) throw new DatasetException("Empty schema path.");
         FileStatus s = statuses[0];
         if(s.isFile() && s.getPath().getName().endsWith(".avsc")) return s.getPath();
         else return null;
     }
-
 
     public DatasetRecordReader getReader(final FileSystem fs) throws IOException, DatasetException {
         if(schema == null) {
@@ -183,9 +197,46 @@ public class Dataset {
         return new DatasetRecordReader(fs,schema,avroPath);
     }
 
+    public Path getStatsPath(final int Q) { return new Path(getBasePath() + "/" + String.format("stats_%d",Q)); }
+
+    public double[] getStats(final FileSystem fs, final int Q , final String fieldName)
+            throws IOException, DatasetException {
+        final Map<String,double[]> stats = getStats(fs,Q,new String[]{fieldName});
+        if(stats.size() != 1)
+            throw new DatasetException("Map should have only 1 entry.");
+        if(!stats.containsKey(fieldName))
+            throw new DatasetException("Cannot find stats for field name " + fieldName + ".");
+        return stats.get(fieldName);
+    }
+
+    public Map<String,double[]> getStats(final FileSystem fs, final int Q,final String[] selectedFieldNames)
+            throws IOException, DatasetException {
+
+        final Path statsParentPath = getStatsPath(Q);
+        if(!fs.exists(statsParentPath))
+            throw new DatasetException("Cannot find datasets stats path " + statsParentPath + ".");
+        if(fs.listStatus(statsParentPath).length == 0)
+            throw new DatasetException("Empty stats path " + statsParentPath + ".");
+        final Path statsFile =  fs.listStatus(statsParentPath)[0].getPath();
+
+        SequenceFile.Reader reader = new SequenceFile.Reader(fs.getConf(), SequenceFile.Reader.file(statsFile));
+        final Map<String,double[]> stats = new HashMap<String,double[]>();
+        Text key = new Text();
+        DatasetStatsWritable value = new DatasetStatsWritable();
+
+        while(reader.next(key,value)) {
+            if(selectedFieldNames == null ||
+                    selectedFieldNames.length == 0 ||
+                    Arrays.asList(selectedFieldNames).contains(key.toString()))
+                stats.put(key.toString(),value.getStats());
+        }
+        reader.close();
+        return stats;
+    }
+
     public boolean isValid() {
         return (name != null) & (basePath != null) &
-               (avroPath != null) & (avroSchemaPath != null);
+                (avroPath != null) & (avroSchemaPath != null);
     }
 
     public class DatasetRecordReader implements Iterator<GenericRecord>,Closeable {

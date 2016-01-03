@@ -58,12 +58,6 @@ public abstract class BloomFilterEncoding {
         N[i] = n;
     }
 
-    public void setN(double[] avgQgrams) {
-        setN(new int[avgQgrams.length]);
-        for (int i = 0; i < avgQgrams.length; i++)
-            setN(dynamicsize(avgQgrams[i], K), i);
-    }
-
     public int getK() {
         return K;
     }
@@ -85,7 +79,21 @@ public abstract class BloomFilterEncoding {
     }
 
     public String getName() {
-        return hasMultiN() ? String.format("%d_%d",K,Q) : String.format("%d_%d_%d",N[0],K,Q);
+        return String.format("%d_%d", K, Q);
+    }
+
+    public String getFullName() {
+        if(isValid()) {
+            StringBuilder sb = new StringBuilder(getName());
+            for(Schema.Field field : encodingSchema.getFields()) {
+                if(field.name().startsWith("encoding_field_")) {
+                    String[] fieldNameParts = field.name().split(("_src_"));
+                    sb.append("_").append((fieldNameParts[fieldNameParts.length - 1]));
+                }
+            }
+            return sb.toString();
+        } else
+            return "(invalid encoding)";
     }
 
     public abstract String toString();
@@ -101,14 +109,6 @@ public abstract class BloomFilterEncoding {
     public boolean isInvalid() {
         return N==null | K <= 0 | Q <= 0 | encodingSchema == null;
 
-    }
-
-    public boolean hasMultiN() {
-        return N.length > 1;
-    }
-
-    public boolean hasSingleN() {
-        return N.length == 1;
     }
 
     public void makeFromSchema(final Schema schema,
@@ -138,11 +138,11 @@ public abstract class BloomFilterEncoding {
         Schema.Field[] encodingFields = new Schema.Field[selectedFieldNames.length];
         int i = 0;
         for(String fieldName : selectedFieldNames) {
-            String encodingFieldName = getEncodingFieldName(getN(hasMultiN()?i:0),getK(),getQ(),fieldName);
+            String encodingFieldName = getEncodingFieldName(getN(i),getK(),getQ(),fieldName);
             encodingFields[i] =new Schema.Field(
                     encodingFieldName, Schema.createFixed(
                     encodingFieldName, null, null,
-                    (int) Math.ceil(getN(hasMultiN() ? i : 0)/(double)8)),
+                    (int) Math.ceil(getN(i)/(double)8)),
                     String.format("Encoding(%s) of field %s", getName(), fieldName), null);
             i++;
         }
@@ -211,9 +211,9 @@ public abstract class BloomFilterEncoding {
         int i = 0;
         for(Schema.Field field : encodingFieldsList) {
             String restName = field.name().substring("encoding_field_".length());
-            String[] parts = restName.split("_");
-            if(parts.length != 4 && parts.length != 3)
-                throw new BloomFilterEncodingException("Parts must be 4 but they are " + parts.length +".");
+            String[] parts = restName.split("_src_")[0].split("_");
+            if(parts.length != 3)
+                throw new BloomFilterEncodingException("Parts must be 3 but they are " + parts.length +".");
             setN(Integer.parseInt(parts[0]),i);
             if(getK() != Integer.parseInt(parts[1]))
                 throw new BloomFilterEncodingException("K :" + getK() + " in schema does not agree with " +
@@ -230,7 +230,7 @@ public abstract class BloomFilterEncoding {
     }
 
     public static String getEncodingFieldName(final int N, final int K, final int Q,final String name) {
-        return String.format("encoding_field_%d_%d_%d_%s",N,K,Q,name);
+        return String.format("encoding_field_%d_%d_%d_src_%s",N,K,Q,name);
     }
 
     private static boolean areSelectedNamesInSchema(final Schema schema, final String[] selectedNames) {
@@ -258,6 +258,14 @@ public abstract class BloomFilterEncoding {
         return (int) Math.ceil((1 / (1 - Math.pow(0.5, (double) 1 / (g * K)))));
     }
 
+    public static int[] dynamicsizes(double[] g, int K) {
+        int N[] = new int[g.length];
+        for (int i = 0; i < g.length; i++) {
+            N[i] = dynamicsize(g[i],K);
+        }
+        return N;
+    }
+
     public static void belongsInAvailableMethods(final String methodName)
             throws BloomFilterEncodingException {
         if(!AVAILABLE_METHODS.contains(methodName))
@@ -269,41 +277,6 @@ public abstract class BloomFilterEncoding {
         belongsInAvailableMethods(methodName);
         try {
             return (BloomFilterEncoding) (AVAILABLE_METHODS_MAP.get(methodName).newInstance());
-        } catch (InstantiationException e) {
-            throw new BloomFilterEncodingException(e.getMessage());
-        } catch (IllegalAccessException e) {
-            throw new BloomFilterEncodingException(e.getMessage());
-        }
-    }
-
-    public static BloomFilterEncoding newInstanceOfMethod(final String methodName, final int N, int K, int Q)
-            throws BloomFilterEncodingException {
-        belongsInAvailableMethods(methodName);
-        try {
-            BloomFilterEncoding encoding =
-                    (BloomFilterEncoding)  (AVAILABLE_METHODS_MAP.get(methodName).newInstance());
-            encoding.setN(new int[1]);
-            encoding.setN(N,0);
-            encoding.setK(K);
-            encoding.setQ(Q);
-            return encoding;
-        } catch (InstantiationException e) {
-            throw new BloomFilterEncodingException(e.getMessage());
-        } catch (IllegalAccessException e) {
-            throw new BloomFilterEncodingException(e.getMessage());
-        }
-    }
-
-    public static BloomFilterEncoding newInstanceOfMethod(final String methodName, final double[] avgQgrams, int K, int Q)
-            throws BloomFilterEncodingException {
-        belongsInAvailableMethods(methodName);
-        try {
-            BloomFilterEncoding encoding =
-                    (BloomFilterEncoding)  (AVAILABLE_METHODS_MAP.get(methodName).newInstance());
-            encoding.setN(avgQgrams);
-            encoding.setK(K);
-            encoding.setQ(Q);
-            return encoding;
         } catch (InstantiationException e) {
             throw new BloomFilterEncodingException(e.getMessage());
         } catch (IllegalAccessException e) {
@@ -330,7 +303,6 @@ public abstract class BloomFilterEncoding {
 
     public static BloomFilterEncoding fromString(final String s)
             throws BloomFilterEncodingException{
-        belongsInAvailableMethods(s);
         return newInstanceOfMethod(s);
     }
 
@@ -338,11 +310,13 @@ public abstract class BloomFilterEncoding {
     public static GenericRecord encodeRecord(final GenericRecord record,
                                              final BloomFilterEncoding encoding,
                                              final Schema schema,
-                                             final String[] selectedFieldNames, final String[] restFieldNames,
-                                             final int[] N, final int K, final int Q)
+                                             final String[] selectedFieldNames, final String[] restFieldNames)
             throws BloomFilterEncodingException, UnsupportedEncodingException {
 
         final GenericRecord encodingRecord = new GenericData.Record(encoding.getEncodingSchema());
+        final int[] N = encoding.getN();
+        final int K = encoding.getK();
+        final int Q = encoding.getQ();
 
         for (int i = 0; i < selectedFieldNames.length; i++) {
             String fieldName = selectedFieldNames[i];

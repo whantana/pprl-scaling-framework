@@ -43,8 +43,8 @@ public class DatasetStatMRTest {
     public void setUp() throws IOException, URISyntaxException {
 
         // input record
-        final Schema s = loadAvroSchemaFromFile(
-                new File(getClass().getResource("/dblp.avsc").toURI()));
+        final Schema s = loadAvroSchemaFromFile(new File("dblp.avsc"));
+                //new File(getClass().getResource("/dblp.avsc").toURI()));
         inputRecord = new GenericData.Record(s);
         inputRecord.put("key", EXPECTED_KEY);
         inputRecord.put("author", EXPECTED_AUTHOR);

@@ -19,7 +19,7 @@ public class BenchmarkHashingMethods {
     private static final int K = 30;
     private static final int Q = 2;
     private static final int ITERATIONS = 4;
-    private static final long BYTES_LIMIT = 1024*1024; // 1MB limit for each iteration for each K
+    private static final long BYTES_LIMIT = 100*1024; // 100K limit for each iteration for each K
     private static final int MAX_PROGRESS = 3*K*ITERATIONS;
     private static final char[] CHARSET_AZ_09_ = "_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".toCharArray();
     private static final Random random = new SecureRandom();
@@ -67,11 +67,13 @@ public class BenchmarkHashingMethods {
                         String.format("%d,%d,%d,%d,%d",
                                 k+1, millisV1[j][k], millisV2[j][k], millisV1backed[j][k], millisV2backed[j][k]))
                         .append("\n");
-            System.out.println("Benchmark timings saved at " + file.getAbsolutePath());
+            System.out.println("Iteration input size : " + BYTES_LIMIT/i + " bytes." +
+                    "Benchmark timings saved at " + file.getAbsolutePath());
             writer.close();
         }
 
-        hdfsBlkSizeBenchmark();
+        //System.out.println("Running 64MB benchmark:");
+        //hdfsBlkSizeBenchmark();
     }
 
     private static String randomQgram() {
@@ -84,8 +86,6 @@ public class BenchmarkHashingMethods {
 
 
     private static long[][] benchmarkCreateHashesV1() throws UnsupportedEncodingException {
-        for (int i = 0; i < 3; i++) BloomFilter.createHashesV1(randomQgram().getBytes("UTF-8"), N, 2, HMAC_MD5, HMAC_SHA1);
-
         int progress = 0;
         long totalBytesRead = 0;
 
@@ -94,6 +94,8 @@ public class BenchmarkHashingMethods {
         for (int i = 10,j=0; j < 3; i=i/2,j++) {
             long maxSize = BYTES_LIMIT/i;
             for(int k = 0 ; k < K; k++) {
+                for (int l = 0; l < ITERATIONS; l++)
+                    BloomFilter.createHashesV1(randomQgram().getBytes("UTF-8"), N, k, HMAC_MD5, HMAC_SHA1);
                 long millisSum = 0;
                 for (int l = 0; l < ITERATIONS; l++) {
                     long bytesRead = 0;
@@ -118,8 +120,6 @@ public class BenchmarkHashingMethods {
     }
 
     private static long[][] benchmarkCreateHashesV2() throws UnsupportedEncodingException {
-        for (int i = 0; i < 3; i++) BloomFilter.createHashesV2(randomQgram().getBytes("UTF-8"), N, 2, HMAC_MD5);
-
         int progress = 0;
         long totalBytesRead = 0;
 
@@ -128,6 +128,8 @@ public class BenchmarkHashingMethods {
         for (int i = 10,j=0; j < 3; i=i/2,j++) {
             long maxSize = BYTES_LIMIT/i;
             for(int k = 0 ; k < K; k++) {
+                for (int l = 0; l < ITERATIONS; l++)
+                    BloomFilter.createHashesV2(randomQgram().getBytes("UTF-8"), N, k, HMAC_MD5);
                 long millisSum = 0;
                 for (int l = 0; l < ITERATIONS; l++) {
                     long bytesRead = 0;
@@ -153,11 +155,7 @@ public class BenchmarkHashingMethods {
 
 
     private static long[][] benchmarkCreateHashesV1MapBacked() throws UnsupportedEncodingException {
-
-        for (int i = 0; i < 3; i++) BloomFilter.createHashesV1(randomQgram().getBytes("UTF-8"), N, 2, HMAC_MD5, HMAC_SHA1);
-
         Map<String,int[]> map = new TreeMap<String,int[]>();
-
         int progress = 0;
         long totalBytesRead = 0;
         long totalBytesHashed = 0;
@@ -168,6 +166,8 @@ public class BenchmarkHashingMethods {
             long maxSize = BYTES_LIMIT/i;
             for(int k = 0 ; k < K; k++) {
                 map.clear();
+                for (int l = 0; l < ITERATIONS; l++)
+                    BloomFilter.createHashesV1(randomQgram().getBytes("UTF-8"), N, l, HMAC_MD5, HMAC_SHA1);
                 long millisSum = 0;
                 for (int l = 0; l < ITERATIONS; l++) {
                     long bytesRead = 0;
@@ -199,8 +199,6 @@ public class BenchmarkHashingMethods {
 
     private static long[][] benchmarkCreateHashesV2MapBacked() throws UnsupportedEncodingException {
 
-        for (int i = 0; i < 3; i++) BloomFilter.createHashesV2(randomQgram().getBytes("UTF-8"), N, 2, HMAC_MD5);
-
         Map<String,int[]> map = new TreeMap<String,int[]>();
 
         int progress = 0;
@@ -213,6 +211,8 @@ public class BenchmarkHashingMethods {
             long maxSize = BYTES_LIMIT/i;
             for(int k = 0 ; k < K; k++) {
                 map.clear();
+                for (int l = 0; l < ITERATIONS; l++)
+                            BloomFilter.createHashesV2(randomQgram().getBytes("UTF-8"), N, k, HMAC_MD5);
                 long millisSum = 0;
                 for (int l = 0; l < ITERATIONS; l++) {
                     long bytesRead = 0;
@@ -246,8 +246,6 @@ public class BenchmarkHashingMethods {
 
         long maxBytes = 64*BYTES_LIMIT; //64 MB
 
-        BloomFilter.createHashesV1(randomQgram().getBytes("UTF-8"), N, K, HMAC_MD5, HMAC_SHA1);
-        BloomFilter.createHashesV1(randomQgram().getBytes("UTF-8"), N, K, HMAC_MD5, HMAC_SHA1);
         {
             long bytesRead = 0;
             long start = System.currentTimeMillis();
@@ -275,8 +273,8 @@ public class BenchmarkHashingMethods {
         {
             long bytesRead = 0;
             long bytesHashed = 0;
-            long start = System.currentTimeMillis();
             Map<String, int[]> map = new TreeMap<String,int[]>();
+            long start = System.currentTimeMillis();
             while (bytesRead < maxBytes) {
                 String qGram = randomQgram();
                 if(!map.containsKey(qGram)) {

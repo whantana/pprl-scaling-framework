@@ -18,10 +18,8 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.net.URL;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 public class MultiTagXmlInputFormatTest {
     private Configuration conf;
@@ -35,9 +33,7 @@ public class MultiTagXmlInputFormatTest {
 
     @Before
     public void setUp() throws URISyntaxException {
-        URL resourceUrl = getClass().getResource("/dblp.xml");
-        assertNotNull("Test file missing", resourceUrl);
-        File testFile = new File(resourceUrl.toURI());
+        File testFile = new File("dblp.xml");
         conf = new Configuration(false);
         split = new FileSplit(new Path(testFile.getAbsoluteFile().toURI()), 0, testFile.length(), null);
         long splitPos = testFile.length() / 2;

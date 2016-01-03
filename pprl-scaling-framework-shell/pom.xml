@@ -93,6 +93,9 @@
 								<copy todir="target/appassembler/data">
 									<fileset dir="data"/>
 								</copy>
+								<copy todir="target/appassembler/scripts">
+									<fileset dir="scripts"/>
+								</copy>
 							</tasks>
 						</configuration>
 						<goals>

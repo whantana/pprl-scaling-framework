@@ -1,0 +1,3 @@
+script pprl-scaling-framework-shell/target/appassembler/scripts/datasets.script
+script pprl-scaling-framework-shell/target/appassembler/scripts/encoding.script
+

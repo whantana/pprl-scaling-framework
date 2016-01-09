@@ -37,7 +37,9 @@ public class EncodeDatasetTool extends Configured implements Tool {
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
         if (args.length != 10 && args.length != 9) {
-            LOG.error(" Usage: EncodeDatasetTool <input-path> <input-schema> <encoding-path> <encoding-schema>\n" +
+            LOG.error(" Usage: EncodeDatasetTool " +
+                    "<input-path> <input-schema> \n" +
+                    "\t <encoding-path> <encoding-schema>\n" +
                     "\t<sel_field_1,sel_field_2,...,sel_field_M>\n" +
                     "\t[<rest_field_1,rest_field_2,...,rest_field_R>]\n" +
                     "\t<FBF|RBF> <N_1,N_2,...,N_M> <K> <Q>");

@@ -199,16 +199,6 @@ public class Dataset {
 
     public Path getStatsPath(final int Q) { return new Path(getBasePath() + "/" + String.format("stats_%d",Q)); }
 
-    public double[] getStats(final FileSystem fs, final int Q , final String fieldName)
-            throws IOException, DatasetException {
-        final Map<String,double[]> stats = getStats(fs,Q,new String[]{fieldName});
-        if(stats.size() != 1)
-            throw new DatasetException("Map should have only 1 entry.");
-        if(!stats.containsKey(fieldName))
-            throw new DatasetException("Cannot find stats for field name " + fieldName + ".");
-        return stats.get(fieldName);
-    }
-
     public Map<String,double[]> getStats(final FileSystem fs, final int Q,final String[] selectedFieldNames)
             throws IOException, DatasetException {
 

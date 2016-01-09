@@ -57,6 +57,17 @@ public class CommandUtils {
         return columns;
     }
 
+    public static double[] retrieveWeights(final String wStr) {
+        double[] weights = null;
+        if (wStr != null && wStr.contains(",")) {
+            String[] parts = wStr.split(",");
+            weights = new double[parts.length];
+            for (int i = 0; i < parts.length; i++)
+                weights[i] = Double.parseDouble(parts[i]);
+        }
+        return weights;
+    }
+
     public static String prettyStats(final double[] stats) {
         if(stats.length != 2) throw new IllegalArgumentException("Stats length must be 2");
         return String.format("[%.2f,%.2f]",stats[0],stats[1]);

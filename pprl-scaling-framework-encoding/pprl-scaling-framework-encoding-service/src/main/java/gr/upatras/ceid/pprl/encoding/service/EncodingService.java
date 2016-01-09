@@ -7,12 +7,9 @@ import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
 import gr.upatras.ceid.pprl.encoding.EncodedDataset;
 import gr.upatras.ceid.pprl.encoding.EncodedDatasetException;
+import gr.upatras.ceid.pprl.encoding.FieldBloomFilterEncoding;
+import gr.upatras.ceid.pprl.encoding.RowBloomFilterEncoding;
 import org.apache.avro.Schema;
-import org.apache.avro.file.DataFileReader;
-import org.apache.avro.file.DataFileWriter;
-import org.apache.avro.generic.GenericDatumReader;
-import org.apache.avro.generic.GenericDatumWriter;
-import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
@@ -29,12 +26,9 @@ import org.springframework.stereotype.Service;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -132,8 +126,7 @@ public class EncodingService extends DatasetsService {
         try {
 
             BloomFilterEncoding encoding = BloomFilterEncoding.newInstanceOfMethod(methodName);
-            encoding.makeFromSchema(loadAvroSchemaFromFile(localAvroSchemaFile));
-            if(encoding.isInvalid()) throw new BloomFilterEncodingException("Encoding not valid.");
+            encoding.setupFromSchema(loadAvroSchemaFromFile(localAvroSchemaFile));
 
             if(name == null) name = encoding.getFullName().toLowerCase();
 
@@ -174,9 +167,7 @@ public class EncodingService extends DatasetsService {
             final Dataset sourceDataset = datasetsService.findDatasetByName(sourceDatasetName);
 
             BloomFilterEncoding encoding = BloomFilterEncoding.newInstanceOfMethod(methodName);
-            encoding.makeFromSchema(loadAvroSchemaFromFile(localAvroSchemaFile));
-            if(encoding.isInvalid())
-                throw new BloomFilterEncodingException("Encoding not valid.");
+            encoding.setupFromSchema(loadAvroSchemaFromFile(localAvroSchemaFile));
             if(!encoding.isEncodingOfSchema(sourceDataset.getSchema(pprlClusterHdfs)))
                 throw new BloomFilterEncodingException("Encoding does not validate with source dataset.");
 
@@ -217,81 +208,263 @@ public class EncodingService extends DatasetsService {
         }
     }
 
+    public void encodeFBFStaticImportedDataset(String name,
+                                               final String datasetName,
+                                               final String[] selectedFieldNames, final String[] restFieldNames,
+                                               final int N, final int K, final int Q) {
+        throw new UnsupportedOperationException("unsupported");
+    }
+
+
+    public void encodeFBFDynamicImportedDataset(String name,
+                                                final String datasetName,
+                                                final String[] selectedFieldNames, final String[] restFieldNames,
+                                                final int K, final int Q) {
+        throw new UnsupportedOperationException("unsupported");
+    }
+
+    public void encodeRBFUniformImportedDataset(String name, final String datasetName,
+                                                final String[] selectedFieldNames, final String[] restFieldNames,
+                                                final int N, final int K, final int Q) {
+        throw new UnsupportedOperationException("unsupported");
+    }
+
+    public void encodeRBFWeightedImportedDataset(String name,
+                                                 final String datasetName,
+                                                 final String[] selectedFieldNames, final String[] restFieldNames,
+                                                 final double[] weights, int K, int Q) {
+        throw new UnsupportedOperationException("unsupported");
+    }
+
+
     public void encodeImportedDataset(String name, final String sourceDatasetName,
                                       final String[] selectedFieldNames,
                                       final String[] restFieldNames,
                                       final String methodName,final int N, final int K, final int Q)
             throws Exception {
+        throw new UnsupportedOperationException("unsupported");
+//            final Dataset sourceDataset = datasetsService.findDatasetByName(sourceDatasetName);
+//            final Map<String,double[]> allStats = sourceDataset.getStats(pprlClusterHdfs, Q, selectedFieldNames);
+
+
+//            final BloomFilterEncoding encoding = ( N > 1) ? BloomFilterEncoding.newInstanceOfMethod(
+//                    methodName,
+//                    N,K,Q,
+//                    allStats,
+//                    selectedFieldNames) :
+//                    BloomFilterEncoding.newInstanceOfMethod(
+//                            methodName,
+//                            K,Q,
+//                            allStats,
+//                            selectedFieldNames);
+
+//            if(restFieldNames == null)
+//                encoding.makeFromSchema(sourceDataset.getSchema(pprlClusterHdfs), selectedFieldNames);
+//            else
+//                encoding.makeFromSchema(sourceDataset.getSchema(pprlClusterHdfs), selectedFieldNames, restFieldNames);
+//            if(encoding.isInvalid()) throw new BloomFilterEncodingException("Encoding not valid.");
+//            if(!encoding.isEncodingOfSchema(sourceDataset.getSchema(pprlClusterHdfs)))
+//                throw new BloomFilterEncodingException("Encoding does not validate with source dataset.");
+//
+//            if(name == null) name = encoding.getFullName().toLowerCase();
+//
+//            final Path basePath = new Path(sourceDataset.getBasePath() + "/" + name);
+//            final Path avroPath = new Path(basePath + "/avro");
+//            final Path avroSchemaPath = new Path(basePath + "/schema");
+//            final EncodedDataset encodedDataset =
+//                    new EncodedDataset(name, sourceDatasetName, basePath, avroPath, avroSchemaPath);
+//            encodedDataset.buildOnFS(pprlClusterHdfs, false, true, true, ONLY_OWNER_PERMISSION);
+//            encodedDataset.setEncoding(encoding);
+//            encodedDataset.writeSchemaOnHdfs(pprlClusterHdfs);
+
+//            LOG.info("EncodedDataset : {}, Base path                         : {}", name, encodedDataset.getBasePath());
+//            LOG.info("EncodedDataset : {}, Avro path                         : {}", name, encodedDataset.getAvroPath());
+//            LOG.info("EncodedDataset : {}, Avro Schema Path                  : {}", name, encodedDataset.getAvroSchemaPath());
+//            LOG.info("EncodedDataset : {}, Source dataset name               : {}", name, sourceDataset.getName());
+//            LOG.info("EncodedDataset : {}, Source dataset base path          : {}", name, sourceDataset.getBasePath());
+//            LOG.info("EncodedDataset : {}, Source dataset avro path          : {}", name, sourceDataset.getAvroPath());
+//            LOG.info("EncodedDataset : {}, Source dataset avro schema path   : {}", name, sourceDataset.getAvroSchemaPath());
+//            LOG.info("EncodedDataset : {}, Selected fields to encode         : {}", name, selectedFieldNames);
+//            if(restFieldNames != null)
+//                LOG.info("EncodedDataset : {}, Rest of fields in encoded dataset : {}", name, restFieldNames);
+//            LOG.info("EncodedDataset : {}, Encoding                          : {}", name, encoding.getFullName());
+//            throw new UnsupportedOperationException("unsuppored so far!");
+//            runEncodeDatasetTool(
+//                    sourceDataset.getAvroPath(), sourceDataset.getSchemaFile(pprlClusterHdfs),
+//                    encodedDataset.getAvroPath(), encodedDataset.getSchemaFile(pprlClusterHdfs),
+//                    selectedFieldNames, restFieldNames,
+//                    methodName, encoding.getN(), K, Q);      // TODO probably fix here
+//            removeSuccessFile(encodedDataset.getAvroPath());
+//
+//            addToDatasets(encodedDataset);
+//        } catch (BloomFilterEncodingException e) {
+//            LOG.error(e.getMessage());
+//            throw e;
+//        } catch (DatasetException e) {
+//            LOG.error(e.getMessage());
+//            throw e;
+//        } catch (IOException e) {
+//            LOG.error(e.getMessage());
+//            throw e;
+//        } catch (Exception e) {
+//            LOG.error(e.getMessage());
+//            throw e;
+//        }
+    }
+
+
+    public String[] encodeFBFDynamicLocalFile(String name,
+                                              final Set<File> avroFiles, final File schemaFile,
+                                              final String[] selectedFieldNames,
+                                              final String[] restFieldNames,
+                                              final int K, final int Q)
+            throws IOException, BloomFilterEncodingException {
         try {
-            final Dataset sourceDataset = datasetsService.findDatasetByName(sourceDatasetName);
-            int[] Ns;
-            if(N <= 0) {
-                LOG.debug("Dynamic FBF size encoding");
-                double[] avgQgrams = new double[selectedFieldNames.length];
-                for (int i = 0; i < avgQgrams.length; i++) {
-                    double[] fieldStats = sourceDataset.getStats(pprlClusterHdfs, Q, selectedFieldNames[i]);
-                    LOG.debug("Stats are for field {} are {}", selectedFieldNames[i], Arrays.toString(fieldStats));
-                    avgQgrams[i] = fieldStats[1];
-                    LOG.debug("Dynamic size : " + BloomFilterEncoding.dynamicsize(avgQgrams[i] , K));
-                }
-                Ns = BloomFilterEncoding.dynamicsizes(avgQgrams, K);
 
-            } else {
-                LOG.debug("Static FBF size encoding");
-                Ns = new int[selectedFieldNames.length];
-                for (int i = 0; i < Ns.length; i++) Ns[i] = N;
-            }
-            final BloomFilterEncoding encoding = BloomFilterEncoding.newInstanceOfMethod(methodName,Ns,K,Q);
+            final Map<String,double[]> allStats = calculateLocalDataStats(avroFiles,schemaFile,selectedFieldNames,Q);
 
-            if(restFieldNames == null)
-                encoding.makeFromSchema(sourceDataset.getSchema(pprlClusterHdfs), selectedFieldNames);
-            else
-                encoding.makeFromSchema(sourceDataset.getSchema(pprlClusterHdfs), selectedFieldNames, restFieldNames);
-            if(encoding.isInvalid()) throw new BloomFilterEncodingException("Encoding not valid.");
-            if(!encoding.isEncodingOfSchema(sourceDataset.getSchema(pprlClusterHdfs)))
+            final double[] avgQgrams = new double[selectedFieldNames.length];
+            for (int i = 0; i < selectedFieldNames.length; i++)
+                avgQgrams[i] = allStats.get(selectedFieldNames[i])[1];
+
+            final FieldBloomFilterEncoding encoding = new FieldBloomFilterEncoding(avgQgrams,K,Q);
+
+            final Schema schema = loadAvroSchemaFromFile(schemaFile);
+            encoding.makeFromSchema(schema, selectedFieldNames, restFieldNames);
+            if(!encoding.isEncodingOfSchema(schema))
                 throw new BloomFilterEncodingException("Encoding does not validate with source dataset.");
-
             if(name == null) name = encoding.getFullName().toLowerCase();
 
-            final Path basePath = new Path(sourceDataset.getBasePath() + "/" + name);
-            final Path avroPath = new Path(basePath + "/avro");
-            final Path avroSchemaPath = new Path(basePath + "/schema");
-            final EncodedDataset encodedDataset =
-                    new EncodedDataset(name, sourceDatasetName, basePath, avroPath, avroSchemaPath);
-            encodedDataset.buildOnFS(pprlClusterHdfs, false, true, true, ONLY_OWNER_PERMISSION);
-            encodedDataset.setEncoding(encoding);
-            encodedDataset.writeSchemaOnHdfs(pprlClusterHdfs);
+            LOG.info("Encoding local data : Data files                : {}", avroFiles);
+            LOG.info("Encoding local data : Schema file               : {}", schemaFile);
+            LOG.info("Encoding local data : Selected fields to encode : {}", selectedFieldNames);
+            LOG.info("Encoding local data : Rest of fields to include : {}", restFieldNames);
+            LOG.info("Encoding local data : Encoding name             : {}", name);
 
-            LOG.info("EncodedDataset : {}, Base path                         : {}", name, encodedDataset.getBasePath());
-            LOG.info("EncodedDataset : {}, Avro path                         : {}", name, encodedDataset.getAvroPath());
-            LOG.info("EncodedDataset : {}, Avro Schema Path                  : {}", name, encodedDataset.getAvroSchemaPath());
-            LOG.info("EncodedDataset : {}, Source dataset name               : {}", name, sourceDataset.getName());
-            LOG.info("EncodedDataset : {}, Source dataset base path          : {}", name, sourceDataset.getBasePath());
-            LOG.info("EncodedDataset : {}, Source dataset avro path          : {}", name, sourceDataset.getAvroPath());
-            LOG.info("EncodedDataset : {}, Source dataset avro schema path   : {}", name, sourceDataset.getAvroSchemaPath());
-            LOG.info("EncodedDataset : {}, Selected fields to encode         : {}", name, selectedFieldNames);
-            if(restFieldNames != null)
-                LOG.info("EncodedDataset : {}, Rest of fields in encoded dataset : {}", name, restFieldNames);
-            LOG.info("EncodedDataset : {}, Encoding                          : {}", name, encoding.getFullName());
-
-            runEncodeDatasetTool(
-                    sourceDataset.getAvroPath(), sourceDataset.getSchemaFile(pprlClusterHdfs),
-                    encodedDataset.getAvroPath(), encodedDataset.getSchemaFile(pprlClusterHdfs),
-                    selectedFieldNames, restFieldNames,
-                    methodName, Ns, K, Q);
-            removeSuccessFile(encodedDataset.getAvroPath());
-
-            addToDatasets(encodedDataset);
-        } catch (BloomFilterEncodingException e) {
-            LOG.error(e.getMessage());
-            throw e;
-        } catch (DatasetException e) {
-            LOG.error(e.getMessage());
-            throw e;
+            return BloomFilterEncoding.encodeLocalFile(name, avroFiles, schema, encoding);
         } catch (IOException e) {
             LOG.error(e.getMessage());
             throw e;
-        } catch (Exception e) {
+        } catch (BloomFilterEncodingException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        }
+
+    }
+
+    public String[] encodeFBFStaticLocalFile(String name,
+                                             final Set<File> avroFiles, final  File schemaFile,
+                                             final String[] selectedFieldNames, final  String[] restFieldNames,
+                                             final int N, final int K, final int Q)
+            throws IOException, BloomFilterEncodingException {
+        try {
+            final FieldBloomFilterEncoding encoding = new FieldBloomFilterEncoding(N,selectedFieldNames.length,K,Q);
+
+            final Schema schema = loadAvroSchemaFromFile(schemaFile);
+            encoding.makeFromSchema(schema, selectedFieldNames, restFieldNames);
+            if(!encoding.isEncodingOfSchema(schema))
+                throw new BloomFilterEncodingException("Encoding does not validate with source dataset.");
+            if(name == null) name = encoding.getFullName().toLowerCase();
+
+            LOG.info("Encoding local data : Data files                : {}", avroFiles);
+            LOG.info("Encoding local data : Schema file               : {}", schemaFile);
+            LOG.info("Encoding local data : Selected fields to encode : {}", selectedFieldNames);
+            LOG.info("Encoding local data : Rest of fields to include : {}", restFieldNames);
+            LOG.info("Encoding local data : Encoding name             : {}", name);
+
+            return BloomFilterEncoding.encodeLocalFile(name, avroFiles, schema, encoding);
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        } catch (BloomFilterEncodingException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        }
+    }
+
+    public String[] encodeRBFUniformLocalFile(String name,
+                                              final Set<File> avroFiles, final  File schemaFile,
+                                              final String[] selectedFieldNames, final String[] restFieldNames,
+                                              final int N, final int K, final int Q)
+            throws IOException, BloomFilterEncodingException {
+        try {
+            final Map<String,double[]> allStats = calculateLocalDataStats(avroFiles,schemaFile,selectedFieldNames,Q);
+
+            final double[] avgQgrams = new double[selectedFieldNames.length];
+            for (int i = 0; i < selectedFieldNames.length; i++)
+                avgQgrams[i] = allStats.get(selectedFieldNames[i])[1]; // 0 length , 1 avgQGrams per field //
+
+            final RowBloomFilterEncoding encoding = new RowBloomFilterEncoding(avgQgrams,N,K,Q);
+
+            final Schema schema = loadAvroSchemaFromFile(schemaFile);
+            encoding.makeFromSchema(schema, selectedFieldNames, restFieldNames);
+            if(!encoding.isEncodingOfSchema(schema))
+                throw new BloomFilterEncodingException("Encoding does not validate with source dataset.");
+            if(name == null) name = encoding.getFullName().toLowerCase();
+
+            LOG.info("Encoding local data : Data files                : {}", avroFiles);
+            LOG.info("Encoding local data : Schema file               : {}", schemaFile);
+            LOG.info("Encoding local data : Selected fields to encode : {}", selectedFieldNames);
+            LOG.info("Encoding local data : Rest of fields to include : {}", restFieldNames);
+            LOG.info("Encoding local data : Encoding name             : {}", name);
+
+            return BloomFilterEncoding.encodeLocalFile(name, avroFiles, schema, encoding);
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        } catch (BloomFilterEncodingException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        }
+    }
+
+
+    public String[] encodeRBFWeightedLocalFile(String name,
+                                               final Set<File> avroFiles, final File schemaFile,
+                                               final String[] selectedFieldNames,
+                                               final String[] restFieldNames,
+                                               double[] weights,
+                                               final int K, final int Q)
+            throws IOException, BloomFilterEncodingException {
+        try {
+            final Map<String,double[]> allStats = calculateLocalDataStats(avroFiles,schemaFile,selectedFieldNames,Q);
+
+            final double[] avgQgrams = new double[selectedFieldNames.length];
+            for (int i = 0; i < selectedFieldNames.length; i++)
+                avgQgrams[i] = allStats.get(selectedFieldNames[i])[1]; // 0 length , 1 avgQGrams per field //
+
+            if(weights == null || weights.length == 0) {
+                throw new UnsupportedOperationException("Need to retrieve weight from stats.");
+            } else {
+                if(weights.length != selectedFieldNames.length)
+                    throw new BloomFilterEncodingException("weights size is not equal to selected fields size.");
+                double sum=0;
+                for (double w : weights) sum+=w;
+                if(sum != 1.0)
+                    throw new BloomFilterEncodingException("weights must add up to 1.0 . sum(weights)=" + sum + ".");
+            }
+
+            final RowBloomFilterEncoding encoding = new RowBloomFilterEncoding(avgQgrams,weights,K,Q);
+
+            final Schema schema = loadAvroSchemaFromFile(schemaFile);
+            encoding.makeFromSchema(schema, selectedFieldNames, restFieldNames);
+            if(!encoding.isEncodingOfSchema(schema))
+                throw new BloomFilterEncodingException("Encoding does not validate with source dataset.");
+            if(name == null) name = encoding.getFullName().toLowerCase();
+
+            LOG.info("Encoding local data : Data files                : {}", avroFiles);
+            LOG.info("Encoding local data : Schema file               : {}", schemaFile);
+            LOG.info("Encoding local data : Selected fields to encode : {}", selectedFieldNames);
+            LOG.info("Encoding local data : Rest of fields to include : {}", restFieldNames);
+            LOG.info("Encoding local data : Encoding name             : {}", name);
+
+            return BloomFilterEncoding.encodeLocalFile(name, avroFiles, schema, encoding);
+
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+            throw e;
+
+        } catch (BloomFilterEncodingException e) {
             LOG.error(e.getMessage());
             throw e;
         }
@@ -303,82 +476,7 @@ public class EncodingService extends DatasetsService {
                                     final String methodName, final int N, final int K, final int Q,
                                     final Set<File> avroFiles, final File schemaFile)
             throws BloomFilterEncodingException, IOException {
-        try {
-            int[] Ns;
-            if(N <= 0) {
-                LOG.debug("Dynamic FBF size encoding");
-                double[] avgQgrams = new double[selectedFieldNames.length];
-                final Map<String,double[]> allStats = calculateLocalDataStats(avroFiles,schemaFile,selectedFieldNames,Q);
-                for (int i = 0; i < selectedFieldNames.length; i++) {
-                    double[] fieldStats = allStats.get(selectedFieldNames[i]);
-                    LOG.debug("Stats are for field {} are {}", selectedFieldNames[i], Arrays.toString(fieldStats));
-                    avgQgrams[i] = fieldStats[1];
-                    LOG.debug("Dynamic size : " + BloomFilterEncoding.dynamicsize(avgQgrams[i], K));
-                }
-                Ns = BloomFilterEncoding.dynamicsizes(avgQgrams, K);
-            } else {
-                LOG.debug("Static FBF size encoding");
-                Ns = new int[selectedFieldNames.length];
-                for (int i = 0; i < Ns.length; i++) Ns[i] = N;
-            }
-            final BloomFilterEncoding encoding = BloomFilterEncoding.newInstanceOfMethod(methodName,Ns,K,Q);
-
-            final Schema schema = loadAvroSchemaFromFile(schemaFile);
-            encoding.makeFromSchema(schema, selectedFieldNames, restFieldNames);
-            if(encoding.isInvalid()) throw new BloomFilterEncodingException("Encoding not valid.");
-            if(!encoding.isEncodingOfSchema(schema))
-                throw new BloomFilterEncodingException("Encoding does not validate with source dataset.");
-
-            if(name == null) name = encoding.getFullName().toLowerCase();
-
-            LOG.info("Encoding local data : Data files                : {}", avroFiles);
-            LOG.info("Encoding local data : Schema file               : {}", schemaFile);
-            LOG.info("Encoding local data : Selected fields to encode : {}", selectedFieldNames);
-            LOG.info("Encoding local data : Rest of fields to include : {}", restFieldNames);
-            LOG.info("Encoding local data : Encoding name             : {}", name);
-
-            final File encodedSchemaFile = new File(name + ".avsc");
-            encodedSchemaFile.createNewFile();
-            final PrintWriter schemaWriter = new PrintWriter(encodedSchemaFile);
-            schemaWriter.print(encoding.getEncodingSchema().toString(true));
-            schemaWriter.close();
-
-            final File encodedFile = new File(name + ".avro");
-            encodedFile.createNewFile();
-            final DataFileWriter<GenericRecord> writer =
-                    new DataFileWriter<GenericRecord>(new GenericDatumWriter<GenericRecord>(
-                            encoding.getEncodingSchema()));
-            writer.create(encoding.getEncodingSchema(), encodedFile);
-            for (File avroFile : avroFiles) {
-                final DataFileReader<GenericRecord> reader =
-                        new DataFileReader<GenericRecord>(avroFile,
-                                new GenericDatumReader<GenericRecord>(schema));
-                for (GenericRecord record : reader) {
-                    writer.append(
-                            BloomFilterEncoding.encodeRecord(record, encoding, schema,
-                                    selectedFieldNames, restFieldNames));
-                }
-                reader.close();
-            }
-            writer.close();
-
-            return new String[]{
-                    encodedFile.getAbsolutePath(),
-                    encodedSchemaFile.getAbsolutePath()
-            };
-        } catch (FileNotFoundException e) {
-            LOG.error(e.getMessage());
-            throw e;
-        } catch (BloomFilterEncodingException e) {
-            LOG.error(e.getMessage());
-            throw e;
-        } catch (UnsupportedEncodingException e) {
-            LOG.error(e.getMessage());
-            throw e;
-        } catch (IOException e) {
-            LOG.error(e.getMessage());
-            throw e;
-        }
+        throw new UnsupportedOperationException("unsupported");
     }
 
     protected void loadDatasets() throws IOException, EncodedDatasetException {
@@ -392,7 +490,7 @@ public class EncodingService extends DatasetsService {
                 while (line != null) {
                     LOG.debug("read line : {}", line);
                     EncodedDataset encodedDataset = EncodedDataset.fromString(line);
-                    encodedDataset.getEncoding().makeFromSchema(encodedDataset.getSchema(pprlClusterHdfs));
+                    encodedDataset.getEncoding().setupFromSchema(encodedDataset.getSchema(pprlClusterHdfs));
                     datasets.add(encodedDataset);
                     line = br.readLine();
                 }
@@ -433,7 +531,7 @@ public class EncodingService extends DatasetsService {
 
     private void runEncodeDatasetTool(final Path input, final Path inputSchema,
                                       final Path output, final Path outputSchema,
-                                      final String[] encodingFieldNames, final String[] restFieldNames,
+                                      final String[] selectedFieldNames, final String[] restFieldNames,
                                       final String methodName,
                                       final int[] N, final int K, final int Q) throws Exception {
         final List<String> argsList = new ArrayList<String>();
@@ -441,9 +539,9 @@ public class EncodingService extends DatasetsService {
         LOG.info("input={} , inputSchema={}", input, inputSchema);
         argsList.add(output.toString()); argsList.add(outputSchema.toString());
         LOG.info("output={} , outputSchema={}", output, outputSchema);
-        StringBuilder sb = new StringBuilder(encodingFieldNames[0]);
-        for (int i = 1; i < encodingFieldNames.length; i++)
-            sb.append(",").append(encodingFieldNames[i]);
+        StringBuilder sb = new StringBuilder(selectedFieldNames[0]);
+        for (int i = 1; i < selectedFieldNames.length; i++)
+            sb.append(",").append(selectedFieldNames[i]);
         final String selectedFieldNamesStr = sb.toString();
         argsList.add(selectedFieldNamesStr);
         LOG.info("selected column names={}", selectedFieldNamesStr);

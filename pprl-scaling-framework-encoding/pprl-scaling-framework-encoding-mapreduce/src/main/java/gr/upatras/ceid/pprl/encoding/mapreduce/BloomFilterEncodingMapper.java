@@ -25,35 +25,21 @@ public class BloomFilterEncodingMapper extends Mapper<AvroKey<GenericRecord>, Nu
     protected Schema inputSchema;
     protected Schema outputSchema;
     protected String methodName;
-    protected int[] N;
-    protected int K;
-    protected int Q;
-    protected String[] restFieldNames;
-    protected String[] selectedFieldNames;
-
     protected BloomFilterEncoding encoding;
-
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
         try {
             final Configuration config = context.getConfiguration();
+
             inputSchema = (new Schema.Parser()).parse(config.get(INPUT_SCHEMA_KEY));
             outputSchema = (new Schema.Parser()).parse(config.get(OUTPUT_SCHEMA_KEY));
-            methodName = config.get(METHOD_NAME_KEY);
-            restFieldNames = config.getStrings(REST_FIELDS_KEY,new String[0]);
-            selectedFieldNames = config.getStrings(SELECTED_FIELDS_KEY);
-            final String[] Nstr = config.getStrings(N_KEY);
-            N = new int[Nstr.length];
-            for (int i = 0; i < N.length; i++) {
-                N[i] = Integer.parseInt(Nstr[i]);
-            }
-            K = config.getInt(K_KEY, 30);
-            Q = config.getInt(Q_KEY, 2);
-
-            encoding = BloomFilterEncoding.newInstanceOfMethod(methodName,N,K,Q);
-            encoding.setEncodingSchema(outputSchema);
+            encoding = BloomFilterEncoding.newInstanceOfMethod(methodName);
+            encoding.setupFromSchema(outputSchema);
+            if(!encoding.isEncodingOfSchema(inputSchema))
+                throw new BloomFilterEncodingException("Encoding schema does not match input schema");
+            encoding.initialize();
         } catch (BloomFilterEncodingException e) {
             throw new InterruptedException(e.getMessage());
         }
@@ -64,9 +50,7 @@ public class BloomFilterEncodingMapper extends Mapper<AvroKey<GenericRecord>, Nu
         final GenericRecord record = key.datum();
         final GenericRecord encodedRecord;
         try {
-            encodedRecord = BloomFilterEncoding.encodeRecord(
-                    record, encoding, inputSchema,
-                    selectedFieldNames, restFieldNames);
+            encodedRecord = encoding.encodeRecord(record);
         } catch (BloomFilterEncodingException e) {
             throw new InterruptedException(e.getMessage());
         }

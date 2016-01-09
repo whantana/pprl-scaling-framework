@@ -3,10 +3,9 @@
   "name" : "DblpPublication",
   "namespace" : "gr.upatras.ceid.pprl.datasets.avro.dblp",
   "fields" : [ {
-    "name"  : "key",
-    "type"  : "string",
-	"order" : "ascending",
-    "doc"   : "DBLP key i.e /journals/acta/Author99"
+    "name" : "key",
+    "type" : "string",
+    "doc"  : "DBLP key i.e /journals/acta/Author99"
   },{
     "name" : "author",
     "type" : "string",

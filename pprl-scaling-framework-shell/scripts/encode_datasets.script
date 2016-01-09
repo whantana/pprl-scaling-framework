@@ -1,10 +1,15 @@
 enc_encode_dataset --dataset random --selected_fields random_string --method FBF --N 1024 --K 10 --Q 2
-enc_encode_dataset --name enc_1024_30_2 --dataset random --selected_fields random_string --method FBF --N 1024 --K 30 --Q 2
-enc_encode_dataset --name enc_D_30_2 --dataset random --selected_fields random_string --method FBF --K 30 --Q 2
-enc_encode_dataset --name enc_D_30_1 --dataset random --selected_fields random_string --method FBF --K 30 --Q 1
-enc_encode_dataset --name enc_D_30_2_dblp --dataset dblp --selected_fields author --rest_fields key --method FBF --K 30 --Q 2
+enc_encode_dataset --name enc_fbf_1024_30_2 --dataset random --selected_fields random_string --method FBF --N 1024 --K 30 --Q 2
+enc_encode_dataset --name enc_fbf_30_2 --dataset random --selected_fields random_string --method FBF --K 30 --Q 2
+enc_encode_dataset --name enc_fbf_30_1 --dataset random --selected_fields random_string --method FBF --K 30 --Q 1
+enc_encode_dataset --name enc_fbf_30_2_dblp --dataset dblp --selected_fields author --rest_fields key --method FBF --K 30 --Q 2
 enc_list
-enc_sample --name enc_D_30_2_dblp
-enc_sample --name enc_1024_30_2
-enc_sample --name enc_D_30_1
-enc_sample --name enc_D_30_2_dblp
+enc_sample --name enc_fbf_1024_30_2
+enc_sample --name enc_fbf_30_2
+enc_sample --name enc_fbf_30_1
+enc_sample --name enc_fbf_30_2_dblp
+enc_encode_dataset --name enc_rbf_1024_30_2 --dataset random --selected_fields random_string --method RBF --N 1024 --K 30 --Q 2
+enc_encode_dataset --name enc_rbf_30_2 --dataset random --selected_fields random_string --method RBF --K 30 --Q 2
+enc_list
+enc_sample --name enc_rbf_1024_30_2
+enc_sample --name enc_rbf_30_2

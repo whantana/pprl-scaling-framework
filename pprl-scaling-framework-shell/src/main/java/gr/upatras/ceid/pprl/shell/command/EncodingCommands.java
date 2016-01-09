@@ -27,7 +27,7 @@ public class EncodingCommands implements CommandMarker {
     private static Logger LOG = LoggerFactory.getLogger(EncodingCommands.class);
 
     @Autowired
-	@Qualifier("encodingService")
+    @Qualifier("encodingService")
     private EncodingService service;
 
     private List<String> AVAILABLE_ENCODING_METHODS;
@@ -145,12 +145,17 @@ public class EncodingCommands implements CommandMarker {
             final String restFieldsStr,
             @CliOption(key= {"method"}, mandatory = true, help = "One of the following encoding methods : {FBF,RBF}.")
             final String methodName,
-            @CliOption(key= {"N"}, mandatory = false, help = "(Optional) Static sizing of Bloom filter. If not set dynamic sizing is enforced.")
+            @CliOption(key= {"N"}, mandatory = false, help = "(Optional) If method == FBF not defining N produces dynamic bloom filters." +
+                    " Else if method == RBF not defining N enforces weighted bit selection instead of uniform bit selection.")
             final String Nstr,
             @CliOption(key= {"K"}, mandatory = false, help = "(Optional) Hash function count. Default value is 30.")
             final String Kstr,
             @CliOption(key= {"Q"}, mandatory = false, help = "(Optional) Q for Q-Grams. Default value is 2.")
-            final String Qstr) {
+            final String Qstr,
+            @CliOption(key= {"weights"}, mandatory = false, help = "(Optional) If method == RBF and N is not defined, " +
+                    "user can provide the FBF bit selection weights with respect to selected fields.")
+            final String Wstr
+    ) {
         try {
             if (!datasetName.matches("^[a-z_A-Z][a-z_A-Z0-9]*$"))
                 return "Error. Source Dataset name must contain only alphanumeric characters and underscores.";
@@ -171,15 +176,28 @@ public class EncodingCommands implements CommandMarker {
             int Q = (Qstr == null) ? 2 : Integer.parseInt(Qstr);
 
             LOG.info("Encoding dataset stored at the PPRL-site");
-            if(name != null) LOG.info("\tEncoded Dataset name                    : {}", name);
+            if(name != null)
+                LOG.info("\tEncoded Dataset name                    : {}", name);
             LOG.info("\tSelected source dataset name            : {}", datasetName);
             LOG.info("\tSelected source dataset encoded fields  : {}", Arrays.toString(selectedFieldNames));
             if(restFieldNames != null)
                 LOG.info("\tRest source dataset encoded fields      : {}", Arrays.toString(restFieldNames));
-            LOG.info("\tSelected encoding method                : {}, N={}, K={}, Q={}",
-                    methodName, N<0? "dynamic sizing":N, K, Q);
 
-            service.encodeImportedDataset(name, datasetName, selectedFieldNames, restFieldNames, methodName, N, K, Q);
+            if(methodName.equals("FBF") && N > 0) {
+                LOG.info("\tSelected encoding method                : FBF, N={}, K={}, Q={}",N, K, Q);
+                service.encodeFBFStaticImportedDataset(name, datasetName, selectedFieldNames, restFieldNames, N, K, Q);
+            } else if (methodName.equals("FBF")) {
+                LOG.info("\tSelected encoding method                : FBF, Dynamic Bloom Filter Sizing, K={}, Q={}",K, Q);
+                service.encodeFBFDynamicImportedDataset(name, datasetName, selectedFieldNames, restFieldNames, K, Q);
+            } else if (methodName.equals("RBF") && N > 0) {
+                LOG.info("\tSelected encoding method                : RBF, N={} (uniform-bit-selection), K={}, Q={}",K, Q);
+                service.encodeRBFUniformImportedDataset(name, datasetName, selectedFieldNames, restFieldNames, N, K, Q);
+            } else {
+                LOG.info("\tSelected encoding method                : RBF, (weighted-bit-selection), K={}, Q={}",K, Q);
+                final double[] weights = CommandUtils.retrieveWeights(Wstr);
+                if(weights != null && weights.length != selectedFieldNames.length) return "Error. weights and selected_fields sizes must agree";
+                service.encodeRBFWeightedImportedDataset(name, datasetName, selectedFieldNames, restFieldNames, weights, K, Q);
+            }
             return "DONE";
         } catch (IllegalArgumentException e) {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
@@ -202,17 +220,23 @@ public class EncodingCommands implements CommandMarker {
             final String restFieldsStr,
             @CliOption(key= {"method"}, mandatory = true, help = "One of the following encoding methods : {FBF,RBF}.")
             final String methodName,
-            @CliOption(key= {"N"}, mandatory = false, help = "(Optional) Static sizing of Bloom filter. If not set dynamic sizing is enforced.")
+            @CliOption(key= {"N"}, mandatory = false, help = "(Optional) If method == FBF not defining N produces dynamic bloom filters." +
+                    " Else if method == RBF not defining N enforces weighted bit selection instead of uniform bit selection.")
             final String Nstr,
             @CliOption(key= {"K"}, mandatory = false, help = "(Optional) Hash function count. Default value is 30.")
             final String Kstr,
             @CliOption(key= {"Q"}, mandatory = false, help = "(Optional) Q for Q-Grams. Default value is 2.")
-            final String Qstr){
+            final String Qstr,
+            @CliOption(key= {"weights"}, mandatory = false, help = "(Optional) If method == RBF and N is not defined, " +
+                    "user can provide the FBF bit selection weights with respect to selected fields.")
+            final String Wstr
+    ){
         try {
             final File schemaFile = new File(schemaFilePath);
             if (!schemaFile.exists()) return "Error. Path \"" + schemaFilePath + "\" does not exist.";
 
             final File[] avroFiles = CommandUtils.retrieveFiles(avroPaths);
+            final Set<File> avroFilesSet = new TreeSet<File>(Arrays.asList(avroFiles));
 
             final String[] absolutePaths = new String[avroFiles.length];
             for (int i = 0; i < avroFiles.length; i++) absolutePaths[i] = avroFiles[i].getAbsolutePath();
@@ -233,20 +257,34 @@ public class EncodingCommands implements CommandMarker {
             int Q = (Qstr == null) ? 2 : Integer.parseInt(Qstr);
 
             LOG.info("Encoding local avro files");
-            if(name != null )LOG.info("\tEncoded Dataset name                      : {}", name);
-            LOG.info("\tSelected local data files for encoding    : {}", Arrays.toString(absolutePaths));
-            LOG.info("\tSelected local schema file for encoding   : {}", schemaFile.getAbsolutePath());
+            if(name != null )
+                LOG.info("\tEncoded Dataset name                     : {}", name);
+            LOG.info("\tSelected local data files for encoding   : {}", Arrays.toString(absolutePaths));
+            LOG.info("\tSelected local schema file for encoding  : {}", schemaFile.getAbsolutePath());
             LOG.info("\tSelected local data fields to be encoded : {}", Arrays.toString(selectedFieldNames));
             LOG.info("\tRest local data fields                   : {}", Arrays.toString(restFieldNames));
-            LOG.info("\tSelected encoding method                : {}, N={}, K={}, Q={}",
-                    methodName, N<0? "dynamic sizing":N, K, Q);
 
-            final Set<File> avroFilesSet = new TreeSet<File>(Arrays.asList(avroFiles));
-
-            String[] paths = service.encodeLocalFile(name,selectedFieldNames,restFieldNames,
-                    methodName, N, K, Q,
-                    avroFilesSet,schemaFile);
-
+            String paths[];
+            if(methodName.equals("FBF") && N > 0) {
+                LOG.info("\tSelected encoding method                : FBF, N={}, K={}, Q={}",N, K, Q);
+                paths = service.encodeFBFStaticLocalFile(name, avroFilesSet,
+                        schemaFile,selectedFieldNames,restFieldNames, N, K, Q);
+            } else if (methodName.equals("FBF")) {
+                LOG.info("\tSelected encoding method                : FBF, Dynamic Bloom Filter Sizing, K={}, Q={}",K, Q);
+                paths = service.encodeFBFDynamicLocalFile(name, avroFilesSet,
+                        schemaFile,selectedFieldNames,restFieldNames, K, Q);
+            } else if (methodName.equals("RBF") && N > 0) {
+                LOG.info("\tSelected encoding method                : RBF, N={} (uniform-bit-selection), K={}, Q={}",K, Q);
+                paths = service.encodeRBFUniformLocalFile(name, avroFilesSet, schemaFile,
+                        selectedFieldNames,restFieldNames, N, K, Q);
+            } else {
+                LOG.info("\tSelected encoding method                : RBF, (weighted-bit-selection), K={}, Q={}",K, Q);
+                final double[] weights = CommandUtils.retrieveWeights(Wstr);
+                if(weights != null && weights.length != selectedFieldNames.length)
+                    return "Error. weights and selected_fields sizes must agree";
+                paths = service.encodeRBFWeightedLocalFile(name, avroFilesSet, schemaFile,
+                        selectedFieldNames, restFieldNames, weights, K, Q);
+            }
             LOG.info("Encoding local avro files");
             LOG.info("\tEncoded schema file saved at : {}", paths[0]);
             LOG.info("\tEncoded avro file saved at   : {}", paths[1]);

@@ -169,7 +169,7 @@ public class DatasetsService implements InitializingBean {
                             new GenericDatumReader<GenericRecord>(schema));
             for (GenericRecord record : reader) {
                 for (String fieldName : fieldNames) {
-                    if (!stats.containsKey(fieldName)) stats.put(fieldName, new double[]{0, 0});
+                    if (!stats.containsKey(fieldName)) stats.put(fieldName, new double[]{0, 0}); // TODO 2 stats so far gonna add more // TODO Unify all stats one mapreduce
                     Object obj = record.get(fieldName);
                     Schema.Type type = schema.getField(fieldName).schema().getType();
                     stats.get(fieldName)[0] += (double) String.valueOf(obj).length();

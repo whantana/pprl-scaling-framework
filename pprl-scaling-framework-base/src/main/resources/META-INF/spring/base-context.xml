@@ -1,32 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:hdp="http://www.springframework.org/schema/hadoop"
        xmlns:context="http://www.springframework.org/schema/context"
        xmlns="http://www.springframework.org/schema/beans"
        xsi:schemaLocation="
        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
-       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
-       http://www.springframework.org/schema/hadoop http://www.springframework.org/schema/hadoop/spring-hadoop.xsd">
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
 
-    <!--- context annotation config -->
-    <context:annotation-config />
-
-    <!-- property place holder-->
+    <!-- property place holder -->
     <context:property-placeholder
-            location="classpath:hadoop-${spring.profiles.active}.properties,
-                      classpath:hadoop.properties"
+            location="classpath:hadoop.properties,yarn.properties,spark.properties,database.properties"
             ignore-unresolvable="true"/>
 
-    <!-- hadoop configuration-->
-    <hdp:configuration id="pprlClusterHadoopConfiguration">
-        fs.defaultFS=${hadoop.fileSystem}
-        dfs.client.use.datanode.hostname=true
-        yarn.resourcemanager.address=${hadoop.resourceManager}
-        mapreduce.framework.name=yarn
-        yarn.nodemanager.aux-services=mapreduce_shuffle
-        yarn.application.classpath=${hadoop.yarnApplicationClasspath}
-    </hdp:configuration>
-
-    <!-- hdfs configuration -->
-    <hdp:file-system id="pprlClusterHdfs" configuration-ref="pprlClusterHadoopConfiguration"/>
+    <!-- component-scan the config package -->
+    <context:component-scan base-package="gr.upatras.ceid.pprl.config"/>
 </beans>

@@ -1,0 +1,20 @@
+{
+  "type" : "record",
+  "name" : "PPRL_Encoding_RBF_30_2_DblpPublication",
+  "namespace" : "encoding.schema.rbf.30.2",
+  "doc" : "PPRL Encoding of DblpPublication",
+  "fields" : [ {
+    "name" : "key",
+    "type" : "string",
+    "doc" : "DBLP key i.e /journals/acta/Author99"
+  }, {
+    "name" : "encoding_field_1024_30_2_src_author_src_title",
+    "type" : {
+      "type" : "fixed",
+      "name" : "encoding_field_1024_30_2_src_author_src_title",
+      "namespace" : "",
+      "size" : 128
+    },
+    "doc" : "715,512,411_2057,512,935_462"
+  } ]
+}

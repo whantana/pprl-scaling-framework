@@ -83,9 +83,7 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
     }
 
     public List<Schema.Field> setupSelectedFields(final String[] selectedFieldNames) throws BloomFilterEncodingException {
-        assert N != null && N.length != 0 &&
-                getK() > 0 && getQ() > 0 &&
-                getEncodingSchema() != null;
+        assert N != null && N.length == selectedFieldNames.length && getK() > 0 && getQ() > 0;
         Schema.Field[] encodingFields = new Schema.Field[selectedFieldNames.length];
         int i = 0;
         for(String fieldName : selectedFieldNames) {

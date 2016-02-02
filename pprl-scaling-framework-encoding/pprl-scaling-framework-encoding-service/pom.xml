@@ -7,7 +7,7 @@
     <parent>
         <groupId>gr.upatras.ceid</groupId>
         <artifactId>pprl-scaling-framework-encoding</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.2-SNAPSHOT</version>
     </parent>
 
     <artifactId>pprl-scaling-framework-encoding-service</artifactId>
@@ -23,11 +23,6 @@
             <artifactId>pprl-scaling-framework-base</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>gr.upatras.ceid</groupId>
-            <artifactId>pprl-scaling-framework-datasets-service</artifactId>
-            <version>${project.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>gr.upatras.ceid</groupId>
@@ -40,6 +35,20 @@
             <artifactId>pprl-scaling-framework-encoding-mapreduce</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>${spring.framework.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-hadoop-test</artifactId>
+            <version>${spring.data.hadoop.test.version}</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
     <build>
         <plugins>

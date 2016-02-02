@@ -4,7 +4,7 @@ import org.junit.Ignore;
 
 // TODO MRUnit messes up the two schemas seriliazation
 @Ignore
-public class EncodeDatasetMRTest {
+public class EncodeDatasetMRTest {}
 
 //    private static final String EXPECTED_KEY = "journals/acta/Saxena96";
 //    private static final String EXPECTED_AUTHOR = "Sanjeev Saxena";
@@ -122,4 +122,3 @@ public class EncodeDatasetMRTest {
 //        fis.close();
 //        return schema;
 //    }
-}

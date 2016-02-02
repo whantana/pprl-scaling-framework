@@ -15,7 +15,4 @@ public class Main {
 	public static void main(String[] args) throws IOException {
 		Bootstrap.main(args);
 	}
-
-	// TODO shell has functionalities that do not need a hadoop cluster.
-	// TODO Initialize app without the hadoop instance
 }

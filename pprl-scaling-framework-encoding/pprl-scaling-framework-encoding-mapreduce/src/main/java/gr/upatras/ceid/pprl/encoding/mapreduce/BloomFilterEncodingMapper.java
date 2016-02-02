@@ -47,13 +47,12 @@ public class BloomFilterEncodingMapper extends Mapper<AvroKey<GenericRecord>, Nu
 
     @Override
     protected void map(AvroKey<GenericRecord> key, NullWritable value, Context context) throws IOException, InterruptedException {
-        final GenericRecord record = key.datum();
-        final GenericRecord encodedRecord;
         try {
-            encodedRecord = encoding.encodeRecord(record);
+            final GenericRecord record = key.datum();
+            final GenericRecord encodedRecord = encoding.encodeRecord(record);
+            context.write(new AvroKey<GenericRecord>(encodedRecord), NullWritable.get());
         } catch (BloomFilterEncodingException e) {
             throw new InterruptedException(e.getMessage());
         }
-        context.write(new AvroKey<GenericRecord>(encodedRecord), NullWritable.get());
     }
 }

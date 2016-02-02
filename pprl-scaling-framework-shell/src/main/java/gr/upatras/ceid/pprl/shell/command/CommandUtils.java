@@ -69,7 +69,12 @@ public class CommandUtils {
     }
 
     public static String prettyStats(final double[] stats) {
-        if(stats.length != 2) throw new IllegalArgumentException("Stats length must be 2");
-        return String.format("[%.2f,%.2f]",stats[0],stats[1]);
+        if(stats.length != 4) throw new IllegalArgumentException("Stats length must be 4");
+        return String.format(
+                "[Average Length = %.2f," +
+                " Average 2-gram Count = %.2f," +
+                " Average 3-gram Count = %.2f," +
+                " Average 4-gram Count = %.2f]"
+                ,stats[0],stats[1],stats[2],stats[3]);
     }
 }

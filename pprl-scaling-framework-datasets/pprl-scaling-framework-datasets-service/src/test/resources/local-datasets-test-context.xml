@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!--<context:component-scan base-package="gr.upatras.ceid.pprl.datasets.service">-->
+        <!--<context:exclude-filter type="regex" expression="gr\.upatras\.ceid\.pprl\.datasets\.service\.config..*"/>-->
+    <!--</context:component-scan>-->
+    <bean id="localFileSystem" class="org.apache.hadoop.fs.LocalFileSystem"/>
+    <bean id="localDatasetsService" class="gr.upatras.ceid.pprl.datasets.service.LocalDatasetsService"/>
+
+</beans>

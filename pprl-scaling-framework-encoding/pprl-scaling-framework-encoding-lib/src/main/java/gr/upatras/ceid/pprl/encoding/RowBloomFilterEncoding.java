@@ -22,6 +22,7 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
     private int[] rbfCompositionCount;
     private int[] rbfCompositionSeeds;
     private int rbfBitPermutationSeed;
+
     private int[][] selectedBits;
     private BloomFilter rbf;
     private int[] bitPermutation;
@@ -46,9 +47,9 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
             rbfCompositionCount[i] =  (i == 0) ?
                     (int) Math.ceil(selectedBitCount) :
                     (int) Math.floor(selectedBitCount);
-            rbfCompositionSeeds[i] = Math.abs(SECURE_RANDOM_GENERATOR.nextInt()) % 1000;
+            rbfCompositionSeeds[i] = SECURE_RANDOM_GENERATOR.nextInt(1000);
         }
-        rbfBitPermutationSeed = Math.abs(SECURE_RANDOM_GENERATOR.nextInt()) % 1000;
+        rbfBitPermutationSeed = SECURE_RANDOM_GENERATOR.nextInt(1000);
     }
 
     public RowBloomFilterEncoding(final double[] avgQCount, final double[] weights, final int K, final int Q) {
@@ -70,9 +71,9 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
         rbfCompositionSeeds = new int[fbfNs.length];
         for (int i = 0; i < fbfNs.length; i++) {
             rbfCompositionCount[i] = (int) ((double) getRBFN()*weights[i]);
-            rbfCompositionSeeds[i] = Math.abs(SECURE_RANDOM_GENERATOR.nextInt()) % 1000;
+            rbfCompositionSeeds[i] = SECURE_RANDOM_GENERATOR.nextInt(1000);
         }
-        rbfBitPermutationSeed = Math.abs(SECURE_RANDOM_GENERATOR.nextInt()) % 1000;
+        rbfBitPermutationSeed = SECURE_RANDOM_GENERATOR.nextInt(1000);
     }
 
     public String getName() {
@@ -100,7 +101,6 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
                 int seed = rbfCompositionSeeds[i];
                 int maxBit = getN(i);
                 selectedBits[i] = RowBloomFilterEncoding.randomBitSelection(bitCount,maxBit,seed);
-
             }
             bitPermutation  = randomBitPermutation(getRBFN(), rbfBitPermutationSeed);
             rbf = new BloomFilter(getRBFN(),getK());
@@ -156,8 +156,7 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
     }
 
     public List<Schema.Field> setupSelectedFields(final String[] selectedFieldNames) throws BloomFilterEncodingException {
-        assert N != null && (N.length == selectedFieldNames.length + 1) &&
-                getEncodingSchema() != null;
+        assert N != null && (N.length == selectedFieldNames.length + 1) && getK() > 0 && getQ() > 0;
 
         StringBuilder sb = new StringBuilder(String.format("encoding_field_%d_%d_%d", getRBFN(), getK(), getQ()));
         StringBuilder docSb = new StringBuilder();
@@ -225,14 +224,13 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
         final int[] randomBits = new int[bitCount];
         Random random = new Random(seed);
         for (int i = 0; i < bitCount; i++)
-            randomBits[i] = Math.abs(random.nextInt()) % maxBit;
+            randomBits[i] = random.nextInt(maxBit);
         return randomBits;
     }
 
     public static int[] randomBitPermutation(final int bitCount, final int seed) {
         List<Integer> c = new ArrayList<Integer>();
-        for (int i = 0; i < bitCount; i++)
-            c.add(i);
+        for (int i = 0; i < bitCount; i++) c.add(i);
         Collections.shuffle(c, new Random(seed));
         Integer[] array = c.toArray(new Integer[c.size()]);
         int[] retArray = new int[bitCount];

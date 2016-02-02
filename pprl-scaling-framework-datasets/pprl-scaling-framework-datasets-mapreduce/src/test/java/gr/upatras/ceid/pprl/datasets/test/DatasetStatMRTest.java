@@ -1,7 +1,7 @@
 package gr.upatras.ceid.pprl.datasets.test;
 
 
-import gr.upatras.ceid.pprl.datasets.DatasetStatsWritable;
+import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
 import gr.upatras.ceid.pprl.datasets.QGramUtil;
 import gr.upatras.ceid.pprl.datasets.mapreduce.GetDatasetsStatsMapper;
 import gr.upatras.ceid.pprl.datasets.mapreduce.GetDatasetsStatsReducer;
@@ -33,36 +33,32 @@ public class DatasetStatMRTest {
     private static final String EXPECTED_YEAR = "1996";
 
     private GenericRecord inputRecord;
-    private MapDriver<AvroKey<GenericRecord>,NullWritable,Text,DatasetStatsWritable> mapDriverQ1;
-    private MapDriver<AvroKey<GenericRecord>,NullWritable,Text,DatasetStatsWritable> mapDriverQ2;
-    private MapDriver<AvroKey<GenericRecord>,NullWritable,Text,DatasetStatsWritable> mapDriverQ3;
-    private ReduceDriver<Text,DatasetStatsWritable,Text,DatasetStatsWritable> reduceDriver1;
-    private ReduceDriver<Text,DatasetStatsWritable,Text,DatasetStatsWritable> reduceDriver2;
+    private MapDriver<AvroKey<GenericRecord>,NullWritable,Text,DatasetStatistics> mapDriver;
+    private ReduceDriver<Text,DatasetStatistics,Text,DatasetStatistics> reduceDriver1;
+    private ReduceDriver<Text,DatasetStatistics,Text,DatasetStatistics> reduceDriver2;
 
     @Before
     public void setUp() throws IOException, URISyntaxException {
 
         // input record
         final Schema s = loadAvroSchemaFromFile(new File("dblp.avsc"));
-                //new File(getClass().getResource("/dblp.avsc").toURI()));
+        //new File(getClass().getResource("/dblp.avsc").toURI()));
         inputRecord = new GenericData.Record(s);
         inputRecord.put("key", EXPECTED_KEY);
         inputRecord.put("author", EXPECTED_AUTHOR);
         inputRecord.put("title", EXPECTED_TITLE);
         inputRecord.put("year", EXPECTED_YEAR);
-        mapDriverQ1 = setupMapDriver(new GetDatasetsStatsMapper(),s,1);
-        mapDriverQ2 = setupMapDriver(new GetDatasetsStatsMapper(), s, 2);
-        mapDriverQ3 = setupMapDriver(new GetDatasetsStatsMapper(),s,3);
+        mapDriver = setupMapDriver(new GetDatasetsStatsMapper(),s);
         reduceDriver1 = ReduceDriver.newReduceDriver(new GetDatasetsStatsReducer());
         reduceDriver2 = ReduceDriver.newReduceDriver(new GetDatasetsStatsReducer());
     }
 
 
-    public MapDriver<AvroKey<GenericRecord>,NullWritable,Text,DatasetStatsWritable> setupMapDriver(
-            GetDatasetsStatsMapper mapper,Schema input,int Q) throws IOException {
+    public MapDriver<AvroKey<GenericRecord>,NullWritable,Text,DatasetStatistics> setupMapDriver(
+            GetDatasetsStatsMapper mapper,Schema input) throws IOException {
 
 
-        MapDriver<AvroKey<GenericRecord>,NullWritable,Text,DatasetStatsWritable> mapDriver =
+        MapDriver<AvroKey<GenericRecord>,NullWritable,Text,DatasetStatistics> mapDriver =
                 MapDriver.newMapDriver(mapper);
 
         AvroSerialization.addToConfiguration(mapDriver.getConfiguration());
@@ -71,100 +67,71 @@ public class DatasetStatMRTest {
 
 
         mapDriver.getConfiguration().set(GetDatasetsStatsMapper.INPUT_SCHEMA_KEY, input.toString());
-        mapDriver.getConfiguration().setInt(GetDatasetsStatsMapper.Q_KEY, Q);
 
         return mapDriver;
     }
 
     @Test
     public void test1() throws IOException {
-        List<Pair<Text,DatasetStatsWritable>> pairs = new ArrayList<Pair<Text,DatasetStatsWritable>>();
+        List<Pair<Text, DatasetStatistics>> pairs = new ArrayList<Pair<Text, DatasetStatistics>>();
 
         pairs.clear();
-        pairs.add(new Pair<Text, DatasetStatsWritable>(new Text("key"), new DatasetStatsWritable(
-                EXPECTED_KEY.length(),
-                QGramUtil.calcQgramsCount(EXPECTED_KEY, 1))));
+        pairs.add(new Pair<Text, DatasetStatistics>(new Text("key"), new DatasetStatistics(
+                EXPECTED_KEY.length(), new double[]{
+                QGramUtil.calcQgramsCount(EXPECTED_KEY, 2),
+                QGramUtil.calcQgramsCount(EXPECTED_KEY, 3),
+                QGramUtil.calcQgramsCount(EXPECTED_KEY, 4),
+        }
+        )));
 
-        pairs.add(new Pair<Text, DatasetStatsWritable>(new Text("author"), new DatasetStatsWritable(
-                EXPECTED_AUTHOR.length(),
-                QGramUtil.calcQgramsCount(EXPECTED_AUTHOR, 1))));
+        pairs.add(new Pair<Text, DatasetStatistics>(new Text("author"), new DatasetStatistics(
+                EXPECTED_AUTHOR.length(), new double[]{
+                QGramUtil.calcQgramsCount(EXPECTED_AUTHOR, 2),
+                QGramUtil.calcQgramsCount(EXPECTED_AUTHOR, 3),
+                QGramUtil.calcQgramsCount(EXPECTED_AUTHOR, 4),
+        })));
 
-        pairs.add(new Pair<Text, DatasetStatsWritable>(new Text("title"), new DatasetStatsWritable(
-                EXPECTED_TITLE.length(),
-                QGramUtil.calcQgramsCount(EXPECTED_TITLE, 1))));
 
-        pairs.add(new Pair<Text, DatasetStatsWritable>(new Text("year"), new DatasetStatsWritable(
-                EXPECTED_YEAR.length(),
-                QGramUtil.calcQgramsCount(EXPECTED_YEAR, 1))));
-        mapDriverQ1.withInput(new AvroKey<GenericRecord>(inputRecord), NullWritable.get());
-        mapDriverQ1.withAllOutput(pairs);
-        mapDriverQ1.runTest();
+        pairs.add(new Pair<Text, DatasetStatistics>(new Text("title"), new DatasetStatistics(
+                EXPECTED_TITLE.length(), new double[]{
+                QGramUtil.calcQgramsCount(EXPECTED_TITLE, 2),
+                QGramUtil.calcQgramsCount(EXPECTED_TITLE, 3),
+                QGramUtil.calcQgramsCount(EXPECTED_TITLE, 4),
+        })));
 
-        pairs.clear();
-        pairs.add(new Pair<Text, DatasetStatsWritable>(new Text("key"), new DatasetStatsWritable(
-                EXPECTED_KEY.length(),
-                QGramUtil.calcQgramsCount(EXPECTED_KEY, 2))));
+        pairs.add(new Pair<Text, DatasetStatistics>(new Text("year"), new DatasetStatistics(
+                EXPECTED_YEAR.length(), new double[]{
+                QGramUtil.calcQgramsCount(EXPECTED_YEAR, 2),
+                QGramUtil.calcQgramsCount(EXPECTED_YEAR, 3),
+                QGramUtil.calcQgramsCount(EXPECTED_YEAR, 4),
+        })));
 
-        pairs.add(new Pair<Text, DatasetStatsWritable>(new Text("author"), new DatasetStatsWritable(
-                EXPECTED_AUTHOR.length(),
-                QGramUtil.calcQgramsCount(EXPECTED_AUTHOR, 2))));
-
-        pairs.add(new Pair<Text, DatasetStatsWritable>(new Text("title"), new DatasetStatsWritable(
-                EXPECTED_TITLE.length(),
-                QGramUtil.calcQgramsCount(EXPECTED_TITLE, 2))));
-
-        pairs.add(new Pair<Text, DatasetStatsWritable>(new Text("year"), new DatasetStatsWritable(
-                EXPECTED_YEAR.length(),
-                QGramUtil.calcQgramsCount(EXPECTED_YEAR, 2))));
-        mapDriverQ2.withInput(new AvroKey<GenericRecord>(inputRecord), NullWritable.get());
-        mapDriverQ2.withAllOutput(pairs);
-        mapDriverQ2.runTest();
-
-        pairs.clear();
-        pairs.add(new Pair<Text, DatasetStatsWritable>(new Text("key"), new DatasetStatsWritable(
-                EXPECTED_KEY.length(),
-                QGramUtil.calcQgramsCount(EXPECTED_KEY, 3))));
-
-        pairs.add(new Pair<Text, DatasetStatsWritable>(new Text("author"), new DatasetStatsWritable(
-                EXPECTED_AUTHOR.length(),
-                QGramUtil.calcQgramsCount(EXPECTED_AUTHOR, 3))));
-
-        pairs.add(new Pair<Text, DatasetStatsWritable>(new Text("title"), new DatasetStatsWritable(
-                EXPECTED_TITLE.length(),
-                QGramUtil.calcQgramsCount(EXPECTED_TITLE, 3))));
-
-        pairs.add(new Pair<Text, DatasetStatsWritable>(new Text("year"), new DatasetStatsWritable(
-                EXPECTED_YEAR.length(),
-                QGramUtil.calcQgramsCount(EXPECTED_YEAR, 3))));
-        mapDriverQ3.withInput(new AvroKey<GenericRecord>(inputRecord), NullWritable.get());
-        mapDriverQ3.withAllOutput(pairs);
-        mapDriverQ3.runTest();
+        mapDriver.withInput(new AvroKey<GenericRecord>(inputRecord), NullWritable.get());
+        mapDriver.withAllOutput(pairs);
+        mapDriver.runTest();
     }
 
     @Test
     public void test2() throws IOException {
-        Pair<Text,List<DatasetStatsWritable>> pair1 = new Pair<Text,List<DatasetStatsWritable>>(
-                new Text("key1"), new ArrayList<DatasetStatsWritable>(Arrays.asList(
-                    new DatasetStatsWritable(1.0,1.0),
-                    new DatasetStatsWritable(2.0,2.0),
-                    new DatasetStatsWritable(3.0,4.0),
-                    new DatasetStatsWritable(4.0,8.0))));
-        Pair<Text,List<DatasetStatsWritable>> pair2 = new Pair<Text,List<DatasetStatsWritable>>(
-                new Text("key2"), new ArrayList<DatasetStatsWritable>(Arrays.asList(
-                    new DatasetStatsWritable(1.0,2.0),
-                    new DatasetStatsWritable(1.0,2.0),
-                    new DatasetStatsWritable(1.0,2.0),
-                    new DatasetStatsWritable(1.0,2.0))));
+        Pair<Text,List<DatasetStatistics>> pair1 = new Pair<Text,List<DatasetStatistics>>(
+                new Text("key1"), new ArrayList<DatasetStatistics>(Arrays.asList(
+                new DatasetStatistics(1.0,new double[]{1.0,1.0,1.0}),
+                new DatasetStatistics(2.0,new double[]{1.0,1.0,1.0}),
+                new DatasetStatistics(3.0,new double[]{1.0,1.0,1.0}),
+                new DatasetStatistics(4.0,new double[]{1.0,1.0,1.0}))));
+        Pair<Text,List<DatasetStatistics>> pair2 = new Pair<Text,List<DatasetStatistics>>(
+                new Text("key2"), new ArrayList<DatasetStatistics>(Arrays.asList(
+                new DatasetStatistics(1.0,new double[]{2.0,2.0,2.0}),
+                new DatasetStatistics(1.0,new double[]{-2.0,-2.0,-2.0}),
+                new DatasetStatistics(1.0,new double[]{2.0,2.0,2.0}),
+                new DatasetStatistics(1.0,new double[]{-2.0,-2.0,-2.0}))));
 
-        Pair<Text,DatasetStatsWritable> outPair1 = new Pair<Text,DatasetStatsWritable>(
-                new Text("key1"), new DatasetStatsWritable(
-                    ((1.0 + 2.0 + 3.0 + 4.0)/(double)4),((1.0 + 2.0 + 4.0 + 8.0)/(double)4)
-                ));
-        Pair<Text,DatasetStatsWritable> outPair2 = new Pair<Text,DatasetStatsWritable>(
-                new Text("key2"), new DatasetStatsWritable(
-                    ((1.0 + 1.0 + 1.0 + 1.0)/(double)4),((2.0 + 2.0 + 2.0 + 2.0)/(double)4)
-                ));
-
+        Pair<Text,DatasetStatistics> outPair1 = new Pair<Text,DatasetStatistics>(
+                new Text("key1"), new DatasetStatistics(
+                ((1.0 + 2.0 + 3.0 + 4.0)/(double)4), new double[] {1.0, 1.0, 1.0}));
+        Pair<Text,DatasetStatistics> outPair2 = new Pair<Text,DatasetStatistics>(
+                new Text("key2"), new DatasetStatistics(
+                ((1.0 + 1.0 + 1.0 + 1.0)/(double)4), new double[] {0, 0, 0}));
 
         reduceDriver1.withInput(pair1);
         reduceDriver1.withOutput(outPair1);

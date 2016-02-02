@@ -16,7 +16,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.Assert.assertNotNull;
@@ -61,6 +60,7 @@ public class BloomFilterEncodingTest {
         encoding.makeFromSchema(schema, SELECTED_FIELDS, REST_FIELDS);
         assertTrue(encoding.isEncodingOfSchema(schema));
         BloomFilterEncoding.encodeLocalFile("dynamic_fbf",avroFiles,schema,encoding);
+        saveAvroSchemaToFile(encoding.getEncodingSchema(),new File("dynamic_fbf.avsc"));
     }
 
     @Test
@@ -77,6 +77,7 @@ public class BloomFilterEncodingTest {
         encoding.makeFromSchema(schema, SELECTED_FIELDS, REST_FIELDS);
         assertTrue(encoding.isEncodingOfSchema(schema));
         BloomFilterEncoding.encodeLocalFile("static_fbf", avroFiles, schema, encoding);
+        saveAvroSchemaToFile(encoding.getEncodingSchema(),new File("static_fbf.avsc"));
     }
 
     @Test
@@ -93,6 +94,8 @@ public class BloomFilterEncodingTest {
         encoding.makeFromSchema(schema, SELECTED_FIELDS, REST_FIELDS);
         assertTrue(encoding.isEncodingOfSchema(schema));
         BloomFilterEncoding.encodeLocalFile("weighted_rbf", avroFiles, schema, encoding);
+        saveAvroSchemaToFile(encoding.getEncodingSchema(),new File("weighted_rbf.avsc"));
+
     }
 
     @Test
@@ -109,6 +112,7 @@ public class BloomFilterEncodingTest {
         encoding.makeFromSchema(schema, SELECTED_FIELDS, REST_FIELDS);
         assertTrue(encoding.isEncodingOfSchema(schema));
         BloomFilterEncoding.encodeLocalFile("uniform_rbf", avroFiles, schema, encoding);
+        saveAvroSchemaToFile(encoding.getEncodingSchema(),new File("uniform_rbf.avsc"));
     }
 
     @Test

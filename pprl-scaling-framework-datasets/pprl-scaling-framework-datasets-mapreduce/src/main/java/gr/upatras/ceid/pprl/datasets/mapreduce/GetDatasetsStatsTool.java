@@ -1,6 +1,6 @@
 package gr.upatras.ceid.pprl.datasets.mapreduce;
 
-import gr.upatras.ceid.pprl.datasets.DatasetStatsWritable;
+import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
 import org.apache.avro.Schema;
 import org.apache.avro.mapreduce.AvroJob;
 import org.apache.avro.mapreduce.AvroKeyInputFormat;
@@ -31,8 +31,8 @@ public class GetDatasetsStatsTool extends Configured implements Tool {
         // get args
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
-        if (args.length != 4) {
-            LOG.error("Usage: GetStatsTool  <input-path> <input-schema> <output-path> <Q>");
+        if (args.length != 3) {
+            LOG.error("Usage: GetStatsTool  <input-path> <input-schema> <output-path>");
             return -1;
         }
 
@@ -45,8 +45,6 @@ public class GetDatasetsStatsTool extends Configured implements Tool {
         final int Q = Integer.valueOf(args[3]);
 
         conf.set(GetDatasetsStatsMapper.INPUT_SCHEMA_KEY, inputSchema.toString());
-        conf.setInt(GetDatasetsStatsMapper.Q_KEY, Q);
-        conf.set("mapreduce.output.basename",String.format("stats_%d",Q));
 
         String description = JOB_DESCRIPTION + " ("
                 + "input-path=" + shortenUrl(inputDataPath.toString()) + ", "
@@ -67,13 +65,13 @@ public class GetDatasetsStatsTool extends Configured implements Tool {
         // setup mapper
         job.setMapperClass(GetDatasetsStatsMapper.class);
         job.setMapOutputKeyClass(Text.class);
-        job.setMapOutputValueClass(DatasetStatsWritable.class);
+        job.setMapOutputValueClass(DatasetStatistics.class);
 
         // setup reducer
         job.setNumReduceTasks(1);
         job.setReducerClass(GetDatasetsStatsReducer.class);
         job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(DatasetStatsWritable.class);
+        job.setOutputValueClass(DatasetStatistics.class);
 
         // setup output
         SequenceFileOutputFormat.setOutputPath(job,outputDataPath);

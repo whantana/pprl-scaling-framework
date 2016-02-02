@@ -1,0 +1,11 @@
+local_dat_describe --schema_file data/dblp/schema/dblp.avsc
+local_dat_describe --schema_file data/da_int/schema/da_int.avsc
+local_dat_describe --schema_file data/random/schema/random.avsc
+
+local_dat_sample --avro_files data/dblp/avro --schema_file data/dblp/schema/dblp.avsc --sample_size 2
+local_dat_sample --avro_files data/da_int/avro --schema_file data/da_int/schema/da_int.avsc --sample_size 3
+local_dat_sample --avro_files data/random/avro/random.avro --schema_file data/random/schema/random.avsc --sample_size 6
+
+local_dat_stats --avro_files data/dblp/avro --schema_file data/dblp/schema/dblp.avsc --selected_fields author
+local_dat_stats --avro_files data/dblp/avro --schema_file data/dblp/schema/dblp.avsc --selected_fields author,title
+local_dat_stats --avro_files data/dblp/avro --schema_file data/dblp/schema/dblp.avsc

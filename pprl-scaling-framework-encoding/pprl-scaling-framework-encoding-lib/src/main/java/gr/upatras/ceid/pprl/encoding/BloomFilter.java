@@ -56,7 +56,7 @@ public class BloomFilter {
         final BigInteger MD5 = new BigInteger(md5Digest);
         final int[] hashes = new int[K];
         for (int i = 0; i < K; i++) {
-            final BigInteger I = new BigInteger(String.valueOf(i+1)); // TODO ask about i and i+1
+            final BigInteger I = new BigInteger(String.valueOf(i+1));
             final BigInteger RES =
                     MD5.multiply(I).add(SHA1).mod(new BigInteger(String.valueOf(N)));
             hashes[i] = Math.abs(RES.intValue());

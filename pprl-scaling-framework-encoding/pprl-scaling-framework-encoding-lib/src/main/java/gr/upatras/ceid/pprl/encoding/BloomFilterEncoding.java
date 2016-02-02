@@ -141,13 +141,13 @@ public abstract class BloomFilterEncoding {
                 String.format("PPRL Encoding of %s", schema.getName()),
                 String.format("encoding.schema.%s", getName().replace("_", ".").toLowerCase()),
                 false);
-        setEncodingSchema(encodingSchema);
 
         final List<Schema.Field> restFields = setupRestFields(schema, restFieldNames);
         final List<Schema.Field> encodingFields = setupSelectedFields(selectedFieldNames);
         restFields.addAll(encodingFields);
         encodingSchema.setFields(restFields);
 
+        setEncodingSchema(encodingSchema);
     }
 
     public boolean isEncodingOfSchema(final Schema schema)

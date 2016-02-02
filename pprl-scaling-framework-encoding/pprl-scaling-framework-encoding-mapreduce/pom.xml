@@ -7,7 +7,7 @@
     <parent>
         <groupId>gr.upatras.ceid</groupId>
         <artifactId>pprl-scaling-framework-encoding</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.2-SNAPSHOT</version>
     </parent>
 
     <artifactId>pprl-scaling-framework-encoding-mapreduce</artifactId>

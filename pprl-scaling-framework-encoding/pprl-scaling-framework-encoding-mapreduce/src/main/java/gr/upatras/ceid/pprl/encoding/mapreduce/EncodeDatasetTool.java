@@ -2,6 +2,8 @@ package gr.upatras.ceid.pprl.encoding.mapreduce;
 
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
+import gr.upatras.ceid.pprl.encoding.FieldBloomFilterEncoding;
+import gr.upatras.ceid.pprl.encoding.RowBloomFilterEncoding;
 import org.apache.avro.Schema;
 import org.apache.avro.mapreduce.AvroJob;
 import org.apache.avro.mapreduce.AvroKeyInputFormat;
@@ -9,6 +11,7 @@ import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.Job;
@@ -19,7 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -29,76 +31,52 @@ public class EncodeDatasetTool extends Configured implements Tool {
 
     private static final Logger LOG = LoggerFactory.getLogger(EncodeDatasetTool.class);
 
-
     public int run(String[] args) throws InterruptedException, IOException, ClassNotFoundException,
             BloomFilterEncodingException {
 
         // get args
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
-        if (args.length != 10 && args.length != 9) {
-            LOG.error(" Usage: EncodeDatasetTool " +
-                    "<input-path> <input-schema> \n" +
-                    "\t <encoding-path> <encoding-schema>\n" +
+        if (args.length > 4 || args.length < 8) {
+            LOG.error("Usage without encoding creation: EncodeDatasetTool " +
+                    "<input-path> <input-schema> <encoding-path> <encoding-schema>\n");
+            LOG.error("Usage with encoding creation: EncodeDatasetTool " +
+                    "<input-path> <input-schema> <encoding-path> <encoding-schema>\n" +
                     "\t<sel_field_1,sel_field_2,...,sel_field_M>\n" +
                     "\t[<rest_field_1,rest_field_2,...,rest_field_R>]\n" +
-                    "\t<FBF|RBF> <N_1,N_2,...,N_M> <K> <Q>");
+                    "\t<FBF|RBF> [<N>] <K> <Q>");
             return -1;
         }
-
-        // set confuguration and params
+        boolean createEncoding = args.length >= 8;
         final Path inputDataPath = new Path(args[0]);
         final Path inputSchemaPath = new Path(args[1]);
-        final Schema inputSchema =
-                loadAvroSchemaFromHdfs(FileSystem.get(conf), inputSchemaPath);
-
         final Path outputDataPath = new Path(args[2]);
         final Path outputSchemaPath = new Path(args[3]);
-        final Schema outputSchema =
-                loadAvroSchemaFromHdfs(FileSystem.get(conf), outputSchemaPath);
-
-        final String[] selectedFielNames = args[4].split(",");
-        final String[] restFieldNames = (args.length==10) ? args[5].split(",") : null;
-        final String methodName = args[(args.length==10) ? 6 : 5];
-        if(!BloomFilterEncoding.AVAILABLE_METHODS.contains(methodName))
-            throw new IllegalArgumentException("Error : " + methodName +
-                    " Availble methods are : " + BloomFilterEncoding.AVAILABLE_METHODS);
-        final int[] N = new int[args[(args.length==10) ? 7 : 6].split(",").length];
-        if(N.length != selectedFielNames.length)
-            throw new IllegalArgumentException("Error : N count must agree with selected field names count.");
-        final String[] Nstr = new String[N.length];
-        for (int i = 0; i < N.length; i++) {
-            N[i] = Integer.parseInt(args[(args.length==10) ? 7 : 6].split(",")[i]);
-            Nstr[i] = args[(args.length==10) ? 7 : 6].split(",")[i];
-        }
-        final int K = Integer.parseInt(args[(args.length==10) ? 8 : 7]);
-        final int Q = Integer.parseInt(args[(args.length==10) ? 9 : 8]);
-
-        conf.set(BloomFilterEncodingMapper.METHOD_NAME_KEY, methodName);
-        conf.set(BloomFilterEncodingMapper.INPUT_SCHEMA_KEY, inputSchema.toString());
-        conf.set(BloomFilterEncodingMapper.OUTPUT_SCHEMA_KEY, outputSchema.toString());
-        conf.setStrings(BloomFilterEncodingMapper.SELECTED_FIELDS_KEY, selectedFielNames);
-        if(restFieldNames != null) conf.setStrings(BloomFilterEncodingMapper.REST_FIELDS_KEY, restFieldNames);
-        conf.setStrings(BloomFilterEncodingMapper.N_KEY, Nstr);
-        conf.setInt(BloomFilterEncodingMapper.K_KEY,K);
-        conf.setInt(BloomFilterEncodingMapper.Q_KEY,Q);
+        final Schema inputSchema = loadAvroSchemaFromHdfs(FileSystem.get(conf), inputSchemaPath);
+        conf.set(BloomFilterEncodingMapper.INPUT_SCHEMA_KEY,inputSchema.toString());
+        final Schema outputSchema;
+        if(createEncoding) {
+            outputSchema = createBloomFilterEncoding(args, inputSchema).getEncodingSchema();
+            LOG.info("Created Encoding Schema :" + outputSchema.toString(true));
+            saveAvroSchemaToHdfs(outputSchema,FileSystem.get(conf),outputSchemaPath);
+        } else outputSchema = loadAvroSchemaFromHdfs(FileSystem.get(conf), outputSchemaPath);
+        conf.set(BloomFilterEncodingMapper.OUTPUT_SCHEMA_KEY,outputSchema.toString());
 
         // set description
-        String description = JOB_DESCRIPTION + " ("
-                + String.format(" N=%s, K=%d, Q=%d",Arrays.toString(N),K,Q) + ", method=" + methodName + ","
-                + "input-path=" + shortenUrl(inputDataPath.toString()) + ", "
-                + "input-schema-path=" + shortenUrl(inputSchemaPath.toString()) + ", "
-                + "output-path=" + shortenUrl(outputDataPath.toString()) + ", "
-                + "output-schema-path=" + shortenUrl(outputDataPath.toString()) + ")";
+        String description = JOB_DESCRIPTION + (createEncoding ? "Create Encoding" :" (" ) +
+                "input-path=" + shortenUrl(inputDataPath.toString()) + ", " +
+                "input-schema-path=" + shortenUrl(inputSchemaPath.toString()) + ", " +
+                "output-path=" + shortenUrl(outputDataPath.toString()) + ", " +
+                "output-schema-path=" + shortenUrl(outputDataPath.toString()) + ")";
 
         // setup map only job
-        Job job = Job.getInstance(conf);
+        final Job job = Job.getInstance(conf);
         job.setJarByClass(EncodeDatasetTool.class);
         job.setJobName(description);
         job.setNumReduceTasks(0);
 
         // setup input
-        AvroKeyInputFormat.setInputPaths(job,inputDataPath);
+        AvroKeyInputFormat.setInputPaths(job, inputDataPath);
         AvroJob.setInputKeySchema(job, inputSchema);
         job.setInputFormatClass(AvroKeyInputFormat.class);
 
@@ -123,20 +101,95 @@ public class EncodeDatasetTool extends Configured implements Tool {
     private static String shortenUrl(final String url) {
         Pattern p = Pattern.compile(".*://.*?(/.*)");
         Matcher m = p.matcher(url);
-        if(m.matches()) {
+        if (m.matches()) {
             return m.group(1);
         } else {
             p = Pattern.compile(".*?(/.*)");
             m = p.matcher(url);
-            if(m.matches()) return m.group(1);
+            if (m.matches()) return m.group(1);
             else return url;
         }
     }
 
-    private static Schema loadAvroSchemaFromHdfs(final FileSystem fs,final Path schemaPath) throws IOException {
+    private static BloomFilterEncoding createBloomFilterEncoding(final String[] args, final Schema inputSchema) throws
+            BloomFilterEncodingException {
+        final String methodName;
+        final String[] restFieldNames;
+        final int N;
+        final int K;
+        final int Q;
+        final String[] selectedFieldNames = args[4].split(",");
+        switch (args.length) {
+            case 8:
+                methodName = args[5];
+                restFieldNames = new String[0];
+                N = -1;
+                K = Integer.valueOf(args[6]);
+                Q = Integer.valueOf(args[7]);
+                break;
+            case 9:
+                if (args[5].equals("FBF") || args[5].equals("RBF")) {
+                    methodName = args[5];
+                    restFieldNames = new String[0];
+                    N = Integer.valueOf(args[6]);
+                } else {
+                    restFieldNames = args[5].contains(",") ?
+                            args[5].split(",") : new String[]{args[5]};
+                    methodName = args[6];
+                    N = -1;
+                }
+                K = Integer.valueOf(args[7]);
+                Q = Integer.valueOf(args[8]);
+                break;
+            case 10:
+                restFieldNames = args[5].contains(",") ?
+                        args[5].split(",") : new String[]{args[5]};
+                methodName = args[6];
+                N = Integer.valueOf(args[7]);
+                K = Integer.valueOf(args[8]);
+                Q = Integer.valueOf(args[9]);
+                break;
+            default:
+                LOG.error("Error. Shouldnt be here.");
+                throw new IllegalArgumentException("Illegal args");
+        }
+        if (!BloomFilterEncoding.AVAILABLE_METHODS.contains(methodName))
+            throw new IllegalArgumentException("Error : " + methodName +
+                    " Availble methods are : " + BloomFilterEncoding.AVAILABLE_METHODS);
+        final BloomFilterEncoding encoding;
+        if (methodName.equals("FBF") && N > 0) {
+            encoding = new FieldBloomFilterEncoding(N, selectedFieldNames.length, K, Q);
+        } else if (methodName.equals("FBF") && N < 0) {
+            double[] avgQCount = new double[selectedFieldNames.length]; // need stats here
+            encoding = new FieldBloomFilterEncoding(avgQCount, K, Q);
+        } else if (methodName.equals("RBF") && N > 0) {
+            double[] avgQCount = new double[selectedFieldNames.length]; // need stats here
+            encoding = new RowBloomFilterEncoding(avgQCount, N, K, Q);
+        } else {
+            double[] avgQCount = new double[selectedFieldNames.length]; // need stats here
+            double[] weights = new double[selectedFieldNames.length]; // need stats here
+            encoding = new RowBloomFilterEncoding(avgQCount, weights, K, Q);
+        }
+
+        encoding.makeFromSchema(inputSchema, selectedFieldNames, restFieldNames);
+        if (!encoding.isEncodingOfSchema(inputSchema))
+            throw new BloomFilterEncodingException("Encoding schema is not derived from input schema.");
+        return encoding;
+    }
+
+
+    private static Schema loadAvroSchemaFromHdfs(final FileSystem fs,final Path schemaPath)
+            throws IOException {
         FSDataInputStream fsdis = fs.open(schemaPath);
         Schema schema = (new Schema.Parser()).parse(fsdis);
         fsdis.close();
         return schema;
+    }
+
+    private static void saveAvroSchemaToHdfs(final Schema schema,final FileSystem fs,final Path schemaPath)
+            throws IOException {
+        final FSDataOutputStream fsdos = fs.create(schemaPath, true);
+        fsdos.write(schema.toString(true).getBytes());
+        fsdos.close();
     }
 }

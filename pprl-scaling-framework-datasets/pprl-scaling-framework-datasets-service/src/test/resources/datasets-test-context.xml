@@ -22,8 +22,5 @@
                            file://${pprl.datasets.test.dir}/avro-mapred-1.7.6-cdh5.4.0-hadoop2.jar,
                            file://${pprl.datasets.test.dir}/pprl-scaling-framework-datasets-lib-${build.version}.jar"/>
 
-    <!-- component scan on service package-->
-    <context:component-scan base-package="gr.upatras.ceid.pprl.datasets.service"/>
-
     <bean id="datasetsService" class="gr.upatras.ceid.pprl.datasets.service.DatasetsService"/>
 </beans>

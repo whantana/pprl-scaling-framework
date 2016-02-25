@@ -1,6 +1,6 @@
 package gr.upatras.ceid.pprl.encoding.test;
 
-import gr.upatras.ceid.pprl.datasets.QGramUtil;
+import gr.upatras.ceid.pprl.datasets.statistics.QGramUtil;
 import gr.upatras.ceid.pprl.encoding.BloomFilter;
 import org.junit.Test;
 import org.slf4j.Logger;

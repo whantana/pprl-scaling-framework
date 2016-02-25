@@ -1,7 +1,10 @@
 package gr.upatras.ceid.pprl.encoding.test;
 
+import org.junit.Ignore;
+
 //@ContextConfiguration(locations = "classpath:encoding-test-context.xml",loader=HadoopDelegatingSmartContextLoader.class)
 //@MiniHadoopCluster(nodes = 1, id = "encoding_service_test")
+@Ignore
 public class EncodingServiceTest { //  extends AbstractMapReduceTests {
 
 //    private static Logger LOG = LoggerFactory.getLogger(EncodingServiceTest.class);

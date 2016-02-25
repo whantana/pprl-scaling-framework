@@ -1,6 +1,6 @@
 package gr.upatras.ceid.pprl.datasets.mapreduce;
 
-import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
+import gr.upatras.ceid.pprl.datasets.statistics.DatasetFieldStatistics;
 import org.apache.avro.Schema;
 import org.apache.avro.mapreduce.AvroJob;
 import org.apache.avro.mapreduce.AvroKeyInputFormat;
@@ -65,13 +65,13 @@ public class GetDatasetsStatsTool extends Configured implements Tool {
         // setup mapper
         job.setMapperClass(GetDatasetsStatsMapper.class);
         job.setMapOutputKeyClass(Text.class);
-        job.setMapOutputValueClass(DatasetStatistics.class);
+        job.setMapOutputValueClass(DatasetFieldStatistics.class);
 
         // setup reducer
         job.setNumReduceTasks(1);
         job.setReducerClass(GetDatasetsStatsReducer.class);
         job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(DatasetStatistics.class);
+        job.setOutputValueClass(DatasetFieldStatistics.class);
 
         // setup output
         SequenceFileOutputFormat.setOutputPath(job,outputDataPath);

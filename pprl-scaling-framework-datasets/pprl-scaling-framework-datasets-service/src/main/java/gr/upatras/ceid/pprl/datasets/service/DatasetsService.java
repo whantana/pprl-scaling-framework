@@ -17,6 +17,10 @@ public class DatasetsService implements InitializingBean {
 
     protected static final Logger LOG = LoggerFactory.getLogger(DatasetsService.class);
 
+    public void afterPropertiesSet() {
+        LOG.info("Dataset service initialized.");
+    }
+
     private static SecureRandom RANDOM = new SecureRandom();
 
     protected static final FsPermission ONLY_OWNER_PERMISSION
@@ -25,13 +29,12 @@ public class DatasetsService implements InitializingBean {
     @Autowired
     protected FileSystem pprlClusterHdfs;
 
-    @Autowired
-    private ToolRunner dblpXmlToAvroToolRunner;
+//    @Autowired
+//    private ToolRunner dblpXmlToAvroToolRunner;
+//
+//    @Autowired
+//    private ToolRunner getDatasetStatsToolRunner;
 
-    @Autowired
-    private ToolRunner getDatasetStatsToolRunner;
-
-    public void afterPropertiesSet() {}
 //        try {
 //            if(isPprlClusterHdfsSet()) {
 //                checkSite();

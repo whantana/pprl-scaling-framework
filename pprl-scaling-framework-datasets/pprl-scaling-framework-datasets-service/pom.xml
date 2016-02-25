@@ -16,7 +16,6 @@
     <name>Datasets (service) - PPRL Scaling Framework</name>
     <url>https://github.com/whantana/pprl-scaling-framework</url>
 
-
     <dependencies>
         <!-- PPRL framework -->
         <dependency>

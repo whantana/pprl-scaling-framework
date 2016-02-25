@@ -1,9 +1,0 @@
-enc_import --avro_files stat_enc_500.avro --schema_file stat_enc_500.avsc --method FBF --dataset random
-enc_import --avro_files dyn_enc.avro --schema_file dyn_enc.avsc --method FBF --dataset random
-enc_import --avro_files stat_enc_500.avro --schema_file stat_enc_500.avsc --method FBF --dataset da_int
-enc_import --avro_files dyn_enc.avro --schema_file dyn_enc.avsc --method FBF --dataset da_int
-enc_list
-enc_list --name random
-enc_list --name da_int
-enc_list --method FBF
-enc_list --method FBF --name dblp

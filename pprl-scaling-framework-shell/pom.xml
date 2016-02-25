@@ -34,6 +34,11 @@
             <artifactId>pprl-scaling-framework-encoding-service</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>gr.upatras.ceid</groupId>
+            <artifactId>pprl-scaling-framework-matching-service</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- Spring dependencies -->
         <dependency>
@@ -115,10 +120,11 @@
                             <mainClass>gr.upatras.ceid.pprl.shell.Main</mainClass>
                             <name>pprl_shell</name>
                             <jvmSettings>
-                                <initialMemorySize>20m</initialMemorySize>
-                                <maxMemorySize>256m</maxMemorySize>
-                                <maxStackSize>128m</maxStackSize>
+                                <initialMemorySize>512m</initialMemorySize>
+                                <maxMemorySize>4g</maxMemorySize>
+                                <maxStackSize>256m</maxStackSize>
                                 <systemProperties>
+                                    <systemProperty>64</systemProperty>
                                     <systemProperty>yarn.resourcemanager=$PPRL_YARN_RM</systemProperty>
                                     <systemProperty>hadoop.namenode=$PPRL_HADOOP_NN</systemProperty>
                                     <systemProperty>spark.master=$PPRL_SPARK_MASTER</systemProperty>

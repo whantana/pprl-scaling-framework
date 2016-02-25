@@ -8,7 +8,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>pprl-scaling-framework-evaluation</artifactId>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
 
     <name>Evaluation - PPRL Scaling Framework</name>
     <url>https://github.com/whantana/pprl-scaling-framework</url>

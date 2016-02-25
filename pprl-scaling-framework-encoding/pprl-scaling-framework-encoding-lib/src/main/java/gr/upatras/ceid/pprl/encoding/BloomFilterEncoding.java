@@ -18,12 +18,12 @@ import java.util.Map;
 import java.util.Set;
 
 public abstract class BloomFilterEncoding {
-    public static final List<String> AVAILABLE_METHODS = new ArrayList<String>();
-    public static final Map<String,Class<?>> AVAILABLE_METHODS_MAP = new HashMap<String, Class<?>>();
+    public static final List<String> SCHEME_NAMES = new ArrayList<String>();
+    public static final Map<String,Class<?>> SCHEMES = new HashMap<String, Class<?>>();
     static {
-        AVAILABLE_METHODS_MAP.put("FBF", FieldBloomFilterEncoding.class);
-        AVAILABLE_METHODS_MAP.put("RBF", RowBloomFilterEncoding.class);
-        AVAILABLE_METHODS.addAll(AVAILABLE_METHODS_MAP.keySet());
+        SCHEMES.put("FBF", FieldBloomFilterEncoding.class);
+        SCHEMES.put("RBF", RowBloomFilterEncoding.class);
+        SCHEME_NAMES.addAll(SCHEMES.keySet());
     }
 
     public static final List<Schema.Type> SUPPORTED_TYPES = new ArrayList<Schema.Type>();
@@ -197,7 +197,7 @@ public abstract class BloomFilterEncoding {
 
     public static void belongsInAvailableMethods(final String methodName)
             throws BloomFilterEncodingException {
-        if(!AVAILABLE_METHODS.contains(methodName))
+        if(!SCHEME_NAMES.contains(methodName))
             throw new BloomFilterEncodingException("String \"" + methodName +"\" does not belong in available methods.");
     }
 
@@ -205,7 +205,7 @@ public abstract class BloomFilterEncoding {
             throws BloomFilterEncodingException {
         belongsInAvailableMethods(methodName);
         try {
-            return (BloomFilterEncoding) (AVAILABLE_METHODS_MAP.get(methodName).newInstance());
+            return (BloomFilterEncoding) (SCHEMES.get(methodName).newInstance());
         } catch (InstantiationException e) {
             throw new BloomFilterEncodingException(e.getMessage());
         } catch (IllegalAccessException e) {

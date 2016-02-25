@@ -20,6 +20,9 @@ public class EncodingService implements InitializingBean{
     private ToolRunner encodeDatasetToolRunner;
 
     public void afterPropertiesSet() {
+        LOG.info("Encoding service initialized.");
+    }
+
 //        try {
 //            checkSite();
 //            userDatasetsFile = new Path(pprlClusterHdfs.getHomeDirectory() + "/.pprl_encodings");
@@ -32,11 +35,8 @@ public class EncodingService implements InitializingBean{
 //        } catch (IOException e) {
 //            LOG.error(e.getMessage());
 //        }
-    }
 //
-//    public List<String> listSupportedEncodingMethodsNames() {
-//        return BloomFilterEncoding.AVAILABLE_METHODS;
-//    }
+
 //
 //    public List<String> listDatasets(final boolean onlyName) {
 //        final List<String> strings = new ArrayList<String>();

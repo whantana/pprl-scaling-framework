@@ -2,6 +2,10 @@ package gr.upatras.ceid.pprl.shell.command;
 
 import gr.upatras.ceid.pprl.datasets.service.DatasetsService;
 import gr.upatras.ceid.pprl.datasets.service.LocalDatasetsService;
+import gr.upatras.ceid.pprl.datasets.statistics.DatasetStatistics;
+import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,10 +16,7 @@ import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 
 @Component
 public class DatasetsCommands implements CommandMarker {
@@ -30,69 +31,62 @@ public class DatasetsCommands implements CommandMarker {
     @Qualifier("localDatasetsService")
     private LocalDatasetsService lds;
 
-    @CliAvailabilityIndicator(value = {"local_dat_sample","local_dat_describe","local_dat_stats"})
+    @CliAvailabilityIndicator(value = {"local_data_sample","local_data_describe","local_data_stats"})
     public boolean localDatasetCommandsAvailability() {
         return lds != null;
     }
 
-
-    @CliCommand(value = "local_dat_sample", help = "View a sample of local data.")
+    @CliCommand(value = "local_data_sample", help = "View a sample of local data.")
     public String sampleOfLocalDatasetCommand(
-            @CliOption(key = {"avro_files"}, mandatory = true, help = "Local data avro files (comma separated) or including directory.")
-            final String avroPaths,
-            @CliOption(key = {"schema_file"}, mandatory = true, help = "Local schema avro file.")
-            final String schemaFilePath,
-            @CliOption(key = {"sample_size"}, mandatory = false, help = "(Optional) Sample size (default : 10).")
-            final String sizeStr
+            @CliOption(key = {"avro"}, mandatory = true, help = "Local data avro files (comma separated) or including directory.")
+            final String avroStr,
+            @CliOption(key = {"schema"}, mandatory = true, help = "Local schema avro file.")
+            final String schemaStr,
+            @CliOption(key = {"size"}, mandatory = false, help = "(Optional) Sample size. Default is 10.")
+            final String sizeStr,
+            @CliOption(key = {"name"}, mandatory = false, help = "(Optional) Name to save sample to local filesystem. If not provided no sample will be saved.")
+            final String nameStr
     ) {
         try{
-            final File schemaFile = new File(schemaFilePath);
-            if (!schemaFile.exists()) return "Error. Path \"" + schemaFilePath + "\" does not exist.";
-
-            final File[] avroFiles = CommandUtils.retrieveFiles(avroPaths);
-
-            int size = (sizeStr != null) ? Integer.parseInt(sizeStr) : 10;
-            if (size < 1) throw new NumberFormatException("Sample size must be greater than zero.");
-
-            final String[] absolutePaths = new String[avroFiles.length];
-            for (int i = 0; i < avroFiles.length; i++) absolutePaths[i] = avroFiles[i].getAbsolutePath();
+            final Path schemaPath = CommandUtils.retrievePath(schemaStr);
+            final Path[] avroPaths = CommandUtils.retrievePaths(avroStr);
+            final int size = CommandUtils.retrieveSize(sizeStr);
+            final String name = CommandUtils.retrieveString(nameStr, null);
+            final boolean save = !(name == null);
+            if(save && !CommandUtils.isValideName(name)) throw new IllegalArgumentException("name is not valid");
 
             LOG.info("Sampling from local data :");
-            LOG.info("\tSelected data files : {}", Arrays.toString(absolutePaths));
-            LOG.info("\tSelected schema file : {}", schemaFile.getAbsolutePath());
+            LOG.info("\tSelected data path(s): {}", Arrays.toString(avroPaths));
+            LOG.info("\tSelected schema path : {}", schemaPath);
             LOG.info("\tSample size : {} ",size);
+            if(save) LOG.info("\tSaving sample with name : {} ",name);
             LOG.info("\n");
 
-            List<String> recordStrings = lds.sampleOfLocalDataset(avroFiles,schemaFile,size);
-            StringBuilder sb = new StringBuilder();
-            int i = 1;
-            for(String string : recordStrings)
-                sb.append(String.format("%d, %s\n",i++,string));
-            LOG.info(sb.toString());
+            final Schema schema = lds.schemaOfLocalDataset(schemaPath);
+            final GenericRecord[] sample = lds.sampleOfLocalDataset(avroPaths,schemaPath,size);
+            if(save) lds.localSaveOfSample(name,sample,schema);
+
+            LOG.info(CommandUtils.prettyRecords(sample,schema));
             return "DONE";
         } catch (Exception e) {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         }
     }
 
-    @CliCommand(value = "local_dat_describe", help = "View a schema desription of local data.")
+    @CliCommand(value = "local_data_describe", help = "View a schema desription of local data.")
     public String describeLocalDatasetCommand(
-            @CliOption(key = {"schema_file"}, mandatory = true, help = "Local schema avro file.")
-            final String schemaFilePath) {
+            @CliOption(key = {"schema"}, mandatory = true, help = "Local schema avro file.")
+            final String schemaStr) {
         try {
-            final File schemaFile = new File(schemaFilePath);
-            if (!schemaFile.exists()) return "Error. Path \"" + schemaFilePath + "\" does not exist.";
+            final Path schemaPath = CommandUtils.retrievePath(schemaStr);
 
             LOG.info("Describing local data :");
-            LOG.info("\tSelected schema file : {}", schemaFile.getAbsolutePath());
+            LOG.info("\tSelected schema file : {}", schemaPath);
             LOG.info("\n");
 
-            Map<String,String> description = lds.describeLocalDataset(schemaFile);
-            StringBuilder sb = new StringBuilder();
-            int i = 1;
-            for(Map.Entry<String,String> entry : description.entrySet())
-                sb.append(String.format("%d, %s %s\n",i++,entry.getKey(),entry.getValue()));
-            LOG.info(sb.toString());
+            final Schema schema = lds.schemaOfLocalDataset(schemaPath);
+
+            LOG.info(CommandUtils.prettySchemaDescription(schema));
             return "DONE";
         } catch (Exception e) {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
@@ -100,53 +94,77 @@ public class DatasetsCommands implements CommandMarker {
     }
 
 
-    @CliCommand(value = "local_dat_stats", help = "Calculate usefull field statistics from local data.")
+    @CliCommand(value = "local_data_stats", help = "Calculate usefull field statistics from local data.")
     public String calculateStatisticsLocalDatasetCommand(
-            @CliOption(key = {"avro_files"}, mandatory = true, help = "Local data avro files (comma separated) or including directory.")
-            final String avroPaths,
-            @CliOption(key = {"schema_file"}, mandatory = true, help = "Local schema avro file.")
-            final String schemaFilePath,
-            @CliOption(key = {"selected_fields"}, mandatory = false, help = "(Optional) Selected fields for stats")
-            final String fieldsStr) {
+            @CliOption(key = {"avro"}, mandatory = true, help = "Local data avro files (comma separated) or including directory.")
+            final String avroStr,
+            @CliOption(key = {"schema"}, mandatory = true, help = "Local schema avro file.")
+            final String schemaStr,
+            @CliOption(key = {"fields"}, mandatory = false, help = "(Optional) Restrict on fields to collect statistics from.")
+            final String fieldsStr,
+            @CliOption(key = {"K"}, mandatory = false, help = "(Optional) Bloom Filter Encoding K (hash functions). Can provide multiple. No bloom filter stats will be included if not provided")
+            final String kStr,
+            @CliOption(key = {"Q"}, mandatory = false, help = "(Optional) Bloom Filter Encoding Q (Q-grams). Q in {2,3,4}. Can provide multiple. No bloom filter stats will be included if not provided")
+            final String qStr,
+            @CliOption(key = {"name"}, mandatory = false, help = "(Optional) Name to save statistics report to local filesystem. No statistics report will be saved if not provided.")
+            final String nameStr
+    ) {
         try {
-            final File schemaFile = new File(schemaFilePath);
-            if (!schemaFile.exists()) return "Error. Path \"" + schemaFilePath + "\" does not exist.";
+            final Path schemaPath = CommandUtils.retrievePath(schemaStr);
+            final Path[] avroPaths = CommandUtils.retrievePaths(avroStr);
+            final String[] fields = CommandUtils.retrieveFields(fieldsStr);
+            final String name = CommandUtils.retrieveString(nameStr, null);
+            final boolean addBFE = !(kStr == null || qStr == null);
+            final boolean save = !(name == null);
+            if(save && !CommandUtils.isValideName(name)) throw new IllegalArgumentException("name is not valid");
+            final int[] Ks = CommandUtils.retrieveInts(kStr);
+            final int[] Qs = CommandUtils.retrieveInts(qStr);
 
-            final File[] avroFiles = CommandUtils.retrieveFiles(avroPaths);
-
-            final String[] absolutePaths = new String[avroFiles.length];
-            for (int i = 0; i < avroFiles.length; i++) absolutePaths[i] = avroFiles[i].getAbsolutePath();
-
-            final String[] selectedFieldNames = (fieldsStr != null ) ?
-                    CommandUtils.retrieveFields(fieldsStr) : null;
-
-            LOG.info("Calculating [Average field length, Avergage 2-gram count, Avergage 3-gram count," +
-                    " Avergage 4-gram count] local AVRO dataset :");
-            LOG.info("\tSelected data files for import  : {}", Arrays.toString(absolutePaths));
-            LOG.info("\tSelected schema file for import : {}", schemaFile.getAbsolutePath());
-            if(selectedFieldNames!=null) LOG.info("\tSelected fields : {}",
-                    Arrays.toString(selectedFieldNames));
+            LOG.info("Calculating statistics on local data:");
+            LOG.info("\tSelected data files : {}", Arrays.toString(avroPaths));
+            LOG.info("\tSelected schema file : {}", schemaPath);
+            LOG.info("\tSelected fields : {}", Arrays.toString(fields));
+            if(addBFE) {
+                LOG.info("\tBloom Filter Encoding Ks : {}", Arrays.toString(Ks));
+                LOG.info("\tBloom Filter Encoding Qs : {}", Arrays.toString(Qs));
+            }
+            if(save) LOG.info("\tStatistics report with name : {}",name);
             LOG.info("\n");
 
-            final Map<String,double[]>
-                      stats = lds.calculateStatisticsLocalDataset(avroFiles, schemaFile, selectedFieldNames);
-            StringBuilder sb = new StringBuilder();
-              for(Map.Entry<String,double[]> entry : stats.entrySet()) {
-                  sb.append(entry.getKey())
-                          .append(" : ")
-                          .append(CommandUtils.prettyStats(entry.getValue())).append("\n");
-              }
-              LOG.info(sb.toString());
-              return "DONE";
+
+            final DatasetStatistics statistics =
+                    lds.calculateStatisticsLocalDataset(avroPaths, schemaPath, fields);
+            final StringBuilder report = new StringBuilder(CommandUtils.prettyStats(statistics));
+            if(addBFE) {
+                for (int k : Ks)
+                    for (int q : Qs)
+                        report.append(CommandUtils.prettyBFEStats(statistics.getFieldStatistics(), k, q));
+            }
+            if(save) lds.localSaveOfStatsReport(name,report.toString());
+
+            LOG.info(report.toString());
+            return "DONE";
         } catch (Exception e) {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         }
     }
 
-    @CliAvailabilityIndicator(value = {"dat_sample","dat_describe","dat_stats"})
-    public boolean datasetCommandsAvailability() {
-        return ds != null;
-    }
+//    @CliAvailabilityIndicator(value = {"dat_sample","dat_describe"})
+//    public boolean datasetCommandsAvailability() {
+//        return ds != null;
+//    }
+//
+//    @CliCommand(value = "dat_sample", help = " describe (dummy).")
+//    public String sampleDummy() {
+//        return "DUMMY!";
+//    }
+//
+//    @CliCommand(value = "dat_describe", help = "stats (dummy).")
+//    public String sampleDescribe() {
+//        return "DUMMY!";
+//    }
+
+
 
 //    @CliCommand(value = "dat_import", help = "Import local avro file(s) and schema on the PPRL site.")
 //    public String datasetsImportCommand(

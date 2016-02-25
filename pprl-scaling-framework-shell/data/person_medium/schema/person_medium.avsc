@@ -1,0 +1,23 @@
+{
+  "type" : "record",
+  "name" : "person_medium",
+  "namespace" : "gr.upatas.ceid.pprl.datasets.person_medium",
+  "doc" : "",
+  "fields" : [ {
+    "name" : "id",
+    "type" : "string",
+    "doc" : ""
+  }, {
+    "name" : "name",
+    "type" : "string",
+    "doc" : ""
+  }, {
+    "name" : "surname",
+    "type" : "string",
+    "doc" : ""
+  }, {
+    "name" : "age",
+    "type" : "int",
+    "doc" : ""
+  } ]
+}

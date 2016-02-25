@@ -1,0 +1,23 @@
+{
+  "type" : "record",
+  "name" : "person_big",
+  "namespace" : "gr.upatas.ceid.pprl.datasets.person_big",
+  "doc" : "",
+  "fields" : [ {
+    "name" : "id",
+    "type" : "string",
+    "doc" : ""
+  }, {
+    "name" : "name",
+    "type" : "string",
+    "doc" : ""
+  }, {
+    "name" : "surname",
+    "type" : "string",
+    "doc" : ""
+  }, {
+    "name" : "gender",
+    "type" : "string",
+    "doc" : ""
+  } ]
+}

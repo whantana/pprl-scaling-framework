@@ -1,0 +1,11 @@
+# Sample datasets
+local_data_sample --avro data/dblp/avro --schema data/dblp/schema/dblp.avsc --size 5
+local_data_sample --avro data/dblp/avro --schema data/dblp/schema/dblp.avsc --size 5 --name dblp_sample_1
+
+local_data_sample --avro data/da_int/avro --schema data/da_int/schema/da_int.avsc --size 3
+local_data_sample --avro data/da_int/avro --schema data/da_int/schema/da_int.avsc --size 5 --name da_int_sample_1
+
+local_data_sample --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc  --size 5
+local_data_sample --avro data/person_medium/avro --schema data/person_small/schema/person_medium.avsc --size 10
+local_data_sample --avro data/person_big/avro  --schema data/person_big/schema/person_big.avsc  --size 20
+

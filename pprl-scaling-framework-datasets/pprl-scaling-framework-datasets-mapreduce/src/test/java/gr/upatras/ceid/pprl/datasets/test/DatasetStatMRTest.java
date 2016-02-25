@@ -1,10 +1,10 @@
 package gr.upatras.ceid.pprl.datasets.test;
 
 
-import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
-import gr.upatras.ceid.pprl.datasets.QGramUtil;
 import gr.upatras.ceid.pprl.datasets.mapreduce.GetDatasetsStatsMapper;
 import gr.upatras.ceid.pprl.datasets.mapreduce.GetDatasetsStatsReducer;
+import gr.upatras.ceid.pprl.datasets.statistics.DatasetFieldStatistics;
+import gr.upatras.ceid.pprl.datasets.statistics.QGramUtil;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
@@ -33,9 +33,9 @@ public class DatasetStatMRTest {
     private static final String EXPECTED_YEAR = "1996";
 
     private GenericRecord inputRecord;
-    private MapDriver<AvroKey<GenericRecord>,NullWritable,Text,DatasetStatistics> mapDriver;
-    private ReduceDriver<Text,DatasetStatistics,Text,DatasetStatistics> reduceDriver1;
-    private ReduceDriver<Text,DatasetStatistics,Text,DatasetStatistics> reduceDriver2;
+    private MapDriver<AvroKey<GenericRecord>,NullWritable,Text,DatasetFieldStatistics> mapDriver;
+    private ReduceDriver<Text,DatasetFieldStatistics,Text,DatasetFieldStatistics> reduceDriver1;
+    private ReduceDriver<Text,DatasetFieldStatistics,Text,DatasetFieldStatistics> reduceDriver2;
 
     @Before
     public void setUp() throws IOException, URISyntaxException {
@@ -54,11 +54,11 @@ public class DatasetStatMRTest {
     }
 
 
-    public MapDriver<AvroKey<GenericRecord>,NullWritable,Text,DatasetStatistics> setupMapDriver(
+    public MapDriver<AvroKey<GenericRecord>,NullWritable,Text,DatasetFieldStatistics> setupMapDriver(
             GetDatasetsStatsMapper mapper,Schema input) throws IOException {
 
 
-        MapDriver<AvroKey<GenericRecord>,NullWritable,Text,DatasetStatistics> mapDriver =
+        MapDriver<AvroKey<GenericRecord>,NullWritable,Text,DatasetFieldStatistics> mapDriver =
                 MapDriver.newMapDriver(mapper);
 
         AvroSerialization.addToConfiguration(mapDriver.getConfiguration());
@@ -73,10 +73,10 @@ public class DatasetStatMRTest {
 
     @Test
     public void test1() throws IOException {
-        List<Pair<Text, DatasetStatistics>> pairs = new ArrayList<Pair<Text, DatasetStatistics>>();
+        List<Pair<Text, DatasetFieldStatistics>> pairs = new ArrayList<Pair<Text, DatasetFieldStatistics>>();
 
         pairs.clear();
-        pairs.add(new Pair<Text, DatasetStatistics>(new Text("key"), new DatasetStatistics(
+        pairs.add(new Pair<Text, DatasetFieldStatistics>(new Text("key"), new DatasetFieldStatistics(
                 EXPECTED_KEY.length(), new double[]{
                 QGramUtil.calcQgramsCount(EXPECTED_KEY, 2),
                 QGramUtil.calcQgramsCount(EXPECTED_KEY, 3),
@@ -84,7 +84,7 @@ public class DatasetStatMRTest {
         }
         )));
 
-        pairs.add(new Pair<Text, DatasetStatistics>(new Text("author"), new DatasetStatistics(
+        pairs.add(new Pair<Text, DatasetFieldStatistics>(new Text("author"), new DatasetFieldStatistics(
                 EXPECTED_AUTHOR.length(), new double[]{
                 QGramUtil.calcQgramsCount(EXPECTED_AUTHOR, 2),
                 QGramUtil.calcQgramsCount(EXPECTED_AUTHOR, 3),
@@ -92,14 +92,14 @@ public class DatasetStatMRTest {
         })));
 
 
-        pairs.add(new Pair<Text, DatasetStatistics>(new Text("title"), new DatasetStatistics(
+        pairs.add(new Pair<Text, DatasetFieldStatistics>(new Text("title"), new DatasetFieldStatistics(
                 EXPECTED_TITLE.length(), new double[]{
                 QGramUtil.calcQgramsCount(EXPECTED_TITLE, 2),
                 QGramUtil.calcQgramsCount(EXPECTED_TITLE, 3),
                 QGramUtil.calcQgramsCount(EXPECTED_TITLE, 4),
         })));
 
-        pairs.add(new Pair<Text, DatasetStatistics>(new Text("year"), new DatasetStatistics(
+        pairs.add(new Pair<Text, DatasetFieldStatistics>(new Text("year"), new DatasetFieldStatistics(
                 EXPECTED_YEAR.length(), new double[]{
                 QGramUtil.calcQgramsCount(EXPECTED_YEAR, 2),
                 QGramUtil.calcQgramsCount(EXPECTED_YEAR, 3),
@@ -113,24 +113,24 @@ public class DatasetStatMRTest {
 
     @Test
     public void test2() throws IOException {
-        Pair<Text,List<DatasetStatistics>> pair1 = new Pair<Text,List<DatasetStatistics>>(
-                new Text("key1"), new ArrayList<DatasetStatistics>(Arrays.asList(
-                new DatasetStatistics(1.0,new double[]{1.0,1.0,1.0}),
-                new DatasetStatistics(2.0,new double[]{1.0,1.0,1.0}),
-                new DatasetStatistics(3.0,new double[]{1.0,1.0,1.0}),
-                new DatasetStatistics(4.0,new double[]{1.0,1.0,1.0}))));
-        Pair<Text,List<DatasetStatistics>> pair2 = new Pair<Text,List<DatasetStatistics>>(
-                new Text("key2"), new ArrayList<DatasetStatistics>(Arrays.asList(
-                new DatasetStatistics(1.0,new double[]{2.0,2.0,2.0}),
-                new DatasetStatistics(1.0,new double[]{-2.0,-2.0,-2.0}),
-                new DatasetStatistics(1.0,new double[]{2.0,2.0,2.0}),
-                new DatasetStatistics(1.0,new double[]{-2.0,-2.0,-2.0}))));
+        Pair<Text,List<DatasetFieldStatistics>> pair1 = new Pair<Text,List<DatasetFieldStatistics>>(
+                new Text("key1"), new ArrayList<DatasetFieldStatistics>(Arrays.asList(
+                new DatasetFieldStatistics(1.0,new double[]{1.0,1.0,1.0}),
+                new DatasetFieldStatistics(2.0,new double[]{1.0,1.0,1.0}),
+                new DatasetFieldStatistics(3.0,new double[]{1.0,1.0,1.0}),
+                new DatasetFieldStatistics(4.0,new double[]{1.0,1.0,1.0}))));
+        Pair<Text,List<DatasetFieldStatistics>> pair2 = new Pair<Text,List<DatasetFieldStatistics>>(
+                new Text("key2"), new ArrayList<DatasetFieldStatistics>(Arrays.asList(
+                new DatasetFieldStatistics(1.0,new double[]{2.0,2.0,2.0}),
+                new DatasetFieldStatistics(1.0,new double[]{-2.0,-2.0,-2.0}),
+                new DatasetFieldStatistics(1.0,new double[]{2.0,2.0,2.0}),
+                new DatasetFieldStatistics(1.0,new double[]{-2.0,-2.0,-2.0}))));
 
-        Pair<Text,DatasetStatistics> outPair1 = new Pair<Text,DatasetStatistics>(
-                new Text("key1"), new DatasetStatistics(
+        Pair<Text,DatasetFieldStatistics> outPair1 = new Pair<Text,DatasetFieldStatistics>(
+                new Text("key1"), new DatasetFieldStatistics(
                 ((1.0 + 2.0 + 3.0 + 4.0)/(double)4), new double[] {1.0, 1.0, 1.0}));
-        Pair<Text,DatasetStatistics> outPair2 = new Pair<Text,DatasetStatistics>(
-                new Text("key2"), new DatasetStatistics(
+        Pair<Text,DatasetFieldStatistics> outPair2 = new Pair<Text,DatasetFieldStatistics>(
+                new Text("key2"), new DatasetFieldStatistics(
                 ((1.0 + 1.0 + 1.0 + 1.0)/(double)4), new double[] {0, 0, 0}));
 
         reduceDriver1.withInput(pair1);

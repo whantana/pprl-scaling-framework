@@ -1,5 +1,2 @@
-enc_list_supported_encodings
-# script pprl-scaling-framework-shell/target/appassembler/scripts/import_encodings.script
-# script pprl-scaling-framework-shell/target/appassembler/scripts/manage_encodings.script
-# script pprl-scaling-framework-shell/target/appassembler/scripts/encode_local_datasets.script
-# script pprl-scaling-framework-shell/target/appassembler/scripts/encode_datasets.script
+encoding_supported_schemes
+script scripts/encode_local_datasets.script

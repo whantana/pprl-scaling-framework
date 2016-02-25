@@ -1,3 +1,3 @@
-script scripts/datasets/local_datasets.script
-# script scripts/datasets/import_datasets.script
-# script scripts/datasets/manage_datasets.script
+script scripts/datasets/local_data_describe.script
+script scripts/datasets/local_data_sample.script
+script scripts/datasets/local_data_stats.script

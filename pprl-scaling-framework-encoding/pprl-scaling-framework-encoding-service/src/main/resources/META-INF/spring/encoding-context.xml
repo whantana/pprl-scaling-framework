@@ -20,5 +20,5 @@
                            file://${app.repo}/pprl-scaling-framework-encoding-lib-${build.version}.jar"/>
 
     <!-- component scan on service package-->
-	<context:component-scan base-package="gr.upatras.ceid.pprl.encoding.service" />
+	<context:component-scan base-package="gr.upatras.ceid.pprl.encoding.service.config" />
 </beans>

@@ -15,6 +15,8 @@ import java.util.TreeMap;
 
 public class BenchmarkHashingMethods {
 
+    // TODO movem to tests
+
     private static final int N = 1024;
     private static final int K = 30;
     private static final int Q = 2;

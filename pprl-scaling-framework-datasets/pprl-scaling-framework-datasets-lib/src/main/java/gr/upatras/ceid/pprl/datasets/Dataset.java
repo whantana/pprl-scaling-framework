@@ -1,6 +1,6 @@
 package gr.upatras.ceid.pprl.datasets;
 
-import java.util.Map;
+import gr.upatras.ceid.pprl.datasets.statistics.DatasetStatistics;
 
 public class Dataset {
     protected int id;
@@ -8,7 +8,7 @@ public class Dataset {
     protected String basePath;
     protected String avroPath;
     protected String avroSchemaPath;
-    private Map<String,DatasetStatistics> statistics;
+    private DatasetStatistics statistics;
 
     //protected Path basePath;
     //protected Path avroPath;
@@ -65,15 +65,15 @@ public class Dataset {
         this.id = id;
     }
 
-    public Map<String, DatasetStatistics> getStatistics() {
+    public DatasetStatistics getStatistics() {
         return statistics;
     }
 
-    public void setStatistics(Map<String, DatasetStatistics> statistics) {
+    public void setStatistics(DatasetStatistics statistics) {
         this.statistics = statistics;
     }
 
-//    public void buildOnFS(final FileSystem fs, FsPermission permission)
+    //    public void buildOnFS(final FileSystem fs, FsPermission permission)
 //            throws IOException, DatasetException {
 //        buildOnFS(fs,true,permission);
 //    }

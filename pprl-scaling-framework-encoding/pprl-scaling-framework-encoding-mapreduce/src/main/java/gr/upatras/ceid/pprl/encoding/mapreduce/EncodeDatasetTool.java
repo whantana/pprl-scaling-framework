@@ -153,9 +153,9 @@ public class EncodeDatasetTool extends Configured implements Tool {
                 LOG.error("Error. Shouldnt be here.");
                 throw new IllegalArgumentException("Illegal args");
         }
-        if (!BloomFilterEncoding.AVAILABLE_METHODS.contains(methodName))
+        if (!BloomFilterEncoding.SCHEME_NAMES.contains(methodName))
             throw new IllegalArgumentException("Error : " + methodName +
-                    " Availble methods are : " + BloomFilterEncoding.AVAILABLE_METHODS);
+                    " Availble methods are : " + BloomFilterEncoding.SCHEME_NAMES);
         final BloomFilterEncoding encoding;
         if (methodName.equals("FBF") && N > 0) {
             encoding = new FieldBloomFilterEncoding(N, selectedFieldNames.length, K, Q);

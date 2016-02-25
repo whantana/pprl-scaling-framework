@@ -1,20 +1,20 @@
 package gr.upatras.ceid.pprl.datasets.mapreduce;
 
-import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
+import gr.upatras.ceid.pprl.datasets.statistics.DatasetFieldStatistics;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
 
-public class GetDatasetsStatsReducer extends Reducer<Text,DatasetStatistics,Text,DatasetStatistics> {
+public class GetDatasetsStatsReducer extends Reducer<Text,DatasetFieldStatistics,Text,DatasetFieldStatistics> {
     @Override
-    protected void reduce(Text key, Iterable<DatasetStatistics> values, Context context) throws IOException, InterruptedException {
+    protected void reduce(Text key, Iterable<DatasetFieldStatistics> values, Context context) throws IOException, InterruptedException {
         long size = 0;
         double sumLen = 0;
-        double[] sumQgramCount = new double[DatasetStatistics.Q_GRAMS.length];
-        for(DatasetStatistics sw : values) {
+        double[] sumQgramCount = new double[DatasetFieldStatistics.Q_GRAMS.length];
+        for(DatasetFieldStatistics sw : values) {
             sumLen += sw.getFieldLength();
-            for (int i = 0; i < DatasetStatistics.Q_GRAMS.length ; i++) {
+            for (int i = 0; i < DatasetFieldStatistics.Q_GRAMS.length ; i++) {
                 sumQgramCount[i] += sw.getFieldQgramCount()[i];
             }
             size++;
@@ -24,7 +24,7 @@ public class GetDatasetsStatsReducer extends Reducer<Text,DatasetStatistics,Text
         for (int i = 0; i < sumQgramCount.length; i++)
             avgQgramCount[i] = (sumQgramCount[i] / (double) size);
 
-        DatasetStatistics dsw = new DatasetStatistics();
+        DatasetFieldStatistics dsw = new DatasetFieldStatistics();
         dsw.setFieldLength(avgLen);
         dsw.setFieldQgramCount(avgQgramCount);
         context.write(key,dsw);

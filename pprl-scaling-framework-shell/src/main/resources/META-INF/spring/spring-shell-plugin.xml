@@ -10,6 +10,7 @@
     <import resource="classpath*:/META-INF/spring/base-context.xml"/>
     <import resource="classpath*:/META-INF/spring/datasets-context.xml"/>
     <import resource="classpath*:/META-INF/spring/encoding-context.xml"/>
+    <import resource="classpath*:/META-INF/spring/matching-context.xml"/>
 
     <context:property-placeholder location="classpath:build.properties"/>
 

@@ -55,7 +55,7 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
         return FileSystem.get(conf);
     }
 
-    @Bean(name ="localFileSystem")
+    @Bean(name = "localFS")
     @Autowired
     public FileSystem localfileSystem(final org.apache.hadoop.conf.Configuration conf) throws IOException {
         return FileSystem.getLocal(conf);

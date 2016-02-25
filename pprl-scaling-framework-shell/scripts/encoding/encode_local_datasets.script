@@ -1,5 +1,42 @@
-enc_encode_local_avro --avro_files  pprl-scaling-framework-shell/target/appassembler/data/random/avro --schema_file pprl-scaling-framework-shell/target/appassembler/data/random/schema/random.avsc --selected_fields random_int --rest_fields random_word --method FBF --N 500 --K 2 --Q 2 --name fbf_stat_enc_500
-enc_encode_local_avro --avro_files  pprl-scaling-framework-shell/target/appassembler/data/random/avro --schema_file pprl-scaling-framework-shell/target/appassembler/data/random/schema/random.avsc --selected_fields random_int --rest_fields random_word --method FBF --K 2 --Q 2 --name fbf_dyn_enc
-enc_encode_local_avro --avro_files  pprl-scaling-framework-shell/target/appassembler/data/da_int/avro --schema_file pprl-scaling-framework-shell/target/appassembler/data/da_int/schema/da_int.avsc --selected_fields daInteger --method FBF --N 500 --K 15 --Q 3 --name rbf_uniform_enc_500
-enc_encode_local_avro --avro_files  pprl-scaling-framework-shell/target/appassembler/data/da_int/avro --schema_file pprl-scaling-framework-shell/target/appassembler/data/da_int/schema/da_int.avsc --selected_fields daInteger --method FBF --K 15 --Q 3 --name rbf_weighted_1_enc
-enc_encode_local_avro --avro_files  pprl-scaling-framework-shell/target/appassembler/data/da_int/avro --schema_file pprl-scaling-framework-shell/target/appassembler/data/da_int/schema/da_int.avsc --selected_fields daInteger --method FBF --K 15 --Q 3 --name rbf_weighted_2_enc
+# Static fbf encoding single size
+encode_local_dataset --avro_files data/person_small/avro --schema_file data/person_small/schema/person_small.avsc --selected_fields name,surname,location --rest_fields id --scheme FBF --static 150 --K 15 --Q 2 --name enc_fbf_person_small_0
+
+# Static fbf encoding multiple sizes
+encode_local_dataset --avro_files  data/person_small/avro --schema_file data/person_small/schema/person_small.avsc \
+    --selected_fields name,surname,location --rest_fields id\
+    --scheme FBF --fbf STATIC --N 150,151,152 --K 15 --Q 2 --name enc_fbf_person_small_1
+
+# Dynamic fbf encoding . Average Q gram per field provided
+encode_local_dataset --avro_files  data/person_small/avro --schema_file data/person_small/schema/person_small.avsc \
+    --selected_fields name,surname,location --rest_fields id\
+    --scheme FBF --fbf DYNAMIC --aqc 7.0,7.5,7.5 --K 15 --Q 2 --name enc_fbf_person_small_2
+
+# Uniform rbf encoding . Static fbf of multiple sizes. Desired rbf length provided.
+encode_local_dataset --avro_files  data/person_small/avro --schema_file data/person_small/schema/person_small.avsc \
+    --selected_fields name,surname,location --rest_fields id\
+    --scheme RBF --selection UNIFORM --fbf STATIC --N 150,151,152 --rbfN 1000 --K 15 --Q 2 --name enc_rbf_person_small_0
+
+# Uniform rbf encoding . Static fbf of a single size. Desired rbf length provided.
+encode_local_dataset --avro_files  data/person_small/avro --schema_file data/person_small/schema/person_small.avsc \
+    --selected_fields name,surname,location --rest_fields id\
+    --scheme RBF --selection UNIFORM --fbf STATIC --N 150 --rbfN 1000 --K 15 --Q 2 --name enc_rbf_person_small_1
+
+# Uniform rbf encoding . Dynamic fbf ,average Q gram per field provided. Desired rbf length provided.
+encode_local_dataset --avro_files  data/person_small/avro --schema_file data/person_small/schema/person_small.avsc \
+    --selected_fields name,surname,location --rest_fields id\
+    --scheme RBF --selection UNIFORM --fbf DYNAMIC --aqc 7.0,7.5,7.5 --rbfN 1000 --K 15 --Q 2 --name enc_rbf_person_small_2
+
+# Weighted rbf encoding . Static fbf of multiple sizes. Weights are provided length provided.
+encode_local_dataset --avro_files  data/person_small/avro --schema_file data/person_small/schema/person_small.avsc \
+    --selected_fields name,surname,location --rest_fields id\
+    --scheme RBF --selection WEIGHTED --fbf STATIC --N 150,151,152 --W 0.23,0.23,0.54 --K 15 --Q 2 --name enc_rbf_person_small_3
+
+# Weighted fbf encoding. Static fbf of a single size. Weights are provided length provided.
+encode_local_dataset --avro_files  data/person_small/avro --schema_file data/person_small/schema/person_small.avsc \
+    --selected_fields name,surname,location --rest_fields id\
+    --scheme RBF --selection WEIGHTED --fbf STATIC --N 150 --W 0.23,0.23,0.54 --K 15 --Q 2 --name enc_rbf_person_small_4
+
+# Weighted fbf encoding. Dynamic fbf ,average Q gram per field provided. Weights are provided length provided.
+encode_local_dataset --avro_files  data/person_small/avro --schema_file data/person_small/schema/person_small.avsc \
+    --selected_fields name,surname,location --rest_fields id\
+    --scheme RBF --selection WEIGHTED --fbf DYNAMIC --aqc 7.0,7.5,7.5 --W 0.23,0.23,0.54 --K 15 --Q 2 --name enc_rbf_person_small_5

@@ -2,9 +2,14 @@ package gr.upatras.ceid.pprl.datasets.test;
 
 
 import gr.upatras.ceid.pprl.datasets.DatasetException;
-import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
 import gr.upatras.ceid.pprl.datasets.service.LocalDatasetsService;
+import gr.upatras.ceid.pprl.datasets.statistics.DatasetFieldStatistics;
+import gr.upatras.ceid.pprl.datasets.statistics.DatasetStatistics;
+import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -18,8 +23,12 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -33,78 +42,233 @@ public class LocalDatasetsServiceTest {
     @Autowired
     private LocalDatasetsService localDatasetsService;
 
-    private File[] DBLP_FILES;
-    private File DBLP_SCHEMA_FILE;
+    private Path[] AVRO_PATHS;
+    private Path SCHEMA_PATH;
 
     @Before
     public void setUp() throws IOException {
         assertNotNull(localDatasetsService);
-        assertNotNull(localDatasetsService.getLocalFileSystem());
-        if(localDatasetsService.getLocalFileSystem().getConf() == null) {
-            localDatasetsService.getLocalFileSystem().initialize(URI.create("file:///"),new Configuration());
+        assertNotNull(localDatasetsService.getLocalFS());
+        if (localDatasetsService.getLocalFS().getConf() == null) {
+            localDatasetsService.getLocalFS().initialize(URI.create("file:///"), new Configuration());
         }
-
-        try {
-            DBLP_FILES = retrieveFiles("dblp/avro");
-            DBLP_SCHEMA_FILE = new File("dblp/schema/dblp_sample.avsc");
-        } catch (IOException e) {
-            LOG.error(e.getMessage());
-        }
+        AVRO_PATHS = new Path[]{new Path("person_small/avro")};
+        SCHEMA_PATH = new Path("person_small/schema/person_small.avsc");
     }
 
     @Test
     public void test0() throws IOException, DatasetException {
-        Map<String,String> description = localDatasetsService.describeLocalDataset(DBLP_SCHEMA_FILE);
-        LOG.info(description.toString());
-        assertTrue(description.keySet().size() > 0);
-        assertTrue(description.values().size() > 0);
+        final Schema schema = localDatasetsService.schemaOfLocalDataset(SCHEMA_PATH);
+        LOG.info(schema.toString(true));
     }
 
     @Test
     public void test1() throws IOException, DatasetException {
-        List<String> sample =  localDatasetsService.sampleOfLocalDataset(DBLP_FILES,DBLP_SCHEMA_FILE,3);
-        LOG.info(sample.toString());
-        assertTrue(sample.size() <= 3);
+        final GenericRecord[] sample = localDatasetsService.sampleOfLocalDataset(AVRO_PATHS, SCHEMA_PATH, 20);
+        final Schema schema = localDatasetsService.schemaOfLocalDataset(SCHEMA_PATH);
+        final String sampleName = "person_small_sample";
+        localDatasetsService.localSaveOfSample(sampleName, sample, schema);
     }
 
     @Test
     public void test2() throws IOException, DatasetException {
-        Map<String,double[]> stats = localDatasetsService.calculateStatisticsLocalDataset(DBLP_FILES,DBLP_SCHEMA_FILE,new String[]{"author","year"});
-        for(String fieldName : stats.keySet()) {
-            LOG.info("Field Name {} : ",fieldName);
-            LOG.info(DatasetStatistics.prettyStats(stats.get(fieldName)));
-        }
-        assertTrue(stats.keySet().size() == 2);
-
+        DatasetStatistics statistics =
+                localDatasetsService.calculateStatisticsLocalDataset(
+                        AVRO_PATHS,SCHEMA_PATH,new String[]{"name","surname"});
+        StringBuilder report = new StringBuilder(prettyStats(statistics));
+        report.append(prettyBFEStats(statistics.getFieldStatistics(), 15, 2));
+        report.append(prettyBFEStats(statistics.getFieldStatistics(), 15, 3));
+        report.append(prettyBFEStats(statistics.getFieldStatistics(), 15, 4));
+        LOG.info(report.toString());
+        final String reportName = "stats_report";
+        localDatasetsService.localSaveOfStatsReport(reportName, report.toString());
+        localDatasetsService.localSaveOfStatsReport(reportName, report.toString(),new Path("person_small"));
+        localDatasetsService.localSaveOfStatsReport(reportName, report.toString(),new Path("asdf"));
     }
 
-    private static File[] retrieveFiles(final String avroPaths) throws IOException {
-        File[] avroFiles;
-        if(!avroPaths.contains(",")) {
-            final File avroFile = new File(avroPaths);
-            if (!avroFile.exists())
-                throw new IOException("Path \"" + avroPaths + "\" does not exist.");
-            if(avroFile.isDirectory()) {
-                LOG.info("Avro file input is the directory {}",avroFile);
-                avroFiles = avroFile.listFiles(new FilenameFilter() {
-                    public boolean accept(File dir, String name) {
-                        return name.endsWith(".avro");
-                    }
-                });
-                LOG.info("Found {} avro files in directory {}",avroFiles.length,avroFile);
-            } else {
-                avroFiles = new File[1];
-                avroFiles[0] = avroFile;
-            }
-        } else {
-            String[] paths = avroPaths.split(",");
-            avroFiles = new File[paths.length];
-            for (int j = 0; j < avroFiles.length; j++) {
-                avroFiles[j] = new File(paths[j]);
-                if (!avroFiles[j].exists())
-                    throw new IOException("Path \"" + avroPaths + "\" does not exist.");
-            }
+
+    @Test
+    public void test3() throws IOException, DatasetException {
+        Path[] avroPaths = new Path[]{new Path("random/avro/random.avro")};
+        Path schemaPath = new Path("random/schema/random.avsc");
+        LOG.info(
+                prettyRecords(
+                        localDatasetsService.loadLocalDataset(avroPaths,schemaPath),
+                        localDatasetsService.schemaOfLocalDataset(schemaPath)
+                )
+        );
+
+        schemaPath = new Path("da_int/schema/da_int.avsc");
+
+        avroPaths = new Path[]{
+                new Path("da_int/avro/da_int_1.avro"),
+                new Path("da_int/avro/da_int_2.avro")
+        };
+        LOG.info(
+                prettyRecords(
+                        localDatasetsService.loadLocalDataset(avroPaths,schemaPath),
+                        localDatasetsService.schemaOfLocalDataset(schemaPath)
+                )
+        );
+
+        avroPaths = new Path[]{
+                new Path("da_int/avro/da_int_1.avro"),
+                new Path("da_int/avro/da_int_2.avro"),
+                new Path("da_int/avro/da_int_3.avro")
+        };
+        LOG.info(
+                prettyRecords(
+                        localDatasetsService.loadLocalDataset(avroPaths,schemaPath),
+                        localDatasetsService.schemaOfLocalDataset(schemaPath)
+                )
+        );
+
+        avroPaths = new Path[]{
+                new Path("da_int/avro")
+        };
+        LOG.info(
+                prettyRecords(
+                        localDatasetsService.loadLocalDataset(avroPaths,schemaPath),
+                        localDatasetsService.schemaOfLocalDataset(schemaPath)
+                )
+        );
+    }
+
+
+    private static String prettyRecords(final GenericRecord[] records,
+                                        final Schema schema) {
+        final StringBuilder sb = new StringBuilder();
+        final List<Schema.Field> fields = schema.getFields();
+        final List<Schema.Type> types = new ArrayList<Schema.Type>();
+        final List<String> fieldNames = new ArrayList<String>();
+
+        for (int i = 0; i < fields.size() ; i++) {
+            fieldNames.add(i, fields.get(i).name());
+            types.add(i,fields.get(i).schema().getType());
         }
-        return avroFiles;
+        sb.append("#Records =").append(records.length).append("\n");
+        sb.append("#Fields =").append(fields.size()).append("\n");
+
+        final StringBuilder hsb = new StringBuilder();
+        for (int i = 0; i < fields.size() ; i++) {
+            final Schema.Type type = types.get(i);
+            final String mod = (type.equals(Schema.Type.FIXED)) ?
+                    String.format("%%%ds|",fields.get(i).schema().getFixedSize() * 8 + 5): "%25s|";
+            hsb.append(String.format(mod, String.format("%s (%s)", fieldNames.get(i),types.get(i))));
+        }
+        final String header = hsb.toString();
+        sb.append(header).append("\n");
+        sb.append(new String(new char[header.length()]).replace("\0", "-")).append("\n");
+        for (GenericRecord record : records) {
+            final StringBuilder rsb = new StringBuilder();
+            for (int i = 0; i < fields.size(); i++) {
+                final String fieldName = fieldNames.get(i);
+                final Schema.Type type = types.get(i);
+                if (type.equals(Schema.Type.FIXED)) {
+                    GenericData.Fixed fixed = (GenericData.Fixed) record.get(i);
+                    String val = prettyBinary(fixed.bytes());
+                    rsb.append(String.format(String.format("%%%ds|", fixed.bytes().length * 8 + 5), val));
+                } else {
+                    String val = String.valueOf(record.get(fieldName));
+                    if (val.length() > 25) {
+                        val = val.substring(0, 10) + "..." + val.substring(val.length() - 10);
+                    }
+                    rsb.append(String.format("%25s|", val));
+                }
+            }
+            sb.append(rsb.toString()).append("\n");
+        }
+
+        return sb.toString();
+    }
+
+    private static String prettyBinary(final byte[] binary) {
+        final StringBuilder sb = new StringBuilder();
+        for (int i = (binary.length - 1); i >= 0 ; i--) {
+            byte b = binary[i];
+            sb.append(String.format("%8s", Integer.toBinaryString(b & 0xFF)).replace(' ', '0'));
+        }
+        return sb.toString();
+    }
+
+
+    private static String prettyStats(DatasetStatistics statistics) {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("#Records=").append(statistics.getRecordCount()).append("\n");
+        sb.append("#Fields=").append(statistics.getFieldCount()).append("\n");
+        sb.append("#Pairs=").append(statistics.getPairCount()).append("\n");
+        sb.append("#Expectation Maximization Estimator iterations=")
+                .append(statistics.getEmAlgorithmIterations())
+                .append("\n");
+        sb.append("#Estimated Duplicate Portion(p)=")
+                .append(String.format("%.3f", statistics.getEstimatedDuplicatePercentage()))
+                .append("\n");
+        final StringBuilder hsb = new StringBuilder(String.format("%50s","Metric\\Field name"));
+        final Set<String> fieldNames = statistics.getFieldStatistics().keySet();
+        for (String fieldName : fieldNames)
+            hsb.append(String.format("|%25s", fieldName));
+        final String header = hsb.toString();
+        sb.append(header).append("\n");
+        sb.append(new String(new char[header.length()]).replace("\0", "-")).append("\n");
+        for (int i = 0; i < DatasetFieldStatistics.description.length; i++) {
+            final StringBuilder ssb = new StringBuilder(
+                    String.format("%50s",DatasetFieldStatistics.description[i]));
+            for (String fieldName : fieldNames)
+                ssb.append(String.format("|%25s",
+                        String.format("%.5f", statistics.getFieldStatistics().get(fieldName).getStats()[i])));
+            sb.append(ssb.toString()).append("\n");
+        }
+        sb.append(new String(new char[header.length()]).replace("\0", "-")).append("\n");
+
+        return sb.toString();
+    }
+
+
+    private static String prettyBFEStats(Map<String,DatasetFieldStatistics> fieldStatistics,final int K, final int Q) {
+        assert K > 0 && Q >= 2 && Q <= 4;
+        final StringBuilder sb = new StringBuilder();
+        final String bar = new String(new char[50 + fieldStatistics.keySet().size()*25]).replace("\0", "-");
+        Map<String,Integer> fbfNs = new HashMap<String,Integer>();
+        Map<String,Integer> rbfNs = new HashMap<String,Integer>();
+
+        sb.append("#Encoding Bloom Filters K=").append(K).append("\n");
+        sb.append("#Encoding Bloom Filters Q=").append(Q).append("\n");
+        sb.append(bar).append("\n");
+        StringBuilder ssb = new StringBuilder(String.format("%50s","Dynamic FBF length"));
+        for (String fieldName : fieldStatistics.keySet()) {
+            double g = fieldStatistics.get(fieldName).getFieldQGramCount(Q);
+            int fbfN = (int) Math.ceil((1 / (1 - Math.pow(0.5, (double) 1 / (g * K)))));
+            fbfNs.put(fieldName,fbfN);
+            ssb.append(String.format("|%25s", String.format("%d",fbfN)));
+        }
+        sb.append(ssb.toString()).append("\n");
+
+        ssb = new StringBuilder(String.format("%50s","Candidate RBF length"));
+        for (String fieldName : fieldStatistics.keySet()) {
+            double fbfN = fbfNs.get(fieldName);
+            double nr = fieldStatistics.get(fieldName).getNormalizedRange();
+            int rbfN  = (int) Math.ceil(fbfN/ nr);
+            rbfNs.put(fieldName,rbfN);
+            ssb.append(String.format("|%25s", String.format("%d", rbfN)));
+        }
+        sb.append(ssb.toString()).append("\n");
+
+        int rbfN = Collections.max(rbfNs.values());
+        sb.append(bar).append("\n");
+        sb.append("#RBF length=").append(rbfN).append("\n");
+        sb.append(bar).append("\n");
+
+        ssb = new StringBuilder(String.format("%50s","Selected bit length"));
+        for (String fieldName : fieldStatistics.keySet()) {
+            double nr = fieldStatistics.get(fieldName).getNormalizedRange();
+            int selectedBitCount = (int)Math.ceil((double) rbfN * nr);
+            ssb.append(String.format("|%25s",
+                    String.format("%d (%.1f %%)",
+                            selectedBitCount,nr*100)
+            ));
+        }
+        sb.append(ssb.toString()).append("\n");
+
+        return sb.toString();
     }
 }

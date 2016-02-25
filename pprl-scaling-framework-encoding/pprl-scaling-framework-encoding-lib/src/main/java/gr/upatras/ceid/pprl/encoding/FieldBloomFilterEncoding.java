@@ -1,6 +1,6 @@
 package gr.upatras.ceid.pprl.encoding;
 
-import gr.upatras.ceid.pprl.datasets.QGramUtil;
+import gr.upatras.ceid.pprl.datasets.statistics.QGramUtil;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;

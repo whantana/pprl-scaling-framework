@@ -19,7 +19,6 @@ import static org.junit.Assert.assertTrue;
 
 public class BloomFilterTest {
 
-
     private static Logger LOG = LoggerFactory.getLogger(BloomFilterTest.class);
 
     private static final String LOREM_IPSUM = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. " +

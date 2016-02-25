@@ -1,4 +1,9 @@
-package gr.upatras.ceid.pprl.encoding;
+package gr.upatras.ceid.pprl.encoding.test;
+
+import gr.upatras.ceid.pprl.encoding.BloomFilter;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -13,10 +18,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 
-public class BenchmarkHashingMethods {
-
-    // TODO movem to tests
-
+public class BloomFilterHashingBenchmarkTest {
+    private static Logger LOG = LoggerFactory.getLogger(BloomFilterHashingBenchmarkTest.class);
     private static final int N = 1024;
     private static final int K = 30;
     private static final int Q = 2;
@@ -48,15 +51,15 @@ public class BenchmarkHashingMethods {
         HMAC_SHA1 = tmp1;
     }
 
-
-    public static void main(String[] args) throws IOException {
-        System.out.format("Running benchmarks (ITERATIONS=%d,N=%d,K={1:%d},Q=%d)\n", ITERATIONS, N, K, Q);
+    @Test
+    public void test0() throws IOException {
+        LOG.info(String.format("Running benchmarks (ITERATIONS=%d,N=%d,K={1:%d},Q=%d)\n", ITERATIONS, N, K, Q));
         long[][] millisV1 = benchmarkCreateHashesV1();
         long[][] millisV2 = benchmarkCreateHashesV2();
         long[][] millisV1backed = benchmarkCreateHashesV1MapBacked();
         long[][] millisV2backed = benchmarkCreateHashesV2MapBacked();
 
-        System.out.println("\nSaving benchmarks to CSV files.");
+        LOG.info("\nSaving benchmarks to CSV files.");
         final String header = "k,createHashesV1,createHashesV2,MBcreateHashesV1,MBcreateHashesV2";
         for (int i = 10,j=0; j<3; i=i/2,j++) {
             final String fileName = String.format("benchmark_scale_%d.csv",j+1);
@@ -69,14 +72,15 @@ public class BenchmarkHashingMethods {
                         String.format("%d,%d,%d,%d,%d",
                                 k+1, millisV1[j][k], millisV2[j][k], millisV1backed[j][k], millisV2backed[j][k]))
                         .append("\n");
-            System.out.println("Iteration input size : " + BYTES_LIMIT/i + " bytes." +
+            LOG.info("Iteration input size : " + BYTES_LIMIT/i + " bytes." +
                     "Benchmark timings saved at " + file.getAbsolutePath());
             writer.close();
         }
 
-        //System.out.println("Running 64MB benchmark:");
+        //LOG.info("Running 64MB benchmark:");
         //hdfsBlkSizeBenchmark();
     }
+
 
     private static String randomQgram() {
         final char[] chars = new char[Q];
@@ -108,7 +112,7 @@ public class BenchmarkHashingMethods {
                     }
                     long after = System.currentTimeMillis();
                     millisSum += after - before;
-                    System.out.print("\rBenchmarking : BloomFilter.createHashesV1() " + (100*progress)/(MAX_PROGRESS) + "%.");
+                    LOG.info("\rBenchmarking : BloomFilter.createHashesV1() " + (100 * progress) / (MAX_PROGRESS) + "%.");
                     progress++;totalBytesRead += bytesRead;
                 }
                 millis[j][k] = millisSum / ITERATIONS;
@@ -116,8 +120,8 @@ public class BenchmarkHashingMethods {
         }
         long end = System.currentTimeMillis();
         long totalTime = (end-start)/1000;
-        System.out.println("\rBenchmarking : BloomFilter.createHashesV1() 100%.");
-        System.out.println("Total bytes Read = " + totalBytesRead + " Total time " + totalTime + " seconds.");
+        LOG.info("\rBenchmarking : BloomFilter.createHashesV1() 100%.");
+        LOG.info("Total bytes Read = " + totalBytesRead + " Total time " + totalTime + " seconds.");
         return millis;
     }
 
@@ -142,7 +146,7 @@ public class BenchmarkHashingMethods {
                     }
                     long after = System.currentTimeMillis();
                     millisSum += after - before;
-                    System.out.print("\rBenchmarking : BloomFilter.createHashesV2() " + (100*progress)/(MAX_PROGRESS) + "%.");
+                    LOG.info("\rBenchmarking : BloomFilter.createHashesV2() " + (100 * progress) / (MAX_PROGRESS) + "%.");
                     progress++;totalBytesRead += bytesRead;
                 }
                 millis[j][k] = millisSum / ITERATIONS;
@@ -150,8 +154,8 @@ public class BenchmarkHashingMethods {
         }
         long end = System.currentTimeMillis();
         long totalTime = (end-start)/1000;
-        System.out.println("\rBenchmarking : BloomFilter.createHashesV2() 100%.");
-        System.out.format("Read %d bytes , Time %d seconds\n",totalBytesRead,totalTime);
+        LOG.info("\rBenchmarking : BloomFilter.createHashesV2() 100%.");
+        LOG.info(String.format("Read %d bytes , Time %d seconds\n",totalBytesRead,totalTime));
         return millis;
     }
 
@@ -184,8 +188,8 @@ public class BenchmarkHashingMethods {
                     }
                     long after = System.currentTimeMillis();
                     millisSum += after - before;
-                    System.out.print("\rBenchmarking : BloomFilter.createHashesV1() backed by dictionary " +
-                            (100*progress)/(MAX_PROGRESS) + "%.");
+                    LOG.info("\rBenchmarking : BloomFilter.createHashesV1() backed by dictionary " +
+                            (100 * progress) / (MAX_PROGRESS) + "%.");
                     progress++;totalBytesRead += bytesRead;
                 }
                 millis[j][k] = millisSum / ITERATIONS;
@@ -193,9 +197,9 @@ public class BenchmarkHashingMethods {
         }
         long end = System.currentTimeMillis();
         long totalTime = (end-start)/1000;
-        System.out.println("\rBenchmarking : BloomFilter.createHashesV1() backed by dictionary 100%.");
-        System.out.format("Read %d bytes, Hashed %d bytes, Time %d seconds\n", totalBytesRead, totalBytesHashed, totalTime);
-        System.out.println("Final dictionary keys size : " +  map.keySet().size() );
+        LOG.info("\rBenchmarking : BloomFilter.createHashesV1() backed by dictionary 100%.");
+        LOG.info("Read %d bytes, Hashed %d bytes, Time %d seconds\n", totalBytesRead, totalBytesHashed, totalTime);
+        LOG.info("Final dictionary keys size : " + map.keySet().size());
         return millis;
     }
 
@@ -229,7 +233,7 @@ public class BenchmarkHashingMethods {
                     }
                     long after = System.currentTimeMillis();
                     millisSum += after - before;
-                    System.out.print("\rBenchmarking : BloomFilter.createHashesV2() backed by dictionary " +
+                    LOG.info("\rBenchmarking : BloomFilter.createHashesV2() backed by dictionary " +
                             (100*progress)/(MAX_PROGRESS) + "%.");
                     progress++;totalBytesRead += bytesRead;
                 }
@@ -238,9 +242,9 @@ public class BenchmarkHashingMethods {
         }
         long end = System.currentTimeMillis();
         long totalTime = (end-start)/1000;
-        System.out.println("\rBenchmarking : BloomFilter.createHashesV2() backed by dictionary 100%.");
-        System.out.format("Read %d bytes, Hashed %d bytes, Time %d seconds\n", totalBytesRead, totalBytesHashed, totalTime);
-        System.out.println("Final dictionary keys size : " +  map.keySet().size() );
+        LOG.info("\rBenchmarking : BloomFilter.createHashesV2() backed by dictionary 100%.");
+        LOG.info("Read %d bytes, Hashed %d bytes, Time %d seconds\n", totalBytesRead, totalBytesHashed, totalTime);
+        LOG.info("Final dictionary keys size : " +  map.keySet().size() );
         return millis;
     }
 
@@ -257,8 +261,8 @@ public class BenchmarkHashingMethods {
             }
             long end = System.currentTimeMillis();
             long millis = end - start;
-            System.out.print("createHashesV1 : ");
-            System.out.println("Time took " + millis/1000 + " seconds. Read " + bytesRead + " bytes.");
+            LOG.info("createHashesV1 : ");
+            LOG.info("Time took " + millis/1000 + " seconds. Read " + bytesRead + " bytes.");
         }
         {
             long bytesRead = 0;
@@ -269,8 +273,8 @@ public class BenchmarkHashingMethods {
             }
             long end = System.currentTimeMillis();
             long millis = end - start;
-            System.out.print("createHashesV2 : ");
-            System.out.println("Time took " + millis/1000 + " seconds. Read " + bytesRead + " bytes.");
+            LOG.info("createHashesV2 : ");
+            LOG.info("Time took " + millis/1000 + " seconds. Read " + bytesRead + " bytes.");
         }
         {
             long bytesRead = 0;
@@ -285,10 +289,10 @@ public class BenchmarkHashingMethods {
                 }
                 bytesRead += Q;
             }
-            System.out.print("Map backed createHashesV1 : ");
+            LOG.info("Map backed createHashesV1 : ");
             long end = System.currentTimeMillis();
             long millis = end - start;
-            System.out.println("Time took " + millis/1000 + " seconds. Read " + bytesRead + " bytes." +
+            LOG.info("Time took " + millis/1000 + " seconds. Read " + bytesRead + " bytes." +
                     " Hashed " + bytesHashed + " bytes");
         }
         {
@@ -306,8 +310,8 @@ public class BenchmarkHashingMethods {
             }
             long end = System.currentTimeMillis();
             long millis = end - start;
-            System.out.print("Map backed createHashesV2 : ");
-            System.out.println("Time took " + millis / 1000 + " seconds. Read " + bytesRead + " bytes." +
+            LOG.info("Map backed createHashesV2 : ");
+            LOG.info("Time took " + millis / 1000 + " seconds. Read " + bytesRead + " bytes." +
                     " Hashed " + bytesHashed + " bytes");
         }
     }

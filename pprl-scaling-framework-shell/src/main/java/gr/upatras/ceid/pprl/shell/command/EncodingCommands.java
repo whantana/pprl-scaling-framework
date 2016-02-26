@@ -1,8 +1,8 @@
 package gr.upatras.ceid.pprl.shell.command;
 
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
-import gr.upatras.ceid.pprl.encoding.service.LocalEncodingService;
 import gr.upatras.ceid.pprl.encoding.service.EncodingService;
+import gr.upatras.ceid.pprl.encoding.service.LocalEncodingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

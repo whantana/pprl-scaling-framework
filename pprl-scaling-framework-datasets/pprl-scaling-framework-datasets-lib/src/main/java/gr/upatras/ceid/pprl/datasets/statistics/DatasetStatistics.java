@@ -2,7 +2,6 @@ package gr.upatras.ceid.pprl.datasets.statistics;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
 import java.io.Serializable;

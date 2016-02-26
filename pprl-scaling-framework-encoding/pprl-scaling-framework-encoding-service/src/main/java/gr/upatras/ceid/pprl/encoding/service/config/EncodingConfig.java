@@ -1,8 +1,8 @@
 package gr.upatras.ceid.pprl.encoding.service.config;
 
 import gr.upatras.ceid.pprl.config.PPRLCLusterCondition;
-import gr.upatras.ceid.pprl.encoding.service.LocalEncodingService;
 import gr.upatras.ceid.pprl.encoding.service.EncodingService;
+import gr.upatras.ceid.pprl.encoding.service.LocalEncodingService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;

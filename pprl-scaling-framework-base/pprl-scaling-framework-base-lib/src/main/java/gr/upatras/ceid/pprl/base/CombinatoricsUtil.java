@@ -1,6 +1,9 @@
-package gr.upatras.ceid.pprl.datasets.statistics;
+package gr.upatras.ceid.pprl.base;
+
+import org.apache.commons.math3.util.Combinations;
 
 import java.math.BigInteger;
+import java.util.Iterator;
 
 public class CombinatoricsUtil {
     public static BigInteger recfact(long start, long n) {
@@ -38,6 +41,12 @@ public class CombinatoricsUtil {
         }
         return rank;
     }
+
+    public static Iterator<int[]> getPairs(final int n) {
+        return (new Combinations(n,2)).iterator();
+    }
+
+
 //
 //    public static int[] ranksContaining(final int e, final int n) {
 //        int rr[][] = ranksArraysContaining(e,n);

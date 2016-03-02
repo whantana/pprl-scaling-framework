@@ -1,8 +1,14 @@
 package gr.upatras.ceid.pprl.shell.command;
 
+import gr.upatras.ceid.pprl.base.CombinatoricsUtil;
+import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
+import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import gr.upatras.ceid.pprl.datasets.service.DatasetsService;
 import gr.upatras.ceid.pprl.datasets.service.LocalDatasetsService;
-import gr.upatras.ceid.pprl.datasets.statistics.DatasetStatistics;
+import gr.upatras.ceid.pprl.matching.ExpectationMaximization;
+import gr.upatras.ceid.pprl.matching.SimilarityMatrix;
+import gr.upatras.ceid.pprl.matching.service.LocalMatchingService;
+import gr.upatras.ceid.pprl.matching.service.MatchingService;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.fs.Path;
@@ -31,10 +37,21 @@ public class DatasetsCommands implements CommandMarker {
     @Qualifier("localDatasetsService")
     private LocalDatasetsService lds;
 
-    @CliAvailabilityIndicator(value = {"local_data_sample","local_data_describe","local_data_stats"})
+    @Autowired(required = false)
+    @Qualifier("matchingService")
+    private MatchingService ms;
+
+    @Autowired(required = false)
+    @Qualifier("localMatchingService")
+    private LocalMatchingService lms;
+
+    @CliAvailabilityIndicator(value = {"local_data_sample","local_data_describe"})
     public boolean localDatasetCommandsAvailability() {
         return lds != null;
     }
+
+    @CliAvailabilityIndicator(value = {"local_data_stats"})
+    public boolean localDatasetSampleCommandAvailability() { return lds != null && lms != null;}
 
     @CliCommand(value = "local_data_sample", help = "View a sample of local data.")
     public String sampleOfLocalDatasetCommand(
@@ -106,13 +123,13 @@ public class DatasetsCommands implements CommandMarker {
             final String kStr,
             @CliOption(key = {"Q"}, mandatory = false, help = "(Optional) Bloom Filter Encoding Q (Q-grams). Q in {2,3,4}. Can provide multiple. No bloom filter stats will be included if not provided")
             final String qStr,
-            @CliOption(key = {"name"}, mandatory = false, help = "(Optional) Name to save statistics report to local filesystem. No statistics report will be saved if not provided.")
-            final String nameStr
+            @CliOption(key = {"name"}, mandatory = false, help = "(Optional) Name to save statistics report to local filesystem as properties file. No statistics report will be saved if not provided.")
+            final String nameStr // TODO provide initial m,u,p
     ) {
         try {
             final Path schemaPath = CommandUtils.retrievePath(schemaStr);
             final Path[] avroPaths = CommandUtils.retrievePaths(avroStr);
-            final String[] fields = CommandUtils.retrieveFields(fieldsStr);
+            String[] fields = CommandUtils.retrieveFields(fieldsStr);
             final String name = CommandUtils.retrieveString(nameStr, null);
             final boolean addBFE = !(kStr == null || qStr == null);
             final boolean save = !(name == null);
@@ -131,18 +148,39 @@ public class DatasetsCommands implements CommandMarker {
             if(save) LOG.info("\tStatistics report with name : {}",name);
             LOG.info("\n");
 
+            final Schema schema = lds.schemaOfLocalDataset(schemaPath);
+            if(fields.length == 0 )
+                fields = DatasetsUtil.fieldNames(schema);
+            else if(!Arrays.asList(DatasetsUtil.fieldNames(schema)).containsAll(Arrays.asList(fields)))
+                throw new IllegalArgumentException(String.format("fields %s not found in schema",
+                        Arrays.toString(fields)));
 
-            final DatasetStatistics statistics =
-                    lds.calculateStatisticsLocalDataset(avroPaths, schemaPath, fields);
+            final GenericRecord[] records = lds.loadLocalDataset(avroPaths,schemaPath);
+            final DatasetStatistics statistics = new DatasetStatistics();
+
+            statistics.setRecordCount(records.length);
+            statistics.setPairCount(CombinatoricsUtil.twoCombinationsCount(records.length));
+            statistics.setFieldNames(fields);
+            DatasetStatistics.calculateAvgQgramsLength(records,schema,statistics,fields);
+
+            final SimilarityMatrix matrix = lms.createMatrix(records,fields);
+            final ExpectationMaximization estimator = lms.newEMInstance(fields); // add initial m u p if provided
+            estimator.runAlgorithm(matrix);
+
+            statistics.setEmAlgorithmIterations(estimator.getIteration());
+            statistics.setEstimatedDuplicatePercentage(estimator.getP());
+            DatasetStatistics.calculateStatsUsingEstimates(
+                    statistics,fields,
+                    estimator.getM(),estimator.getU());
+
             final StringBuilder report = new StringBuilder(CommandUtils.prettyStats(statistics));
-            if(addBFE) {
-                for (int k : Ks)
-                    for (int q : Qs)
-                        report.append(CommandUtils.prettyBFEStats(statistics.getFieldStatistics(), k, q));
-            }
-            if(save) lds.localSaveOfStatsReport(name,report.toString());
-
+            if(addBFE)
+                for (int k : Ks) for (int q : Qs)
+                    report.append(CommandUtils.prettyBFEStats(statistics.getFieldStatistics(), k, q));
             LOG.info(report.toString());
+
+            if(save) lds.localSaveOfStatsProperties(name, statistics);
+
             return "DONE";
         } catch (Exception e) {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();

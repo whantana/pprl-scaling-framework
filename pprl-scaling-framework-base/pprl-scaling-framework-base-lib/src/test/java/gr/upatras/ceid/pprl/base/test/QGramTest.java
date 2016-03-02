@@ -1,7 +1,7 @@
-package gr.upatras.ceid.pprl.datasets.test;
+package gr.upatras.ceid.pprl.base.test;
 
 
-import gr.upatras.ceid.pprl.datasets.statistics.QGramUtil;
+import gr.upatras.ceid.pprl.base.QGramUtil;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,4 +1,4 @@
-package gr.upatras.ceid.pprl.datasets.statistics;
+package gr.upatras.ceid.pprl.datasets;
 
 import org.apache.hadoop.io.Writable;
 
@@ -37,6 +37,20 @@ public class DatasetFieldStatistics implements Serializable,Writable {
         description[7] = "Disagreement Weight";
         description[8] = "Weight range";
         description[9] = "Normaliszed weight range";
+    }
+
+    public static final String[] props = new String[10];
+    static {
+        props[0] = "avg.length";
+        props[1] = "avg.2grams.count";
+        props[2] = "avg.3grams.count";
+        props[3] = "avg.4grams.count";
+        props[4] = "m.probability";
+        props[5] = "u.probability";
+        props[6] = "agreement.weight";
+        props[7] = "disagreement.weight";
+        props[8] = "weight.range";
+        props[9] = "normalized.weight.range";
     }
 
     public DatasetFieldStatistics(){

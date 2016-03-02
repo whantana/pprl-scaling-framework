@@ -73,9 +73,9 @@
 
     <modules>
         <module>pprl-scaling-framework-base</module>
-        <module>pprl-scaling-framework-matching</module>
         <module>pprl-scaling-framework-datasets</module>
         <module>pprl-scaling-framework-encoding</module>
+        <module>pprl-scaling-framework-matching</module>
         <module>pprl-scaling-framework-blocking</module>
         <module>pprl-scaling-framework-evaluation</module>
         <module>pprl-scaling-framework-webapp</module>

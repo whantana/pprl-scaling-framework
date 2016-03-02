@@ -1,6 +1,6 @@
 package gr.upatras.ceid.pprl.datasets.mapreduce;
 
-import gr.upatras.ceid.pprl.datasets.statistics.DatasetFieldStatistics;
+import gr.upatras.ceid.pprl.datasets.DatasetFieldStatistics;
 import org.apache.avro.Schema;
 import org.apache.avro.mapreduce.AvroJob;
 import org.apache.avro.mapreduce.AvroKeyInputFormat;

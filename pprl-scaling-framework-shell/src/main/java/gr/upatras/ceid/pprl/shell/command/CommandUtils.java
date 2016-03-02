@@ -1,7 +1,7 @@
 package gr.upatras.ceid.pprl.shell.command;
 
-import gr.upatras.ceid.pprl.datasets.statistics.DatasetFieldStatistics;
-import gr.upatras.ceid.pprl.datasets.statistics.DatasetStatistics;
+import gr.upatras.ceid.pprl.datasets.DatasetFieldStatistics;
+import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
@@ -130,16 +130,6 @@ public class CommandUtils {
         }
         return fields;
     }
-
-
-
-
-
-
-
-
-
-
 
     public static String prettySchemaDescription(final Schema schema) {
         final Map<String, String> description = new HashMap<String, String>();

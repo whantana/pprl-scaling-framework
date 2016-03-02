@@ -1,12 +1,11 @@
-package gr.upatras.ceid.pprl.datasets.test;
+package gr.upatras.ceid.pprl.base.test;
 
-import gr.upatras.ceid.pprl.datasets.statistics.CombinatoricsUtil;
+import gr.upatras.ceid.pprl.base.CombinatoricsUtil;
 import org.apache.commons.math3.util.Combinations;
+import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.junit.Assert.assertEquals;
 
 public class CombinatoricsTest {
 
@@ -14,19 +13,19 @@ public class CombinatoricsTest {
 
     @Test
     public void testRank() {
-        assertEquals(CombinatoricsUtil.rankTwoCombination(new int[]{0, 1}),0);
-        assertEquals(CombinatoricsUtil.rankCombination(new int[]{0, 1}, 2),0);
+        Assert.assertEquals(CombinatoricsUtil.rankTwoCombination(new int[]{0, 1}), 0);
+        Assert.assertEquals(CombinatoricsUtil.rankCombination(new int[]{0, 1}, 2), 0);
         Combinations CC2 = new Combinations(10,2);
         Combinations CC3 = new Combinations(10,3);
         final int limit = 10;
         int i = 0;
         for(int[] cc : CC2) {
-            assertEquals(CombinatoricsUtil.rankTwoCombination(cc),i++);
+            Assert.assertEquals(CombinatoricsUtil.rankTwoCombination(cc), i++);
             if(i >= limit ) break;
         }
         i = 0;
         for(int[] cc : CC3) {
-            assertEquals(CombinatoricsUtil.rankCombination(cc,3),i++);
+            Assert.assertEquals(CombinatoricsUtil.rankCombination(cc, 3), i++);
             break;
         }
     }

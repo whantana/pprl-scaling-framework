@@ -1,4 +1,4 @@
-package gr.upatras.ceid.pprl.datasets.statistics;
+package gr.upatras.ceid.pprl.base;
 
 import org.apache.avro.Schema;
 

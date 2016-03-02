@@ -1,10 +1,10 @@
 package gr.upatras.ceid.pprl.datasets.test;
 
 
+import gr.upatras.ceid.pprl.base.QGramUtil;
+import gr.upatras.ceid.pprl.datasets.DatasetFieldStatistics;
 import gr.upatras.ceid.pprl.datasets.mapreduce.GetDatasetsStatsMapper;
 import gr.upatras.ceid.pprl.datasets.mapreduce.GetDatasetsStatsReducer;
-import gr.upatras.ceid.pprl.datasets.statistics.DatasetFieldStatistics;
-import gr.upatras.ceid.pprl.datasets.statistics.QGramUtil;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;

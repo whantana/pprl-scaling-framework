@@ -1,10 +1,11 @@
 package gr.upatras.ceid.pprl.datasets.test;
 
 
+import gr.upatras.ceid.pprl.base.CombinatoricsUtil;
 import gr.upatras.ceid.pprl.datasets.DatasetException;
+import gr.upatras.ceid.pprl.datasets.DatasetFieldStatistics;
+import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
 import gr.upatras.ceid.pprl.datasets.service.LocalDatasetsService;
-import gr.upatras.ceid.pprl.datasets.statistics.DatasetFieldStatistics;
-import gr.upatras.ceid.pprl.datasets.statistics.DatasetStatistics;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
@@ -37,17 +38,18 @@ public class LocalDatasetsServiceTest {
     private static Logger LOG = LoggerFactory.getLogger(LocalDatasetsServiceTest.class);
 
     @Autowired
-    private LocalDatasetsService localDatasetsService;
+    private LocalDatasetsService lds;
 
     private Path[] AVRO_PATHS;
     private Path SCHEMA_PATH;
+    private String[] FIELDS =  new String[]{"name", "surname"};
 
     @Before
     public void setUp() throws IOException {
-        assertNotNull(localDatasetsService);
-        assertNotNull(localDatasetsService.getLocalFS());
-        if (localDatasetsService.getLocalFS().getConf() == null) {
-            localDatasetsService.getLocalFS().initialize(URI.create("file:///"), new Configuration());
+        assertNotNull(lds);
+        assertNotNull(lds.getLocalFS());
+        if (lds.getLocalFS().getConf() == null) {
+            lds.getLocalFS().initialize(URI.create("file:///"), new Configuration());
         }
         AVRO_PATHS = new Path[]{new Path("person_small/avro")};
         SCHEMA_PATH = new Path("person_small/schema/person_small.avsc");
@@ -55,32 +57,45 @@ public class LocalDatasetsServiceTest {
 
     @Test
     public void test0() throws IOException, DatasetException {
-        final Schema schema = localDatasetsService.schemaOfLocalDataset(SCHEMA_PATH);
+        final Schema schema = lds.schemaOfLocalDataset(SCHEMA_PATH);
         LOG.info(schema.toString(true));
     }
 
     @Test
     public void test1() throws IOException, DatasetException {
-        final GenericRecord[] sample = localDatasetsService.sampleOfLocalDataset(AVRO_PATHS, SCHEMA_PATH, 20);
-        final Schema schema = localDatasetsService.schemaOfLocalDataset(SCHEMA_PATH);
+        final GenericRecord[] sample = lds.sampleOfLocalDataset(AVRO_PATHS, SCHEMA_PATH, 20);
+        final Schema schema = lds.schemaOfLocalDataset(SCHEMA_PATH);
         final String sampleName = "person_small_sample";
-        localDatasetsService.localSaveOfSample(sampleName, sample, schema);
+        lds.localSaveOfSample(sampleName, sample, schema);
     }
 
     @Test
     public void test2() throws IOException, DatasetException {
-        DatasetStatistics statistics =
-                localDatasetsService.calculateStatisticsLocalDataset(
-                        AVRO_PATHS,SCHEMA_PATH,new String[]{"name","surname"});
+        final GenericRecord[] records = lds.loadLocalDataset(AVRO_PATHS,SCHEMA_PATH);
+        final Schema schema = lds.schemaOfLocalDataset(SCHEMA_PATH);
+        final DatasetStatistics statistics = new DatasetStatistics();
+        statistics.setRecordCount(records.length);
+        statistics.setPairCount(CombinatoricsUtil.twoCombinationsCount(records.length));
+        statistics.setFieldNames(FIELDS);
+        DatasetStatistics.calculateAvgQgramsLength(records,schema,statistics,FIELDS);
+        final double[] estimatedM = new double[]{0.9,0.9};
+        final double[] estimatedU = new double[]{0.1,0.5};
+        final double estimatedP = 0.01;
+        final int iterations = 3;
+        statistics.setEmAlgorithmIterations(iterations);
+        statistics.setEstimatedDuplicatePercentage(estimatedP);
+        DatasetStatistics.calculateStatsUsingEstimates(
+                statistics,FIELDS,
+                estimatedM,estimatedU);
         StringBuilder report = new StringBuilder(prettyStats(statistics));
         report.append(prettyBFEStats(statistics.getFieldStatistics(), 15, 2));
         report.append(prettyBFEStats(statistics.getFieldStatistics(), 15, 3));
         report.append(prettyBFEStats(statistics.getFieldStatistics(), 15, 4));
         LOG.info(report.toString());
         final String reportName = "stats_report";
-        localDatasetsService.localSaveOfStatsReport(reportName, report.toString());
-        localDatasetsService.localSaveOfStatsReport(reportName, report.toString(),new Path("person_small"));
-        localDatasetsService.localSaveOfStatsReport(reportName, report.toString(),new Path("asdf"));
+        lds.localSaveOfStatsProperties(reportName, statistics);
+        lds.localSaveOfStatsProperties(reportName, statistics, new Path("person_small"));
+        lds.localSaveOfStatsProperties(reportName, statistics, new Path("asdf"));
     }
 
 
@@ -90,8 +105,8 @@ public class LocalDatasetsServiceTest {
         Path schemaPath = new Path("random/schema/random.avsc");
         LOG.info(
                 prettyRecords(
-                        localDatasetsService.loadLocalDataset(avroPaths,schemaPath),
-                        localDatasetsService.schemaOfLocalDataset(schemaPath)
+                        lds.loadLocalDataset(avroPaths, schemaPath),
+                        lds.schemaOfLocalDataset(schemaPath)
                 )
         );
 
@@ -103,8 +118,8 @@ public class LocalDatasetsServiceTest {
         };
         LOG.info(
                 prettyRecords(
-                        localDatasetsService.loadLocalDataset(avroPaths,schemaPath),
-                        localDatasetsService.schemaOfLocalDataset(schemaPath)
+                        lds.loadLocalDataset(avroPaths, schemaPath),
+                        lds.schemaOfLocalDataset(schemaPath)
                 )
         );
 
@@ -115,8 +130,8 @@ public class LocalDatasetsServiceTest {
         };
         LOG.info(
                 prettyRecords(
-                        localDatasetsService.loadLocalDataset(avroPaths,schemaPath),
-                        localDatasetsService.schemaOfLocalDataset(schemaPath)
+                        lds.loadLocalDataset(avroPaths,schemaPath),
+                        lds.schemaOfLocalDataset(schemaPath)
                 )
         );
 
@@ -125,8 +140,8 @@ public class LocalDatasetsServiceTest {
         };
         LOG.info(
                 prettyRecords(
-                        localDatasetsService.loadLocalDataset(avroPaths,schemaPath),
-                        localDatasetsService.schemaOfLocalDataset(schemaPath)
+                        lds.loadLocalDataset(avroPaths,schemaPath),
+                        lds.schemaOfLocalDataset(schemaPath)
                 )
         );
     }

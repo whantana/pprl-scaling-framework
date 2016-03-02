@@ -1,9 +1,8 @@
 package gr.upatras.ceid.pprl.datasets.service;
 
 import gr.upatras.ceid.pprl.datasets.DatasetException;
+import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
 import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
-import gr.upatras.ceid.pprl.datasets.statistics.CombinatoricsUtil;
-import gr.upatras.ceid.pprl.datasets.statistics.DatasetStatistics;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -25,7 +24,6 @@ import java.util.List;
 
 @Service
 public class LocalDatasetsService implements InitializingBean {
-    // TODO Load FULL dataset in memory service
 
     private static final Logger LOG = LoggerFactory.getLogger(LocalDatasetsService.class);
 
@@ -155,60 +153,22 @@ public class LocalDatasetsService implements InitializingBean {
         }
     }
 
-    public DatasetStatistics calculateStatisticsLocalDataset(final Path[] avroPaths,
-                                                             final Path schemaPath,
-                                                             String[] fieldNames)
+    public void localSaveOfStatsProperties(final String name,
+                                           final DatasetStatistics statistics)
             throws IOException, DatasetException {
-        try {
-            final Schema schema = DatasetsUtil.loadSchemaFromFSPath(localFS, schemaPath);
-            if (fieldNames == null || fieldNames.length == 0) {
-                fieldNames = new String[schema.getFields().size()];
-                for (int i = 0; i < fieldNames.length; i++)
-                    fieldNames[i] = schema.getFields().get(i).name();
-            }
-            DatasetsUtil.DatasetRecordReader reader = new DatasetsUtil.DatasetRecordReader(
-                    localFS, schema, avroPaths);
-            List<GenericRecord> rlist = new ArrayList<GenericRecord>();
-            while (reader.hasNext()) rlist.add(reader.next());
-            reader.close();
-            GenericRecord[] records = rlist.toArray(new GenericRecord[rlist.size()]);
-
-            return calculateStatisticsLocalDataset(records, schema, fieldNames);
-        } catch (DatasetException e) {
-            LOG.error(e.getMessage());
-            throw e;
-        }
+        localSaveOfStatsProperties(name, statistics, localFS.getWorkingDirectory());
     }
 
-    private DatasetStatistics calculateStatisticsLocalDataset(final GenericRecord[] records,
-                                                              final Schema schema,
-                                                              final String[] fieldNames)
-            throws IOException {
-        final DatasetStatistics statistics = new DatasetStatistics();
-        statistics.setRecordCount(records.length);
-        statistics.setPairCount(CombinatoricsUtil.twoCombinationsCount(records.length));
-        statistics.setFieldNames(fieldNames);
-        statistics.calculateFieldStatistics(records, schema, fieldNames);
-        return statistics;
-    }
-
-    public void localSaveOfStatsReport(final String name,
-                                       final String report)
-            throws IOException, DatasetException {
-        localSaveOfStatsReport(name, report , localFS.getWorkingDirectory());
-    }
-
-    public void localSaveOfStatsReport(final String name,
-                                       final String report,
-                                       final Path parent)
+    public void localSaveOfStatsProperties(final String name,
+                                           final DatasetStatistics statistics,
+                                           final Path parent)
             throws IOException, DatasetException {
         try {
             if(!localFS.exists(parent) && !localFS.mkdirs(parent,ONLY_OWNER_PERMISSION))
                     throw new DatasetException(String.format("Cannot create dir \"%s\"",parent));
-            final Path reportPath = new Path(parent,name + ".txt");
-            FSDataOutputStream fsdos;
-            fsdos = localFS.create(reportPath);
-            fsdos.write(report.getBytes());
+            final Path path = new Path(parent,name + ".properties");
+            FSDataOutputStream fsdos = localFS.create(path);
+            statistics.toProperties().store(fsdos, "statistics");
             fsdos.close();
         } catch (IOException e) {
             LOG.error(e.getMessage());
@@ -217,13 +177,5 @@ public class LocalDatasetsService implements InitializingBean {
             LOG.error(e.getMessage());
             throw e;
         }
-    }
-
-    public void localSaveOfStatsReport(final DatasetStatistics statistics) {
-        localSaveOfStatsReport(statistics, localFS.getWorkingDirectory());
-    }
-
-    public void localSaveOfStatsReport(final DatasetStatistics statistics, final Path parent) {
-        // might export them as properties... who knows
     }
 }

@@ -1,12 +1,13 @@
-package gr.upatras.ceid.pprl.datasets.statistics;
+package gr.upatras.ceid.pprl.datasets;
 
+import gr.upatras.ceid.pprl.base.QGramUtil;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 public class DatasetStatistics implements Serializable {
     private long recordCount;
@@ -80,25 +81,43 @@ public class DatasetStatistics implements Serializable {
                 '}';
     }
 
+    public Properties toProperties(){
+        final Properties properties = new Properties();
+        properties.setProperty("record.count",String.valueOf(getRecordCount()));
+        properties.setProperty("field.count",String.valueOf(getFieldCount()));
+        properties.setProperty("pair.count",String.valueOf(getPairCount()));
+        properties.setProperty("em.algorithm.iterations",String.valueOf(getEmAlgorithmIterations()));
+        properties.setProperty("em.estimated.p",String.valueOf(getEstimatedDuplicatePercentage()));
+        for (Map.Entry<String,DatasetFieldStatistics> entry : fieldStatistics.entrySet()) {
+            final String fieldName = entry.getKey();
+            final DatasetFieldStatistics fieldStats = entry.getValue();
+            final String firstKey  = "field." + fieldName;
+            int i =0;
+            for (String prop : DatasetFieldStatistics.props)
+                properties.setProperty(firstKey + "." + prop,String.format("%.5f",fieldStats.getStats()[i++]));
+        }
+        return properties;
+    }
+
+    public void fromProperties(final Properties properties) {
+        // TODO if needed
+    }
 
 
-    public void calculateFieldStatistics(final GenericRecord[] records,
-                                         final Schema schema,
-                                         final String[] fieldNames)
-            throws IOException {
-
-        int recordCount = records.length;
-        int fieldCount = fieldNames.length;
+    public static void calculateAvgQgramsLength(final GenericRecord[] records,
+                                                final Schema schema,
+                                                final DatasetStatistics statistics,
+                                                final String[] fieldNames) {
         for (GenericRecord record : records) {
             for (String fieldName : fieldNames) {
-                DatasetFieldStatistics fieldStats = fieldStatistics.get(fieldName);
+                DatasetFieldStatistics fieldStats = statistics.getFieldStatistics().get(fieldName);
                 Object obj = record.get(fieldName);
                 Schema.Type type = schema.getField(fieldName).schema().getType();
-                double update = (double) String.valueOf(obj).length() / (double) recordCount;
+                double update = (double) String.valueOf(obj).length() / (double) statistics.getRecordCount();
                 double[] updateQgram = new double[DatasetFieldStatistics.Q_GRAMS.length];
                 for (int i = 0; i < updateQgram.length; i++) {
                     updateQgram[i] = ((double) QGramUtil.calcQgramsCount(
-                            obj, type, DatasetFieldStatistics.Q_GRAMS[i]) / (double) recordCount);
+                            obj, type, DatasetFieldStatistics.Q_GRAMS[i]) / (double) statistics.getRecordCount());
                 }
 
                 fieldStats.incrementAvgFieldLengthBy((update));
@@ -106,38 +125,31 @@ public class DatasetStatistics implements Serializable {
             }
         }
 
-        final Gamma gamma = Gamma.createGamma(records,fieldNames,false);
+    }
 
-        final ExpectationMaximization estimator =
-                new ExpectationMaximization(fieldCount,0.9,0.1,0.1);
-        estimator.runAlgorithm(gamma);
+    public static void calculateStatsUsingEstimates(final DatasetStatistics statistics,
+                                                    final String[] fieldNames,
+                                                    final double[] m, final double[] u) {
         double wrangeSum = 0;
         for (int i = 0; i < fieldNames.length ; i++) {
-            final double m = estimator.getM()[i];
-            final double u = estimator.getU()[i];
-            fieldStatistics.get(fieldNames[i]).setM(m);
-            fieldStatistics.get(fieldNames[i]).setU(u);
+            statistics.getFieldStatistics().get(fieldNames[i]).setM(m[i]);
+            statistics.getFieldStatistics().get(fieldNames[i]).setU(u[i]);
             final double wa =
-                    Math.log(m == 0 ? Double.MIN_NORMAL : m) -
-                    Math.log(u == 0 ? Double.MIN_NORMAL : u);
+                    Math.log(m[i] == 0 ? Double.MIN_NORMAL : m[i]) -
+                            Math.log(u[i] == 0 ? Double.MIN_NORMAL : u[i]);
             final double wd =
-                    Math.log((1 - m ) == 0 ? Double.MIN_NORMAL : (1 - m)) -
-                    Math.log((1 - u ) == 0 ? Double.MIN_NORMAL : (1 - u));
-            fieldStatistics.get(fieldNames[i]).setAgreeWeight(wa);
-            fieldStatistics.get(fieldNames[i]).setDisagreeWeight(wd);
+                    Math.log((1 - m[i] ) == 0 ? Double.MIN_NORMAL : (1 - m[i])) -
+                            Math.log((1 - u[i] ) == 0 ? Double.MIN_NORMAL : (1 - u[i]));
+            statistics.getFieldStatistics().get(fieldNames[i]).setAgreeWeight(wa);
+            statistics.getFieldStatistics().get(fieldNames[i]).setDisagreeWeight(wd);
             final double wrange = Math.abs(wa - wd);
-            fieldStatistics.get(fieldNames[i]).setRange(wrange);
+            statistics.getFieldStatistics().get(fieldNames[i]).setRange(wrange);
             wrangeSum += wrange;
         }
         for (int i = 0; i < fieldNames.length; i++) {
-            double wrangeNormalized =
-                    fieldStatistics.get(fieldNames[i])
-                            .getRange() / wrangeSum;
-            fieldStatistics.get(fieldNames[i])
+            double wrangeNormalized = statistics.getFieldStatistics().get(fieldNames[i]).getRange() / wrangeSum;
+            statistics.getFieldStatistics().get(fieldNames[i])
                     .setNormalizedRange(wrangeNormalized);
         }
-
-        emAlgorithmIterations = estimator.getIteration();
-        estimatedDuplicatePercentage = estimator.getP();
     }
 }

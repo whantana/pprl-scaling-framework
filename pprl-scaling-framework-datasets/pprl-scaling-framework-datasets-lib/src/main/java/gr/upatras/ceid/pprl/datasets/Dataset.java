@@ -1,7 +1,5 @@
 package gr.upatras.ceid.pprl.datasets;
 
-import gr.upatras.ceid.pprl.datasets.statistics.DatasetStatistics;
-
 public class Dataset {
     protected int id;
     protected String name;

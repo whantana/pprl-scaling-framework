@@ -31,6 +31,7 @@ public class DatasetFieldStatistics implements Serializable,Writable {
         description[1] = "Avg 2-grams count";
         description[2] = "Avg 3-grams count";
         description[3] = "Avg 4-grams count";
+        // TODO Add unique q gram count
         description[4] = "F-S m-probability";
         description[5] = "F-S u-probability";
         description[6] = "Agreement Weight";

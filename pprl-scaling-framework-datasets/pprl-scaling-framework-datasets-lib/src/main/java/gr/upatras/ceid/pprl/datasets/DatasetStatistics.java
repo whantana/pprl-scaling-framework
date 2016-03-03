@@ -100,7 +100,7 @@ public class DatasetStatistics implements Serializable {
     }
 
     public void fromProperties(final Properties properties) {
-        // TODO if needed
+        // TODO implement me
     }
 
 

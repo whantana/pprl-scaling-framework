@@ -78,32 +78,32 @@ public class DatasetStatMRTest {
         pairs.clear();
         pairs.add(new Pair<Text, DatasetFieldStatistics>(new Text("key"), new DatasetFieldStatistics(
                 EXPECTED_KEY.length(), new double[]{
-                QGramUtil.calcQgramsCount(EXPECTED_KEY, 2),
-                QGramUtil.calcQgramsCount(EXPECTED_KEY, 3),
-                QGramUtil.calcQgramsCount(EXPECTED_KEY, 4),
+                QGramUtil.calcQgramsCount(EXPECTED_KEY, Schema.Type.STRING, 2),
+                QGramUtil.calcQgramsCount(EXPECTED_KEY, Schema.Type.STRING, 3),
+                QGramUtil.calcQgramsCount(EXPECTED_KEY, Schema.Type.STRING, 4),
         }
         )));
 
         pairs.add(new Pair<Text, DatasetFieldStatistics>(new Text("author"), new DatasetFieldStatistics(
                 EXPECTED_AUTHOR.length(), new double[]{
-                QGramUtil.calcQgramsCount(EXPECTED_AUTHOR, 2),
-                QGramUtil.calcQgramsCount(EXPECTED_AUTHOR, 3),
-                QGramUtil.calcQgramsCount(EXPECTED_AUTHOR, 4),
+                QGramUtil.calcQgramsCount(EXPECTED_AUTHOR, Schema.Type.STRING, 2),
+                QGramUtil.calcQgramsCount(EXPECTED_AUTHOR, Schema.Type.STRING, 3),
+                QGramUtil.calcQgramsCount(EXPECTED_AUTHOR, Schema.Type.STRING, 4),
         })));
 
 
         pairs.add(new Pair<Text, DatasetFieldStatistics>(new Text("title"), new DatasetFieldStatistics(
                 EXPECTED_TITLE.length(), new double[]{
-                QGramUtil.calcQgramsCount(EXPECTED_TITLE, 2),
-                QGramUtil.calcQgramsCount(EXPECTED_TITLE, 3),
-                QGramUtil.calcQgramsCount(EXPECTED_TITLE, 4),
+                QGramUtil.calcQgramsCount(EXPECTED_TITLE, Schema.Type.STRING, 2),
+                QGramUtil.calcQgramsCount(EXPECTED_TITLE, Schema.Type.STRING, 3),
+                QGramUtil.calcQgramsCount(EXPECTED_TITLE, Schema.Type.STRING, 4),
         })));
 
         pairs.add(new Pair<Text, DatasetFieldStatistics>(new Text("year"), new DatasetFieldStatistics(
                 EXPECTED_YEAR.length(), new double[]{
-                QGramUtil.calcQgramsCount(EXPECTED_YEAR, 2),
-                QGramUtil.calcQgramsCount(EXPECTED_YEAR, 3),
-                QGramUtil.calcQgramsCount(EXPECTED_YEAR, 4),
+                QGramUtil.calcQgramsCount(EXPECTED_YEAR, Schema.Type.STRING, 2),
+                QGramUtil.calcQgramsCount(EXPECTED_YEAR, Schema.Type.STRING, 3),
+                QGramUtil.calcQgramsCount(EXPECTED_YEAR, Schema.Type.STRING, 4),
         })));
 
         mapDriver.withInput(new AvroKey<GenericRecord>(inputRecord), NullWritable.get());

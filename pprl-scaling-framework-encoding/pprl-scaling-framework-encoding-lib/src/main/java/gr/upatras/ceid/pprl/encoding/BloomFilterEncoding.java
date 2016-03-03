@@ -22,7 +22,7 @@ public abstract class BloomFilterEncoding {
     public static final Map<String,Class<?>> SCHEMES = new HashMap<String, Class<?>>();
     static {
         SCHEMES.put("FBF", FieldBloomFilterEncoding.class);
-        SCHEMES.put("RBF", RowBloomFilterEncoding.class);
+        SCHEMES.put("RBF", RowBloomFilterEncoding.class); // TODO add CLK is really simple
         SCHEME_NAMES.addAll(SCHEMES.keySet());
     }
 

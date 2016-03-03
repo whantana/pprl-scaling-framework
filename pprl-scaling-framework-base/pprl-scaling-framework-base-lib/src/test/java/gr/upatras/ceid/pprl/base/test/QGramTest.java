@@ -2,6 +2,8 @@ package gr.upatras.ceid.pprl.base.test;
 
 
 import gr.upatras.ceid.pprl.base.QGramUtil;
+import org.apache.avro.Schema;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +11,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
+
+import static org.junit.Assert.assertEquals;
 
 public class QGramTest {
 
@@ -29,21 +33,54 @@ public class QGramTest {
     @Test
     public void test1() {
         final String small = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
-        String[] unigrams = QGramUtil.generateQGrams(small, 1);
-        if(unigrams==null) {LOG.error("unigrams == null"); return;}
-        LOG.info("Small unigrams count = {}",unigrams.length);
-        String[] bigrams = QGramUtil.generateQGrams(small, 2);
-        if(bigrams==null) {LOG.error("bigrams == null"); return;}
-        LOG.info("Small bigrams count = {}",bigrams.length);
-        String[] trigrams = QGramUtil.generateQGrams(small, 3);
-        if(trigrams==null) {LOG.error("trigrams == null"); return;}
-        LOG.info("Small trigrams count = {}",trigrams.length);
+        final DescriptiveStatistics stats = new DescriptiveStatistics();
+
+        stats.clear();
+        for (int i = 0; i < 5; i++) {
+            long start = System.currentTimeMillis();
+            String[] unigrams = QGramUtil.generateQGrams(small, Schema.Type.STRING, 1);
+            String[] bigrams = QGramUtil.generateQGrams(small, Schema.Type.STRING, 2);
+            String[] trigrams = QGramUtil.generateQGrams(small, Schema.Type.STRING, 3);
+            long end = System.currentTimeMillis();
+            stats.addValue(end - start);
+            if(i==0) {
+                LOG.info("Small unigrams count = {}", unigrams.length);
+                LOG.info("Small bigrams count = {}", bigrams.length);
+                LOG.info("Small trigrams count = {}", trigrams.length);
+            }
+            assertEquals(unigrams.length, QGramUtil.calcQgramsCount(small, Schema.Type.STRING, 1));
+            assertEquals(bigrams.length, QGramUtil.calcQgramsCount(small, Schema.Type.STRING, 2));
+            assertEquals(trigrams.length, QGramUtil.calcQgramsCount(small, Schema.Type.STRING, 3));
+        }
+        LOG.info("Took " + stats.getPercentile(50) + " ms.");
+
+        stats.clear();
+        for (int i = 0; i < 5; i++) {
+            long start = System.currentTimeMillis();
+            String[] unigrams = QGramUtil.generateUniqueQGrams(small, Schema.Type.STRING, 1);
+            String[] bigrams = QGramUtil.generateUniqueQGrams(small, Schema.Type.STRING, 2);
+            String[] trigrams = QGramUtil.generateUniqueQGrams(small, Schema.Type.STRING, 3);
+            long end = System.currentTimeMillis();
+            stats.addValue(end - start);
+            if(i==0) {
+                LOG.info("Unique Small unigrams count = {}", unigrams.length);
+                LOG.info("Unique Small bigrams count = {}", bigrams.length);
+                LOG.info("Unique Small trigrams count = {}", trigrams.length);
+            }
+            assertEquals(unigrams.length,QGramUtil.calcUniqueQgramsCount(small, Schema.Type.STRING, 1));
+            assertEquals(bigrams.length,QGramUtil.calcUniqueQgramsCount(small, Schema.Type.STRING, 2));
+            assertEquals(trigrams.length, QGramUtil.calcUniqueQgramsCount(small, Schema.Type.STRING, 3));
+
+        }
+        LOG.info("Took " + stats.getPercentile(50) + " ms.");
     }
+
+
 
     @Test
     public void test2() {
         Map<String,Integer> bigramsHashed = new TreeMap<String,Integer>();
-        String[] bigrams = QGramUtil.generateQGrams(LOREM_IPSUM, 2);
+        String[] bigrams = QGramUtil.generateQGrams(LOREM_IPSUM ,Schema.Type.STRING, 2);
         if(bigrams == null) {LOG.error("bigrams == null"); return;}
         for(String s : bigrams) {
             if(bigramsHashed.containsKey(s)) bigramsHashed.put(s, bigramsHashed.get(s) + 1);
@@ -57,7 +94,7 @@ public class QGramTest {
         Integer maxI = null;
 
         for(Map.Entry<String,Integer> entry : bigramsHashed.entrySet()) {
-            if(minS == null && minI==null && maxS == null && maxI == null) {
+            if(minS == null && minI == null) {
                 minS = entry.getKey(); minI = entry.getValue();
                 maxS = entry.getKey(); maxI = entry.getValue();
                 continue;
@@ -67,6 +104,11 @@ public class QGramTest {
         }
         LOG.info("min.bigram.count = ({},{})",minS,minI);
         LOG.info("max.bigram.count = ({},{})",maxS,maxI);
+
+        String[] unique_bigrams = QGramUtil.generateUniqueQGrams(LOREM_IPSUM, Schema.Type.STRING, 2);
+
+        assertEquals(unique_bigrams.length,bigramsHashed.size());
+        assertEquals(unique_bigrams.length,QGramUtil.calcUniqueQgramsCount(LOREM_IPSUM, Schema.Type.STRING, 2));
     }
 
 
@@ -82,17 +124,17 @@ public class QGramTest {
         ints[2] = big;
         ints[3] = negative;
         for(int i : ints) {
-            String[] unigrams = QGramUtil.generateQGrams(i, 1);
+            String[] unigrams = QGramUtil.generateQGrams(i, Schema.Type.INT, 1);
             if(unigrams != null) {
                 LOG.info("for int={}, unigrams count = {}", i, unigrams.length);
                 LOG.info("{}", Arrays.toString(unigrams));
             }
-            String[] bigrams = QGramUtil.generateQGrams(i, 2);
+            String[] bigrams = QGramUtil.generateQGrams(i, Schema.Type.INT, 2);
             if(bigrams != null) {
                 LOG.info("for int={}, bigrams count = {}", i, bigrams.length);
                 LOG.info("{}", Arrays.toString(bigrams));
             }
-            String[] trigrams = QGramUtil.generateQGrams(i, 3);
+            String[] trigrams = QGramUtil.generateQGrams(i, Schema.Type.INT, 3);
             if(trigrams != null) {
                 LOG.info("for int={}, trigrams count = {}", i, trigrams.length);
                 LOG.info("{}", Arrays.toString(trigrams));
@@ -112,17 +154,17 @@ public class QGramTest {
         dbls[2] = big;
         dbls[3] = negative;
         for(double i : dbls) {
-            String[] unigrams = QGramUtil.generateQGrams(i, 1);
+            String[] unigrams = QGramUtil.generateQGrams(i, Schema.Type.DOUBLE, 1);
             if(unigrams != null) {
                 LOG.info("for int={}, unigrams count = {}", i, unigrams.length);
                 LOG.info("{}", Arrays.toString(unigrams));
             }
-            String[] bigrams = QGramUtil.generateQGrams(i, 2);
+            String[] bigrams = QGramUtil.generateQGrams(i, Schema.Type.DOUBLE, 2);
             if(bigrams != null) {
                 LOG.info("for int={}, bigrams count = {}", i, bigrams.length);
                 LOG.info("{}", Arrays.toString(bigrams));
             }
-            String[] trigrams = QGramUtil.generateQGrams(i, 3);
+            String[] trigrams = QGramUtil.generateQGrams(i, Schema.Type.DOUBLE, 3);
             if(trigrams != null) {
                 LOG.info("for int={}, trigrams count = {}", i, trigrams.length);
                 LOG.info("{}", Arrays.toString(trigrams));

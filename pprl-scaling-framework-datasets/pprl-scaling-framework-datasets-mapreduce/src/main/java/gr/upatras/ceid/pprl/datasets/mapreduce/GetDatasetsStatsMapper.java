@@ -12,6 +12,8 @@ import org.apache.hadoop.mapreduce.Mapper;
 import java.io.IOException;
 
 public class GetDatasetsStatsMapper extends Mapper<AvroKey<GenericRecord>, NullWritable, Text, DatasetFieldStatistics>{
+    // TODO probably remove this code for Spark code.
+
     public static String INPUT_SCHEMA_KEY = "pprl.datasets.schema";
     private Schema schema;
 

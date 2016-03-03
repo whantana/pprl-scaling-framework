@@ -23,6 +23,8 @@ import java.util.regex.Pattern;
 
 public class GetDatasetsStatsTool extends Configured implements Tool {
 
+    // TODO probably remove this code for Spark code.
+
     private static final Logger LOG = LoggerFactory.getLogger(GetDatasetsStatsTool.class);
 
     private static final String JOB_DESCRIPTION = "Calculate column related stats from dataset";

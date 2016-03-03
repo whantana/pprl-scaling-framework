@@ -49,18 +49,17 @@ public class BloomFilter {
         return HMAC_SHA1;
     }
 
-    public static int[] createHashesV1(final byte[] data,int N,int K, final Mac HMAC_MD5, final Mac HMAC_SHA1) {
+    public static int[] createHashesV1(final byte[] data,int n,int K, final Mac HMAC_MD5, final Mac HMAC_SHA1) {
         byte[] sha1Digest = HMAC_SHA1.doFinal(data);
         byte[] md5Digest = HMAC_MD5.doFinal(data);
         final BigInteger SHA1 = new BigInteger(sha1Digest);
         final BigInteger MD5 = new BigInteger(md5Digest);
+        final BigInteger N = new BigInteger(String.valueOf(n));
         final int[] hashes = new int[K];
         for (int i = 0; i < K; i++) {
             final BigInteger I = new BigInteger(String.valueOf(i+1));
-            final BigInteger RES =
-                    MD5.multiply(I).add(SHA1).mod(new BigInteger(String.valueOf(N)));
+            final BigInteger RES = MD5.multiply(I).add(SHA1).mod(N);
             hashes[i] = Math.abs(RES.intValue());
-
         }
         return hashes;
     }
@@ -89,7 +88,7 @@ public class BloomFilter {
 
     public int[] addData(final byte[] data) {
         final int[] positions = createHashesV1(data,N,K,getHmacMD5(),getHmacSHA1());
-        //final int[] positions = createHashesV2(data,N,K,getHmacMD5());
+        //final int[] positions = createHashesV2(data,N,K,getHmacMD5()); // TODO benchmark not enough check similarity
         return setPositions(positions);
     }
 

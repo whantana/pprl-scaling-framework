@@ -28,6 +28,8 @@ public class DatasetsService implements InitializingBean {
     @Autowired
     protected FileSystem pprlClusterHdfs;
 
+    // TODO reintroduce Remote datasets code
+
 //    @Autowired
 //    private ToolRunner dblpXmlToAvroToolRunner;
 //

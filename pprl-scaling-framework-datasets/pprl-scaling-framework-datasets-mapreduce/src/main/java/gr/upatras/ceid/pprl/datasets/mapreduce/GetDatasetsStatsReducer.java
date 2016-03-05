@@ -1,11 +1,5 @@
 package gr.upatras.ceid.pprl.datasets.mapreduce;
 
-import gr.upatras.ceid.pprl.datasets.DatasetFieldStatistics;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.Reducer;
-
-import java.io.IOException;
-
 public class GetDatasetsStatsReducer {// extends Reducer<Text,DatasetFieldStatistics,Text,DatasetFieldStatistics> {
 //    // TODO probably remove this code for Spark code.
 //

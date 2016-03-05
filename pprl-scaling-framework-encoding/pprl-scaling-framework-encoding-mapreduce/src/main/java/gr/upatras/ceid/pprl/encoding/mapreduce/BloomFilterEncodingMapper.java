@@ -2,6 +2,7 @@ package gr.upatras.ceid.pprl.encoding.mapreduce;
 
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
+import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingUtil;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroKey;
@@ -15,12 +16,6 @@ public class BloomFilterEncodingMapper extends Mapper<AvroKey<GenericRecord>, Nu
 
     public static final String INPUT_SCHEMA_KEY = "pprl.encoding.input.schema";
     public static final String OUTPUT_SCHEMA_KEY = "pprl.encoding.encoding.schema";
-    public static final String SELECTED_FIELDS_KEY = "pprl.encoding.fields.selected";
-    public static final String METHOD_NAME_KEY = "pprl.encoding.method.name";
-    public static final String REST_FIELDS_KEY = "pprl.encoding.fields.rest";
-    public static final String N_KEY = "pprl.encoding.bf.n";
-    public static final String K_KEY = "pprl.encoding.bf.k";
-    public static final String Q_KEY = "pprl.encoding.q";
 
     protected Schema inputSchema;
     protected Schema outputSchema;
@@ -35,7 +30,7 @@ public class BloomFilterEncodingMapper extends Mapper<AvroKey<GenericRecord>, Nu
 
             inputSchema = (new Schema.Parser()).parse(config.get(INPUT_SCHEMA_KEY));
             outputSchema = (new Schema.Parser()).parse(config.get(OUTPUT_SCHEMA_KEY));
-            encoding = BloomFilterEncoding.newInstanceOfMethod(methodName);
+            encoding = BloomFilterEncodingUtil.newInstance(methodName);
             encoding.setupFromSchema(outputSchema);
             if(!encoding.isEncodingOfSchema(inputSchema))
                 throw new BloomFilterEncodingException("Encoding schema does not match input schema");

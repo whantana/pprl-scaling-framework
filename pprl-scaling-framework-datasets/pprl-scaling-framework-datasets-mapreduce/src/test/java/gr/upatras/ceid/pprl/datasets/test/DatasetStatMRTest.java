@@ -1,31 +1,7 @@
 package gr.upatras.ceid.pprl.datasets.test;
 
 
-import gr.upatras.ceid.pprl.base.QGramUtil;
-import gr.upatras.ceid.pprl.datasets.DatasetFieldStatistics;
-import gr.upatras.ceid.pprl.datasets.mapreduce.GetDatasetsStatsMapper;
-import gr.upatras.ceid.pprl.datasets.mapreduce.GetDatasetsStatsReducer;
-import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericData;
-import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.hadoop.io.AvroSerialization;
-import org.apache.avro.mapred.AvroKey;
-import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mrunit.mapreduce.MapDriver;
-import org.apache.hadoop.mrunit.mapreduce.ReduceDriver;
-import org.apache.hadoop.mrunit.types.Pair;
-import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.Test;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 @Ignore
 public class DatasetStatMRTest {
 //    private static final String EXPECTED_KEY = "journals/acta/Saxena96";

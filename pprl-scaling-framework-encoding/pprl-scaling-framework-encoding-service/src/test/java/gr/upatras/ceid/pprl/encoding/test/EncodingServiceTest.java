@@ -5,6 +5,8 @@ import org.junit.Ignore;
 //@ContextConfiguration(locations = "classpath:encoding-test-context.xml",loader=HadoopDelegatingSmartContextLoader.class)
 //@MiniHadoopCluster(nodes = 1, id = "encoding_service_test")
 @Ignore
+
+// TODO restore local and encoding service tests
 public class EncodingServiceTest { //  extends AbstractMapReduceTests {
 
 //    private static Logger LOG = LoggerFactory.getLogger(EncodingServiceTest.class);

@@ -1,41 +1,15 @@
 package gr.upatras.ceid.pprl.encoding;
 
 import org.apache.avro.Schema;
-import org.apache.avro.file.DataFileReader;
-import org.apache.avro.file.DataFileWriter;
-import org.apache.avro.generic.GenericDatumReader;
-import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.generic.GenericRecord;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public abstract class BloomFilterEncoding {
-    public static final List<String> SCHEME_NAMES = new ArrayList<String>();
-    public static final Map<String,Class<?>> SCHEMES = new HashMap<String, Class<?>>();
-    static {
-        SCHEMES.put("FBF", FieldBloomFilterEncoding.class);
-        SCHEMES.put("RBF", RowBloomFilterEncoding.class);
-        SCHEMES.put("CLK", CLKEncoding.class);
-        SCHEME_NAMES.addAll(SCHEMES.keySet());
-    }
-
-    public static final List<Schema.Type> SUPPORTED_TYPES = new ArrayList<Schema.Type>();
-    static {
-        SUPPORTED_TYPES.add(Schema.Type.INT);
-        SUPPORTED_TYPES.add(Schema.Type.LONG);
-        SUPPORTED_TYPES.add(Schema.Type.FLOAT);
-        SUPPORTED_TYPES.add(Schema.Type.DOUBLE);
-        SUPPORTED_TYPES.add(Schema.Type.BOOLEAN);
-        SUPPORTED_TYPES.add(Schema.Type.STRING);
-    }
 
     protected Schema encodingSchema;
     protected Map<String,String> name2nameMap = new HashMap<String,String>();
@@ -98,7 +72,6 @@ public abstract class BloomFilterEncoding {
         return name2nameMap.get(name);
     }
 
-
     public String getFullName() {
         if(encodingSchema !=null) {
             StringBuilder sb = new StringBuilder(getName());
@@ -155,9 +128,9 @@ public abstract class BloomFilterEncoding {
             throws BloomFilterEncodingException {
         assert getEncodingSchema() != null;
 
-         boolean isSchemaValid = getEncodingSchema().getName().contains("PPRL_Encoding") &&
-                 getEncodingSchema().getName().endsWith(schema.getName()) &&
-                 getEncodingSchema().getNamespace().startsWith("encoding.schema");
+        boolean isSchemaValid = getEncodingSchema().getName().contains("PPRL_Encoding") &&
+                getEncodingSchema().getName().endsWith(schema.getName()) &&
+                getEncodingSchema().getNamespace().startsWith("encoding.schema");
 
         boolean areFieldsValid = true;
         for(Schema.Field encodingField : getEncodingSchema().getFields()) {
@@ -194,61 +167,5 @@ public abstract class BloomFilterEncoding {
             }
         }
         return nonSelectedFields;
-    }
-
-    public static void belongsInAvailableMethods(final String methodName)
-            throws BloomFilterEncodingException {
-        if(!SCHEME_NAMES.contains(methodName))
-            throw new BloomFilterEncodingException("String \"" + methodName +"\" does not belong in available methods.");
-    }
-
-    public static BloomFilterEncoding newInstanceOfMethod(final String methodName)
-            throws BloomFilterEncodingException {
-        belongsInAvailableMethods(methodName);
-        try {
-            return (BloomFilterEncoding) (SCHEMES.get(methodName).newInstance());
-        } catch (InstantiationException e) {
-            throw new BloomFilterEncodingException(e.getMessage());
-        } catch (IllegalAccessException e) {
-            throw new BloomFilterEncodingException(e.getMessage());
-        }
-    }
-
-    public static String[] encodeLocalFile(final String name, final Set<File> avroFiles, final Schema schema,
-                                            final BloomFilterEncoding encoding)
-            throws IOException, BloomFilterEncodingException {
-        final Schema encodingSchema = encoding.getEncodingSchema();
-        encoding.initialize();
-
-        final File encodedSchemaFile = new File(name + ".avsc");
-        encodedSchemaFile.createNewFile();
-        final PrintWriter schemaWriter = new PrintWriter(encodedSchemaFile);
-        schemaWriter.print(encodingSchema .toString(true));
-        schemaWriter.close();
-
-        final File encodedFile = new File(name + ".avro");
-        encodedFile.createNewFile();
-        final DataFileWriter<GenericRecord> writer =
-                new DataFileWriter<GenericRecord>(
-                        new GenericDatumWriter<GenericRecord>(encodingSchema));
-        writer.create(encodingSchema, encodedFile);
-        for (File avroFile : avroFiles) {
-            final DataFileReader<GenericRecord> reader =
-                    new DataFileReader<GenericRecord>(avroFile,
-                            new GenericDatumReader<GenericRecord>(schema));
-            for (GenericRecord record : reader) writer.append(encoding.encodeRecord(record));
-            reader.close();
-        }
-        writer.close();
-
-        return new String[]{
-                encodedFile.getAbsolutePath(),
-                encodedSchemaFile.getAbsolutePath()
-        };
-    }
-
-    public static BloomFilterEncoding fromString(final String s)
-            throws BloomFilterEncodingException{
-        return newInstanceOfMethod(s);
     }
 }

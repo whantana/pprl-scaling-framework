@@ -5,6 +5,11 @@ import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
 import gr.upatras.ceid.pprl.encoding.FieldBloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.RowBloomFilterEncoding;
 import org.apache.avro.Schema;
+import org.apache.avro.file.DataFileReader;
+import org.apache.avro.file.DataFileWriter;
+import org.apache.avro.generic.GenericDatumReader;
+import org.apache.avro.generic.GenericDatumWriter;
+import org.apache.avro.generic.GenericRecord;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -14,6 +19,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.Set;
@@ -59,7 +65,7 @@ public class BloomFilterEncodingTest {
         FieldBloomFilterEncoding encoding = new FieldBloomFilterEncoding(avgQcount,K,Q);
         encoding.makeFromSchema(schema, SELECTED_FIELDS, REST_FIELDS);
         assertTrue(encoding.isEncodingOfSchema(schema));
-        BloomFilterEncoding.encodeLocalFile("dynamic_fbf",avroFiles,schema,encoding);
+        encodeLocalFile("dynamic_fbf",avroFiles,schema,encoding);
         saveAvroSchemaToFile(encoding.getEncodingSchema(),new File("dynamic_fbf.avsc"));
     }
 
@@ -76,7 +82,7 @@ public class BloomFilterEncodingTest {
         FieldBloomFilterEncoding encoding = new FieldBloomFilterEncoding(N,SELECTED_FIELDS.length,K,Q);
         encoding.makeFromSchema(schema, SELECTED_FIELDS, REST_FIELDS);
         assertTrue(encoding.isEncodingOfSchema(schema));
-        BloomFilterEncoding.encodeLocalFile("static_fbf", avroFiles, schema, encoding);
+        encodeLocalFile("static_fbf", avroFiles, schema, encoding);
         saveAvroSchemaToFile(encoding.getEncodingSchema(),new File("static_fbf.avsc"));
     }
 
@@ -93,7 +99,7 @@ public class BloomFilterEncodingTest {
         RowBloomFilterEncoding encoding = new RowBloomFilterEncoding(avgQcount, weights, K, Q);
         encoding.makeFromSchema(schema, SELECTED_FIELDS, REST_FIELDS);
         assertTrue(encoding.isEncodingOfSchema(schema));
-        BloomFilterEncoding.encodeLocalFile("weighted_rbf", avroFiles, schema, encoding);
+        encodeLocalFile("weighted_rbf", avroFiles, schema, encoding);
         saveAvroSchemaToFile(encoding.getEncodingSchema(),new File("weighted_rbf.avsc"));
 
     }
@@ -111,7 +117,7 @@ public class BloomFilterEncodingTest {
         RowBloomFilterEncoding encoding = new RowBloomFilterEncoding(avgQcount,N,K,Q);
         encoding.makeFromSchema(schema, SELECTED_FIELDS, REST_FIELDS);
         assertTrue(encoding.isEncodingOfSchema(schema));
-        BloomFilterEncoding.encodeLocalFile("uniform_rbf", avroFiles, schema, encoding);
+        encodeLocalFile("uniform_rbf", avroFiles, schema, encoding);
         saveAvroSchemaToFile(encoding.getEncodingSchema(),new File("uniform_rbf.avsc"));
     }
 
@@ -137,5 +143,39 @@ public class BloomFilterEncodingTest {
         FileOutputStream fos = new FileOutputStream(schemaFile,false);
         fos.write(schema.toString(true).getBytes());
         fos.close();
+    }
+    
+    
+    private static String[] encodeLocalFile(final String name, final Set<File> avroFiles, final Schema schema,
+                                            final BloomFilterEncoding encoding)
+            throws IOException, BloomFilterEncodingException {
+        final Schema encodingSchema = encoding.getEncodingSchema();
+        encoding.initialize();
+
+        final File encodedSchemaFile = new File(name + ".avsc");
+        encodedSchemaFile.createNewFile();
+        final PrintWriter schemaWriter = new PrintWriter(encodedSchemaFile);
+        schemaWriter.print(encodingSchema .toString(true));
+        schemaWriter.close();
+
+        final File encodedFile = new File(name + ".avro");
+        encodedFile.createNewFile();
+        final DataFileWriter<GenericRecord> writer =
+                new DataFileWriter<GenericRecord>(
+                        new GenericDatumWriter<GenericRecord>(encodingSchema));
+        writer.create(encodingSchema, encodedFile);
+        for (File avroFile : avroFiles) {
+            final DataFileReader<GenericRecord> reader =
+                    new DataFileReader<GenericRecord>(avroFile,
+                            new GenericDatumReader<GenericRecord>(schema));
+            for (GenericRecord record : reader) writer.append(encoding.encodeRecord(record));
+            reader.close();
+        }
+        writer.close();
+
+        return new String[]{
+                encodedFile.getAbsolutePath(),
+                encodedSchemaFile.getAbsolutePath()
+        };
     }
 }

@@ -3,7 +3,6 @@ package gr.upatras.ceid.pprl.shell.command;
 import gr.upatras.ceid.pprl.datasets.DatasetFieldStatistics;
 import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
 import gr.upatras.ceid.pprl.encoding.FieldBloomFilterEncoding;
-import gr.upatras.ceid.pprl.encoding.RowBloomFilterEncoding;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;

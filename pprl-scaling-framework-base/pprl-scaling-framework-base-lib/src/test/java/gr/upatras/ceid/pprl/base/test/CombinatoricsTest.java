@@ -2,7 +2,6 @@ package gr.upatras.ceid.pprl.base.test;
 
 import gr.upatras.ceid.pprl.base.CombinatoricsUtil;
 import org.apache.commons.math3.util.Combinations;
-import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

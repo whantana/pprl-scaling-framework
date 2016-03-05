@@ -2,6 +2,7 @@ package gr.upatras.ceid.pprl.encoding.mapreduce;
 
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
+import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingUtil;
 import gr.upatras.ceid.pprl.encoding.FieldBloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.RowBloomFilterEncoding;
 import org.apache.avro.Schema;
@@ -38,7 +39,7 @@ public class EncodeDatasetTool extends Configured implements Tool {
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
         if (args.length > 4 || args.length < 8) {
-            LOG.error("Usage without encoding creation: EncodeDatasetTool " +
+            LOG.error("Usage without encoding creation: EncodeDatasetTool " +   // TODO Refactor ME Keep only this
                     "<input-path> <input-schema> <encoding-path> <encoding-schema>\n");
             LOG.error("Usage with encoding creation: EncodeDatasetTool " +
                     "<input-path> <input-schema> <encoding-path> <encoding-schema>\n" +
@@ -113,7 +114,7 @@ public class EncodeDatasetTool extends Configured implements Tool {
 
     private static BloomFilterEncoding createBloomFilterEncoding(final String[] args, final Schema inputSchema) throws
             BloomFilterEncodingException {
-        final String methodName;
+        final String scheme;
         final String[] restFieldNames;
         final int N;
         final int K;
@@ -121,7 +122,7 @@ public class EncodeDatasetTool extends Configured implements Tool {
         final String[] selectedFieldNames = args[4].split(",");
         switch (args.length) {
             case 8:
-                methodName = args[5];
+                scheme = args[5];
                 restFieldNames = new String[0];
                 N = -1;
                 K = Integer.valueOf(args[6]);
@@ -129,13 +130,13 @@ public class EncodeDatasetTool extends Configured implements Tool {
                 break;
             case 9:
                 if (args[5].equals("FBF") || args[5].equals("RBF")) {
-                    methodName = args[5];
+                    scheme = args[5];
                     restFieldNames = new String[0];
                     N = Integer.valueOf(args[6]);
                 } else {
                     restFieldNames = args[5].contains(",") ?
                             args[5].split(",") : new String[]{args[5]};
-                    methodName = args[6];
+                    scheme = args[6];
                     N = -1;
                 }
                 K = Integer.valueOf(args[7]);
@@ -144,7 +145,7 @@ public class EncodeDatasetTool extends Configured implements Tool {
             case 10:
                 restFieldNames = args[5].contains(",") ?
                         args[5].split(",") : new String[]{args[5]};
-                methodName = args[6];
+                scheme = args[6];
                 N = Integer.valueOf(args[7]);
                 K = Integer.valueOf(args[8]);
                 Q = Integer.valueOf(args[9]);
@@ -153,16 +154,14 @@ public class EncodeDatasetTool extends Configured implements Tool {
                 LOG.error("Error. Shouldnt be here.");
                 throw new IllegalArgumentException("Illegal args");
         }
-        if (!BloomFilterEncoding.SCHEME_NAMES.contains(methodName))
-            throw new IllegalArgumentException("Error : " + methodName +
-                    " Availble methods are : " + BloomFilterEncoding.SCHEME_NAMES);
+        BloomFilterEncodingUtil.schemeNameSupported(scheme);
         final BloomFilterEncoding encoding;
-        if (methodName.equals("FBF") && N > 0) {
+        if (scheme.equals("FBF") && N > 0) {
             encoding = new FieldBloomFilterEncoding(N, selectedFieldNames.length, K, Q);
-        } else if (methodName.equals("FBF") && N < 0) {
+        } else if (scheme.equals("FBF") && N < 0) {
             double[] avgQCount = new double[selectedFieldNames.length]; // need stats here
             encoding = new FieldBloomFilterEncoding(avgQCount, K, Q);
-        } else if (methodName.equals("RBF") && N > 0) {
+        } else if (scheme.equals("RBF") && N > 0) {
             double[] avgQCount = new double[selectedFieldNames.length]; // need stats here
             encoding = new RowBloomFilterEncoding(avgQCount, N, K, Q);
         } else {

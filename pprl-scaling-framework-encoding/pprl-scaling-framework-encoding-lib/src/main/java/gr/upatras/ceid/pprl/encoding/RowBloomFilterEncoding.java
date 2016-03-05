@@ -57,12 +57,46 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
         int[] fbfNs = FieldBloomFilterEncoding.dynamicsizes(avgQCount,K);
         int[] Ns = new int[fbfNs.length + 1];
         System.arraycopy(fbfNs, 0, Ns, 0, fbfNs.length);
-        int N = 0;
+        Ns[fbfNs.length] = weightedsize(fbfNs,weights);
+        setN(Ns);
+        setK(K);
+        setQ(Q);
+
+        rbfCompositionCount = new int[fbfNs.length];
+        rbfCompositionSeeds = new int[fbfNs.length];
         for (int i = 0; i < fbfNs.length; i++) {
-            int rbfN = (int)(((double)fbfNs[i])/weights[i]);
-            if(rbfN> N) N = rbfN;
+            rbfCompositionCount[i] = (int) ((double) getRBFN()*weights[i]);
+            rbfCompositionSeeds[i] = SECURE_RANDOM_GENERATOR.nextInt(1000);
         }
+        rbfBitPermutationSeed = SECURE_RANDOM_GENERATOR.nextInt(1000);
+    }
+
+    public RowBloomFilterEncoding(int[] fbfNs, final int N, final int K, final int Q) {
+        int[] Ns = new int[fbfNs.length + 1];
+        System.arraycopy(fbfNs,0,Ns,0,fbfNs.length);
         Ns[fbfNs.length] = N;
+
+        setN(Ns);
+        setK(K);
+        setQ(Q);
+
+        double selectedBitCount = getRBFN()/((double)fbfNs.length);
+        rbfCompositionCount = new int[fbfNs.length];
+        rbfCompositionSeeds = new int[fbfNs.length];
+        for (int i = 0; i < fbfNs.length; i++) {
+            rbfCompositionCount[i] =  (i == 0) ?
+                    (int) Math.ceil(selectedBitCount) :
+                    (int) Math.floor(selectedBitCount);
+            rbfCompositionSeeds[i] = SECURE_RANDOM_GENERATOR.nextInt(1000);
+        }
+        rbfBitPermutationSeed = SECURE_RANDOM_GENERATOR.nextInt(1000);
+    }
+
+    public RowBloomFilterEncoding(int[] fbfNs, final double[] weights, final int K, final int Q) {
+        assert fbfNs.length == weights.length;
+        int[] Ns = new int[fbfNs.length + 1];
+        System.arraycopy(fbfNs, 0, Ns, 0, fbfNs.length);
+        Ns[fbfNs.length] = weightedsize(fbfNs,weights);
         setN(Ns);
         setK(K);
         setQ(Q);
@@ -121,8 +155,6 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
         String s = ns.substring("encoding.schema.".length());
         String[] sParts = s.split("\\.");
         assert sParts.length == 3;
-        final String method = sParts[0].toUpperCase();
-        belongsInAvailableMethods(method);
         setK(Integer.valueOf(sParts[1]));
         setQ(Integer.valueOf(sParts[2]));
 
@@ -240,5 +272,14 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
             i++;
         }
         return retArray;
+    }
+
+    public static int weightedsize(final int[] fbfNs, final double[] weights) {
+        int N = 0;
+        for (int i = 0; i < fbfNs.length; i++) {
+            int rbfN = (int)(((double)fbfNs[i])/weights[i]);
+            if(rbfN> N) N = rbfN;
+        }
+        return N;
     }
 }

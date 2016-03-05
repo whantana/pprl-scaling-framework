@@ -1,16 +1,5 @@
 package gr.upatras.ceid.pprl.datasets.mapreduce;
 
-import gr.upatras.ceid.pprl.base.QGramUtil;
-import gr.upatras.ceid.pprl.datasets.DatasetFieldStatistics;
-import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.mapred.AvroKey;
-import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.Mapper;
-
-import java.io.IOException;
-
 public class GetDatasetsStatsMapper { //extends Mapper<AvroKey<GenericRecord>, NullWritable, Text, DatasetFieldStatistics>{
 //    // TODO probably remove this code for Spark code.
 //

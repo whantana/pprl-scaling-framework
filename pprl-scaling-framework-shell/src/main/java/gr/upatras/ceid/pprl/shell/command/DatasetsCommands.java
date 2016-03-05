@@ -1,6 +1,5 @@
 package gr.upatras.ceid.pprl.shell.command;
 
-import gr.upatras.ceid.pprl.base.CombinatoricsUtil;
 import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
 import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import gr.upatras.ceid.pprl.datasets.service.DatasetsService;
@@ -79,9 +78,9 @@ public class DatasetsCommands implements CommandMarker {
             if(save) LOG.info("\tSaving sample with name : {} ",name);
             LOG.info("\n");
 
-            final Schema schema = lds.schemaOfLocalDataset(schemaPath);
-            final GenericRecord[] sample = lds.sampleOfLocalDataset(avroPaths,schemaPath,size);
-            if(save) lds.localSaveOfSample(name,sample,schema);
+            final Schema schema = lds.loadSchema(schemaPath);
+            final GenericRecord[] sample = lds.sample(avroPaths, schemaPath, size);
+            if(save) lds.saveRecords(name, sample, schema);
 
             LOG.info(CommandUtils.prettyRecords(sample,schema));
             return "DONE";
@@ -101,7 +100,7 @@ public class DatasetsCommands implements CommandMarker {
             LOG.info("\tSelected schema file : {}", schemaPath);
             LOG.info("\n");
 
-            final Schema schema = lds.schemaOfLocalDataset(schemaPath);
+            final Schema schema = lds.loadSchema(schemaPath);
 
             LOG.info(CommandUtils.prettySchemaDescription(schema));
             return "DONE";
@@ -146,14 +145,14 @@ public class DatasetsCommands implements CommandMarker {
             if(save) LOG.info("\tStatistics report with name : {}",name);
             LOG.info("\n");
 
-            final Schema schema = lds.schemaOfLocalDataset(schemaPath);
+            final Schema schema = lds.loadSchema(schemaPath);
             if(fields.length == 0 )
                 fields = DatasetsUtil.fieldNames(schema);
             else if(!Arrays.asList(DatasetsUtil.fieldNames(schema)).containsAll(Arrays.asList(fields)))
                 throw new IllegalArgumentException(String.format("fields %s not found in schema",
                         Arrays.toString(fields)));
 
-            final GenericRecord[] records = lds.loadLocalDataset(avroPaths,schemaPath);
+            final GenericRecord[] records = lds.loadRecords(avroPaths, schemaPath);
             final DatasetStatistics statistics = new DatasetStatistics();
 
             statistics.setRecordCount(records.length);
@@ -173,7 +172,7 @@ public class DatasetsCommands implements CommandMarker {
 
             LOG.info(CommandUtils.prettyStats(statistics));
 
-            if(save) lds.localSaveOfStatsProperties(name, statistics);
+            if(save) lds.saveStats(name, statistics);
 
             return "DONE";
         } catch (Exception e) {

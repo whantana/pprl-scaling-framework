@@ -57,22 +57,22 @@ public class LocalDatasetsServiceTest {
 
     @Test
     public void test0() throws IOException, DatasetException {
-        final Schema schema = lds.schemaOfLocalDataset(SCHEMA_PATH);
+        final Schema schema = lds.loadSchema(SCHEMA_PATH);
         LOG.info(schema.toString(true));
     }
 
     @Test
     public void test1() throws IOException, DatasetException {
-        final GenericRecord[] sample = lds.sampleOfLocalDataset(AVRO_PATHS, SCHEMA_PATH, 20);
-        final Schema schema = lds.schemaOfLocalDataset(SCHEMA_PATH);
+        final GenericRecord[] sample = lds.sample(AVRO_PATHS, SCHEMA_PATH, 20);
+        final Schema schema = lds.loadSchema(SCHEMA_PATH);
         final String sampleName = "person_small_sample";
-        lds.localSaveOfSample(sampleName, sample, schema);
+        lds.saveRecords(sampleName, sample, schema);
     }
 
     @Test
     public void test2() throws IOException, DatasetException {
-        final GenericRecord[] records = lds.loadLocalDataset(AVRO_PATHS,SCHEMA_PATH);
-        final Schema schema = lds.schemaOfLocalDataset(SCHEMA_PATH);
+        final GenericRecord[] records = lds.loadRecords(AVRO_PATHS, SCHEMA_PATH);
+        final Schema schema = lds.loadSchema(SCHEMA_PATH);
         final DatasetStatistics statistics = new DatasetStatistics();
         statistics.setRecordCount(records.length);
         statistics.setEmPairs(CombinatoricsUtil.twoCombinationsCount(records.length));
@@ -93,9 +93,9 @@ public class LocalDatasetsServiceTest {
         report.append(prettyBFEStats(statistics.getFieldStatistics(), 15, 4));
         LOG.info(report.toString());
         final String reportName = "stats_report";
-        lds.localSaveOfStatsProperties(reportName, statistics);
-        lds.localSaveOfStatsProperties(reportName, statistics, new Path("person_small"));
-        lds.localSaveOfStatsProperties(reportName, statistics, new Path("asdf"));
+        lds.saveStats(reportName, statistics);
+        lds.saveStats(reportName, statistics, new Path("person_small"));
+        lds.saveStats(reportName, statistics, new Path("asdf"));
     }
 
 
@@ -105,8 +105,8 @@ public class LocalDatasetsServiceTest {
         Path schemaPath = new Path("random/schema/random.avsc");
         LOG.info(
                 prettyRecords(
-                        lds.loadLocalDataset(avroPaths, schemaPath),
-                        lds.schemaOfLocalDataset(schemaPath)
+                        lds.loadRecords(avroPaths, schemaPath),
+                        lds.loadSchema(schemaPath)
                 )
         );
 
@@ -118,8 +118,8 @@ public class LocalDatasetsServiceTest {
         };
         LOG.info(
                 prettyRecords(
-                        lds.loadLocalDataset(avroPaths, schemaPath),
-                        lds.schemaOfLocalDataset(schemaPath)
+                        lds.loadRecords(avroPaths, schemaPath),
+                        lds.loadSchema(schemaPath)
                 )
         );
 
@@ -130,8 +130,8 @@ public class LocalDatasetsServiceTest {
         };
         LOG.info(
                 prettyRecords(
-                        lds.loadLocalDataset(avroPaths,schemaPath),
-                        lds.schemaOfLocalDataset(schemaPath)
+                        lds.loadRecords(avroPaths, schemaPath),
+                        lds.loadSchema(schemaPath)
                 )
         );
 
@@ -140,8 +140,8 @@ public class LocalDatasetsServiceTest {
         };
         LOG.info(
                 prettyRecords(
-                        lds.loadLocalDataset(avroPaths,schemaPath),
-                        lds.schemaOfLocalDataset(schemaPath)
+                        lds.loadRecords(avroPaths, schemaPath),
+                        lds.loadSchema(schemaPath)
                 )
         );
     }

@@ -53,8 +53,6 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
         String s = ns.substring("encoding.schema.".length());
         String[] sParts = s.split("\\.");
         assert sParts.length == 3;
-        final String method = sParts[0].toUpperCase();
-        belongsInAvailableMethods(method);
         setK(Integer.valueOf(sParts[1]));
         setQ(Integer.valueOf(sParts[2]));
 

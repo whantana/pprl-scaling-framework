@@ -4,8 +4,14 @@ import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
 import gr.upatras.ceid.pprl.datasets.service.DatasetsService;
 import gr.upatras.ceid.pprl.datasets.service.LocalDatasetsService;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
+import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
+import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingUtil;
+import gr.upatras.ceid.pprl.encoding.FieldBloomFilterEncoding;
+import gr.upatras.ceid.pprl.encoding.RowBloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.service.EncodingService;
 import gr.upatras.ceid.pprl.encoding.service.LocalEncodingService;
+import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +25,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Properties;
 
 @Component
 public class EncodingCommands implements CommandMarker {
@@ -32,7 +37,7 @@ public class EncodingCommands implements CommandMarker {
 
     @Autowired(required = false)
     @Qualifier("localEncodingService")
-    private LocalEncodingService elds;
+    private LocalEncodingService les;
 
     @Autowired(required = false)
     @Qualifier("datasetsService")
@@ -42,12 +47,12 @@ public class EncodingCommands implements CommandMarker {
     @Qualifier("localDatasetsService")
     private LocalDatasetsService lds;
 
-    private List<String> ENCODING_SCHEMES = BloomFilterEncoding.SCHEME_NAMES;
+    private List<String> ENCODING_SCHEMES = BloomFilterEncodingUtil.SCHEME_NAMES;
 
     @CliAvailabilityIndicator(value = {"encode_supported_schemes","encode_calculate_encoding_sizes"})
     public boolean availability0() { return true; }
     @CliAvailabilityIndicator(value = {"encode_local_data"})
-    public boolean availability1() { return elds != null && lds != null; }
+    public boolean availability1() { return les != null && lds != null; }
 
 
     @CliCommand(value = "encode_supported_schemes", help = "List system's supported Bloom-filter encoding schemes.")
@@ -78,7 +83,7 @@ public class EncodingCommands implements CommandMarker {
             if(Q < 2 || Q > 4) throw new IllegalArgumentException("Q is limited to {2,3,4}.");
             final int K = CommandUtils.retrieveInt(kStr,15);
             if(K < 1) throw new IllegalArgumentException("K must be at least 1.");
-            DatasetStatistics statistics = lds.localLoadStatsProperties(statsPath);
+            DatasetStatistics statistics = lds.loadStats(statsPath);
             LOG.info(CommandUtils.prettyBFEStats(statistics.getFieldStatistics(),K,Q));
             return "DONE";
         } catch (Exception e) {
@@ -116,12 +121,29 @@ public class EncodingCommands implements CommandMarker {
             final String pathStr
     ) {
         try {
-            if(!ENCODING_SCHEMES.contains(scheme)) throw new IllegalArgumentException("Scheme " + scheme + " does not exist");
+            BloomFilterEncodingUtil.schemeNameSupported(scheme);
 
             final Path schemaPath = CommandUtils.retrievePath(schemaStr);
             final Path[] avroPaths = CommandUtils.retrievePaths(avroStr);
             final String[] fields = CommandUtils.retrieveFields(fieldsStr);
             final String[] included = CommandUtils.retrieveFields(includeStr);
+            final int fbfN = CommandUtils.retrieveInt(fbfNstr,-1);
+            final int N = CommandUtils.retrieveInt(Nstr,-1);
+            final int K = CommandUtils.retrieveInt(Kstr,15);
+            final int Q = CommandUtils.retrieveInt(Qstr,2);
+            final Path statsPath = CommandUtils.retrievePath(pathStr);
+            final double[] avgQgrams = (statsPath == null)  ? null : new double[fields.length];
+            final double[] weights = (statsPath == null)  ? null : new double[fields.length];
+            if(statsPath != null) {
+                DatasetStatistics statistics = lds.loadStats(statsPath);
+                int i = 0;
+                for (String fieldName : fields) {
+                    avgQgrams[i] = statistics.getFieldStatistics().get(fieldName).getQgramCount(Q);
+                    weights[i] =  statistics.getFieldStatistics().get(fieldName).getNormalizedRange();
+                    i++;
+                }
+            }
+
             LOG.info("Encoding local data :");
             LOG.info("\tEncoding name : {}", name);
             LOG.info("\tSelected data files : {}", Arrays.toString(avroPaths));
@@ -129,57 +151,32 @@ public class EncodingCommands implements CommandMarker {
             LOG.info("\tSelected fields to be encoded : {}", Arrays.toString(fields));
             if(included.length !=0)
                 LOG.info("\tSelected fields to included   : {}", Arrays.toString(included));
-
-
-            final int fbfN = CommandUtils.retrieveInt(fbfNstr,-1);
-            final int N = CommandUtils.retrieveInt(Nstr,-1);
-            final int K = CommandUtils.retrieveInt(Kstr,15);
-            final int Q = CommandUtils.retrieveInt(Qstr,2);
-            final boolean clk = scheme.equals("CLK");
-            if(clk && N < 0) throw new IllegalArgumentException("CLK Encoding requires N to be set.");
-            final boolean fbfStatic = scheme.equals("FBF") && (fbfN > 0);
-            final boolean fbfDynamic = scheme.equals("FBF") && (fbfN < 0);
-            final boolean rbfUniformFbfStatic = scheme.equals("RBF") && N > 0 && (fbfN > 0);
-            final boolean rbfUniformFbfDynamic = scheme.equals("RBF") && N > 0 && (fbfN < 0);
-            final boolean rbfWeighetdFbfStatic = scheme.equals("RBF") && N < 0 && (fbfN > 0);
-            final boolean rbfWeighetdFbfDynamic = scheme.equals("RBF") && N < 0 && (fbfN < 0);
-
-            final boolean requiresStatistics = fbfDynamic || rbfUniformFbfDynamic || rbfWeighetdFbfDynamic
-                    || rbfUniformFbfStatic;
-            final Path statsPath = CommandUtils.retrievePath(pathStr);
-            if(requiresStatistics && statsPath == null)
-                throw new IllegalArgumentException("Encoding schema requires statistics");
-            if(statsPath !=null)
+            if(statsPath != null)
                 LOG.info("\tSelected stats file : {}", statsPath);
-            if(clk) {
-                LOG.info("\tScheme : CLK");
-                LOG.info("\tBloom-Filter size : {}",N);
-            } else if (fbfStatic) {
-                LOG.info("\tScheme : FBF/Static");
-                LOG.info("\tField Bloom-Filter size : {}",fbfN);
-            } else if (fbfDynamic) {
-                LOG.info("\tScheme : FBF/Dynamic");
-                LOG.info("\tField Bloom-Filter size : 0 FIXME");
-            } else if (rbfUniformFbfStatic) {
-                LOG.info("\tScheme : RBF/Uniform/Static");
-                LOG.info("\tField Bloom-Filter size : {}",fbfN);
-                LOG.info("\tRow Bloom-Filter size : {}", N);
-            } else if (rbfUniformFbfDynamic) {
-                LOG.info("\tScheme : RBF/Uniform/Dynamic");
-                LOG.info("\tField Bloom-Filter size : 0 FIXME");
-                LOG.info("\tRow Bloom-Filter size : {}", N);
-            } else if (rbfWeighetdFbfStatic) {
-                LOG.info("\tScheme : RBF/Weighted/Static");
-                LOG.info("\tField Bloom-Filter size : {}",fbfN);
-                LOG.info("\tRow Bloom-Filter size : 0 FIXME");
-            } else if (rbfWeighetdFbfDynamic) {
-                LOG.info("\tScheme : RBF/Weighted/Dynamic");
-                LOG.info("\tField Bloom-Filter size : 0 FIXME");
-                LOG.info("\tRow Bloom-Filter size : 0 FIXME");
-            }
             LOG.info("\tNumber of Hash functions  (K) : {}", K);
             LOG.info("\tHashing Q-Grams (Q) : {}", Q);
+            LOG.info("\tScheme : {}", scheme);
+            if(scheme.equals("FBF") || scheme.equals("RBF")) {
+                if (fbfN > 0) LOG.info("\tFBF static size : {}", fbfN);
+                else LOG.info("\tFBF dynamic sizes : {}",Arrays.toString(FieldBloomFilterEncoding.dynamicsizes(avgQgrams, K)));
+            }
+            if(scheme.equals("RBF")) {
+                int fbfNs[] = (fbfN > 0)  ? FieldBloomFilterEncoding.staticsizes(fbfN,fields.length) :
+                        FieldBloomFilterEncoding.dynamicsizes(avgQgrams, K);
+                LOG.info("\tRBF size : {}", N > 0 ? N : RowBloomFilterEncoding.weightedsize(fbfNs, weights));
+            }else if(scheme.equals("CLK"))
+                LOG.info("\tCLK size : {}", N);
 
+            final BloomFilterEncoding encoding = BloomFilterEncodingUtil.instanceFactory(
+                    scheme, fields.length, N, fbfN, K, Q, avgQgrams, weights);
+            final Schema schema = lds.loadSchema(schemaPath);
+            encoding.makeFromSchema(schema,fields,included);
+            if(!encoding.isEncodingOfSchema(schema))
+                throw new BloomFilterEncodingException("Encoding does not validate with source dataset.");
+            final GenericRecord[] records = lds.loadRecords(avroPaths,schemaPath);
+            final GenericRecord[] encodedRecords = les.encodeRecords(records, encoding);
+
+            lds.saveRecords(name,encodedRecords,encoding.getEncodingSchema());
             return "DONE";
         } catch (Exception e) {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();

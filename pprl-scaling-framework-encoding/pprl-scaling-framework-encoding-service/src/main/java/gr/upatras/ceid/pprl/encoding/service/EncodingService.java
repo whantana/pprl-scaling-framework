@@ -254,7 +254,7 @@ public class EncodingService implements InitializingBean{
 //            final double[] avgQcounts = new double[selectedFieldNames.length];
 //            int i =0 ;
 //            for(String fieldName : selectedFieldNames)
-//                avgQcounts[i] = stats.get(fieldName).getFieldQgramCount();
+//                avgQcounts[i] = stats.get(fieldName).getQgramCount();
 //
 //            final FieldBloomFilterEncoding encoding = new FieldBloomFilterEncoding(avgQcounts,K,Q);
 //            if(restFieldNames == null) restFieldNames = new String[0];
@@ -315,7 +315,7 @@ public class EncodingService implements InitializingBean{
 //            final double[] avgQcounts = new double[selectedFieldNames.length];
 //            int i =0 ;
 //            for(String fieldName : selectedFieldNames)
-//                avgQcounts[i] = stats.get(fieldName).getFieldQgramCount();
+//                avgQcounts[i] = stats.get(fieldName).getQgramCount();
 //
 //            final RowBloomFilterEncoding encoding = new RowBloomFilterEncoding(avgQcounts,N,K,Q);
 //            if(restFieldNames == null) restFieldNames = new String[0];
@@ -387,7 +387,7 @@ public class EncodingService implements InitializingBean{
 //            final double[] avgQcounts = new double[selectedFieldNames.length];
 //            int i =0 ;
 //            for(String fieldName : selectedFieldNames)
-//                avgQcounts[i] = stats.get(fieldName).getFieldQgramCount();
+//                avgQcounts[i] = stats.get(fieldName).getQgramCount();
 //            // read calcuclated weights
 //            final RowBloomFilterEncoding encoding = new RowBloomFilterEncoding(avgQcounts,weights,K,Q);
 //            if(restFieldNames == null) restFieldNames = new String[0];
@@ -451,7 +451,7 @@ public class EncodingService implements InitializingBean{
 //
 //            final double[] avgQgrams = new double[selectedFieldNames.length];
 //            for (int i = 0; i < selectedFieldNames.length; i++)
-//                avgQgrams[i] = stats.get(selectedFieldNames[i]).getFieldQgramCount();
+//                avgQgrams[i] = stats.get(selectedFieldNames[i]).getQgramCount();
 //
 //            final FieldBloomFilterEncoding encoding = new FieldBloomFilterEncoding(avgQgrams,K,Q);
 //
@@ -519,7 +519,7 @@ public class EncodingService implements InitializingBean{
 //
 //            final double[] avgQgrams = new double[selectedFieldNames.length];
 //            for (int i = 0; i < selectedFieldNames.length; i++)
-//                avgQgrams[i] = stats.get(selectedFieldNames[i]).getFieldQgramCount();
+//                avgQgrams[i] = stats.get(selectedFieldNames[i]).getQgramCount();
 //
 //            final RowBloomFilterEncoding encoding = new RowBloomFilterEncoding(avgQgrams,N,K,Q);
 //
@@ -569,7 +569,7 @@ public class EncodingService implements InitializingBean{
 //
 //            final double[] avgQgrams = new double[selectedFieldNames.length];
 //            for (int i = 0; i < selectedFieldNames.length; i++)
-//                avgQgrams[i] = stats.get(selectedFieldNames[i]).getFieldQgramCount();
+//                avgQgrams[i] = stats.get(selectedFieldNames[i]).getQgramCount();
 //            // read calcuclated weights
 //
 //            final RowBloomFilterEncoding encoding = new RowBloomFilterEncoding(avgQgrams,weights,K,Q);

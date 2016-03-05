@@ -98,6 +98,10 @@ public class ExpectationMaximization {
         return p;
     }
 
+    public int getPairCount() {
+        return pairCount;
+    }
+
     @Override
     public String toString() {
         StringBuilder msb = new StringBuilder();

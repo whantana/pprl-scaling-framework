@@ -1,8 +1,12 @@
 package gr.upatras.ceid.pprl.shell.command;
 
+import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
+import gr.upatras.ceid.pprl.datasets.service.DatasetsService;
+import gr.upatras.ceid.pprl.datasets.service.LocalDatasetsService;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.service.EncodingService;
 import gr.upatras.ceid.pprl.encoding.service.LocalEncodingService;
+import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,9 +14,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.shell.core.CommandMarker;
 import org.springframework.shell.core.annotation.CliAvailabilityIndicator;
 import org.springframework.shell.core.annotation.CliCommand;
+import org.springframework.shell.core.annotation.CliOption;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 
 @Component
 public class EncodingCommands implements CommandMarker {
@@ -27,13 +34,24 @@ public class EncodingCommands implements CommandMarker {
     @Qualifier("localEncodingService")
     private LocalEncodingService elds;
 
+    @Autowired(required = false)
+    @Qualifier("datasetsService")
+    private DatasetsService ds;
+
+    @Autowired(required = false)
+    @Qualifier("localDatasetsService")
+    private LocalDatasetsService lds;
+
     private List<String> ENCODING_SCHEMES = BloomFilterEncoding.SCHEME_NAMES;
 
-    @CliAvailabilityIndicator(value = {"encode_supported_schemes"})
-    public boolean alwaysAvailable() { return elds != null || es != null; }
+    @CliAvailabilityIndicator(value = {"encode_supported_schemes","encode_calculate_encoding_sizes"})
+    public boolean availability0() { return true; }
+    @CliAvailabilityIndicator(value = {"encode_local_data"})
+    public boolean availability1() { return elds != null && lds != null; }
 
-    @CliCommand(value = "encoding_supported_schemes", help = "List system's supported Bloom-filter encoding schemes.")
-    public String encodingSupportedSchemesCommand() {
+
+    @CliCommand(value = "encode_supported_schemes", help = "List system's supported Bloom-filter encoding schemes.")
+    public String command0() {
         LOG.info("Supported bloom filter encoding schemes : ");
         int i = 1;
         for(String methodName: ENCODING_SCHEMES) {
@@ -43,93 +61,134 @@ public class EncodingCommands implements CommandMarker {
         return "DONE";
     }
 
-//    @CliAvailabilityIndicator(value = {"encode_local_dataset"})
-//    public boolean encodingLocalDatasetAvailability() {
-//        return elds != null;
-//    }
-//
-//    @CliCommand(value = "encode_local_dataset", help = "Encode local avro files.")
-//    public String encodingLocalDatasetCommand(
-//            @CliOption(key = {"avro_files"}, mandatory = true, help = "Local data avro files (comma separated).")
-//            final String avroPaths,
-//            @CliOption(key = {"schema_file"}, mandatory = true, help = "Local schema avro file.")
-//            final String schemaFilePath,
-//            @CliOption(key = {"selected_fields"}, mandatory = true, help = "Selected fields to be encoded")
-//            final String fieldsStr,
-//            @CliOption(key = {"rest_fields"}, mandatory = false, help = "(Optional) Rest of fields to be encoded")
-//            final String restFieldsStr,
-//            @CliOption(key = {"name"}, mandatory = true, help = "Name of encoding.")
-//            final String nameStr,
-//            @CliOption(key= {"scheme"}, mandatory = true, help = "One of the following encoding methods : {FBF,RBF}.")
-//            final String schemeStr,
-//            @CliOption(key= {"fbfN"}, mandatory = true, help = "One of the following encoding methods : {FBF,RBF}.")
-//            final String fbfNstr) {
-//
-//    }
-//            @CliOption(key= {"N"}, mandatory = false, help = "(Optional) If method == FBF not defining N produces dynamic bloom filters." +
-//                    " Else if method == RBF not defining N enforces weighted bit selection instead of uniform bit selection.")
-//            final String Nstr,
-//            @CliOption(key= {"K"}, mandatory = false, help = "(Optional) Hash function count. Default value is 30.")
-//            final String Kstr,
-//            @CliOption(key= {"Q"}, mandatory = false, help = "(Optional) Q for Q-Grams. Default value is 2.")
-//            final String Qstr,
-//            @CliOption(key= {"weights"}, mandatory = false, help = "(Optional) If method == RBF and N is not defined, " +
-//                    "user can provide the FBF bit selection weights with respect to selected fields.")
-//            final String Wstr
-//    ){
-//        try {
-//            final File schemaFile = CommandUtils.retrieveFile(schemaFilePath);
-//            final File[] avroFiles = CommandUtils.retrieveFiles(avroPaths);
-//            final String[] selectedFieldNames = CommandUtils.retrieveFields(fieldsStr);
-//            final String[] restFieldNames = CommandUtils.retrieveFields(restFieldsStr);
-//            final
-//
-//
-//
-//
-//
-//            int N = (Nstr == null) ? -1 : Integer.parseInt(Nstr);
-//            int K = (Kstr == null) ? 30 : Integer.parseInt(Kstr);
-//            int Q = (Qstr == null) ? 2 : Integer.parseInt(Qstr);
-//
-//            LOG.info("Encoding local data :");
-//            if(name != null )
-//                LOG.info("\tEncoded Dataset name                     : {}", name);
-//            LOG.info("\tSelected local data files for encoding   : {}", Arrays.toString(avroFiles));
-//            LOG.info("\tSelected local schema file for encoding  : {}", schemaFile.getAbsolutePath());
-//            LOG.info("\tSelected local data fields to be encoded : {}", Arrays.toString(selectedFieldNames));
-//            LOG.info("\tRest local data fields                   : {}", Arrays.toString(restFieldNames));
-//
-//            String paths[];
-//            if(methodName.equals("FBF") && N > 0) {
-//                LOG.info("\tSelected encoding method                : FBF, N={}, K={}, Q={}",N, K, Q);
-//                paths = service.encodeFBFStaticLocalFile(name, avroFilesSet,
-//                        schemaFile,selectedFieldNames,restFieldNames, N, K, Q);
-//            } else if (methodName.equals("FBF")) {
-//                LOG.info("\tSelected encoding method                : FBF, Dynamic Bloom Filter Sizing, K={}, Q={}",K, Q);
-//                paths = service.encodeFBFDynamicLocalFile(name, avroFilesSet,
-//                        schemaFile,selectedFieldNames,restFieldNames, K, Q);
-//            } else if (methodName.equals("RBF") && N > 0) {
-//                LOG.info("\tSelected encoding method                : RBF, N={} (uniform-bit-selection), K={}, Q={}",K, Q);
-//                paths = service.encodeRBFUniformLocalFile(name, avroFilesSet, schemaFile,
-//                        selectedFieldNames,restFieldNames, N, K, Q);
-//            } else {
-//                LOG.info("\tSelected encoding method                : RBF, (weighted-bit-selection), K={}, Q={}",K, Q);
-//                final double[] weights = CommandUtils.retrieveWeights(Wstr);
-//                if(weights != null && weights.length != selectedFieldNames.length)
-//                    return "Error. weights and selected_fields sizes must agree";
-//                paths = service.encodeRBFWeightedLocalFile(name, avroFilesSet, schemaFile,
-//                        selectedFieldNames, restFieldNames, weights, K, Q);
-//            }
-//            LOG.info("Encoding local avro files");
-//            LOG.info("\tEncoded schema file saved at : {}", paths[0]);
-//            LOG.info("\tEncoded avro file saved at   : {}", paths[1]);
-//            return "DONE";
-//
-//        } catch (Exception e) {
-//            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
-//        }
-//    }
+    @CliCommand(value = "encode_calculate_encoding_sizes", help = "Calculate FBF & RBF sizes for given data statistics.")
+    public String command1(
+            @CliOption(key = {"stats"}, mandatory = true, help = "Path to property file containing the required data statistics")
+            final String pathStr,
+            @CliOption(key = {"Q"}, mandatory = false, help = "Q for q-grams. Limited to Q={2,3,4}. Default is 2.")
+            final String qStr,
+            @CliOption(key = {"K"}, mandatory = false, help = "K for number of hash functions.Default is 15.")
+            final String kStr
+    ) {
+        try {
+            final Path statsPath = CommandUtils.retrievePath(pathStr);
+            LOG.info("Calculating encoding sizes :");
+            LOG.info("\tSelected stats file : {}", statsPath);
+            final int Q = CommandUtils.retrieveInt(qStr,2);
+            if(Q < 2 || Q > 4) throw new IllegalArgumentException("Q is limited to {2,3,4}.");
+            final int K = CommandUtils.retrieveInt(kStr,15);
+            if(K < 1) throw new IllegalArgumentException("K must be at least 1.");
+            DatasetStatistics statistics = lds.localLoadStatsProperties(statsPath);
+            LOG.info(CommandUtils.prettyBFEStats(statistics.getFieldStatistics(),K,Q));
+            return "DONE";
+        } catch (Exception e) {
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
+        }
+    }
+
+    @CliCommand(value = "encode_local_data", help = "Encode local data.")
+    public String command2(
+            @CliOption(key = {"avro"}, mandatory = true, help = "Local data avro files (comma separated) or including directory.")
+            final String avroStr,
+            @CliOption(key = {"schema"}, mandatory = true, help = "Local schema avro file.")
+            final String schemaStr,
+            @CliOption(key = {"name"}, mandatory = true, help = "Name of encoding.")
+            final String name,
+            @CliOption(key = {"fields"}, mandatory = true, help = "Selected fields to be encoded")
+            final String fieldsStr,
+            @CliOption(key= {"scheme"}, mandatory = true, help = "One of the following encoding schemes : {FBF,RBF,CLK}.")
+            final String scheme,
+            @CliOption(key = {"include"}, mandatory = false, help = "(Optional) Fields to be included")
+            final String includeStr,
+            @CliOption(key= {"fbfN"}, mandatory = false, help = "(Optional) Size of FBFs used in encoding." +
+                    "Scheme set must be FBF or RBF. By not providing this FBFs produced will be dynamicaly sized based" +
+                    " on dataset statistics.")
+            final String fbfNstr,
+            @CliOption(key= {"N"}, mandatory = false, help = "(Optional) Setting whole row encoding size." +
+                    " Scheme set must be RBF or CLK. " +
+                    " For RBF schema ,if set bit selection will be uniform from all the FBFs involved, weighted otherwise.")
+            final String Nstr,
+            @CliOption(key= {"K"}, mandatory = false, help = "(Optional) Hash function count. Default value is 15.")
+            final String Kstr,
+            @CliOption(key= {"Q"}, mandatory = false, help = "(Optional) Q for Q-Grams. Limited to {2,3,4} .Default value is 2.")
+            final String Qstr,
+            @CliOption(key = {"stats"}, mandatory = true, help = "Path to property file containing the required data statistics")
+            final String pathStr
+    ) {
+        try {
+            if(!ENCODING_SCHEMES.contains(scheme)) throw new IllegalArgumentException("Scheme " + scheme + " does not exist");
+
+            final Path schemaPath = CommandUtils.retrievePath(schemaStr);
+            final Path[] avroPaths = CommandUtils.retrievePaths(avroStr);
+            final String[] fields = CommandUtils.retrieveFields(fieldsStr);
+            final String[] included = CommandUtils.retrieveFields(includeStr);
+            LOG.info("Encoding local data :");
+            LOG.info("\tEncoding name : {}", name);
+            LOG.info("\tSelected data files : {}", Arrays.toString(avroPaths));
+            LOG.info("\tSelected schema file : {}", schemaPath);
+            LOG.info("\tSelected fields to be encoded : {}", Arrays.toString(fields));
+            if(included.length !=0)
+                LOG.info("\tSelected fields to included   : {}", Arrays.toString(included));
+
+
+            final int fbfN = CommandUtils.retrieveInt(fbfNstr,-1);
+            final int N = CommandUtils.retrieveInt(Nstr,-1);
+            final int K = CommandUtils.retrieveInt(Kstr,15);
+            final int Q = CommandUtils.retrieveInt(Qstr,2);
+            final boolean clk = scheme.equals("CLK");
+            if(clk && N < 0) throw new IllegalArgumentException("CLK Encoding requires N to be set.");
+            final boolean fbfStatic = scheme.equals("FBF") && (fbfN > 0);
+            final boolean fbfDynamic = scheme.equals("FBF") && (fbfN < 0);
+            final boolean rbfUniformFbfStatic = scheme.equals("RBF") && N > 0 && (fbfN > 0);
+            final boolean rbfUniformFbfDynamic = scheme.equals("RBF") && N > 0 && (fbfN < 0);
+            final boolean rbfWeighetdFbfStatic = scheme.equals("RBF") && N < 0 && (fbfN > 0);
+            final boolean rbfWeighetdFbfDynamic = scheme.equals("RBF") && N < 0 && (fbfN < 0);
+
+            final boolean requiresStatistics = fbfDynamic || rbfUniformFbfDynamic || rbfWeighetdFbfDynamic
+                    || rbfUniformFbfStatic;
+            final Path statsPath = CommandUtils.retrievePath(pathStr);
+            if(requiresStatistics && statsPath == null)
+                throw new IllegalArgumentException("Encoding schema requires statistics");
+            if(statsPath !=null)
+                LOG.info("\tSelected stats file : {}", statsPath);
+            if(clk) {
+                LOG.info("\tScheme : CLK");
+                LOG.info("\tBloom-Filter size : {}",N);
+            } else if (fbfStatic) {
+                LOG.info("\tScheme : FBF/Static");
+                LOG.info("\tField Bloom-Filter size : {}",fbfN);
+            } else if (fbfDynamic) {
+                LOG.info("\tScheme : FBF/Dynamic");
+                LOG.info("\tField Bloom-Filter size : 0 FIXME");
+            } else if (rbfUniformFbfStatic) {
+                LOG.info("\tScheme : RBF/Uniform/Static");
+                LOG.info("\tField Bloom-Filter size : {}",fbfN);
+                LOG.info("\tRow Bloom-Filter size : {}", N);
+            } else if (rbfUniformFbfDynamic) {
+                LOG.info("\tScheme : RBF/Uniform/Dynamic");
+                LOG.info("\tField Bloom-Filter size : 0 FIXME");
+                LOG.info("\tRow Bloom-Filter size : {}", N);
+            } else if (rbfWeighetdFbfStatic) {
+                LOG.info("\tScheme : RBF/Weighted/Static");
+                LOG.info("\tField Bloom-Filter size : {}",fbfN);
+                LOG.info("\tRow Bloom-Filter size : 0 FIXME");
+            } else if (rbfWeighetdFbfDynamic) {
+                LOG.info("\tScheme : RBF/Weighted/Dynamic");
+                LOG.info("\tField Bloom-Filter size : 0 FIXME");
+                LOG.info("\tRow Bloom-Filter size : 0 FIXME");
+            }
+            LOG.info("\tNumber of Hash functions  (K) : {}", K);
+            LOG.info("\tHashing Q-Grams (Q) : {}", Q);
+
+            return "DONE";
+        } catch (Exception e) {
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
+        }
+    }
+
+
+
+
 
 //
 //    @CliCommand(value = "enc_list", help = "List user encodings on the PPRL site.")

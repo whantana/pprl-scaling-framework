@@ -75,15 +75,15 @@ public class LocalDatasetsServiceTest {
         final Schema schema = lds.schemaOfLocalDataset(SCHEMA_PATH);
         final DatasetStatistics statistics = new DatasetStatistics();
         statistics.setRecordCount(records.length);
-        statistics.setPairCount(CombinatoricsUtil.twoCombinationsCount(records.length));
+        statistics.setEmPairs(CombinatoricsUtil.twoCombinationsCount(records.length));
         statistics.setFieldNames(FIELDS);
-        DatasetStatistics.calculateAvgQgramsLength(records,schema,statistics,FIELDS);
+        DatasetStatistics.calculateQgramStatistics(records, schema, statistics, FIELDS);
         final double[] estimatedM = new double[]{0.9,0.9};
         final double[] estimatedU = new double[]{0.1,0.5};
         final double estimatedP = 0.01;
         final int iterations = 3;
         statistics.setEmAlgorithmIterations(iterations);
-        statistics.setEstimatedDuplicatePercentage(estimatedP);
+        statistics.setP(estimatedP);
         DatasetStatistics.calculateStatsUsingEstimates(
                 statistics,FIELDS,
                 estimatedM,estimatedU);
@@ -208,12 +208,12 @@ public class LocalDatasetsServiceTest {
         final StringBuilder sb = new StringBuilder();
         sb.append("#Records=").append(statistics.getRecordCount()).append("\n");
         sb.append("#Fields=").append(statistics.getFieldCount()).append("\n");
-        sb.append("#Pairs=").append(statistics.getPairCount()).append("\n");
+        sb.append("#Pairs=").append(statistics.getEmPairs()).append("\n");
         sb.append("#Expectation Maximization Estimator iterations=")
                 .append(statistics.getEmAlgorithmIterations())
                 .append("\n");
         sb.append("#Estimated Duplicate Portion(p)=")
-                .append(String.format("%.3f", statistics.getEstimatedDuplicatePercentage()))
+                .append(String.format("%.3f", statistics.getP()))
                 .append("\n");
         final StringBuilder hsb = new StringBuilder(String.format("%50s","Metric\\Field name"));
         final Set<String> fieldNames = statistics.getFieldStatistics().keySet();
@@ -248,7 +248,7 @@ public class LocalDatasetsServiceTest {
         sb.append(bar).append("\n");
         StringBuilder ssb = new StringBuilder(String.format("%50s","Dynamic FBF length"));
         for (String fieldName : fieldStatistics.keySet()) {
-            double g = fieldStatistics.get(fieldName).getFieldQGramCount(Q);
+            double g = fieldStatistics.get(fieldName).getQgramCount(Q);
             int fbfN = (int) Math.ceil((1 / (1 - Math.pow(0.5, (double) 1 / (g * K)))));
             fbfNs.put(fieldName,fbfN);
             ssb.append(String.format("|%25s", String.format("%d",fbfN)));

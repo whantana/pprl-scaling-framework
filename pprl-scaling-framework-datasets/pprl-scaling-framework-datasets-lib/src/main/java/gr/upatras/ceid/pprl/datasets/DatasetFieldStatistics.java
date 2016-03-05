@@ -8,10 +8,11 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
 
-public class DatasetFieldStatistics implements Serializable,Writable {
+public class DatasetFieldStatistics implements Serializable {
 
-    private double fieldLength;
-    private double[] fieldQgramCount;
+    private double length;
+    private double[] qgramCount;
+    private double[] uniqueQgramCount;
     private double estimatedM;
     private double estimatedU;
     private double agreeWeight;
@@ -25,41 +26,48 @@ public class DatasetFieldStatistics implements Serializable,Writable {
         Q_GRAMS[1] = 3;
         Q_GRAMS[2] = 4;
     }
-    public static final String[] description = new String[10];
-    static {
-        description[0] = "Avg length";
-        description[1] = "Avg 2-grams count";
-        description[2] = "Avg 3-grams count";
-        description[3] = "Avg 4-grams count";
-        // TODO Add unique q gram count
-        description[4] = "F-S m-probability";
-        description[5] = "F-S u-probability";
-        description[6] = "Agreement Weight";
-        description[7] = "Disagreement Weight";
-        description[8] = "Weight range";
-        description[9] = "Normaliszed weight range";
-    }
+    public static final String[] description = new String[]{
+            "Avg length",
+            "Avg 2-grams count",
+            "Avg 3-grams count",
+            "Avg 4-grams count",
+            "Avg Unique 2-grams count",   // TODO worth keeping these ?
+            "Avg Unique 3-grams count",
+            "Avg Unique 4-grams count",
+            "F-S m-probability",
+            "F-S u-probability",
+            "Agreement Weight",
+            "Disagreement Weight",
+            "Weight range",
+            "Normaliszed weight range"
+    };
 
-    public static final String[] props = new String[10];
-    static {
-        props[0] = "avg.length";
-        props[1] = "avg.2grams.count";
-        props[2] = "avg.3grams.count";
-        props[3] = "avg.4grams.count";
-        props[4] = "m.probability";
-        props[5] = "u.probability";
-        props[6] = "agreement.weight";
-        props[7] = "disagreement.weight";
-        props[8] = "weight.range";
-        props[9] = "normalized.weight.range";
-    }
+    public static final String[] props = new String[]{
+        "avg.length",
+        "avg.2grams.count",
+        "avg.3grams.count",
+        "avg.4grams.count",
+        "avg.unique.2grams.count",
+        "avg.unique.3grams.count",
+        "avg.unique.4grams.count",
+        "em.estimated.m",
+        "em.estimated.u",
+        "agreement.weight",
+        "disagreement.weight",
+        "weight.range",
+        "normalized.weight.range"
+    };
 
     public DatasetFieldStatistics(){
-        fieldLength = 0;
-        fieldQgramCount = new double[Q_GRAMS.length];
-        fieldQgramCount[0] = 0;
-        fieldQgramCount[1] = 0;
-        fieldQgramCount[2] = 0;
+        length = 0;
+        qgramCount = new double[Q_GRAMS.length];
+        qgramCount[0] = 0;
+        qgramCount[1] = 0;
+        qgramCount[2] = 0;
+        uniqueQgramCount = new double[Q_GRAMS.length];
+        uniqueQgramCount[0] = 0;
+        uniqueQgramCount[1] = 0;
+        uniqueQgramCount[2] = 0;
         estimatedM = 0;
         estimatedU = 0;
         agreeWeight = 0;
@@ -68,52 +76,53 @@ public class DatasetFieldStatistics implements Serializable,Writable {
         normalizedRange = 0;
     }
 
-    public DatasetFieldStatistics(double fieldLength, double[] fieldQgramCount){
-        assert fieldQgramCount.length == Q_GRAMS.length;
-        this.fieldLength = fieldLength;
-        this.fieldQgramCount = fieldQgramCount;
+    public double getLength() {
+        return length;
     }
 
-    public void write(DataOutput out) throws IOException {
-        out.writeDouble(fieldLength);
-        for (double aFieldQgramCount : fieldQgramCount) {
-            out.writeDouble(aFieldQgramCount);
-        }
-
+    public void setLength(double length) {
+        this.length = length;
     }
 
-    public void readFields(DataInput in) throws IOException {
-        fieldLength = in.readDouble();
-        fieldQgramCount = new double[Q_GRAMS.length];
-        for (int i = 0; i < Q_GRAMS.length; i++) {
-            fieldQgramCount[i] = in.readDouble();
-        }
+    public double[] getQgramCount() {
+        return qgramCount;
     }
 
-    public double getFieldLength() {
-        return fieldLength;
+    public double getQgramCount(final int Q) {
+        assert (Q-2) >= 0 && (Q-2) < 3;
+        return this.qgramCount[Q-2];
     }
 
-    public void setFieldLength(double fieldLength) {
-        this.fieldLength = fieldLength;
+    public void setQgramCount(double[] qgramCount) {
+        assert qgramCount.length == Q_GRAMS.length;
+        this.qgramCount = qgramCount;
     }
 
-    public double[] getFieldQgramCount() {
-        return fieldQgramCount;
+    public void setQgramCount(final int Q, final double qgramCount) {
+        assert (Q-2) >= 0 && (Q-2) < 3;
+        this.qgramCount[Q-2] = qgramCount;
     }
 
-    public void setFieldQgramCount(double[] fieldQgramCount) {
-        assert fieldQgramCount.length == Q_GRAMS.length;
-        this.fieldQgramCount = fieldQgramCount;
+    public double[] getUniqueQgramCount() {
+        return uniqueQgramCount;
     }
 
-    public void setFieldQGramCount(final int Q, final double fieldQgramCount) {
-        this.fieldQgramCount[Arrays.binarySearch(Q_GRAMS,Q)] = fieldQgramCount;
+    public double getUniqueQgramCount(final int Q) {
+        assert (Q-2) >= 0 && (Q-2) < 3;
+        return this.uniqueQgramCount[Q-2];
     }
 
-    public double getFieldQGramCount(final int Q) {
-        return this.fieldQgramCount[Arrays.binarySearch(Q_GRAMS,Q)];
+
+    public void setUniqueQgramCount(double[] qgramCount) {
+        assert qgramCount.length == Q_GRAMS.length;
+        this.uniqueQgramCount = qgramCount;
     }
+
+    public void setUniqueQgramCount(final int Q, final double qgramCount) {
+        assert (Q-2) >= 0 && (Q-2) < 3;
+        this.uniqueQgramCount[Q-2] = qgramCount;
+    }
+
 
     public double getM() {
         return estimatedM;
@@ -165,24 +174,50 @@ public class DatasetFieldStatistics implements Serializable,Writable {
 
     public double[] getStats() {
         return new double[]{
-                fieldLength,
-                fieldQgramCount[0], fieldQgramCount[1], fieldQgramCount[2],
-                estimatedM, estimatedU,
-                agreeWeight, disagreeWeight,
-                range,normalizedRange
+                getLength(),
+                getQgramCount(2),getQgramCount(3),getQgramCount(4),
+                getUniqueQgramCount(2),getUniqueQgramCount(3),getUniqueQgramCount(4),
+                getM(),getU(),
+                getAgreeWeight(),getDisagreeWeight(),
+                getRange(),getNormalizedRange()
         };
     }
 
-    public void incrementAvgFieldLengthBy(final double update) {
-        fieldLength += update;
+    public void setStats(final double[] stats) {
+        assert stats.length == description.length && stats.length == props.length;
+        setLength(stats[0]);
+        setQgramCount(2,stats[1]);
+        setQgramCount(3,stats[2]);
+        setQgramCount(4,stats[3]);
+        setUniqueQgramCount(2, stats[4]);
+        setUniqueQgramCount(3, stats[5]);
+        setUniqueQgramCount(4, stats[6]);
+        setM(stats[7]);
+        setU(stats[8]);
+        setAgreeWeight(stats[9]);
+        setDisagreeWeight(stats[10]);
+        setRange(stats[11]);
+        setNormalizedRange(stats[12]);
     }
 
-    public void incrementAvgQgramCountBy(final double[] update) {
-        assert fieldQgramCount.length == update.length;
-        for (int i = 0; i < fieldQgramCount.length; i++) {
-            fieldQgramCount[i] += update[i];
+    public void incrementLength(final double update) {
+        length += update;
+    }
+
+    public void incrementQgramCount(final double[] update) {
+        assert qgramCount.length == update.length;
+        for (int i = 0; i < qgramCount.length; i++) {
+            qgramCount[i] += update[i];
         }
     }
+
+    public void incrementUniqueQgramCount(final double[] update) {
+        assert uniqueQgramCount.length == update.length;
+        for (int i = 0; i < uniqueQgramCount.length; i++) {
+            uniqueQgramCount[i] += update[i];
+        }
+    }
+
 
     @Override
     public boolean equals(Object o) {
@@ -191,14 +226,15 @@ public class DatasetFieldStatistics implements Serializable,Writable {
 
         DatasetFieldStatistics that = (DatasetFieldStatistics) o;
 
-        if (Double.compare(that.fieldLength, fieldLength) != 0) return false;
+        if (Double.compare(that.length, length) != 0) return false;
         if (Double.compare(that.estimatedM, estimatedM) != 0) return false;
         if (Double.compare(that.estimatedU, estimatedU) != 0) return false;
         if (Double.compare(that.agreeWeight, agreeWeight) != 0) return false;
         if (Double.compare(that.disagreeWeight, disagreeWeight) != 0) return false;
         if (Double.compare(that.range, range) != 0) return false;
         if (Double.compare(that.normalizedRange, normalizedRange) != 0) return false;
-        return Arrays.equals(fieldQgramCount, that.fieldQgramCount);
+        if (!Arrays.equals(qgramCount, that.qgramCount)) return false;
+        return Arrays.equals(uniqueQgramCount, that.uniqueQgramCount);
 
     }
 
@@ -206,9 +242,10 @@ public class DatasetFieldStatistics implements Serializable,Writable {
     public int hashCode() {
         int result;
         long temp;
-        temp = Double.doubleToLongBits(fieldLength);
+        temp = Double.doubleToLongBits(length);
         result = (int) (temp ^ (temp >>> 32));
-        result = 31 * result + Arrays.hashCode(fieldQgramCount);
+        result = 31 * result + Arrays.hashCode(qgramCount);
+        result = 31 * result + Arrays.hashCode(uniqueQgramCount);
         temp = Double.doubleToLongBits(estimatedM);
         result = 31 * result + (int) (temp ^ (temp >>> 32));
         temp = Double.doubleToLongBits(estimatedU);
@@ -226,11 +263,16 @@ public class DatasetFieldStatistics implements Serializable,Writable {
 
     @Override
     public String toString() {
-        return "DatasetStatsWritable{" +
-                "fieldLength=" + fieldLength +
-                ", fieldQgramCount=" + Arrays.toString(fieldQgramCount) +
+        return "DatasetFieldStatistics{" +
+                "length=" + length +
+                ", qgramCount=" + Arrays.toString(qgramCount) +
+                ", uniqueQgramCount=" + Arrays.toString(uniqueQgramCount) +
                 ", estimatedM=" + estimatedM +
                 ", estimatedU=" + estimatedU +
+                ", agreeWeight=" + agreeWeight +
+                ", disagreeWeight=" + disagreeWeight +
+                ", range=" + range +
+                ", normalizedRange=" + normalizedRange +
                 '}';
     }
 

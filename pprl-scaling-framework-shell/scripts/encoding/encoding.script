@@ -1,2 +1,2 @@
-encoding_supported_schemes
-script scripts/encode_local_datasets.script
+encode_supported_schemes
+script scripts/encoding/encode_local_datasets.script

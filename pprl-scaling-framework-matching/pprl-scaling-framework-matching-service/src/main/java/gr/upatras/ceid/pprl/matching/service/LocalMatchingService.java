@@ -30,7 +30,6 @@ public class LocalMatchingService implements InitializingBean {
             if(Long.compare(pairCount*fieldCount,Integer.MAX_VALUE) > 0)
                 throw new UnsupportedOperationException("Cannot create similarity matrix. #N*#F < Integer.MAX");
             final SimilarityMatrix matrix = new SimilarityMatrix(fieldCount);
-            LOG.info("Created Similarity matrix : {}",matrix);
             final Iterator<int[]> pairIter = CombinatoricsUtil.getPairs(records.length);
             do {
                 int pair[] = pairIter.next();
@@ -42,6 +41,7 @@ public class LocalMatchingService implements InitializingBean {
                 }
                 matrix.set(row);
             }while(pairIter.hasNext());
+            LOG.info("Created Similarity matrix : {}",matrix);
             return matrix;
         } catch(Exception e) {
             LOG.error(e.getMessage());
@@ -75,8 +75,10 @@ public class LocalMatchingService implements InitializingBean {
                         String s2 = String.valueOf(recB.get(fieldNamesB[j]));
                         if(SimilarityMatrix.similarity(similarityMethodName, s1, s2)) row[j] = true;
                     }
+                    matrix.set(row);
                 }
             }
+            LOG.info("Created Similarity matrix : {}",matrix);
             return matrix;
         } catch(Exception e) {
             LOG.error(e.getMessage());

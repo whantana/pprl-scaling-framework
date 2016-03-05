@@ -5,6 +5,7 @@ import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
 import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -21,6 +22,7 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 
 @Service
 public class LocalDatasetsService implements InitializingBean {
@@ -170,6 +172,27 @@ public class LocalDatasetsService implements InitializingBean {
             FSDataOutputStream fsdos = localFS.create(path);
             statistics.toProperties().store(fsdos, "statistics");
             fsdos.close();
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        } catch (DatasetException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        }
+    }
+
+    public DatasetStatistics localLoadStatsProperties(final Path propertiesPath)
+            throws IOException, DatasetException {
+        try {
+            if (!localFS.exists(propertiesPath))
+                throw new DatasetException(String.format("Cannot find file \"%s\"", propertiesPath));
+            Properties properties = new Properties();
+            FSDataInputStream fsdis = localFS.open(propertiesPath);
+            properties.load(fsdis);
+            fsdis.close();
+            DatasetStatistics statistics = new DatasetStatistics();
+            statistics.fromProperties(properties);
+            return statistics;
         } catch (IOException e) {
             LOG.error(e.getMessage());
             throw e;

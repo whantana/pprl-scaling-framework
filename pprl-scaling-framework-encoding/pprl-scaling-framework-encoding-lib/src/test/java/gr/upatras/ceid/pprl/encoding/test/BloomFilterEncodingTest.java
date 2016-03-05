@@ -123,6 +123,8 @@ public class BloomFilterEncodingTest {
         assertTrue(encoding.isEncodingOfSchema(schema));
     }
 
+    // TODO add test for CLKEncoding
+
 
     private static Schema loadAvroSchemaFromFile(final File schemaFile) throws IOException {
         FileInputStream fis = new FileInputStream(schemaFile);

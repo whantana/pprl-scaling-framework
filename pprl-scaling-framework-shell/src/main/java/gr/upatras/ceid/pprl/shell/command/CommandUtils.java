@@ -2,12 +2,15 @@ package gr.upatras.ceid.pprl.shell.command;
 
 import gr.upatras.ceid.pprl.datasets.DatasetFieldStatistics;
 import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
+import gr.upatras.ceid.pprl.encoding.FieldBloomFilterEncoding;
+import gr.upatras.ceid.pprl.encoding.RowBloomFilterEncoding;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.fs.Path;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -15,66 +18,33 @@ import java.util.Map;
 import java.util.Set;
 
 public class CommandUtils {
-    public static Path retrievePath(final String str) {
-        return new Path(str);
-    }
-
-    public static Path[] retrievePaths(final String str) {
-        return retrievePaths(str,",");
-    }
-
-    public static Path[] retrievePaths(final String str,final String sep) {
-        if(str.contains(sep)) {
-            final String[] strs = retrieveStrings(str, sep);
-            final Path[] paths = new Path[strs.length];
-            for (int i = 0; i < strs.length; i++) paths[i] = new Path(strs[i]);
-            return paths;
-        } else return new Path[]{new Path(str)};
-    }
-
-    public static int retrieveSize(final String sampleSizeStr) {
-        int size = retrieveInt(sampleSizeStr,10);
-        if (size < 1) throw new IllegalArgumentException("Sample size must be greater than zero.");
-        return size;
-    }
 
     public static String retrieveString(final String str, final String dstr) {
         return (str == null) ? dstr : str;
     }
-
     public static String[] retrieveStrings(final String str) { return retrieveStrings(str,","); }
-
-
     public static String[] retrieveStrings(final String str,final String sep) {
         return (str == null) ? new String[0] : str.split(sep);
     }
 
-    public static int retrieveK(final String str) {
-        return retrieveInt(str,30);
+    public static boolean retrieveBoolean(final String str, boolean defaultBoolean) {
+        return (str == null) ? defaultBoolean : Boolean.valueOf(str);
+    }
+    public static boolean[] retrieveBooleans(final String str) { return retrieveBooleans(str,",");}
+    public static boolean[] retrieveBooleans(final String str, final String sep) {
+        if(str == null) return new boolean[0];
+        if(str.contains(sep)) {
+            String[] strings = retrieveStrings(str, ",");
+            boolean[] booleans = new boolean[strings.length];
+            for (int i = 0; i < booleans.length; i++) booleans[i] = Boolean.valueOf(str);
+            return booleans;
+        } else return new boolean[]{Boolean.parseBoolean(str)};
     }
 
-    public static int retrieveK(final String str, final int N) {
-        int K = retrieveInt(str,30);
-        if(K > N) throw new IllegalArgumentException("K > N");
-        return K;
+    public static int retrieveInt(final String str, int defaultInt) {
+        return (str == null) ? defaultInt : Integer.valueOf(str);
     }
-
-    public static int retrieveQ(final String str) {
-        int q = retrieveInt(str,2);
-        if(q < 2 || q > 4) throw new IllegalArgumentException("Q must be in {2,3,4}");
-        return q;
-    }
-
-    public static boolean retrieveBoolean(final String str, boolean b) {
-         return (str == null) ? b : Boolean.valueOf(str);
-    }
-
-    public static int retrieveInt(final String str, int i) {
-        return (str == null) ? i : Integer.valueOf(str);
-    }
-
     public static int[] retrieveInts(final String str) { return retrieveInts(str, ","); }
-
     public static int[] retrieveInts(final String str, final String sep) {
         if(str == null) return new int[0];
         if(str.contains(sep)) {
@@ -86,32 +56,45 @@ public class CommandUtils {
         } else return new int[]{Integer.valueOf(str)};
     }
 
-    public static int[] retrieveQs(String str) { return retrieveQs(str, ","); }
+    public static double retrieveDouble(final String str, double defaultDouble) {
+        return (str == null) ? defaultDouble : Double.valueOf(str);
 
-    public static int[] retrieveQs(String str, final String sep) {
-        final int[] Qs = retrieveInts(str,sep);
-        for (int q : Qs) if(q < 2 || q > 4) throw new IllegalArgumentException("Q must be in {2,3,4}");
-        return Qs;
     }
-
-    public static boolean isValideName(final String name) {
-        return name.matches("^[a-zA-Z1-9_]+$");
-    }
-
-    public static boolean isValidFieldName(final String name) { return name.matches("^[a-z_A-Z][a-z_A-Z0-9]*$");}
-
-    public static double[] retrieveDoubles(final String wStr) { return retrieveDoubles(wStr, ","); }
-
-    public static double[] retrieveDoubles(final String wStr, final String sep) {
-        if(wStr == null) return new double[0];
-        if(wStr.contains(sep)) {
-            final String[] parts = retrieveStrings(wStr, sep);
+    public static double[] retrieveDoubles(final String str) { return retrieveDoubles(str, ","); }
+    public static double[] retrieveDoubles(final String str, final String sep) {
+        if(str == null) return new double[0];
+        if(str.contains(sep)) {
+            final String[] parts = retrieveStrings(str, sep);
             final double[] weights = new double[parts.length];
             for (int i = 0; i < parts.length; i++)
                 weights[i] = Double.parseDouble(parts[i]);
             return weights;
-        } else return new double[]{Double.parseDouble(wStr)};
+        } else return new double[]{Double.parseDouble(str)};
     }
+
+
+    public static Path retrievePath(final String str) {
+        if(str == null) return null;
+        return new Path(str);
+    }
+    public static Path[] retrievePaths(final String str) {
+        return retrievePaths(str,",");
+    }
+    public static Path[] retrievePaths(final String str,final String sep) {
+        if(str == null) return new Path[0];
+        if(str.contains(sep)) {
+            final String[] strs = retrieveStrings(str, sep);
+            final Path[] paths = new Path[strs.length];
+            for (int i = 0; i < strs.length; i++) paths[i] = new Path(strs[i]);
+            return paths;
+        } else return new Path[]{new Path(str)};
+    }
+
+
+    public static boolean isValidName(final String name) {
+        return name.matches("^[a-zA-Z1-9_]+$");
+    }
+    public static boolean isValidFieldName(final String name) { return name.matches("^[a-z_A-Z][a-z_A-Z0-9]*$");}
 
     public static String[] retrieveFields(final String fieldsStr) throws IllegalArgumentException {
         if(fieldsStr == null) return new String[0];
@@ -129,6 +112,21 @@ public class CommandUtils {
             fields[0] = fieldsStr;
         }
         return fields;
+    }
+
+    public static double retrieveProbability(final String str, final double dvalue) {
+        double d = retrieveDouble(str,dvalue);
+        if(d < 0 || d > 1 ) throw new IllegalArgumentException("Probability value is not between 0 and 1.");
+        return d;
+    }
+    public static double[] retrieveProbabilities(final String str, final int dsize, final double dvalue) throws IllegalArgumentException {
+        double[] ds = retrieveDoubles(str);
+        if(ds.length == 0) {
+            ds = new double[dsize];
+            Arrays.fill(ds,dvalue);
+        } else if(ds.length != dsize) throw new IllegalArgumentException("Input must be of size " + dsize +" elements.");
+        for (double mm : ds) if(mm < 0 || mm > 1) throw new IllegalArgumentException("Probability value is not between 0 and 1.");
+        return ds;
     }
 
     public static String prettySchemaDescription(final Schema schema) {
@@ -189,17 +187,16 @@ public class CommandUtils {
         return sb.toString();
     }
 
-
     public static String prettyStats(DatasetStatistics statistics) {
         final StringBuilder sb = new StringBuilder();
         sb.append("#Records=").append(statistics.getRecordCount()).append("\n");
         sb.append("#Fields=").append(statistics.getFieldCount()).append("\n");
-        sb.append("#Pairs=").append(statistics.getPairCount()).append("\n");
+        sb.append("#Pairs=").append(statistics.getEmPairs()).append("\n");
         sb.append("#Expectation Maximization Estimator iterations=")
                 .append(statistics.getEmAlgorithmIterations())
                 .append("\n");
         sb.append("#Estimated Duplicate Portion(p)=")
-                .append(String.format("%.3f", statistics.getEstimatedDuplicatePercentage()))
+                .append(String.format("%.3f", statistics.getP()))
                 .append("\n");
         final StringBuilder hsb = new StringBuilder(String.format("%50s","Metric\\Field name"));
         final Set<String> fieldNames = statistics.getFieldStatistics().keySet();
@@ -235,6 +232,7 @@ public class CommandUtils {
         assert K > 0 && Q >= 2 && Q <= 4;
         final StringBuilder sb = new StringBuilder();
         Map<String,Integer> fbfNs = new HashMap<String,Integer>();
+        Map<String,Integer> fbfNsUQ = new HashMap<String,Integer>();
         Map<String,Integer> rbfNs = new HashMap<String,Integer>();
         sb.append("#Encoding Bloom Filters K=").append(K).append("\n");
         sb.append("#Encoding Bloom Filters Q=").append(Q).append("\n");
@@ -246,14 +244,23 @@ public class CommandUtils {
         final String header = hsb.toString();
         sb.append(header).append("\n");
         sb.append(new String(new char[header.length()]).replace("\0", "-")).append("\n");
-        StringBuilder ssb = new StringBuilder(String.format("%50s","Dynamic FBF length"));
+        StringBuilder ssb = new StringBuilder(String.format("%50s","Dynamic FBF size"));
         for (String fieldName : fieldStatistics.keySet()) {
-            double g = fieldStatistics.get(fieldName).getFieldQGramCount(Q);
-            int fbfN = (int) Math.ceil((1 / (1 - Math.pow(0.5, (double) 1 / (g * K)))));
+            double g = fieldStatistics.get(fieldName).getQgramCount(Q);
+            int fbfN = FieldBloomFilterEncoding.dynamicsize(g,K);
             fbfNs.put(fieldName,fbfN);
             ssb.append(String.format("|%25s", String.format("%d",fbfN)));
         }
         sb.append(ssb.toString()).append("\n");
+
+//        StringBuilder ssb = new StringBuilder(String.format("%50s","Dynamic FBF size (unique q-grams)"));
+//        for (String fieldName : fieldStatistics.keySet()) {
+//            double g = fieldStatistics.get(fieldName).getUniqueQgramCount(Q);
+//            int fbfN = FieldBloomFilterEncoding.dynamicsize(g,K);
+//            fbfNsUQ.put(fieldName,fbfN);
+//            ssb.append(String.format("|%25s", String.format("%d",fbfN)));
+//        }
+//        sb.append(ssb.toString()).append("\n");
 
         ssb = new StringBuilder(String.format("%50s","Candidate RBF length"));
         for (String fieldName : fieldStatistics.keySet()) {

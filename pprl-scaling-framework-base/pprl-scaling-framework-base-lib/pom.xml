@@ -29,14 +29,14 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
-            <version>3.5</version>
+            <version>${commons.math3.version}</version>
         </dependency>
 
         <!-- Java String similarity -->
         <dependency>
             <groupId>info.debatty</groupId>
             <artifactId>java-string-similarity</artifactId>
-            <version>RELEASE</version>
+            <version>${string.similarity.version}</version>
         </dependency>
 
     </dependencies>

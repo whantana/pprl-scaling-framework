@@ -1,10 +1,6 @@
 # Get statistics
 local_data_stats --avro data/dblp/avro --schema data/dblp/schema/dblp.avsc --fields author,title
 local_data_stats --avro data/dblp/avro --schema data/dblp/schema/dblp.avsc --fields author,title --name dblp_stats_1
-local_data_stats --avro data/dblp/avro --schema data/dblp/schema/dblp.avsc --fields author,title --K 15 --Q 2
-local_data_stats --avro data/dblp/avro --schema data/dblp/schema/dblp.avsc --fields author,title --K 15 --Q 2 --name dblp_stats_2
-local_data_stats --avro data/dblp/avro --schema data/dblp/schema/dblp.avsc --fields author,title --K 15 --Q 2,3 --name dblp_stats_3
-local_data_stats --avro data/dblp/avro --schema data/dblp/schema/dblp.avsc --fields author,title --K 15,30 --Q 2,3,4 --name dblp_stats_4
+local_data_stats --avro data/dblp/avro --schema data/dblp/schema/dblp.avsc --fields author,title --name dblp_stats_2 --m 0.5,0.2 --u 0.01,0.02 --p 0.0001
 
-local_data_stats --avro data/person_small/avro  --schema data/person_small/schema/person_small.avsc --fields name,surname,location --K 15 --Q 2
-local_data_stats --avro data/person_medium/avro --schema data/person_medium/schema/person_medium.avsc --fields name,surname --K 15,30,50 --Q 2
+local_data_stats --avro data/person_small/avro  --schema data/person_small/schema/person_small.avsc --fields name,surname,location --p 0.02 --name person_small

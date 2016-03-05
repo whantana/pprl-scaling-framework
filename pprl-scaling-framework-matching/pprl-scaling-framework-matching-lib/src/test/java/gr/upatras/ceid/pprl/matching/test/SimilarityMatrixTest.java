@@ -137,6 +137,8 @@ public class SimilarityMatrixTest {
         }
     }
 
+    // TODO Some tests with maybe some benchmarking ?
+
     public static SimilarityMatrix createSimilarityMatrix(final String[][] records,
                                                           final String similarityMethodName) {
         final int pairCount = CombinatoricsUtil.twoCombinationsCount(records.length);

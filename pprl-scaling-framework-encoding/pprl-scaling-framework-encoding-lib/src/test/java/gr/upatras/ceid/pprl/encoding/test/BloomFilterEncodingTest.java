@@ -2,6 +2,7 @@ package gr.upatras.ceid.pprl.encoding.test;
 
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
+import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingUtil;
 import gr.upatras.ceid.pprl.encoding.FieldBloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.RowBloomFilterEncoding;
 import org.apache.avro.Schema;
@@ -34,12 +35,12 @@ public class BloomFilterEncodingTest {
     private Schema schema;
     private Set<File> avroFiles;
 
-    private static double[] avgQcount = new double[]{16.5,47.5};
+    private static double[] avgQcount = new double[]{16.27777777777778,68.11111111111113};
     private static double[] weights = new double[]{0.2,0.8};
     private static final String[] REST_FIELDS = new String[]{"key"};
     private static final String[] SELECTED_FIELDS = new String[]{"author","title"};
-    private static final int N = 1024;
-    private static final int K = 30;
+    private static final int N = 500;
+    private static final int K = 10;
     private static final int Q = 2;
 
 
@@ -62,7 +63,7 @@ public class BloomFilterEncodingTest {
 
     @Test
     public void test1() throws URISyntaxException, IOException, InterruptedException, BloomFilterEncodingException {
-        FieldBloomFilterEncoding encoding = new FieldBloomFilterEncoding(avgQcount,K,Q);
+        BloomFilterEncoding encoding = new FieldBloomFilterEncoding(avgQcount,K,Q);
         encoding.makeFromSchema(schema, SELECTED_FIELDS, REST_FIELDS);
         assertTrue(encoding.isEncodingOfSchema(schema));
         encodeLocalFile("dynamic_fbf",avroFiles,schema,encoding);
@@ -101,7 +102,6 @@ public class BloomFilterEncodingTest {
         assertTrue(encoding.isEncodingOfSchema(schema));
         encodeLocalFile("weighted_rbf", avroFiles, schema, encoding);
         saveAvroSchemaToFile(encoding.getEncodingSchema(),new File("weighted_rbf.avsc"));
-
     }
 
     @Test

@@ -23,11 +23,6 @@
             <artifactId>pprl-scaling-framework-base-lib</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>gr.upatras.ceid</groupId>
-            <artifactId>pprl-scaling-framework-datasets-lib</artifactId>
-            <version>${project.version}</version>
-        </dependency>
 
         <!-- Hadoop dependencies -->
         <dependency>

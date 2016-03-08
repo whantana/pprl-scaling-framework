@@ -1,7 +1,25 @@
 encode_calculate_encoding_sizes --stats person_small.properties
 encode_calculate_encoding_sizes --stats dblp_stats_1.properties
 encode_calculate_encoding_sizes --stats person_small.properties --K 10
-encode_calculate_encoding_sizes --stats person_small.properties --K 15 --Q 3
+encode_calculate_encoding_sizes --stats person_small.properties --K 10 --Q 3
 
-encode_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc
-encode_local_data --avro data/dblp/avro --schema data/dblp/schema/dblp.avsc
+encode_local_data --avro data/dblp/avro --schema data/dblp/schema/dblp.avsc --fields author,title --include key --scheme FBF --fbfN 500 --K 10 --Q 3 --stats dblp_stats_1.properties --name dblp_s_fbf
+local_data_sample --avro dblp_s_fbf/avro --schema dblp_s_fbf/schema/dblp_s_fbf.avsc --size 5
+encode_local_data --avro data/dblp/avro --schema data/dblp/schema/dblp.avsc --fields author,title --include key --scheme FBF --K 10 --Q 3 --stats dblp_stats_1.properties --name dblp_d_fbf
+local_data_sample --avro dblp_u_fbf/avro --schema dblp_u_fbf/schema/dblp_u_fbf.avsc --size 5
+
+encode_local_data --avro data/dblp/avro --schema data/dblp/schema/dblp.avsc --fields author,title --include key --scheme RBF --fbfN 500 --K 10 --Q 3 --stats dblp_stats_1.properties --name dblp_w_rbf_s_fbf
+local_data_sample --avro dblp_w_rbf_s_fbf/avro --schema dblp_w_rbf_s_fbf/schema/dblp_w_rbf_s_fbf.avsc --size 5
+
+encode_local_data --avro data/dblp/avro --schema data/dblp/schema/dblp.avsc --fields author,title --include key --scheme RBF --K 10 --Q 3 --stats dblp_stats_1.properties --name dblp_w_rbf_d_fbf
+local_data_sample --avro dblp_w_rbf_d_fbf/avro --schema dblp_w_rbf_s_fbf/schema/dblp_w_rbf_d_fbf.avsc --size 5
+
+encode_local_data --avro data/dblp/avro --schema data/dblp/schema/dblp.avsc --fields author,title --include key --scheme RBF --fbfN 500 --N 1000 --K 10 --Q 3 --stats dblp_stats_1.properties --name dblp_u_rbf_s_fbf
+local_data_sample --avro dblp_u_rbf_s_fbf/avro --schema dblp_u_rbf_s_fbf/schema/dblp_u_rbf_s_fbf.avsc --size 5
+encode_local_data --avro data/dblp/avro --schema data/dblp/schema/dblp.avsc --fields author,title --include key --scheme RBF --N 1000 --K 10 --Q 3 --stats dblp_stats_1.properties --name dblp_u_rbf_d_fbf
+local_data_sample --avro dblp_u_rbf_d_fbf/avro --schema dblp_u_rbf_d_fbf/schema/dblp_u_rbf_d_fbf.avsc --size 5
+
+encode_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --fields name,surname,location --scheme RBF --stats person_small.properties --name person_small_w_rbf
+local_data_sample --avro person_small_w_rbf/avro --schema person_small_w_rbf/schema/person_small_w_rbf.avsc --size 5
+encode_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --fields name,surname,location --scheme RBF --N 1024 --stats person_small.properties --name person_small_u_rbf
+local_data_sample --avro person_small_u_rbf/avro --schema person_small_u_rbf/schema/person_small_u_rbf.avsc --size 5

@@ -3,6 +3,8 @@ package gr.upatras.ceid.pprl.encoding;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -16,6 +18,8 @@ import java.util.Random;
 import java.util.Set;
 
 public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
+
+    private static final Logger LOG = LoggerFactory.getLogger(RowBloomFilterEncoding.class);
 
     private static final SecureRandom SECURE_RANDOM_GENERATOR = new SecureRandom();
 
@@ -110,11 +114,7 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
         rbfBitPermutationSeed = SECURE_RANDOM_GENERATOR.nextInt(1000);
     }
 
-    public String getName() {
-        return "RBF_" + String.format("%d_%d",K,Q);
-    }
-
-    public String toString() { return "RBF"; }
+    public String schemeName() { return "RBF"; }
 
     public int getRBFN() {
         return N[N.length - 1];
@@ -123,21 +123,25 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
     public void initialize()
             throws BloomFilterEncodingException {
         try {
-            super.initialize();
+            for(String name : name2indexMap.keySet()) addFBF(name);
             final Set<String> names = name2FBFMap.keySet();
             selectedBits = new int[names.size()][];
             for (String name : names) {
                 int i = getIndex(name);
                 if(encodingFieldName == null)
-                    encodingFieldName = getFieldName(name);
-                else assert encodingFieldName.equals(getFieldName(name));
+                    encodingFieldName = getMappedFieldName(name);
+                else assert encodingFieldName.equals(getMappedFieldName(name));
                 int bitCount = rbfCompositionCount[i];
                 int seed = rbfCompositionSeeds[i];
                 int maxBit = getN(i);
                 selectedBits[i] = RowBloomFilterEncoding.randomBitSelection(bitCount,maxBit,seed);
+                LOG.debug("Generating selected bits for field {} from FBF with {} bits.",
+                        String.format("%s(%d)",name,i),maxBit);
             }
+            LOG.debug("Generating a random bit permutation of {} bits",getRBFN());
             bitPermutation  = randomBitPermutation(getRBFN(), rbfBitPermutationSeed);
             rbf = new BloomFilter(getRBFN(),getK());
+            LOG.debug("Initialized for RBF Encoding.");
         } catch (NoSuchAlgorithmException e) {
             throw new BloomFilterEncodingException(e.getMessage());
         } catch (InvalidKeyException e) {
@@ -164,7 +168,7 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
                 String[] parts = restName.split("_src_");
                 int rbfN = Integer.parseInt(parts[0].split("_")[0]);
                 for (int j = 1; j < parts.length; j++)
-                    addToMap(parts[j], field.name());
+                    addMappedName(parts[j], field.name());
                 int fbfCount = parts.length - 1;
                 assert fbfCount > 0;
                 setN(new int[fbfCount + 1]);
@@ -177,7 +181,7 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
                     final String[] partss = docParts[i].split(",");
                     assert partss.length == 3;
                     setN(Integer.parseInt(partss[0]),i);
-                    addToMap(parts[i + 1], i);
+                    addIndex(parts[i + 1], i);
                     rbfCompositionCount[i] = Integer.parseInt(partss[1]);
                     rbfCompositionSeeds[i] = Integer.parseInt(partss[2]);
                 }
@@ -187,7 +191,7 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
         setEncodingSchema(encodingSchema);
     }
 
-    public List<Schema.Field> setupSelectedFields(final String[] selectedFieldNames) throws BloomFilterEncodingException {
+    public List<Schema.Field> setupSelectedForEncodingFields(final String[] selectedFieldNames) throws BloomFilterEncodingException {
         assert N != null && (N.length == selectedFieldNames.length + 1) && getK() > 0 && getQ() > 0;
 
         StringBuilder sb = new StringBuilder(String.format("encoding_field_%d_%d_%d", getRBFN(), getK(), getQ()));
@@ -203,8 +207,8 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
 
         int i = 0;
         for(String fieldName : selectedFieldNames) {
-            addToMap(fieldName, encodingFieldName);
-            addToMap(fieldName, i);
+            addMappedName(fieldName, encodingFieldName);
+            addIndex(fieldName, i);
             i++;
         }
 
@@ -245,12 +249,26 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
         }
 
         final Schema schema = encodingRecord.getSchema().getField(encodingFieldName).schema();
-        final GenericData.Fixed fixed = new GenericData.Fixed(schema, rbf.getByteArray());
+        final GenericData.Fixed fixed = new GenericData.Fixed(schema,
+                Arrays.copyOf(
+                        rbf.getByteArray(),
+                        rbf.getByteArray().length)
+        );
         encodingRecord.put(encodingFieldName,fixed);
 
         return encodingRecord;
     }
 
+    @Override
+    public String toString() {
+        return super.toString() +
+                ", rbfCompositionCount=" + Arrays.toString(rbfCompositionCount) +
+                ", rbfCompositionSeeds=" + Arrays.toString(rbfCompositionSeeds) +
+                ", rbfBitPermutationSeed=" + rbfBitPermutationSeed +
+                ", selectedBits=" + Arrays.toString(selectedBits) +
+                ", encodingFieldName='" + encodingFieldName + '\'' +
+                '}';
+    }
 
     public static int[] randomBitSelection(final int bitCount, final int maxBit,final int seed) {
         final int[] randomBits = new int[bitCount];

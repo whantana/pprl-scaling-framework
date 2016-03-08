@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class CommandUtils {
+public class CommandUtil {
 
     public static String retrieveString(final String str, final String dstr) {
         return (str == null) ? dstr : str;
@@ -156,9 +156,9 @@ public class CommandUtils {
         final StringBuilder hsb = new StringBuilder();
         for (int i = 0; i < fields.size() ; i++) {
             final Schema.Type type = types.get(i);
-            final String mod = (type.equals(Schema.Type.FIXED)) ?
-                    String.format("%%%ds|",fields.get(i).schema().getFixedSize() * 8 + 5): "%25s|";
-            hsb.append(String.format(mod, String.format("%s (%s)", fieldNames.get(i),types.get(i))));
+            hsb.append(String.format(
+                    (type.equals(Schema.Type.FIXED)) ? "%100s|" : "%25s|",
+                    String.format("%s (%s)", fieldNames.get(i),types.get(i))));
         }
         final String header = hsb.toString();
         sb.append(header).append("\n");
@@ -171,7 +171,11 @@ public class CommandUtils {
                 if (type.equals(Schema.Type.FIXED)) {
                     GenericData.Fixed fixed = (GenericData.Fixed) record.get(i);
                     String val = prettyBinary(fixed.bytes());
-                    rsb.append(String.format(String.format("%%%ds|", fixed.bytes().length * 8 + 5), val));
+                    if(fixed.bytes().length * 8 < 100)
+                        rsb.append(String.format("%100s|", val));
+                    else
+                        rsb.append(String.format("%100s|",
+                                val.substring(0,48) + "..." + val.substring(val.length()-48,val.length())));
                 } else {
                     String val = String.valueOf(record.get(fieldName));
                     if (val.length() > 25) {

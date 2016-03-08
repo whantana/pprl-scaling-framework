@@ -2,6 +2,7 @@ package gr.upatras.ceid.pprl.matching.test;
 
 import gr.upatras.ceid.pprl.base.CombinatoricsUtil;
 import gr.upatras.ceid.pprl.matching.SimilarityMatrix;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,20 +101,30 @@ public class SimilarityMatrixTest {
 
     @Test
     public void test1() {
-        long start = System.currentTimeMillis();
-        NaiveSimilarityMatrix matrix = NaiveSimilarityMatrix.createMatrix(records);
-        long end = System.currentTimeMillis();
-        long time = end - start;
-        LOG.info("{} took {} ms.",matrix,time);
+        DescriptiveStatistics stats = new DescriptiveStatistics();
+        NaiveSimilarityMatrix matrix = null;
+        for (int i = 0; i < 5; i++) {
+            long start = System.currentTimeMillis();
+            matrix = NaiveSimilarityMatrix.createMatrix(records);
+            long end = System.currentTimeMillis();
+            long time = end - start;
+            stats.addValue(time);
+        }
+        LOG.info("{} took {} ms.",matrix,stats.getPercentile(50));
     }
 
     @Test
     public void test2() {
-        long start = System.currentTimeMillis();
-        SimilarityMatrix matrix = SimilarityMatrixTest.createSimilarityMatrix(records);
-        long end = System.currentTimeMillis();
-        long time = end - start;
-        LOG.info("{} took {} ms.",matrix,time);
+        DescriptiveStatistics stats = new DescriptiveStatistics();
+        SimilarityMatrix matrix = null;
+        for (int i = 0; i < 5; i++) {
+            long start = System.currentTimeMillis();
+            matrix = SimilarityMatrixTest.createSimilarityMatrix(records);
+            long end = System.currentTimeMillis();
+            long time = end - start;
+            stats.addValue(time);
+        }
+        LOG.info("{} took {} ms.",matrix,stats.getPercentile(50));
     }
 
     @Test
@@ -136,8 +147,6 @@ public class SimilarityMatrixTest {
             LOG.info("\n");
         }
     }
-
-    // TODO Some tests with maybe some benchmarking ?
 
     public static SimilarityMatrix createSimilarityMatrix(final String[][] records,
                                                           final String similarityMethodName) {

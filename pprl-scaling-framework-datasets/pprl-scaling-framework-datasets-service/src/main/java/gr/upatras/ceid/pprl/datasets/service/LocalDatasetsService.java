@@ -54,7 +54,7 @@ public class LocalDatasetsService implements InitializingBean {
                                   final int sampleSize)
             throws IOException, DatasetException {
         try {
-            LOG.info(String.format("Sampling local dataset [Size=%d,Avro=%s,Schema=%s]", sampleSize,
+            LOG.info(String.format("Sampling local dataset [size=%d,avroPath=%s,schemaPath=%s]", sampleSize,
                     Arrays.toString(avroPaths), schemaPath));
             final Schema schema = DatasetsUtil.loadSchemaFromFSPath(localFS, schemaPath);
             final DatasetsUtil.DatasetRecordReader reader = new DatasetsUtil.DatasetRecordReader(
@@ -83,7 +83,7 @@ public class LocalDatasetsService implements InitializingBean {
                                        final Path schemaPath)
             throws DatasetException, IOException {
         try{
-            LOG.info(String.format("Loading local dataset [Avro=%s,Schema=%s]",
+            LOG.info(String.format("Loading local dataset [avroPath=%s,schemaPath=%s]",
                     Arrays.toString(avroPaths), schemaPath));
             final Schema schema = DatasetsUtil.loadSchemaFromFSPath(localFS, schemaPath);
             final List<GenericRecord> rlist = new ArrayList<GenericRecord>();
@@ -93,8 +93,10 @@ public class LocalDatasetsService implements InitializingBean {
             while (reader.hasNext()) {
                 rlist.add(i,reader.next());
                 i++;
+                LOG.info("Loading Record #{}",i);
             }
             GenericRecord[] records = new GenericRecord[rlist.size()];
+            LOG.info("Loaded records count = {}",records.length);
             records = rlist.toArray(records);
             return records;
         } catch (DatasetException e) {
@@ -106,18 +108,17 @@ public class LocalDatasetsService implements InitializingBean {
         }
     }
 
-    public void saveRecords(final String name,
+    public Path saveRecords(final String name,
                             final GenericRecord[] records, final Schema schema)
             throws DatasetException, IOException {
-        saveRecords(name, records, schema, localFS.getWorkingDirectory());
+        return saveRecords(name, records, schema, localFS.getWorkingDirectory());
     }
 
-    public void saveRecords(final String name,
+    public Path saveRecords(final String name,
                             final GenericRecord[] records, final Schema schema,
                             final Path parent)
             throws DatasetException, IOException {
         try {
-            LOG.info("Saving records with name : {}",name);
             final Path basePath = new Path(parent,name);
             if(!localFS.mkdirs(basePath, ONLY_OWNER_PERMISSION))
                 throw new DatasetException(String.format("Cannot create base path \"%s\".",basePath));
@@ -129,10 +130,13 @@ public class LocalDatasetsService implements InitializingBean {
             final Path baseAvroPath = new Path(basePath,"avro");
             if(!localFS.mkdirs(baseAvroPath,ONLY_OWNER_PERMISSION))
                 throw new DatasetException(String.format("Cannot create base avro path \"%s\".",basePath));
+            LOG.info(String.format("Saving records(%d) [basePath=%s,baseAvroPath=%s,baseSchemaPath=%s]",
+                    records.length,basePath,baseAvroPath,baseSchemaPath));
             final DatasetsUtil.DatasetRecordWriter writer =
                     new DatasetsUtil.DatasetRecordWriter(localFS,name,schema,baseAvroPath);
             writer.writeRecords(records);
             writer.close();
+            return basePath;
         } catch (DatasetException e) {
             LOG.error(e.getMessage());
             throw e;
@@ -145,6 +149,7 @@ public class LocalDatasetsService implements InitializingBean {
     public Schema loadSchema(final Path schemaPath)
             throws IOException, DatasetException {
         try {
+            LOG.info(String.format("Loading schema [path=%s]",schemaPath));
             return DatasetsUtil.loadSchemaFromFSPath(localFS,schemaPath);
         } catch (DatasetException e) {
             LOG.error(e.getMessage());
@@ -155,13 +160,13 @@ public class LocalDatasetsService implements InitializingBean {
         }
     }
 
-    public void saveStats(final String name,
+    public Path saveStats(final String name,
                           final DatasetStatistics statistics)
             throws IOException, DatasetException {
-        saveStats(name, statistics, localFS.getWorkingDirectory());
+        return saveStats(name, statistics, localFS.getWorkingDirectory());
     }
 
-    public void saveStats(final String name,
+    public Path saveStats(final String name,
                           final DatasetStatistics statistics,
                           final Path parent)
             throws IOException, DatasetException {
@@ -169,9 +174,11 @@ public class LocalDatasetsService implements InitializingBean {
             if(!localFS.exists(parent) && !localFS.mkdirs(parent,ONLY_OWNER_PERMISSION))
                     throw new DatasetException(String.format("Cannot create dir \"%s\"",parent));
             final Path path = new Path(parent,name + ".properties");
+            LOG.info("Saving stats to [path={}]",path);
             FSDataOutputStream fsdos = localFS.create(path);
             statistics.toProperties().store(fsdos, "statistics");
             fsdos.close();
+            return path;
         } catch (IOException e) {
             LOG.error(e.getMessage());
             throw e;
@@ -186,6 +193,7 @@ public class LocalDatasetsService implements InitializingBean {
         try {
             if (!localFS.exists(propertiesPath))
                 throw new DatasetException(String.format("Cannot find file \"%s\"", propertiesPath));
+            LOG.info("Loading stats from [path={}]",propertiesPath);
             Properties properties = new Properties();
             FSDataInputStream fsdis = localFS.open(propertiesPath);
             properties.load(fsdis);

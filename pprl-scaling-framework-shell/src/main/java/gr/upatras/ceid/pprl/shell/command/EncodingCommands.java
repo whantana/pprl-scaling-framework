@@ -76,15 +76,15 @@ public class EncodingCommands implements CommandMarker {
             final String kStr
     ) {
         try {
-            final Path statsPath = CommandUtils.retrievePath(pathStr);
+            final Path statsPath = CommandUtil.retrievePath(pathStr);
             LOG.info("Calculating encoding sizes :");
             LOG.info("\tSelected stats file : {}", statsPath);
-            final int Q = CommandUtils.retrieveInt(qStr,2);
+            final int Q = CommandUtil.retrieveInt(qStr, 2);
             if(Q < 2 || Q > 4) throw new IllegalArgumentException("Q is limited to {2,3,4}.");
-            final int K = CommandUtils.retrieveInt(kStr,15);
+            final int K = CommandUtil.retrieveInt(kStr, 15);
             if(K < 1) throw new IllegalArgumentException("K must be at least 1.");
             DatasetStatistics statistics = lds.loadStats(statsPath);
-            LOG.info(CommandUtils.prettyBFEStats(statistics.getFieldStatistics(),K,Q));
+            LOG.info(CommandUtil.prettyBFEStats(statistics.getFieldStatistics(), K, Q));
             return "DONE";
         } catch (Exception e) {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
@@ -123,19 +123,21 @@ public class EncodingCommands implements CommandMarker {
         try {
             BloomFilterEncodingUtil.schemeNameSupported(scheme);
 
-            final Path schemaPath = CommandUtils.retrievePath(schemaStr);
-            final Path[] avroPaths = CommandUtils.retrievePaths(avroStr);
-            final String[] fields = CommandUtils.retrieveFields(fieldsStr);
-            final String[] included = CommandUtils.retrieveFields(includeStr);
-            final int fbfN = CommandUtils.retrieveInt(fbfNstr,-1);
-            final int N = CommandUtils.retrieveInt(Nstr,-1);
-            final int K = CommandUtils.retrieveInt(Kstr,15);
-            final int Q = CommandUtils.retrieveInt(Qstr,2);
-            final Path statsPath = CommandUtils.retrievePath(pathStr);
+            final Path schemaPath = CommandUtil.retrievePath(schemaStr);
+            final Path[] avroPaths = CommandUtil.retrievePaths(avroStr);
+            final String[] fields = CommandUtil.retrieveFields(fieldsStr);
+            final String[] included = CommandUtil.retrieveFields(includeStr);
+            final int fbfN = CommandUtil.retrieveInt(fbfNstr, -1);
+            final int N = CommandUtil.retrieveInt(Nstr, -1);
+            final int K = CommandUtil.retrieveInt(Kstr, 15);
+            final int Q = CommandUtil.retrieveInt(Qstr, 2);
+            final Path statsPath = CommandUtil.retrievePath(pathStr);
             final double[] avgQgrams = (statsPath == null)  ? null : new double[fields.length];
             final double[] weights = (statsPath == null)  ? null : new double[fields.length];
             if(statsPath != null) {
                 DatasetStatistics statistics = lds.loadStats(statsPath);
+                if(scheme.equals("RBF") && N < 0 && fields.length != statistics.getFieldCount())
+                    throw new IllegalStateException("In the case of weighted RBF all fields in stats must be included. Should recalculate stats");
                 int i = 0;
                 for (String fieldName : fields) {
                     avgQgrams[i] = statistics.getFieldStatistics().get(fieldName).getQgramCount(Q);
@@ -151,8 +153,11 @@ public class EncodingCommands implements CommandMarker {
             LOG.info("\tSelected fields to be encoded : {}", Arrays.toString(fields));
             if(included.length !=0)
                 LOG.info("\tSelected fields to included   : {}", Arrays.toString(included));
-            if(statsPath != null)
+            if(statsPath != null) {
                 LOG.info("\tSelected stats file : {}", statsPath);
+                LOG.info("\tAvg (Q={})-grams count : {}",Q,avgQgrams);
+                LOG.info("\tRBF Bit selection weights : {}",weights);
+            }
             LOG.info("\tNumber of Hash functions  (K) : {}", K);
             LOG.info("\tHashing Q-Grams (Q) : {}", Q);
             LOG.info("\tScheme : {}", scheme);
@@ -174,9 +179,14 @@ public class EncodingCommands implements CommandMarker {
             if(!encoding.isEncodingOfSchema(schema))
                 throw new BloomFilterEncodingException("Encoding does not validate with source dataset.");
             final GenericRecord[] records = lds.loadRecords(avroPaths,schemaPath);
-            final GenericRecord[] encodedRecords = les.encodeRecords(records, encoding);
 
-            lds.saveRecords(name,encodedRecords,encoding.getEncodingSchema());
+            final GenericRecord[] encodedRecords = les.encodeRecords(records, encoding);
+            final Schema encodingSchema = encoding.getEncodingSchema();
+
+            final Path encodingDatapath = lds.saveRecords(name,encodedRecords,encodingSchema);
+
+            LOG.info("\tEncoded data path = {}",encodingDatapath);
+            LOG.info("\n");
             return "DONE";
         } catch (Exception e) {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();

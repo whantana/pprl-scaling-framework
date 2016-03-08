@@ -158,6 +158,11 @@ public class DatasetsUtil {
         private List<DataFileWriter<GenericRecord>> fileWriters;
         private int partitions;
 
+        public DatasetRecordWriter(final FileSystem fs, final String name, final Schema schema)
+                throws IOException {
+            this(fs,name,schema,fs.getWorkingDirectory(),1);
+        }
+
         public DatasetRecordWriter(final FileSystem fs, final String name,
                                    final Schema schema, final Path parentPath)
                 throws IOException {
@@ -203,7 +208,7 @@ public class DatasetsUtil {
                 int start = recordIndexOfPartition[i];
                 int end = (i < partitions - 1) ? recordIndexOfPartition[i+1] : recordCount ;
                 LOG.debug("Writer {} writes records in range {}",i,String.format("[%d,%d)",start,end));
-                for(int j =start ; j < end ; j++) writeRecord(records[j],i);
+                for(int j = start ; j < end ; j++) writeRecord(records[j],i);
                 fileWriters.get(i).close();
             }
         }
@@ -239,7 +244,9 @@ public class DatasetsUtil {
 
         public DatasetRecordReader(final FileSystem fs, final Schema schema, final Path parentPath)
                 throws IOException {
-            final SortedSet<Path> paths = getPathsRecurcively(fs,parentPath);
+            final SortedSet<Path> paths =
+                    fs.isDirectory(parentPath) ? getPathsRecurcively(fs,parentPath) :
+                            new TreeSet<Path>(Arrays.asList(new Path[]{fs.makeQualified(parentPath)}));
             int count = paths.size();
             LOG.debug(String.format("Found %d files to read [FileSystem=%s,Path=%s]",
                     count, fsIsLocal(fs) ? "local" : fs.getUri(), parentPath));
@@ -254,9 +261,13 @@ public class DatasetsUtil {
 
         public DatasetRecordReader(final FileSystem fs, final Schema schema, final Path[] avroPaths)
                 throws IOException {
-            final SortedSet<Path> paths = (avroPaths.length == 1 && fs.isDirectory(avroPaths[0])) ?
-                    getPathsRecurcively(fs,avroPaths[0]) :
-                    new TreeSet<Path>(Arrays.asList(avroPaths));
+            final SortedSet<Path> paths = new TreeSet<Path>();
+            for (Path avroPath : avroPaths) {
+                if(fs.isDirectory(avroPath))
+                    paths.addAll(getPathsRecurcively(fs,avroPath));
+                else
+                    paths.add(fs.makeQualified(avroPath));
+            }
             int count = paths.size();
             LOG.debug(String.format("Found %d files to read [FileSystem=%s,Paths=%s]",
                     count, fsIsLocal(fs) ? "local" : fs.getUri(), Arrays.toString(avroPaths)));

@@ -2,14 +2,19 @@ package gr.upatras.ceid.pprl.encoding;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 public class CLKEncoding extends BloomFilterEncoding{ // TODO not so simple
 
+    private static final Logger LOG = LoggerFactory.getLogger(CLKEncoding.class);
+
+
     @Override
-    public String toString() {
-        return null;
+    public String schemeName() {
+        return "CLK";
     }
 
     @Override
@@ -18,7 +23,12 @@ public class CLKEncoding extends BloomFilterEncoding{ // TODO not so simple
     }
 
     @Override
-    public List<Schema.Field> setupSelectedFields(String[] selectedFieldNames) throws BloomFilterEncodingException {
+    public String toString() {
+        return super.toString();
+    }
+
+    @Override
+    public List<Schema.Field> setupSelectedForEncodingFields(String[] selectedFieldNames) throws BloomFilterEncodingException {
         return null;
     }
 

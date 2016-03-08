@@ -18,47 +18,48 @@ public class ExpectationMaximazationTest {
 
     private String[][] records = SimilarityMatrixTest.records;
     private String[] fieldNames = SimilarityMatrixTest.fieldNames;
-    private NaiveSimilarityMatrix matrix1;
-    private SimilarityMatrix matrix2;
 
-    @Before
-    public void setup() {
-        long start = System.currentTimeMillis();
-        matrix1 = NaiveSimilarityMatrix.createMatrix(records);
-        long end = System.currentTimeMillis();
-        long time = end - start;
-        LOG.info("{} took {} ms.",matrix1,time);
-
-        start = System.currentTimeMillis();
-        matrix2 = SimilarityMatrixTest.createSimilarityMatrix(records);
-        end = System.currentTimeMillis();
-        time = end - start;
-        LOG.info("{} took {} ms.",matrix2,time);
-
-    }
     @Test
     public void test1() throws IOException {
-        NaiveExpectationMaximization estimator = new NaiveExpectationMaximization (fieldNames,0.9,0.1,0.01);
-        long start = System.currentTimeMillis();
-        estimator.runAlgorithm(matrix1);
-        long end= System.currentTimeMillis();
-        long time = end - start;
-        LOG.info(estimator.toString() + " took " + time + " ms.");
+        DescriptiveStatistics stats = new DescriptiveStatistics();
+        NaiveSimilarityMatrix matrix = null;
+        NaiveExpectationMaximization estimator = null;
+        for (int i = 0; i < 5; i++) {
+            long start = System.currentTimeMillis();
+            matrix = NaiveSimilarityMatrix.createMatrix(records);
+            estimator = new NaiveExpectationMaximization (fieldNames,0.9,0.1,0.01);
+            estimator.runAlgorithm(matrix);
+            long end = System.currentTimeMillis();
+            long time = end - start;
+            stats.addValue(time);
+        }
+        LOG.info("matrix={} , estimator={}",matrix,estimator);
+        LOG.info("Took {} ms.",stats.getPercentile(50));
     }
 
     @Test
     public void test2() throws IOException {
-        ExpectationMaximization estimator = new ExpectationMaximization(fieldNames,0.9,0.1,0.01);
-        long start = System.currentTimeMillis();
-        estimator.runAlgorithm(matrix2);
-        long end= System.currentTimeMillis();
-        long time = end - start;
-        LOG.info(estimator.toString() + " took " + time + " ms.");
+        DescriptiveStatistics stats = new DescriptiveStatistics();
+        SimilarityMatrix matrix = null;
+        ExpectationMaximization estimator = null;
+        for (int i = 0; i < 5; i++) {
+            long start = System.currentTimeMillis();
+            matrix = SimilarityMatrixTest.createSimilarityMatrix(records);
+            estimator = new ExpectationMaximization (fieldNames,0.9,0.1,0.01);
+            estimator.runAlgorithm(matrix);
+            long end = System.currentTimeMillis();
+            long time = end - start;
+            stats.addValue(time);
+        }
+        LOG.info("matrix={} , estimator={}",matrix,estimator);
+        LOG.info("Took {} ms.",stats.getPercentile(50));
     }
 
     @Test
     public void test3() throws IOException {
         DescriptiveStatistics stats =  new DescriptiveStatistics();
+        NaiveSimilarityMatrix matrix1 = null;
+        SimilarityMatrix matrix2 = null;
         int iterations = 5;
         for (int i = 1; i < 5; i++) {
             String[][] bigRecords = new String[i*records.length][fieldNames.length];

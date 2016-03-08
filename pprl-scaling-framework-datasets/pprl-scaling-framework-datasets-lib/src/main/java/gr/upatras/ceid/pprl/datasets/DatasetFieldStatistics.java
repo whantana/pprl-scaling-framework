@@ -26,7 +26,7 @@ public class DatasetFieldStatistics implements Serializable {
             "Avg 2-grams count",
             "Avg 3-grams count",
             "Avg 4-grams count",
-            "Avg Unique 2-grams count",   // TODO worth keeping these ?
+            "Avg Unique 2-grams count",
             "Avg Unique 3-grams count",
             "Avg Unique 4-grams count",
             "F-S m-probability",

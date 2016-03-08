@@ -63,26 +63,28 @@ public class DatasetsCommands implements CommandMarker {
             final String nameStr
     ) {
         try{
-            final Path schemaPath = CommandUtils.retrievePath(schemaStr);
-            final Path[] avroPaths = CommandUtils.retrievePaths(avroStr);
-            final int size = CommandUtils.retrieveInt(sizeStr, 10);
+            final Path schemaPath = CommandUtil.retrievePath(schemaStr);
+            final Path[] avroPaths = CommandUtil.retrievePaths(avroStr);
+            final int size = CommandUtil.retrieveInt(sizeStr, 10);
             if (size < 1) throw new IllegalArgumentException("Sample size must be greater than zero.");
-            final String name = CommandUtils.retrieveString(nameStr, null);
+            final String name = CommandUtil.retrieveString(nameStr, null);
             final boolean save = !(name == null);
-            if(save && !CommandUtils.isValidName(name)) throw new IllegalArgumentException("name is not valid");
+            if(save && !CommandUtil.isValidName(name)) throw new IllegalArgumentException("name is not valid");
 
             LOG.info("Sampling from local data :");
             LOG.info("\tSelected data path(s): {}", Arrays.toString(avroPaths));
             LOG.info("\tSelected schema path : {}", schemaPath);
             LOG.info("\tSample size : {} ",size);
-            if(save) LOG.info("\tSaving sample with name : {} ",name);
-            LOG.info("\n");
 
             final Schema schema = lds.loadSchema(schemaPath);
             final GenericRecord[] sample = lds.sample(avroPaths, schemaPath, size);
-            if(save) lds.saveRecords(name, sample, schema);
+            if(save) {
+                final Path savePath = lds.saveRecords(name, sample, schema);
+                LOG.info("\t Saved to path : {}",savePath);
+            }
+            LOG.info("\n");
 
-            LOG.info(CommandUtils.prettyRecords(sample,schema));
+            LOG.info(CommandUtil.prettyRecords(sample, schema));
             return "DONE";
         } catch (Exception e) {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
@@ -94,7 +96,7 @@ public class DatasetsCommands implements CommandMarker {
             @CliOption(key = {"schema"}, mandatory = true, help = "Local schema avro file.")
             final String schemaStr) {
         try {
-            final Path schemaPath = CommandUtils.retrievePath(schemaStr);
+            final Path schemaPath = CommandUtil.retrievePath(schemaStr);
 
             LOG.info("Describing local data :");
             LOG.info("\tSelected schema file : {}", schemaPath);
@@ -102,7 +104,7 @@ public class DatasetsCommands implements CommandMarker {
 
             final Schema schema = lds.loadSchema(schemaPath);
 
-            LOG.info(CommandUtils.prettySchemaDescription(schema));
+            LOG.info(CommandUtil.prettySchemaDescription(schema));
             return "DONE";
         } catch (Exception e) {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
@@ -128,22 +130,21 @@ public class DatasetsCommands implements CommandMarker {
             final String pStr
     ) {
         try {
-            final Path schemaPath = CommandUtils.retrievePath(schemaStr);
-            final Path[] avroPaths = CommandUtils.retrievePaths(avroStr);
-            String[] fields = CommandUtils.retrieveFields(fieldsStr);
-            final String name = CommandUtils.retrieveString(nameStr, null);
+            final Path schemaPath = CommandUtil.retrievePath(schemaStr);
+            final Path[] avroPaths = CommandUtil.retrievePaths(avroStr);
+            String[] fields = CommandUtil.retrieveFields(fieldsStr);
+            final String name = CommandUtil.retrieveString(nameStr, null);
             final boolean save = name != null;
-            if(save && !CommandUtils.isValidName(name)) throw new IllegalArgumentException("name is not valid");
-            final double[] m0 = CommandUtils.retrieveProbabilities(mStr, fields.length,0.9);
-            final double[] u0 = CommandUtils.retrieveProbabilities(uStr, fields.length, 0.001);
-            final double p0 = CommandUtils.retrieveProbability(pStr,0.1);
+            if(save && !CommandUtil.isValidName(name)) throw new IllegalArgumentException("name is not valid");
+            final double[] m0 = CommandUtil.retrieveProbabilities(mStr, fields.length, 0.9);
+            final double[] u0 = CommandUtil.retrieveProbabilities(uStr, fields.length, 0.001);
+            final double p0 = CommandUtil.retrieveProbability(pStr, 0.1);
 
             LOG.info("Calculating statistics on local data:");
             LOG.info("\tSelected data files : {}", Arrays.toString(avroPaths));
             LOG.info("\tSelected schema file : {}", schemaPath);
             LOG.info("\tSelected fields : {}", Arrays.toString(fields));
-            if(save) LOG.info("\tStatistics report with name : {}",name);
-            LOG.info("\n");
+
 
             final Schema schema = lds.loadSchema(schemaPath);
             if(fields.length == 0 )
@@ -170,9 +171,13 @@ public class DatasetsCommands implements CommandMarker {
                     statistics,fields,
                     estimator.getM(),estimator.getU());
 
-            LOG.info(CommandUtils.prettyStats(statistics));
+            if(save) {
+                final Path statsPath = lds.saveStats(name, statistics);
+                LOG.info("\tStatistics path : {}",statsPath);
+            }
+            LOG.info("\n");
 
-            if(save) lds.saveStats(name, statistics);
+            LOG.info(CommandUtil.prettyStats(statistics));
 
             return "DONE";
         } catch (Exception e) {

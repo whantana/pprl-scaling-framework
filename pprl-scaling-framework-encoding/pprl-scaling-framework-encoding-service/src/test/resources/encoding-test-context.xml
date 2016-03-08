@@ -1,30 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:context="http://www.springframework.org/schema/context"
        xmlns:hdp="http://www.springframework.org/schema/hadoop"
        xsi:schemaLocation="
        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
-       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
        http://www.springframework.org/schema/hadoop http://www.springframework.org/schema/hadoop/spring-hadoop.xsd">
 
-    <context:property-placeholder/>
 
-    <hdp:file-system id="pprlClusterHdfs"/>
 
     <!-- Tool Runner configuration -->
-    <hdp:tool-runner id="dblpXmlToAvroToolRunner"
-                     jar="file://${pprl.encoding.test.dir}/pprl-scaling-framework-datasets-mapreduce-${build.version}.jar"
-                     tool-class="gr.upatras.ceid.pprl.datasets.mapreduce.DblpXmlToAvroTool"
-                     close-fs="false"
-                     libs="file://${pprl.encoding.test.dir}/avro-mapred-1.7.6-cdh5.4.0-hadoop2.jar"/>
-    <hdp:tool-runner id="getDatasetStatsToolRunner"
-                     jar="file://${pprl.encoding.test.dir}/pprl-scaling-framework-datasets-mapreduce-${build.version}.jar"
-                     tool-class="gr.upatras.ceid.pprl.datasets.mapreduce.GetDatasetsStatsTool"
-                     close-fs="false"
-                     libs="file://${pprl.encoding.test.dir}/avro-1.7.6-cdh5.4.0.jar,
-                           file://${pprl.encoding.test.dir}/avro-mapred-1.7.6-cdh5.4.0-hadoop2.jar,
-                           file://${pprl.encoding.test.dir}/pprl-scaling-framework-datasets-lib-${build.version}.jar"/>
     <hdp:tool-runner id="encodeDatasetToolRunner"
                      jar="file://${pprl.encoding.test.dir}/pprl-scaling-framework-encoding-mapreduce-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.encoding.mapreduce.EncodeDatasetTool"
@@ -35,6 +19,5 @@
                            file://${pprl.encoding.test.dir}/pprl-scaling-framework-encoding-lib-${build.version}.jar"/>
 
     <!-- component scan on service package-->
-    <context:component-scan base-package="gr.upatras.ceid.pprl.datasets.service"/>
-    <context:component-scan base-package="gr.upatras.ceid.pprl.encoding.service"/>
+    <bean id="datasetsService" class="gr.upatras.ceid.pprl.encoding.service.EncodingService"/>
 </beans>

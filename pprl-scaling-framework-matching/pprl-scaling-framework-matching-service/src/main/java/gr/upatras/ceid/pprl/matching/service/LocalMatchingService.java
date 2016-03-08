@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.Iterator;
 
 @Service
@@ -29,7 +30,9 @@ public class LocalMatchingService implements InitializingBean {
             final int fieldCount = fieldNames.length;
             if(Long.compare(pairCount*fieldCount,Integer.MAX_VALUE) > 0)
                 throw new UnsupportedOperationException("Cannot create similarity matrix. #N*#F < Integer.MAX");
+            LOG.info("Creating similarity matrix");
             final SimilarityMatrix matrix = new SimilarityMatrix(fieldCount);
+            int pairsDone = 0;
             final Iterator<int[]> pairIter = CombinatoricsUtil.getPairs(records.length);
             do {
                 int pair[] = pairIter.next();
@@ -40,8 +43,10 @@ public class LocalMatchingService implements InitializingBean {
                     if(SimilarityMatrix.similarity(similarityMethodName, s1, s2)) row[j] = true;
                 }
                 matrix.set(row);
+                pairsDone++;
+                LOG.info("Pairs done : {}.",pairsDone );
             }while(pairIter.hasNext());
-            LOG.info("Created Similarity matrix : {}",matrix);
+            LOG.info("{}",matrix);
             return matrix;
         } catch(Exception e) {
             LOG.error(e.getMessage());
@@ -66,7 +71,9 @@ public class LocalMatchingService implements InitializingBean {
             final int fieldCount = fieldNamesA.length;
             if(Long.compare(pairCount*fieldCount,Integer.MAX_VALUE) > 0)
                 throw new UnsupportedOperationException("Cannot create gamma. #N*#F < Integer.MAX");
+            LOG.info("Creating similarity matrix");
             final SimilarityMatrix matrix = new SimilarityMatrix(fieldCount);
+            int pairsDone = 0;
             for (GenericRecord recA : recordsA) {
                 for(GenericRecord recB : recordsB) {
                     boolean[] row = new boolean[fieldNamesA.length];
@@ -76,9 +83,11 @@ public class LocalMatchingService implements InitializingBean {
                         if(SimilarityMatrix.similarity(similarityMethodName, s1, s2)) row[j] = true;
                     }
                     matrix.set(row);
+                    pairsDone++;
+                    LOG.info("Pairs done : {}.",pairsDone );
                 }
             }
-            LOG.info("Created Similarity matrix : {}",matrix);
+            LOG.info("{}",matrix);
             return matrix;
         } catch(Exception e) {
             LOG.error(e.getMessage());
@@ -95,10 +104,14 @@ public class LocalMatchingService implements InitializingBean {
     }
 
     public ExpectationMaximization newEMInstance(final String[] fieldNames, final double[] m, final double[] u, double p) {
+        LOG.info(String.format("New EM Instance [fieldNames=%s,m=%s,u=%s,p=%f].",
+                Arrays.toString(fieldNames),Arrays.toString(m),Arrays.toString(u),p));
         return new ExpectationMaximization(fieldNames,m,u,p);
     }
 
     public ExpectationMaximization newEMInstance(final String[] fieldNames, final double m, final double u, double p) {
+        LOG.info(String.format("New EM Instance [fieldNames=%s,m=%f,u=%f,p=%f].",
+                Arrays.toString(fieldNames),m,u,p));
         return new ExpectationMaximization(fieldNames,m,u,p);
     }
 

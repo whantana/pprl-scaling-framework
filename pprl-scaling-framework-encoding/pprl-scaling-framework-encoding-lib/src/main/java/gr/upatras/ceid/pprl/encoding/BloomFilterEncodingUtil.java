@@ -2,13 +2,18 @@ package gr.upatras.ceid.pprl.encoding;
 
 
 import org.apache.avro.Schema;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class BloomFilterEncodingUtil {
+
+    private static final Logger LOG = LoggerFactory.getLogger(BloomFilterEncodingUtil.class);
 
     public static final List<String> SCHEME_NAMES = new ArrayList<String>();
     public static final Map<String,Class<?>> SCHEMES = new HashMap<String, Class<?>>();
@@ -39,12 +44,23 @@ public class BloomFilterEncodingUtil {
             throws BloomFilterEncodingException {
         schemeNameSupported(scheme);
         try {
+            LOG.debug("New Encoding instance is {} .",scheme);
             return (BloomFilterEncoding) (SCHEMES.get(scheme).newInstance());
         } catch (InstantiationException e) {
             throw new BloomFilterEncodingException(e.getMessage());
         } catch (IllegalAccessException e) {
             throw new BloomFilterEncodingException(e.getMessage());
         }
+    }
+
+    public static boolean nameBelongsToSchema(final Schema schema, final String[] selectedNames) {
+        for(String name : selectedNames) {
+            boolean nameFound = false;
+            for(Schema.Field field : schema.getFields())
+                if(field.name().equals(name)) { nameFound = true ; break; }
+            if(!nameFound) return false;
+        }
+        return true;
     }
 
     public static BloomFilterEncoding instanceFactory(final String scheme,
@@ -68,25 +84,56 @@ public class BloomFilterEncodingUtil {
         final boolean rbfWeighetdFbfDynamic = rbfWeighted && (fbfN < 0);
 
         if(clk) {
+            LOG.debug("New Encoding instance is CLK.");
             throw new UnsupportedOperationException("Not supported.");
         } else if (fbfStatic) {
             int fbfNs[] = FieldBloomFilterEncoding.staticsizes(fbfN, fieldCount);
+            LOG.debug(String.format("New Encoding instance is FBF/Static : [fbfNs=%s,K=%d,Q=%d].",
+                    Arrays.toString(fbfNs),K,Q));
             return  new FieldBloomFilterEncoding(fbfNs,K,Q);
         } else if (fbfDynamic) {
+            if(containsNan(avgQgrams)) throw new IllegalArgumentException("Avg q grams contains NaN.");
             int fbfNs[] = FieldBloomFilterEncoding.dynamicsizes(avgQgrams, K);
+            LOG.debug(String.format("New Encoding instance is FBF/Dynamic : [fbfNs=%s,K=%d,Q=%d].",
+                    Arrays.toString(fbfNs),K,Q));
             return  new FieldBloomFilterEncoding(fbfNs,K,Q);
         } else if (rbfUniformFbfStatic) {
             int fbfNs[] = FieldBloomFilterEncoding.staticsizes(fbfN, fieldCount);
+            LOG.debug(String.format("New Encoding instance is RBF/Uniform/FBF/Static : [fbfNs=%s,N=%d,K=%d,Q=%d].",
+                    Arrays.toString(fbfNs),N,K,Q));
             return  new RowBloomFilterEncoding(fbfNs, N,K,Q);
         } else if (rbfUniformFbfDynamic) {
+            if(containsNan(avgQgrams)) throw new IllegalArgumentException("Avg q grams contains NaN.");
             int fbfNs[] = FieldBloomFilterEncoding.dynamicsizes(avgQgrams, K);
+            LOG.debug(String.format("New Encoding instance is RBF/Uniform/FBF/Dynamic : [fbfNs=%s,N=%d,K=%d,Q=%d].",
+                    Arrays.toString(fbfNs),N,K,Q));
             return  new RowBloomFilterEncoding(fbfNs, N,K,Q);
         } else if (rbfWeighetdFbfStatic) {
             int fbfNs[] = FieldBloomFilterEncoding.staticsizes(fbfN, fieldCount);
-            return  new RowBloomFilterEncoding(fbfNs, weights,K,Q);
+            if(containsNan(weights)) throw new IllegalArgumentException("Weights contains NaN.");
+            if(!doublesAddUpTo1(weights, 0.0001)) throw new IllegalArgumentException("Weights do not add up to 1.");
+            LOG.debug(String.format("New Encoding instance is RBF/Weighted/FBF/Static : [fbfNs=%s,weights=%s,K=%d,Q=%d].",
+                    Arrays.toString(fbfNs),Arrays.toString(weights),K,Q));
+            return new RowBloomFilterEncoding(fbfNs, weights,K,Q);
         } else if (rbfWeighetdFbfDynamic) {
+            if(containsNan(avgQgrams)) throw new IllegalArgumentException("Avg q grams contains NaN.");
             int fbfNs[] = FieldBloomFilterEncoding.dynamicsizes(avgQgrams, K);
+            if(containsNan(weights)) throw new IllegalArgumentException("Weights contains NaN.");
+            if(!doublesAddUpTo1(weights, 0.0001)) throw new IllegalArgumentException("Weights do not add up to 1.");
+            LOG.debug(String.format("New Encoding instance is RBF/Weighted/FBF/Dynamic : [fbfNs=%s,weights=%s,K=%d,Q=%d].",
+                    Arrays.toString(fbfNs),Arrays.toString(weights),K,Q));
             return new RowBloomFilterEncoding(fbfNs, weights,K,Q);
         } else throw new IllegalStateException("illegal state.");
+    }
+
+    public static boolean containsNan(final double[] doubles) {
+        for(double d : doubles) if(Double.isNaN(d)) return true;
+        return false;
+    }
+
+    public static boolean doublesAddUpTo1(final double[] doubles, double error) {
+        double sum = 0;
+        for(double d : doubles) sum += d;
+        return Math.abs(1.0 - sum) <= error;
     }
 }

@@ -4,6 +4,8 @@ import gr.upatras.ceid.pprl.base.QGramUtil;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
@@ -14,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 
 public class FieldBloomFilterEncoding extends BloomFilterEncoding {
+
+    private static final Logger LOG = LoggerFactory.getLogger(FieldBloomFilterEncoding.class);
 
     protected Map<String,BloomFilter> name2FBFMap = new HashMap<String,BloomFilter>();
     protected Map<String,Integer> name2indexMap = new HashMap<String,Integer>();
@@ -34,15 +38,19 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
         setQ(Q);
     }
 
-    public String getName() {
-        return "FBF_" + super.getName();
-    }
-
-    public String toString() { return "FBF"; }
+    public String schemeName() { return "FBF"; }
 
     @Override
     public void initialize() throws BloomFilterEncodingException {
         for(String name : name2indexMap.keySet()) addFBF(name);
+        LOG.debug("Initialized for FBF Encoding.");
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() +
+                ", name2indexMap=" + name2indexMap +
+                '}';
     }
 
     @Override
@@ -55,11 +63,13 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
         assert sParts.length == 3;
         setK(Integer.valueOf(sParts[1]));
         setQ(Integer.valueOf(sParts[2]));
-
+        LOG.debug("setupFromSchema K found : {}",getK());
+        LOG.debug("setupFromSchema Q found : {}",getQ());
         int Nlength = 0;
         for(Schema.Field field : encodingSchema.getFields())
             if(field.name().startsWith("encoding_field_")) Nlength++;
         setN(new int[Nlength]);
+        LOG.debug("setupFromSchema fields found : {}",getN().length);
         int i = 0;
         for(Schema.Field field : encodingSchema.getFields()) {
             final String name = field.name();
@@ -72,15 +82,15 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
                 setN(Integer.parseInt(parts[0]),i);
                 assert getK() == Integer.parseInt(parts[1]);
                 assert getQ() == Integer.parseInt(parts[2]);
-                addToMap(partss[1], i);
-                addToMap(partss[1], name);
+                addIndex(partss[1], i);
+                addMappedName(partss[1], name);
                 i++;
-            } else addToMap(name, name);
+            } else addMappedName(name, name);
         }
         setEncodingSchema(encodingSchema);
     }
 
-    public List<Schema.Field> setupSelectedFields(final String[] selectedFieldNames) throws BloomFilterEncodingException {
+    public List<Schema.Field> setupSelectedForEncodingFields(final String[] selectedFieldNames) throws BloomFilterEncodingException {
         assert N != null && N.length == selectedFieldNames.length && getK() > 0 && getQ() > 0;
         Schema.Field[] encodingFields = new Schema.Field[selectedFieldNames.length];
         int i = 0;
@@ -90,9 +100,9 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
                     encodingFieldName, Schema.createFixed(
                     encodingFieldName, null, null,
                     (int) Math.ceil(getN(i)/(double)8)),
-                    String.format("Encoding(%s) of field %s", getName(), fieldName), null);
-            addToMap(fieldName, i);
-            addToMap(fieldName, encodingFieldName);
+                    String.format("Encoding(%s) of field %s", schemeName(), fieldName), null);
+            addIndex(fieldName, i);
+            addMappedName(fieldName, encodingFieldName);
             i++;
         }
         return Arrays.asList(encodingFields);
@@ -110,9 +120,16 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
             else {
                 final Object obj = record.get(name);
                 final Schema.Type type = record.getSchema().getField(name).schema().getType();
+                LOG.debug("encodeRecord : field : {}",name);
+                LOG.debug("encodeRecord : String.valueOf(obj) : {}",String.valueOf(obj));
                 encodeObject(obj, type, getQ(), getFBF(name));
                 final Schema schema = encodingRecord.getSchema().getField(mappedName).schema();
-                final GenericData.Fixed fixed = new GenericData.Fixed(schema, getFBF(name).getByteArray());
+                final GenericData.Fixed fixed = new GenericData.Fixed(schema,
+                        Arrays.copyOf(
+                                getFBF(name).getByteArray(),
+                                getFBF(name).getByteArray().length)
+                );
+                LOG.debug("encodeRecord : Putting encoding in name : {}",mappedName);
                 encodingRecord.put(mappedName,fixed);
             }
         }
@@ -137,6 +154,7 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
             final int index = getIndex(name);
             final int fbfN = getN(index);
             final int K = getK();
+            LOG.debug("name {} -to-> fbfN,K={}",name,String.format("%d,%d",fbfN,K));
             name2FBFMap.put(name, new BloomFilter(fbfN, K));
         } catch (NoSuchAlgorithmException e) {
             throw new BloomFilterEncodingException(e.getMessage());
@@ -146,16 +164,19 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
     }
 
     public BloomFilter getFBF(final String name) {
-        if(!name2FBFMap.containsKey(name)) return null;
+        if(!name2FBFMap.containsKey(name))
+            throw new IllegalArgumentException("Cannot find FBF name for name " + name);
         return name2FBFMap.get(name);
     }
 
-    protected void addToMap(final String name, final int index) {
+    protected void addIndex(final String name, final int index) {
+        LOG.debug("name {} -to-> index {}",name,index);
         name2indexMap.put(name, index);
     }
 
     public int getIndex(final String name) {
-        if(!name2indexMap.containsKey(name)) return -1;
+        if(!name2indexMap.containsKey(name))
+            throw new IllegalArgumentException("Cannot find index name for name " + name);
         return name2indexMap.get(name);
     }
 

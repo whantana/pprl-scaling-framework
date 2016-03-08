@@ -85,7 +85,7 @@ public class BloomFilterEncodingUtil {
 
         if(clk) {
             LOG.debug("New Encoding instance is CLK.");
-            throw new UnsupportedOperationException("Not supported.");
+            return new CLKEncoding(N,K,Q);
         } else if (fbfStatic) {
             int fbfNs[] = FieldBloomFilterEncoding.staticsizes(fbfN, fieldCount);
             LOG.debug(String.format("New Encoding instance is FBF/Static : [fbfNs=%s,K=%d,Q=%d].",

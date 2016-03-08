@@ -190,7 +190,7 @@ public class CreateHashesBenchmarkTest {
         long end = System.currentTimeMillis();
         long totalTime = (end-start)/1000;
         LOG.info("Benchmarking : BloomFilter.createHashesV1() backed by dictionary 100%.");
-        LOG.info("Read %d bytes, Hashed %d bytes, Time %d seconds\n", totalBytesRead, totalBytesHashed, totalTime);
+        LOG.info(String.format("Read %d bytes, Hashed %d bytes, Time %d seconds\n", totalBytesRead, totalBytesHashed, totalTime));
         LOG.info("Final dictionary keys size : " + map.keySet().size());
         return millis;
     }
@@ -228,7 +228,7 @@ public class CreateHashesBenchmarkTest {
         long end = System.currentTimeMillis();
         long totalTime = (end-start)/1000;
         LOG.info("\rBenchmarking : BloomFilter.createHashesV2() backed by dictionary 100%.");
-        LOG.info("Read %d bytes, Hashed %d bytes, Time %d seconds\n", totalBytesRead, totalBytesHashed, totalTime);
+        LOG.info(String.format("Read %d bytes, Hashed %d bytes, Time %d seconds\n", totalBytesRead, totalBytesHashed, totalTime));
         LOG.info("Final dictionary keys size : " +  map.keySet().size() );
         return millis;
     }

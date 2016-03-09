@@ -20,34 +20,41 @@ public class PPRLCLusterCondition implements Condition {
     @Bean(name="isClusterReady")
     public Boolean isClusterReady(final Environment env) {
         boolean defined = areAllDefined(
-                env.getProperty("database.host"),
-                env.getProperty("database.user"),
-                env.getProperty("database.password"),
+//                env.getProperty("database.host"),
+//                env.getProperty("database.user"),
+//                env.getProperty("database.password"),
                 env.getProperty("hadoop.namenode"),
                 env.getProperty("yarn.resourcemanager"),
                 env.getProperty("spark.master")
         );
         LOG.info(String.format("Application %s cluster ready.",defined ? "is" :"is not"));
-        boolean persistence = areAllDefined(
-                env.getProperty("database.host"),
-                env.getProperty("database.user"),
-                env.getProperty("database.password"));
+//        boolean persistence = areAllDefined(
+//                env.getProperty("database.host"),
+//                env.getProperty("database.user"),
+//                env.getProperty("database.password"));
         boolean hdfs = isDefined(env.getProperty("hadoop.namenode"));
         boolean yarn = isDefined(env.getProperty("yarn.resourcemanager"));
         boolean spark = isDefined(env.getProperty("spark.master"));
 
-        LOG.info(String.format("Details : [Persistence : %s, HDFS : %s, YARN : %s, Spark : %s]",
-                persistence ? "set" :"not set", hdfs ? "set" :"not set", yarn ? "set" :"not set",
-                spark ? "set" :"not set"));
+        LOG.info(String.format("Details : [" +
+//                        " Persistence : %s," +
+                        " HDFS : %s," +
+                        " YARN : %s," +
+                        " Spark : %s]",
+//                persistence ? "set" :"not set",
+                hdfs ? "set" :"not set",
+                yarn ? "set" :"not set",
+                spark ? "set" :"not set")
+        );
         return defined;
     }
 
     public boolean matches(ConditionContext ctx, AnnotatedTypeMetadata meta) {
         final Environment env = ctx.getEnvironment();
         return areAllDefined(
-                env.getProperty("database.host"),
-                env.getProperty("database.user"),
-                env.getProperty("database.password"),
+//                env.getProperty("database.host"),
+//                env.getProperty("database.user"),
+//                env.getProperty("database.password"),
                 env.getProperty("hadoop.namenode"),
                 env.getProperty("yarn.resourcemanager"),
                 env.getProperty("spark.master")

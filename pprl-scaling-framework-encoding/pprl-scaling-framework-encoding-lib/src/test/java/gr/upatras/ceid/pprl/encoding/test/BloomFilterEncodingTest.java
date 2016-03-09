@@ -2,7 +2,6 @@ package gr.upatras.ceid.pprl.encoding.test;
 
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
-import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingUtil;
 import gr.upatras.ceid.pprl.encoding.CLKEncoding;
 import gr.upatras.ceid.pprl.encoding.FieldBloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.RowBloomFilterEncoding;
@@ -62,73 +61,77 @@ public class BloomFilterEncodingTest {
         }
     }
 
-//    @Test
-//    public void test1() throws URISyntaxException, IOException, InterruptedException, BloomFilterEncodingException {
-//        BloomFilterEncoding encoding = new FieldBloomFilterEncoding(avgQcount,K,Q);
-//        encoding.makeFromSchema(schema, SELECTED_FIELDS, REST_FIELDS);
-//        assertTrue(encoding.isEncodingOfSchema(schema));
-//        encodeLocalFile("dynamic_fbf",avroFiles,schema,encoding);
-//        saveAvroSchemaToFile(encoding.getEncodingSchema(),new File("dynamic_fbf.avsc"));
-//    }
-//
-//    @Test
-//    public void test2() throws URISyntaxException, IOException, InterruptedException, BloomFilterEncodingException {
-//        final Schema encodingSchema = loadAvroSchemaFromFile( new File("dynamic_fbf.avsc"));
-//        FieldBloomFilterEncoding encoding = new FieldBloomFilterEncoding();
-//        encoding.setupFromSchema(encodingSchema);
-//        assertTrue(encoding.isEncodingOfSchema(schema));
-//    }
-//
-//    @Test
-//    public void test3() throws URISyntaxException, IOException, InterruptedException, BloomFilterEncodingException {
-//        FieldBloomFilterEncoding encoding = new FieldBloomFilterEncoding(N,SELECTED_FIELDS.length,K,Q);
-//        encoding.makeFromSchema(schema, SELECTED_FIELDS, REST_FIELDS);
-//        assertTrue(encoding.isEncodingOfSchema(schema));
-//        encodeLocalFile("static_fbf", avroFiles, schema, encoding);
-//        saveAvroSchemaToFile(encoding.getEncodingSchema(),new File("static_fbf.avsc"));
-//    }
-//
-//    @Test
-//    public void test4() throws URISyntaxException, IOException, InterruptedException, BloomFilterEncodingException {
-//        final Schema encodingSchema = loadAvroSchemaFromFile( new File("static_fbf.avsc"));
-//        FieldBloomFilterEncoding encoding = new FieldBloomFilterEncoding();
-//        encoding.setupFromSchema(encodingSchema);
-//        assertTrue(encoding.isEncodingOfSchema(schema));
-//    }
-//
-//    @Test
-//    public void test5() throws URISyntaxException, IOException, InterruptedException, BloomFilterEncodingException {
-//        RowBloomFilterEncoding encoding = new RowBloomFilterEncoding(avgQcount, weights, K, Q);
-//        encoding.makeFromSchema(schema, SELECTED_FIELDS, REST_FIELDS);
-//        assertTrue(encoding.isEncodingOfSchema(schema));
-//        encodeLocalFile("weighted_rbf", avroFiles, schema, encoding);
-//        saveAvroSchemaToFile(encoding.getEncodingSchema(),new File("weighted_rbf.avsc"));
-//    }
-//
-//    @Test
-//    public void test6() throws URISyntaxException, IOException, InterruptedException, BloomFilterEncodingException {
-//        final Schema encodingSchema = loadAvroSchemaFromFile( new File("weighted_rbf.avsc"));
-//        RowBloomFilterEncoding encoding = new RowBloomFilterEncoding();
-//        encoding.setupFromSchema(encodingSchema);
-//        assertTrue(encoding.isEncodingOfSchema(schema));
-//    }
-//
-//    @Test
-//    public void test7() throws URISyntaxException, IOException, InterruptedException, BloomFilterEncodingException {
-//        RowBloomFilterEncoding encoding = new RowBloomFilterEncoding(avgQcount,N,K,Q);
-//        encoding.makeFromSchema(schema, SELECTED_FIELDS, REST_FIELDS);
-//        assertTrue(encoding.isEncodingOfSchema(schema));
-//        encodeLocalFile("uniform_rbf", avroFiles, schema, encoding);
-//        saveAvroSchemaToFile(encoding.getEncodingSchema(),new File("uniform_rbf.avsc"));
-//    }
-//
-//    @Test
-//    public void test8() throws URISyntaxException, IOException, InterruptedException, BloomFilterEncodingException {
-//        final Schema encodingSchema = loadAvroSchemaFromFile( new File("uniform_rbf.avsc"));
-//        RowBloomFilterEncoding encoding = new RowBloomFilterEncoding();
-//        encoding.setupFromSchema(encodingSchema);
-//        assertTrue(encoding.isEncodingOfSchema(schema));
-//    }
+    @Test
+    public void test1() throws URISyntaxException, IOException, InterruptedException, BloomFilterEncodingException {
+        BloomFilterEncoding encoding = new FieldBloomFilterEncoding(avgQcount,K,Q);
+        encoding.makeFromSchema(schema, SELECTED_FIELDS, REST_FIELDS);
+        assertTrue(encoding.isEncodingOfSchema(schema));
+        encodeLocalFile("dynamic_fbf",avroFiles,schema,encoding);
+        saveAvroSchemaToFile(encoding.getEncodingSchema(),new File("dynamic_fbf.avsc"));
+    }
+
+    @Test
+    public void test2() throws URISyntaxException, IOException, InterruptedException, BloomFilterEncodingException {
+        final Schema encodingSchema = loadAvroSchemaFromFile( new File("dynamic_fbf.avsc"));
+        FieldBloomFilterEncoding encoding = new FieldBloomFilterEncoding();
+        encoding.setupFromSchema(encodingSchema);
+        assertTrue(encoding.isEncodingOfSchema(schema));
+        encodeLocalFile("dynamic_fbf_copy",avroFiles,schema,encoding);
+    }
+
+    @Test
+    public void test3() throws URISyntaxException, IOException, InterruptedException, BloomFilterEncodingException {
+        FieldBloomFilterEncoding encoding = new FieldBloomFilterEncoding(N,SELECTED_FIELDS.length,K,Q);
+        encoding.makeFromSchema(schema, SELECTED_FIELDS, REST_FIELDS);
+        assertTrue(encoding.isEncodingOfSchema(schema));
+        encodeLocalFile("static_fbf", avroFiles, schema, encoding);
+        saveAvroSchemaToFile(encoding.getEncodingSchema(),new File("static_fbf.avsc"));
+    }
+
+    @Test
+    public void test4() throws URISyntaxException, IOException, InterruptedException, BloomFilterEncodingException {
+        final Schema encodingSchema = loadAvroSchemaFromFile( new File("static_fbf.avsc"));
+        FieldBloomFilterEncoding encoding = new FieldBloomFilterEncoding();
+        encoding.setupFromSchema(encodingSchema);
+        assertTrue(encoding.isEncodingOfSchema(schema));
+        encodeLocalFile("static_fbf_copy", avroFiles, schema, encoding);
+    }
+
+    @Test
+    public void test5() throws URISyntaxException, IOException, InterruptedException, BloomFilterEncodingException {
+        RowBloomFilterEncoding encoding = new RowBloomFilterEncoding(avgQcount, weights, K, Q);
+        encoding.makeFromSchema(schema, SELECTED_FIELDS, REST_FIELDS);
+        assertTrue(encoding.isEncodingOfSchema(schema));
+        encodeLocalFile("weighted_rbf", avroFiles, schema, encoding);
+        saveAvroSchemaToFile(encoding.getEncodingSchema(),new File("weighted_rbf.avsc"));
+    }
+
+    @Test
+    public void test6() throws URISyntaxException, IOException, InterruptedException, BloomFilterEncodingException {
+        final Schema encodingSchema = loadAvroSchemaFromFile( new File("weighted_rbf.avsc"));
+        RowBloomFilterEncoding encoding = new RowBloomFilterEncoding();
+        encoding.setupFromSchema(encodingSchema);
+        assertTrue(encoding.isEncodingOfSchema(schema));
+        encodeLocalFile("weighted_rbf_copy", avroFiles, schema, encoding);
+    }
+
+    @Test
+    public void test7() throws URISyntaxException, IOException, InterruptedException, BloomFilterEncodingException {
+        RowBloomFilterEncoding encoding = new RowBloomFilterEncoding(avgQcount,N,K,Q);
+        encoding.makeFromSchema(schema, SELECTED_FIELDS, REST_FIELDS);
+        assertTrue(encoding.isEncodingOfSchema(schema));
+        encodeLocalFile("uniform_rbf", avroFiles, schema, encoding);
+        saveAvroSchemaToFile(encoding.getEncodingSchema(),new File("uniform_rbf.avsc"));
+    }
+
+    @Test
+    public void test8() throws URISyntaxException, IOException, InterruptedException, BloomFilterEncodingException {
+        final Schema encodingSchema = loadAvroSchemaFromFile( new File("uniform_rbf.avsc"));
+        RowBloomFilterEncoding encoding = new RowBloomFilterEncoding();
+        encoding.setupFromSchema(encodingSchema);
+        assertTrue(encoding.isEncodingOfSchema(schema));
+        encodeLocalFile("uniform_rbf_copy", avroFiles, schema, encoding);
+    }
 
     @Test
     public void test9() throws URISyntaxException, IOException, InterruptedException, BloomFilterEncodingException {
@@ -145,6 +148,7 @@ public class BloomFilterEncodingTest {
         CLKEncoding encoding = new CLKEncoding();
         encoding.setupFromSchema(encodingSchema);
         assertTrue(encoding.isEncodingOfSchema(schema));
+        encodeLocalFile("clk_copy", avroFiles, schema, encoding);
     }
 
 

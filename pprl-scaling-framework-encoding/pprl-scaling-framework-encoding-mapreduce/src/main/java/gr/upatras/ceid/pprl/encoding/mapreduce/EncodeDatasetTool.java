@@ -1,10 +1,6 @@
 package gr.upatras.ceid.pprl.encoding.mapreduce;
 
-import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
-import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingUtil;
-import gr.upatras.ceid.pprl.encoding.FieldBloomFilterEncoding;
-import gr.upatras.ceid.pprl.encoding.RowBloomFilterEncoding;
 import org.apache.avro.Schema;
 import org.apache.avro.mapreduce.AvroJob;
 import org.apache.avro.mapreduce.AvroKeyInputFormat;
@@ -12,7 +8,6 @@ import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.Job;

@@ -40,6 +40,17 @@ public class BloomFilterEncodingUtil {
             throw new BloomFilterEncodingException("String \"" + scheme +"\" does not belong in available schemes.");
     }
 
+    public static BloomFilterEncoding newInstance(final Schema schema)
+            throws BloomFilterEncodingException {
+        String ns = schema.getNamespace();
+        if(!ns.startsWith("encoding.schema"))
+            throw new BloomFilterEncodingException("Invalid encoding schema.");
+        String s = ns.substring("encoding.schema.".length());
+        String[] sParts = s.split("\\.");
+        assert sParts.length == 3;
+        return newInstance(sParts[0].toUpperCase());
+    }
+
     public static BloomFilterEncoding newInstance(final String scheme)
             throws BloomFilterEncodingException {
         schemeNameSupported(scheme);
@@ -135,5 +146,61 @@ public class BloomFilterEncodingUtil {
         double sum = 0;
         for(double d : doubles) sum += d;
         return Math.abs(1.0 - sum) <= error;
+    }
+
+    public static List<Schema.Field> setupIncludedFields(final Schema schema, final String[] includedFieldNames) {
+        List<Schema.Field> nonSelectedFields = new ArrayList<Schema.Field>();
+        for(Schema.Field field : schema.getFields()) {
+            if(Arrays.asList(includedFieldNames).contains(field.name())) {
+                nonSelectedFields.add(new Schema.Field(field.name(), field.schema(), field.doc(), null));
+            }
+        }
+        return nonSelectedFields;
+    }
+
+    public static Schema basedOnExistingSchema(final Schema schema,
+                                               final String[] selectedFieldNames, final String[] includedFieldNames,
+                                               final Schema existingSchema,
+                                               final String[] existingFieldNames)
+            throws BloomFilterEncodingException {
+        if(!nameBelongsToSchema(schema, selectedFieldNames))
+            throw new BloomFilterEncodingException("At least one of the selected for encoding field names " +
+                    "does not belong in schema. Selected Field Names " + Arrays.toString(selectedFieldNames));
+
+        if(!nameBelongsToSchema(schema, includedFieldNames))
+            throw new BloomFilterEncodingException("At least one of the included field names " +
+                    "does not belong in schema. Rest Field Names " + Arrays.toString(includedFieldNames));
+
+        String[] parts = existingSchema.getName().substring("PPRL_Encoding_".length()).split("_",4);
+        assert parts.length >= 3;
+        final String name = parts[0] + "_" + parts[1] + "_" + parts[2];
+
+        Schema encodingSchema = Schema.createRecord(
+                String.format("PPRL_Encoding_%s_%s", name, schema.getName()),
+                String.format("PPRL Encoding of %s", schema.getName()),
+                String.format("encoding.schema.%s", name.replace("_", ".").toLowerCase()),
+                false);
+
+        final List<Schema.Field> restFields = setupIncludedFields(schema, includedFieldNames);
+        final List<Schema.Field> encodingFields = new ArrayList<Schema.Field>();
+
+        for (Schema.Field existingField : existingSchema.getFields()) {
+            if(existingField.name().startsWith("encoding.field")) {
+                String encodingFieldName = existingField.name();
+                for (int i = 0; i < existingFieldNames.length; i++) {
+                    final String toReplace = "_src_" + existingFieldNames[i];
+                    final String replacement = "_src_" + selectedFieldNames[i];
+                    encodingFieldName = encodingFieldName.replace(toReplace,replacement);
+                }
+                encodingFields.add(new Schema.Field(encodingFieldName,
+                        existingField.schema(), existingField.doc(), null));
+            }
+        }
+
+        restFields.addAll(encodingFields);
+        encodingSchema.setFields(restFields);
+        LOG.debug("Encoding Schema ready :\n-----------------------\n" +
+                encodingSchema.toString(true) + "-----------------------\n");
+        return encodingSchema;
     }
 }

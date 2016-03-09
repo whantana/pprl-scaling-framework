@@ -5,7 +5,6 @@ import org.apache.avro.generic.GenericRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -116,28 +115,31 @@ public abstract class BloomFilterEncoding {
     public abstract void setupFromSchema(final Schema encodingSchema) throws BloomFilterEncodingException;
 
     public void makeFromSchema(final Schema schema,
-                               final String[] selectedFieldNames, final String[] includedtFieldNames)
+                               final String[] selectedFieldNames, final String[] includedFieldNames)
             throws BloomFilterEncodingException {
 
         if(!BloomFilterEncodingUtil.nameBelongsToSchema(schema, selectedFieldNames))
             throw new BloomFilterEncodingException("At least one of the selected for encoding field names " +
                     "does not belong in schema. Selected Field Names " + Arrays.toString(selectedFieldNames));
 
-        if(!BloomFilterEncodingUtil.nameBelongsToSchema(schema, includedtFieldNames))
+        if(!BloomFilterEncodingUtil.nameBelongsToSchema(schema, includedFieldNames))
             throw new BloomFilterEncodingException("At least one of the included field names " +
-                    "does not belong in schema. Rest Field Names " + Arrays.toString(includedtFieldNames));
+                    "does not belong in schema. Rest Field Names " + Arrays.toString(includedFieldNames));
         Schema encodingSchema = Schema.createRecord(
                 String.format("PPRL_Encoding_%s_%s", getName(), schema.getName()),
                 String.format("PPRL Encoding of %s", schema.getName()),
                 String.format("encoding.schema.%s", getName().replace("_", ".").toLowerCase()),
                 false);
 
-        final List<Schema.Field> restFields = setupIncludedFields(schema, includedtFieldNames);
+        final List<Schema.Field> restFields = BloomFilterEncodingUtil.setupIncludedFields(schema,
+                includedFieldNames);
+        for (String fieldName : includedFieldNames)
+            addMappedName(fieldName,fieldName);
         final List<Schema.Field> encodingFields = setupSelectedForEncodingFields(selectedFieldNames);
         restFields.addAll(encodingFields);
         encodingSchema.setFields(restFields);
         LOG.debug("Encoding Schema ready :\n-----------------------\n" +
-                  encodingSchema.toString(true) + "-----------------------\n");
+                encodingSchema.toString(true) + "-----------------------\n");
         setEncodingSchema(encodingSchema);
     }
 
@@ -161,18 +163,5 @@ public abstract class BloomFilterEncoding {
         }
         LOG.debug("isSchemaValid={} && areFieldsValid={}",isSchemaValid,areFieldsValid);
         return isSchemaValid && areFieldsValid;
-    }
-
-
-    private List<Schema.Field> setupIncludedFields(final Schema schema, final String[] includedFieldNames)
-            throws BloomFilterEncodingException {
-        List<Schema.Field> nonSelectedFields = new ArrayList<Schema.Field>();
-        for(Schema.Field field : schema.getFields()) {
-            if(Arrays.asList(includedFieldNames).contains(field.name())) {
-                nonSelectedFields.add(new Schema.Field(field.name(), field.schema(), field.doc(), null));
-                addMappedName(field.name(), field.name());
-            }
-        }
-        return nonSelectedFields;
     }
 }

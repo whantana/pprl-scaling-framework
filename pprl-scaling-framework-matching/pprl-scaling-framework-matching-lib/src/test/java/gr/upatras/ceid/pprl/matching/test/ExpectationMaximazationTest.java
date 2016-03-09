@@ -4,7 +4,6 @@ package gr.upatras.ceid.pprl.matching.test;
 import gr.upatras.ceid.pprl.matching.ExpectationMaximization;
 import gr.upatras.ceid.pprl.matching.SimilarityMatrix;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -24,7 +24,9 @@ import org.springframework.shell.core.annotation.CliOption;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class EncodingCommands implements CommandMarker {
@@ -51,7 +53,7 @@ public class EncodingCommands implements CommandMarker {
 
     @CliAvailabilityIndicator(value = {"encode_supported_schemes","encode_calculate_encoding_sizes"})
     public boolean availability0() { return true; }
-    @CliAvailabilityIndicator(value = {"encode_local_data"})
+    @CliAvailabilityIndicator(value = {"encode_local_data","encode_local_data_by_schema"})
     public boolean availability1() { return les != null && lds != null; }
 
 
@@ -187,6 +189,77 @@ public class EncodingCommands implements CommandMarker {
 
             LOG.info("\tEncoded data path = {}",encodingDatapath);
             LOG.info("\n");
+            return "DONE";
+        } catch (Exception e) {
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
+        }
+    }
+
+    @CliCommand(value = "encode_local_data_by_schema", help = "Encode local data based on existing encoding.")
+    public String command3(
+            @CliOption(key = {"avro"}, mandatory = true, help = "Local data avro files (comma separated) or including directory.")
+            final String avroStr,
+            @CliOption(key = {"schema"}, mandatory = true, help = "Local schema avro file.")
+            final String schemaStr,
+            @CliOption(key = {"name"}, mandatory = true, help = "Name of encoding.")
+            final String name,
+            @CliOption(key = {"fields"}, mandatory = true, help = "Selected fields to be encoded")
+            final String fieldsStr,
+            @CliOption(key = {"encoding_schema"}, mandatory = true, help = "Local schema avro file.")
+            final String encodingSchemaStr,
+            @CliOption(key = {"mapping"}, mandatory = true, help = "Mapping of fields with the encoded counterparts.")
+            final String mappingStr,
+            @CliOption(key = {"include"}, mandatory = false, help = "(Optional) Fields to be included")
+            final String includeStr
+    ) {
+        try { // TODO Test this command. Need to have at least two datasets here
+
+            final Path schemaPath = CommandUtil.retrievePath(schemaStr);
+            final Path[] avroPaths = CommandUtil.retrievePaths(avroStr);
+            final String[] fields = CommandUtil.retrieveFields(fieldsStr);
+            final String[] included = CommandUtil.retrieveFields(includeStr);
+            final Path encodingSchemaPath = CommandUtil.retrievePath(encodingSchemaStr);
+            final String[] existingFieldNames = CommandUtil.retrieveFields(fieldsStr);
+
+            if(fields.length != existingFieldNames.length)
+                throw new IllegalArgumentException("Not the same length of fields");
+
+            LOG.info("Encoding local data :");
+            LOG.info("\tEncoding name : {}", name);
+            LOG.info("\tSelected data files : {}", Arrays.toString(avroPaths));
+            LOG.info("\tSelected schema file : {}", schemaPath);
+            LOG.info("\tSelected fields to be encoded : {}", Arrays.toString(fields));
+            if(included.length !=0)
+                LOG.info("\tSelected fields to included   : {}", Arrays.toString(included));
+            LOG.info("\tBase Encoding schema stored in file : {}",encodingSchemaPath);
+            final Map<String,String> field2fieldMap = new HashMap<String,String>();
+            for (int i = 0; i < fields.length; i++)
+                field2fieldMap.put(fields[i],existingFieldNames[i]);
+            LOG.info("\tField Mappings are : {}",field2fieldMap);
+
+            final Schema existingEncodingSchema = lds.loadSchema(encodingSchemaPath);
+            final Schema schema = lds.loadSchema(schemaPath);
+            final BloomFilterEncoding encoding =
+                    BloomFilterEncodingUtil.newInstance(existingEncodingSchema);
+            encoding.setupFromSchema(
+                    BloomFilterEncodingUtil.basedOnExistingSchema(
+                            schema, fields, included,
+                            existingEncodingSchema, existingFieldNames)
+            );
+
+            if(!encoding.isEncodingOfSchema(schema))
+                throw new BloomFilterEncodingException("Encoding does not validate with source dataset.");
+
+            final GenericRecord[] records = lds.loadRecords(avroPaths,schemaPath);
+
+            final GenericRecord[] encodedRecords = les.encodeRecords(records, encoding);
+            final Schema encodingSchema = encoding.getEncodingSchema();
+
+            final Path encodingDatapath = lds.saveRecords(name,encodedRecords,encodingSchema);
+
+            LOG.info("\tEncoded data path = {}",encodingDatapath);
+            LOG.info("\n");
+
             return "DONE";
         } catch (Exception e) {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();

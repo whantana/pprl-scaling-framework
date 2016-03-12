@@ -20,6 +20,7 @@ public class CombinatoricsUtil {
     public static BigInteger factorial(long n) { return recfact(1, n); }
 
     public static long twoCombinationsCount(long n) {
+        assert n >= 2;
         BigInteger nFactorial = factorial(n);
         BigInteger nm2Factorial = factorial(n-2);
         BigInteger nc2 = nFactorial.divide(nm2Factorial.multiply(new BigInteger("2")));
@@ -27,12 +28,15 @@ public class CombinatoricsUtil {
     }
 
     public static long rankTwoCombination(final int[] c) {
+        assert c.length == 2;
+        assert c[0] >= 0 || c[1] >= 0;
         long rank = (c[1] >= 2)?(c[1]*(c[1]-1)/2):0;
         rank += (c[0] >= 1)?c[0]:0;
         return rank;
     }
 
     public static int rankCombination(final int[] c, final int k) {
+        assert c.length == k;
         int rank = 0;
         for (int i = k; i >= 1 ; i--) {
             if(c[i-1] >= i) {
@@ -43,9 +47,9 @@ public class CombinatoricsUtil {
     }
 
     public static Iterator<int[]> getPairs(final int n) {
+        assert n >=2;
         return (new Combinations(n,2)).iterator();
     }
-
 
 
     public static long[] ranksContaining(final int e, final int n) {
@@ -58,6 +62,7 @@ public class CombinatoricsUtil {
     }
 
     public static long[][] ranksArraysContaining(final int e, final int n) {
+        assert e < n && e >= 0 && n >= 0;
         long[][] ranks;
         int ranksLeft = n - 1;
         int i = 0;
@@ -84,7 +89,6 @@ public class CombinatoricsUtil {
     }
 
     public static Iterator<Long> oldranksOfElementIterator(final int e, final int n) {
-        // TODO THROW EXCEPTIONS
         return new OldElementLexicographicIterator(e,n);
     }
 
@@ -136,7 +140,7 @@ public class CombinatoricsUtil {
     }
 
     public static Iterator<Long> ranksOfElementIterator(final int e, final int n) {
-        // TODO THROW EXCEPTIONS
+        assert e < n && e >= 0 && n >= 0;
         return new ElementLexicographicIterator(e,n);
     }
 

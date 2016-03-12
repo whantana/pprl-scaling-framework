@@ -13,7 +13,7 @@ import java.util.Iterator;
 
 
 public class GeneratePairsMapper extends Mapper<AvroKey<GenericRecord>, NullWritable, LongWritable, AvroKey<GenericRecord>> {
-
+    // TODO make a tool for this
     private int recordCount;
     private String uidFieldName;
 

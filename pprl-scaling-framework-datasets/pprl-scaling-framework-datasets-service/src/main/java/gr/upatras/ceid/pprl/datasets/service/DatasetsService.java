@@ -68,6 +68,8 @@ public class DatasetsService implements InitializingBean {
 
     // TODO sample files (need spark here)
 
+    // TODO Add a an int UID field for a sample
+
 
     public Path uploadFiles(final Path[] avroPaths, final Path schemaPath,final  String name)
             throws IOException {

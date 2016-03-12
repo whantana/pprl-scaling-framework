@@ -15,6 +15,7 @@
 
     <modules>
         <module>pprl-scaling-framework-matching-lib</module>
+        <module>pprl-scaling-framework-matching-mapreduce</module>
         <module>pprl-scaling-framework-matching-service</module>
     </modules>
 </project>

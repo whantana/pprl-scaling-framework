@@ -19,15 +19,15 @@ public class CombinatoricsUtil {
 
     public static BigInteger factorial(long n) { return recfact(1, n); }
 
-    public static int twoCombinationsCount(int n) {
+    public static long twoCombinationsCount(long n) {
         BigInteger nFactorial = factorial(n);
         BigInteger nm2Factorial = factorial(n-2);
         BigInteger nc2 = nFactorial.divide(nm2Factorial.multiply(new BigInteger("2")));
-        return nc2.intValue();
+        return nc2.longValue();
     }
 
-    public static int rankTwoCombination(final int[] c) {
-        int rank = (c[1] >= 2)?(c[1]*(c[1]-1)/2):0;
+    public static long rankTwoCombination(final int[] c) {
+        long rank = (c[1] >= 2)?(c[1]*(c[1]-1)/2):0;
         rank += (c[0] >= 1)?c[0]:0;
         return rank;
     }
@@ -48,33 +48,33 @@ public class CombinatoricsUtil {
 
 
 
-    public static int[] ranksContaining(final int e, final int n) {
-        int rr[][] = ranksArraysContaining(e,n);
-        int[] ranks = new int[n-1];
+    public static long[] ranksContaining(final int e, final int n) {
+        long rr[][] = ranksArraysContaining(e,n);
+        long[] ranks = new long[n-1];
         int r = 0;
-        if(rr[0].length == 2) for (int i = rr[0][0]; i <= rr[0][1]; i++) ranks[r++] = i;
+        if(rr[0].length == 2) for (long i = rr[0][0]; i <= rr[0][1]; i++) ranks[r++] = i;
         for (int i = (rr[0].length == 2)?1:0 ; i < rr.length; i++) ranks[r++] = rr[i][0];
         return ranks;
     }
 
-    public static int[][] ranksArraysContaining(final int e, final int n) {
-        int[][] ranks;
+    public static long[][] ranksArraysContaining(final int e, final int n) {
+        long[][] ranks;
         int ranksLeft = n - 1;
         int i = 0;
         if (e > 0) {
             int[] p0 = new int[]{0, e};
-            int rs = rankTwoCombination(p0);
-            int re = rs + e - 1;
+            long rs = rankTwoCombination(p0);
+            long re = rs + e - 1;
             ranksLeft -= e;
-            ranks = new int[1 + ranksLeft][];
-            ranks[i++] = new int[]{rs, re};
-        } else ranks = new int[ranksLeft][];
+            ranks = new long[1 + ranksLeft][];
+            ranks[i++] = new long[]{rs, re};
+        } else ranks = new long[ranksLeft][];
 
         if(ranksLeft > 0) {
             int element = e + 1;
-            int r = rankTwoCombination(new int[]{e, element});
+            long r = rankTwoCombination(new int[]{e, element});
             while (ranksLeft > 0) {
-                ranks[i++] = new int[]{r};
+                ranks[i++] = new long[]{r};
                 r += element;
                 element++;
                 ranksLeft--;
@@ -83,22 +83,23 @@ public class CombinatoricsUtil {
         return ranks;
     }
 
-    public static Iterator<Integer> ranksOfElementIterator(final int e, final int n) {
-        return new ElementLexicographicIterator(e,n);
+    public static Iterator<Long> oldranksOfElementIterator(final int e, final int n) {
+        // TODO THROW EXCEPTIONS
+        return new OldElementLexicographicIterator(e,n);
     }
 
-    private static class ElementLexicographicIterator implements Iterator<Integer> {
+    private static class OldElementLexicographicIterator implements Iterator<Long> {
 
         private boolean more;
-        private int[][] ranks;
+        private long[][] ranks;
         private int ranksLeft;
-        private int rank;
+        private long rank;
         private boolean sequencial;
-        private int rstart;
-        private int rend;
+        private long rstart;
+        private long rend;
         private int i;
 
-        public ElementLexicographicIterator(final int e,final int n) {
+        public OldElementLexicographicIterator(final int e, final int n) {
             ranks = ranksArraysContaining(e, n);
             ranksLeft = n - 1;
             more = true;
@@ -110,14 +111,14 @@ public class CombinatoricsUtil {
                 i = 1;
                 sequencial = true;
             }
-            else { rank = ranks[i][0] ; }
+            else { rank = ranks[0][0] ; }
         }
 
         public boolean hasNext() {
             return more;
         }
 
-        public Integer next() {
+        public Long next() {
             if(sequencial) {
                 rank = rstart++;
                 sequencial = !(rstart > rend);
@@ -127,6 +128,65 @@ public class CombinatoricsUtil {
             ranksLeft--;
             if(ranksLeft <= 0 || i == ranks.length ) { more = false ;}
             return rank;
+        }
+
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    public static Iterator<Long> ranksOfElementIterator(final int e, final int n) {
+        // TODO THROW EXCEPTIONS
+        return new ElementLexicographicIterator(e,n);
+    }
+
+
+    private static class ElementLexicographicIterator implements Iterator<Long> {
+        private int ranksLeft;
+        private long baseRank;
+        private int e;
+        private int other;
+        private long rank;
+        private boolean sequencial;
+        private boolean more;
+
+        public ElementLexicographicIterator(final int e, final int n) {
+            ranksLeft = n - 1;
+            this.e = e;
+            more = true;
+            other =  (e > 0) ? 0 : 1;
+            baseRank = rankTwoCombination(
+                    (e > 0) ? new int[]{other,this.e} :
+                              new int[]{this.e,other}
+            );
+            sequencial = (e > 0);
+        }
+
+        public boolean hasNext() {
+            return more;
+        }
+
+        public Long next() {
+            if(sequencial) {
+                rank = baseRank + other;
+                other++;
+                ranksLeft--;
+                more = !(ranksLeft == 0);
+                sequencial=!(other == e);
+                return rank;
+            } else {
+                if(other == e){
+                    other++;
+                    baseRank = rankTwoCombination(new int[]{e,other});
+                    rank = baseRank;
+                } else {
+                    rank = rank + (other-1);
+                }
+                other++;
+                ranksLeft--;
+                more = !(ranksLeft == 0);
+                return rank;
+            }
         }
 
         public void remove() {

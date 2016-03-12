@@ -26,7 +26,7 @@ public class LocalMatchingService implements InitializingBean {
                                          final String similarityMethodName)
             throws Exception {
         try {
-            final int pairCount = CombinatoricsUtil.twoCombinationsCount(records.length);
+            final long pairCount = CombinatoricsUtil.twoCombinationsCount(records.length);
             final int fieldCount = fieldNames.length;
             if(Long.compare(pairCount*fieldCount,Integer.MAX_VALUE) > 0)
                 throw new UnsupportedOperationException("Cannot create similarity matrix. #N*#F < Integer.MAX");

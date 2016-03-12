@@ -150,7 +150,7 @@ public class SimilarityMatrixTest {
 
     public static SimilarityMatrix createSimilarityMatrix(final String[][] records,
                                                           final String similarityMethodName) {
-        final int pairCount = CombinatoricsUtil.twoCombinationsCount(records.length);
+        final long pairCount = CombinatoricsUtil.twoCombinationsCount(records.length);
         final int fieldCount = records[0].length;
         if(Long.compare(pairCount*fieldCount,Integer.MAX_VALUE) > 0)
             throw new UnsupportedOperationException("Cannot create gamma. #N*#F < Integer.MAX");

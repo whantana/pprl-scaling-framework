@@ -13,11 +13,8 @@ public class EncodingService implements InitializingBean{
 
     private static final Logger LOG = LoggerFactory.getLogger(EncodingService.class);
 
-    @Autowired(required = false)
-    protected FileSystem pprlClusterHdfs;
-
-    @Autowired(required = false)
-    private ToolRunner encodeDatasetToolRunner;
+    // @Autowired(required = false)
+    // private ToolRunner encodeDatasetToolRunner;
 
     public void afterPropertiesSet() {
         LOG.info("Encoding service initialized.");

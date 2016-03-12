@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 public class ExpectationMaximization {
     public static final int MAX_ITERATIONS = 1000;
-    private int pairCount;
+    private long pairCount;
     private int fieldCount;
     private int iteration;
     private double[] m;
@@ -98,7 +98,7 @@ public class ExpectationMaximization {
         return p;
     }
 
-    public int getPairCount() {
+    public long getPairCount() {
         return pairCount;
     }
 

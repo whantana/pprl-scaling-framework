@@ -50,6 +50,9 @@ public class DatasetsCommands implements CommandMarker {
     }
     @CliAvailabilityIndicator(value = {"local_data_stats"})
     public boolean availability1() { return lds != null && lms != null;}
+    @CliAvailabilityIndicator(value = {"upload_local_data"})
+    public boolean availability2() { return ds != null;}
+
 
     @CliCommand(value = "local_data_sample", help = "View a sample of local data.")
     public String command0(
@@ -185,15 +188,39 @@ public class DatasetsCommands implements CommandMarker {
         }
     }
 
+    @CliCommand(value = "upload_local_data", help = "Upload local data to the PPRL-site hdfs cluster.")
+    public String command3(
+            @CliOption(key = {"avro"}, mandatory = true, help = "Local data avro files (comma separated) or including directory.")
+            final String avroStr,
+            @CliOption(key = {"schema"}, mandatory = true, help = "Local schema avro file.")
+            final String schemaStr,
+            @CliOption(key = {"name"}, mandatory = true, help = "Name of the dataset. Will be stored at hdfs://users/${USER.HOME}/${name}")
+            final String name
+    ) {
+        try{
+            final Path schemaPath = CommandUtil.retrievePath(schemaStr);
+            final Path[] avroPaths = CommandUtil.retrievePaths(avroStr);
+            LOG.info("Uploading local data to hdfs :");
+            LOG.info("\tSelected data files : {}", Arrays.toString(avroPaths));
+            LOG.info("\tSelected schema file : {}", schemaPath);
+            LOG.info("\tName : {}",name);
+            final Path uploadedPath = ds.uploadFiles(avroPaths,schemaPath,name);
+            LOG.info("\tDestination path : {}",uploadedPath);
+            return "DONE";
+        } catch (Exception e) {
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
+        }
+    }
+
+// TODO add a record uid (monotonically increased int )
+
+
 //    @CliAvailabilityIndicator(value = {"dat_sample","dat_describe"})
 //    public boolean datasetCommandsAvailability() {
 //        return ds != null;
 //    }
 //
-//    @CliCommand(value = "dat_sample", help = " describe (dummy).")
-//    public String sampleDummy() {
-//        return "DUMMY!";
-//    }
+
 //
 //    @CliCommand(value = "dat_describe", help = "stats (dummy).")
 //    public String sampleDescribe() {

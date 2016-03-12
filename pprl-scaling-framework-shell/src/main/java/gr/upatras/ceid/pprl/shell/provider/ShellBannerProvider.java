@@ -59,7 +59,7 @@ public class ShellBannerProvider extends DefaultBannerProvider {
         sb.append(String.format("\nPPRL HDFS Site Namenode : %s", hadoopNamenode));
         sb.append(String.format("\nPPRL YARN Site ResourceManager : %s", yarnResourceManager));
         sb.append(String.format("\nPPRL Spark Master : %s", sparkMaster));
-        sb.append(String.format("\nPPRL Database Host : %s", dbHost));
+//        sb.append(String.format("\nPPRL Database Host : %s", dbHost));
         sb.append("\n---\nYou can type \'help\' to get started.");
         return sb.toString();
     }

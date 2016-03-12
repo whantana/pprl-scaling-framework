@@ -46,16 +46,18 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
                 .property("yarn.nodemanager.aux-services", "mapreduce_shuffle")
                 .property("dfs.client.use.datanode.hostname", "true")
                 .property("yarn.application.classpath", yarnApplicationClasspath);
+		
+		// TODO review spring capabilities for different hadoop vendors 
     }
 
-    @Bean
+    @Bean(name = "hdfs")
     @Conditional(PPRLCLusterCondition.class)
     @Autowired
     public FileSystem fileSystem(final org.apache.hadoop.conf.Configuration conf) throws IOException {
         return FileSystem.get(conf);
     }
 
-    @Bean(name = "localFS")
+    @Bean(name = "localFs")
     @Autowired
     public FileSystem localfileSystem(final org.apache.hadoop.conf.Configuration conf) throws IOException {
         return FileSystem.getLocal(conf);

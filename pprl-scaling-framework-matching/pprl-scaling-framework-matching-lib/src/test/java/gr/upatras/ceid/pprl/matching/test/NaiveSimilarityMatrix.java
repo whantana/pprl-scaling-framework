@@ -20,11 +20,11 @@ public class NaiveSimilarityMatrix {
     public NaiveSimilarityMatrix(final int pairCount, final int fieldCount) {
         this.fieldCount = fieldCount;
         this.pairCount = pairCount;
-        totalBits = pairCount*fieldCount;
+        totalBits = ((int)pairCount)*fieldCount;
         bits = new BitSet(totalBits);
         nnzCount = 0;
         minIndex = 0;
-        maxIndex = pairCount*fieldCount - 1;
+        maxIndex = totalBits - 1;
     }
 
     private void set(int rank,int field,boolean value) {
@@ -84,7 +84,7 @@ public class NaiveSimilarityMatrix {
 
     public static NaiveSimilarityMatrix createMatrix(final String[][] records,
                                                     final String similarityMethodName) {
-        final int pairCount = CombinatoricsUtil.twoCombinationsCount(records.length);
+        final int pairCount = (int)CombinatoricsUtil.twoCombinationsCount(records.length);
         final int fieldCount = records[0].length;
         if(Long.compare(pairCount*fieldCount,Integer.MAX_VALUE) > 0)
             throw new UnsupportedOperationException("Cannot create gamma. #N*#F < Integer.MAX");
@@ -92,11 +92,11 @@ public class NaiveSimilarityMatrix {
         final Iterator<int[]> pairIter = CombinatoricsUtil.getPairs(records.length);
         do {
             int pair[] = pairIter.next();
-            int i = CombinatoricsUtil.rankTwoCombination(pair);
+            long i = CombinatoricsUtil.rankTwoCombination(pair);
             for(int j=0; j < records[0].length; j++) {
                 String s1 = records[pair[0]][j];
                 String s2 = records[pair[1]][j];
-                if(NaiveSimilarityMatrix.similarity(similarityMethodName, s1, s2)) matrix.set(i, j);
+                if(NaiveSimilarityMatrix.similarity(similarityMethodName, s1, s2)) matrix.set((int)i, j);
             }
         }while(pairIter.hasNext());
         return matrix;

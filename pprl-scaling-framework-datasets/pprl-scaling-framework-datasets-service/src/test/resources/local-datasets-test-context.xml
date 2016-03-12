@@ -3,7 +3,7 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-    <bean id="localFS" class="org.apache.hadoop.fs.LocalFileSystem"/>
+    <bean id="localFs" class="org.apache.hadoop.fs.LocalFileSystem"/>
     <bean id="localDatasetsService" class="gr.upatras.ceid.pprl.datasets.service.LocalDatasetsService"/>
 
 </beans>

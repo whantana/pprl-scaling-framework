@@ -15,6 +15,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RemoteIterator;
+import org.apache.hadoop.fs.permission.FsPermission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.SortedSet;
@@ -35,6 +37,44 @@ public class DatasetsUtil {
 
     private static boolean fsIsLocal(final FileSystem fs) {
         return fs.getScheme().equals("file");
+    }
+
+    public static Path[] createDatasetDirectories(final FileSystem fs, final String name, final Path basePath)
+            throws IOException {
+        return createDatasetDirectories(fs,name,basePath,null);
+    }
+
+    public static Path[] createDatasetDirectories(final FileSystem fs, final String name, final Path basePath,
+                                                  final FsPermission permission)
+            throws IOException {
+        LOG.debug(String.format("Creating dataset directories [FileSystem=%s,Path=%s]",
+                fsIsLocal(fs) ? "local" : fs.getUri(), name));
+        final Path datasetPath = new Path(basePath,name);
+        if (fs.exists(datasetPath)) {
+            LOG.debug(String.format("Deleting directory because it already exists " +
+                            "[FileSystem=%s,basePath=%s]",
+                    fsIsLocal(fs) ? "local" : fs.getUri(), name));
+            fs.delete(datasetPath, true);
+        }
+        LOG.debug(String.format("Making base directory [FileSystem=%s,basePath=%s]",
+                fsIsLocal(fs) ? "local" : fs.getUri(), datasetPath));
+        if(permission == null ) fs.mkdirs(datasetPath);
+        else fs.mkdirs(datasetPath, permission);
+
+        final Path datasetAvroPath = new Path(datasetPath,"avro");
+        LOG.debug(String.format("Making avro directory [FileSystem=%s,datasetAvroPath=%s]",
+                fsIsLocal(fs) ? "local" : fs.getUri(), datasetAvroPath));
+        if(permission == null ) fs.mkdirs(datasetPath);
+        else fs.mkdirs(datasetPath, permission);
+
+
+        final Path datasetSchemaPath = new Path(datasetPath,"schema");
+        LOG.debug(String.format("Making schema directory [FileSystem=%s,datasetSchemaPath=%s]",
+                fsIsLocal(fs) ? "local" : fs.getUri(), datasetSchemaPath));
+        if(permission == null ) fs.mkdirs(datasetPath);
+        else fs.mkdirs(datasetPath, permission);
+
+        return new Path[]{datasetPath,datasetAvroPath,datasetSchemaPath};
     }
 
     public static Schema loadSchemaFromFSPath(final FileSystem fs, final Path schemaPath)
@@ -226,21 +266,56 @@ public class DatasetsUtil {
         }
     }
 
+    public static SortedSet<Path> getPathsRecurcively(final FileSystem fs, final Path parentPath) throws IOException {
+        final SortedSet<Path> paths = new TreeSet<Path>();
+        final RemoteIterator<LocatedFileStatus> iterator = fs.listFiles(parentPath, true);
+        while(iterator.hasNext()) {
+            final LocatedFileStatus lfs = iterator.next();
+            if (lfs.isFile() && lfs.getPath().toString().endsWith(".avro"))
+                paths.add(lfs.getPath());
+        }
+        LOG.debug("getPathsRecurcively returns {}", paths);
+        return paths;
+    }
+
+    public static SortedSet<Path> getAllAvroPaths(final FileSystem fs, final Path[] pathArray) throws IOException {
+        final SortedSet<Path> paths = new TreeSet<Path>();
+        for(Path p : pathArray) {
+            if (fs.isDirectory(p)) {
+                final RemoteIterator<LocatedFileStatus> iterator = fs.listFiles(p, true);
+                while (iterator.hasNext()) {
+                    final LocatedFileStatus lfs = iterator.next();
+                    if (lfs.isFile() && lfs.getPath().toString().endsWith(".avro"))
+                        paths.add(lfs.getPath());
+                }
+
+            } else {
+                if (fs.isFile(p) && p.toString().endsWith(".avro"))
+                    paths.add(p);
+            }
+        }
+        LOG.debug("getAllAvroPaths returns {}", paths);
+        return paths;
+    }
+
+    public static Path getSchemaPath(final FileSystem fs, final Path schemaPath) throws IOException{
+        final RemoteIterator<LocatedFileStatus> iterator = fs.listFiles(schemaPath, true);
+        while (iterator.hasNext()) {
+            final LocatedFileStatus lfs = iterator.next();
+            if (lfs.isFile() && lfs.getPath().toString().endsWith(".avsc")) {
+                LOG.debug("getSchemaPath returns {}", lfs.getPath());
+                return lfs.getPath();
+            }
+        }
+        throw new IOException("Could not find schema path.");
+    }
+
+
+
     public static class DatasetRecordReader implements Iterator<GenericRecord>, Closeable {
         private static final Logger LOG = LoggerFactory.getLogger(DatasetRecordReader.class);
         private List<FileReader<GenericRecord>> fileReaders;
         private int current;
-
-        private static SortedSet<Path> getPathsRecurcively(final FileSystem fs, final Path parentPath) throws IOException {
-            final SortedSet<Path> paths = new TreeSet<Path>();
-            final RemoteIterator<LocatedFileStatus> iterator = fs.listFiles(parentPath, true);
-            while(iterator.hasNext()) {
-                final LocatedFileStatus lfs = iterator.next();
-                if (lfs.isFile() && lfs.getPath().toString().endsWith(".avro"))
-                    paths.add(lfs.getPath());
-            }
-            return paths;
-        }
 
         public DatasetRecordReader(final FileSystem fs, final Schema schema, final Path parentPath)
                 throws IOException {

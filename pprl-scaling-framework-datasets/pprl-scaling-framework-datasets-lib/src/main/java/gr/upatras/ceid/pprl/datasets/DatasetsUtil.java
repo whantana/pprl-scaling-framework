@@ -391,4 +391,37 @@ public class DatasetsUtil {
             throw new UnsupportedOperationException("Not supported");
         }
     }
+
+    public static Schema addULID(final Schema schema,final String fieldName) {
+        Schema newSchema = Schema.createRecord(
+                schema.getName(),schema.getDoc(),schema.getNamespace(),schema.isError());
+        final Schema.Field field = new Schema.Field(fieldName,Schema.create(Schema.Type.LONG),
+                "Unique Long IDentifier",null, Schema.Field.Order.ASCENDING);
+        List<Schema.Field> newFields = new ArrayList<Schema.Field>();
+        newFields.add(field);
+        for(Schema.Field f : schema.getFields())
+            newFields.add(new Schema.Field(f.name(),f.schema(),f.doc(),f.defaultValue(),f.order()));
+        newSchema.setFields(newFields);
+        return newSchema;
+    }
+
+    public static GenericRecord[] addULID(final GenericRecord[] records, final Schema newSchema,
+                               final String fieldName) {
+        return addULID(records,newSchema,fieldName,0);
+    }
+
+    public static GenericRecord[] addULID(final GenericRecord[] records, final Schema newSchema,
+                               final String fieldName, final long start) {
+        long ulid = start;
+        final GenericRecord[] newRecords = new GenericRecord[records.length];
+        for (int i = 0 ; i < records.length ; i++) {
+            LOG.debug("{} = {}",fieldName,ulid);
+            newRecords[i] = new GenericData.Record(newSchema);
+            newRecords[i].put(fieldName, ulid);
+            for (String f : fieldNames(records[i].getSchema()))
+                newRecords[i].put(f, records[i].get(f));
+            ulid++;
+        }
+        return newRecords;
+    }
 }

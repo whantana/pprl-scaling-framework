@@ -44,7 +44,7 @@ public class DatasetsCommands implements CommandMarker {
     @Qualifier("localMatchingService")
     private LocalMatchingService lms;
 
-    @CliAvailabilityIndicator(value = {"local_data_sample","local_data_describe"})
+    @CliAvailabilityIndicator(value = {"local_data_sample","local_data_describe","local_data_add_ulid"})
     public boolean availability0() {
         return lds != null;
     }
@@ -212,7 +212,39 @@ public class DatasetsCommands implements CommandMarker {
         }
     }
 
-// TODO add a record uid (monotonically increased int )
+    @CliCommand(value = "local_data_add_ulid", help = "Add a Unique Long Identifier as a field to existing avro data.")
+    public String command4(
+            @CliOption(key = {"avro"}, mandatory = true, help = "Local data avro files (comma separated) or including directory.")
+            final String avroStr,
+            @CliOption(key = {"schema"}, mandatory = true, help = "Local schema avro file.")
+            final String schemaStr,
+            @CliOption(key = {"name"}, mandatory = true, help = "(Optional) Name to save the update records.")
+            final String name,
+            @CliOption(key = {"field"}, mandatory = false, help = "(Optional) Name of the ULID field.")
+            final String fieldStr
+    ) {
+        try {
+            final Path schemaPath = CommandUtil.retrievePath(schemaStr);
+            final Path[] avroPaths = CommandUtil.retrievePaths(avroStr);
+            final String fieldName = CommandUtil.retrieveString(fieldStr,"ulid");
+            if(!CommandUtil.isValidFieldName(fieldName)) throw new IllegalArgumentException("Invalid field name.");
+            LOG.info("Add a ULID field to local data:");
+            LOG.info("\tSelected data files : {}", Arrays.toString(avroPaths));
+            LOG.info("\tSelected schema file : {}", schemaPath);
+            LOG.info("\tName : {}",name);
+            LOG.info("\tField Name : {}",fieldName);
+
+            final Schema updatedSchema = DatasetsUtil.addULID(lds.loadSchema(schemaPath),
+                    fieldName);
+            final GenericRecord[] updatedRecords = DatasetsUtil.addULID(lds.loadRecords(avroPaths, schemaPath),
+                    updatedSchema, fieldName);
+            LOG.info(CommandUtil.prettyRecords(updatedRecords, updatedSchema));
+            lds.saveRecords(name,updatedRecords,updatedSchema);
+            return "DONE";
+        } catch (Exception e) {
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
+        }
+    }
 
 
 //    @CliAvailabilityIndicator(value = {"dat_sample","dat_describe"})

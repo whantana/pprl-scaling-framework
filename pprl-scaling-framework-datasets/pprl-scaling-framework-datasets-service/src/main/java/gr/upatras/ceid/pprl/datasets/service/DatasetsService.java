@@ -208,4 +208,6 @@ public class DatasetsService implements InitializingBean {
             hdfs.delete(p, false);
         }
     }
+
+    // TODO Run the stats mapreduce on statistics
 }

@@ -71,7 +71,7 @@ public class DblpXmlToAvroMRTest {
     }
 
     @Test
-    public void test1() throws IOException {
+    public void test0() throws IOException {
         mapDriver.withInput(firstKey, firstValue);
         mapDriver.withOutput(
                 new AvroKey<DblpPublication>(new DblpPublication(EXPECTED_KEY,EXPECTED_AUTHOR,EXPECTED_TITLE,EXPECTED_YEAR)),

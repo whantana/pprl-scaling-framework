@@ -9,6 +9,8 @@ import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.FsInput;
+import org.apache.hadoop.fs.AvroFSInput;
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -25,7 +27,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.SortedSet;
@@ -36,7 +37,7 @@ public class DatasetsUtil {
     private static final Logger LOG = LoggerFactory.getLogger(DatasetsUtil.class);
 
     private static boolean fsIsLocal(final FileSystem fs) {
-        return fs.getScheme().equals("file");
+        return fs.getUri().toString().contains("file");
     }
 
     public static Path[] createDatasetDirectories(final FileSystem fs, final String name, final Path basePath)
@@ -97,13 +98,14 @@ public class DatasetsUtil {
     }
 
     public static Schema avroSchema(final String schemaName,
-                                    final String[] fieldNames, final Schema.Type[] fieldTypes) {
-        Schema schema = Schema.createRecord(schemaName,"",
-                "gr.upatas.ceid.pprl.datasets."+schemaName.toLowerCase(),false);
+                                    final String doc, final String ns,
+                                    final String[] fieldNames, final Schema.Type[] fieldTypes,
+                                    final String[] docs) {
+        Schema schema = Schema.createRecord(schemaName,doc,ns,false);
         assert fieldNames.length == fieldTypes.length;
         List<Schema.Field> fields = new ArrayList<Schema.Field>();
         for (int i = 0; i < fieldNames.length; i++)
-            fields.add(new Schema.Field(fieldNames[i], Schema.create(fieldTypes[i]),"",null));
+            fields.add(new Schema.Field(fieldNames[i], Schema.create(fieldTypes[i]),docs[i],null));
         schema.setFields(fields);
         return schema;
     }
@@ -115,27 +117,16 @@ public class DatasetsUtil {
         return fieldNames;
     }
 
-    public static void csv2avro(final FileSystem fs, final Schema schema , final Path csvPath)
+    public static Path csv2avro(final FileSystem fs, final Schema schema ,
+                                final Path csvPath)
             throws DatasetException, IOException {
-        final Path p = new Path(csvPath.getParent() + "/" + schema.getName());
-        fs.mkdirs(p);
-        LOG.debug(String.format("Making directory [FileSystem=%s,Path=%s]",
-                fsIsLocal(fs) ? "local" : fs.getUri(), p));
-        fs.mkdirs(new Path(p + "/schema"));
-        LOG.debug(String.format("Making directory [FileSystem=%s,Path=%s]",
-                fsIsLocal(fs) ? "local" : fs.getUri(), p + "/schema"));
-        fs.mkdirs(new Path(p + "/avro"));
-        LOG.debug(String.format("Making directory [FileSystem=%s,Path=%s]",
-                fsIsLocal(fs) ? "local" : fs.getUri(), p + "/avro"));
+        final Path[] paths = createDatasetDirectories(fs,schema.getName(),csvPath.getParent());
+        final Path basePath = paths[0];
+        final Path avroBasePath = paths[1];
+        final Path schemaBasePath = paths[2];
 
-
-        final Path schemaPath = new Path(String.format("%s/schema/%s.avsc",
-                csvPath.getParent() + "/" + schema.getName(),
-                schema.getName()));
-        saveSchemaToFSPath(fs, schema, schemaPath);
-        final Path avroPath = new Path(String.format("%s/avro/%s.avro",
-                csvPath.getParent() + "/" + schema.getName(),
-                schema.getName()));
+        saveSchemaToFSPath(fs, schema, new Path(schemaBasePath,schema.getName()+".avsc"));
+        final Path avroPath = new Path(avroBasePath,schema.getName()+".avro");
 
         DataFileWriter<GenericRecord> writer = new DataFileWriter<GenericRecord>(
                 new GenericDatumWriter<GenericRecord>(schema));
@@ -186,6 +177,7 @@ public class DatasetsUtil {
             }
             writer.close();
             reader.close();
+            return basePath;
         } finally {
             writer.close();
             reader.close();
@@ -327,9 +319,10 @@ public class DatasetsUtil {
                     count, fsIsLocal(fs) ? "local" : fs.getUri(), parentPath));
             fileReaders = new ArrayList<FileReader<GenericRecord>>();
             for (Path p : paths) {
-                LOG.debug("Creating reader for file {}", p);
+                final long len = fs.getFileStatus(p).getLen();
+                LOG.debug("Creating reader for file {} (len : {})", p, len);
                 fileReaders.add(DataFileReader.openReader(
-                        new FsInput(p, fs.getConf()), new GenericDatumReader<GenericRecord>(schema)));
+                        new AvroFSInput(fs.open(p), len), new GenericDatumReader<GenericRecord>(schema)));
             }
             current = 0;
         }
@@ -348,9 +341,10 @@ public class DatasetsUtil {
                     count, fsIsLocal(fs) ? "local" : fs.getUri(), Arrays.toString(avroPaths)));
             fileReaders = new ArrayList<FileReader<GenericRecord>>();
             for (Path p : paths) {
-                LOG.debug("Creating reader for file {}", p);
+                LOG.debug("Creating reader for file {} (len : {})", p, fs.getFileStatus(p).getLen());
+                final long len = fs.getFileStatus(p).getLen();
                 fileReaders.add(DataFileReader.openReader(
-                        new FsInput(p, fs.getConf()), new GenericDatumReader<GenericRecord>(schema)));
+                        new AvroFSInput(fs.open(p), len), new GenericDatumReader<GenericRecord>(schema)));
             }
             current = 0;
         }
@@ -392,7 +386,7 @@ public class DatasetsUtil {
         }
     }
 
-    public static Schema addULID(final Schema schema,final String fieldName) {
+    public static Schema updateSchemaWithULID(final Schema schema, final String fieldName) {
         Schema newSchema = Schema.createRecord(
                 schema.getName(),schema.getDoc(),schema.getNamespace(),schema.isError());
         final Schema.Field field = new Schema.Field(fieldName,Schema.create(Schema.Type.LONG),
@@ -405,13 +399,13 @@ public class DatasetsUtil {
         return newSchema;
     }
 
-    public static GenericRecord[] addULID(final GenericRecord[] records, final Schema newSchema,
-                               final String fieldName) {
-        return addULID(records,newSchema,fieldName,0);
+    public static GenericRecord[] updateRecordsWithULID(final GenericRecord[] records, final Schema newSchema,
+                                                        final String fieldName) {
+        return updateRecordsWithULID(records, newSchema, fieldName, 0);
     }
 
-    public static GenericRecord[] addULID(final GenericRecord[] records, final Schema newSchema,
-                               final String fieldName, final long start) {
+    public static GenericRecord[] updateRecordsWithULID(final GenericRecord[] records, final Schema newSchema,
+                                                        final String fieldName, final long start) {
         long ulid = start;
         final GenericRecord[] newRecords = new GenericRecord[records.length];
         for (int i = 0 ; i < records.length ; i++) {

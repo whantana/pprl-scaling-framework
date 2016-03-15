@@ -43,6 +43,7 @@ public class ExhaustivePairSimilarityMRTest {
 
     @Before
     public void setup() throws IOException {
+        // TODO load real records
         schema = loadAvroSchemaFromFile(new File("person_small/schema/person_small.avsc"));
         for (int i = 0; i < 10; i++) {
             records[i] = new GenericData.Record(schema);

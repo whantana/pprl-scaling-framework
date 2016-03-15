@@ -173,7 +173,7 @@ public class SimilarityMatrixTest {
     public static SimilarityMatrix createSimilarityMatrix(final String[][] records) {
         return createSimilarityMatrix(records, SimilarityMatrix.DEFAULT_SIMILARITY_METHOD_NAME);
     }
-
+    // TODO Load real ones
     public static String[][] records = {
             {"conner","draiden","irving"}, {"connor","dradien","irving"}, {"connor","draiden","irving"},
             {"lucas","paterson","seattle"},

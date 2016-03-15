@@ -25,19 +25,19 @@ public class SparkConfig {
     @Value("${spark.executor.memory}")
     private String sparkExecutorMemory;
 
-    @Bean
-    @Conditional(PPRLCLusterCondition.class)
-    public SparkConf sparkConf() {
-        LOG.info("Spark-Master : " +
-                (isDefined(sparkMaster) ? sparkMaster : "Not provided"));
-        return new SparkConf()
-                .setMaster(sparkMaster)
-                .set("spark.executor.memory", sparkExecutorMemory)
-                .set("spark.cores.max", sparkCoresMax)
-                .set("spark.default.parallelism", sparkDefaultParallelism);
-    }
-
-    private static boolean isDefined(final String str) {
-        return str != null && !str.isEmpty();
-    }
+//    @Bean
+//    @Conditional(PPRLCLusterCondition.class)
+//    public SparkConf sparkConf() {
+//        LOG.info("Spark-Master : " +
+//                (isDefined(sparkMaster) ? sparkMaster : "Not provided"));
+//        return new SparkConf()
+//                .setMaster(sparkMaster)
+//                .set("spark.executor.memory", sparkExecutorMemory)
+//                .set("spark.cores.max", sparkCoresMax)
+//                .set("spark.default.parallelism", sparkDefaultParallelism);
+//    }
+//
+//    private static boolean isDefined(final String str) {
+//        return str != null && !str.isEmpty();
+//    }
 }

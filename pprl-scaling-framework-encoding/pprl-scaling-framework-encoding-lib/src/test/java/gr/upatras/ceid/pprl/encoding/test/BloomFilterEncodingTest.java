@@ -164,8 +164,8 @@ public class BloomFilterEncodingTest {
         fos.write(schema.toString(true).getBytes());
         fos.close();
     }
-    
-    
+    // TODO person small testing
+    // TODO maybe refactor this
     private static String[] encodeLocalFile(final String name, final Set<File> avroFiles, final Schema schema,
                                             final BloomFilterEncoding encoding)
             throws IOException, BloomFilterEncodingException {

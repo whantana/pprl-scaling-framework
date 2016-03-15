@@ -14,10 +14,15 @@ public class QGramCountingMapper extends Mapper<AvroKey<GenericRecord>,NullWrita
     public static final String SCHEMA_KEY = "schema";
     public static final String FIELD_NAMES_KEY = "field.names";
     public static final String RECORD_COUNT_KEY = "record.count";
-    public static final String[] QGRAM_COUNT_KEYS = {
+
+    public static final String[] STATISTICS = {
             "length",
-            "2grams.count","3grams.count","4grams.count",
-            "unique.2grams.count","unique.3grams.count","unique.4grams.count"
+            "2grams.count",
+            "3grams.count",
+            "4grams.count",
+            "unique.2grams.count",
+            "unique.3grams.count",
+            "unique.4grams.count"
     };
 
     String[] fieldNames;
@@ -43,13 +48,13 @@ public class QGramCountingMapper extends Mapper<AvroKey<GenericRecord>,NullWrita
             final Object obj = record.get(fieldNames[i]);
             final Schema.Type type = types[i];
             final String counterGroupName = "f." + fieldNames[i];
-            context.getCounter(counterGroupName,QGRAM_COUNT_KEYS[0]).increment(String.valueOf(obj).length());
-            context.getCounter(counterGroupName,QGRAM_COUNT_KEYS[1]).increment(QGramUtil.calcQgramsCount(obj, type, 2));
-            context.getCounter(counterGroupName,QGRAM_COUNT_KEYS[2]).increment(QGramUtil.calcQgramsCount(obj, type, 3));
-            context.getCounter(counterGroupName,QGRAM_COUNT_KEYS[3]).increment(QGramUtil.calcQgramsCount(obj, type, 4));
-            context.getCounter(counterGroupName,QGRAM_COUNT_KEYS[4]).increment(QGramUtil.calcUniqueQgramsCount(obj, type, 2));
-            context.getCounter(counterGroupName,QGRAM_COUNT_KEYS[5]).increment(QGramUtil.calcUniqueQgramsCount(obj, type, 3));
-            context.getCounter(counterGroupName,QGRAM_COUNT_KEYS[6]).increment(QGramUtil.calcUniqueQgramsCount(obj, type, 4));
+            context.getCounter(counterGroupName, STATISTICS[0]).increment(String.valueOf(obj).length());
+            context.getCounter(counterGroupName, STATISTICS[1]).increment(QGramUtil.calcQgramsCount(obj, type, 2));
+            context.getCounter(counterGroupName, STATISTICS[2]).increment(QGramUtil.calcQgramsCount(obj, type, 3));
+            context.getCounter(counterGroupName, STATISTICS[3]).increment(QGramUtil.calcQgramsCount(obj, type, 4));
+            context.getCounter(counterGroupName, STATISTICS[4]).increment(QGramUtil.calcUniqueQgramsCount(obj, type, 2));
+            context.getCounter(counterGroupName, STATISTICS[5]).increment(QGramUtil.calcUniqueQgramsCount(obj, type, 3));
+            context.getCounter(counterGroupName, STATISTICS[6]).increment(QGramUtil.calcUniqueQgramsCount(obj, type, 4));
         }
     }
 }

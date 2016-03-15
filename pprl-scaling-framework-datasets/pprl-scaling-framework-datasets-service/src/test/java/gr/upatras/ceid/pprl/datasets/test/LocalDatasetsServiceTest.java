@@ -5,6 +5,7 @@ import gr.upatras.ceid.pprl.base.CombinatoricsUtil;
 import gr.upatras.ceid.pprl.datasets.DatasetException;
 import gr.upatras.ceid.pprl.datasets.DatasetFieldStatistics;
 import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
+import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import gr.upatras.ceid.pprl.datasets.service.LocalDatasetsService;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
@@ -34,7 +35,6 @@ import static org.junit.Assert.assertNotNull;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = "classpath:local-datasets-test-context.xml")
-@Ignore
 public class LocalDatasetsServiceTest {
 
     private static Logger LOG = LoggerFactory.getLogger(LocalDatasetsServiceTest.class);
@@ -146,6 +146,22 @@ public class LocalDatasetsServiceTest {
                         lds.loadSchema(schemaPath)
                 )
         );
+    }
+
+    @Test
+    public void test4() throws DatasetException, IOException {
+        Path[] avroPaths = new Path[]{new Path("random/avro/random.avro")};
+        Path schemaPath = new Path("random/schema/random.avsc");
+        final Schema schema = lds.loadSchema(schemaPath);
+        final GenericRecord[] records = lds.loadRecords(avroPaths,schemaPath);
+        LOG.info(prettyRecords(records,schema));
+        final Schema updatedSchema = DatasetsUtil.updateSchemaWithULID(schema,"ulid");
+        final GenericRecord[] updatedRecords = DatasetsUtil.updateRecordsWithULID(records,updatedSchema,"ulid");
+        LOG.info(prettyRecords(updatedRecords,schema));
+        final GenericRecord[] updatedRecords1 = DatasetsUtil.updateRecordsWithULID(records,updatedSchema,"ulid");
+        LOG.info(prettyRecords(updatedRecords1,schema));
+        lds.saveRecords("updated_random",updatedRecords,updatedSchema);
+        lds.saveRecords("updated_random1",updatedRecords1,updatedSchema);
     }
 
 

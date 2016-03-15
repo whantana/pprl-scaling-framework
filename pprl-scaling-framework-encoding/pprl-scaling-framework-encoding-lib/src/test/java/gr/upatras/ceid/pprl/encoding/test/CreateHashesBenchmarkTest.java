@@ -34,6 +34,8 @@ public class CreateHashesBenchmarkTest {
     private static final Mac HMAC_SHA1;
     private static final String SECRET_KEY = "MYZIKRETQI";
     private static DescriptiveStatistics stats =  new DescriptiveStatistics();
+
+    // TODO rewrite benchmark to load from existing data
     static {
         Mac tmp;
         Mac tmp1;

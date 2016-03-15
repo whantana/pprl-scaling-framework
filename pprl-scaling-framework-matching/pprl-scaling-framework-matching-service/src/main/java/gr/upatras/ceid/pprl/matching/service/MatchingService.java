@@ -13,4 +13,6 @@ public class MatchingService implements InitializingBean {
     public void afterPropertiesSet() {
         LOG.info("Local Matching service initialized.");
     }
+
+    // TODO provide the similarity matrix on the HDFS with MR
 }

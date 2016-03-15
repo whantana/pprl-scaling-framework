@@ -23,9 +23,9 @@ public class PPRLCLusterCondition implements Condition {
 //                env.getProperty("database.host"),
 //                env.getProperty("database.user"),
 //                env.getProperty("database.password"),
+//                env.getProperty("spark.master"),
                 env.getProperty("hadoop.namenode"),
-                env.getProperty("yarn.resourcemanager"),
-                env.getProperty("spark.master")
+                env.getProperty("yarn.resourcemanager")
         );
         LOG.info(String.format("Application %s cluster ready.",defined ? "is" :"is not"));
 //        boolean persistence = areAllDefined(
@@ -34,17 +34,17 @@ public class PPRLCLusterCondition implements Condition {
 //                env.getProperty("database.password"));
         boolean hdfs = isDefined(env.getProperty("hadoop.namenode"));
         boolean yarn = isDefined(env.getProperty("yarn.resourcemanager"));
-        boolean spark = isDefined(env.getProperty("spark.master"));
+//        boolean spark = isDefined(env.getProperty("spark.master"));
 
         LOG.info(String.format("Details : [" +
 //                        " Persistence : %s," +
+//                        " Spark : %s," +
                         " HDFS : %s," +
-                        " YARN : %s," +
-                        " Spark : %s]",
+                        " YARN : %s]",
 //                persistence ? "set" :"not set",
+//                spark ? "set" :"not set",
                 hdfs ? "set" :"not set",
-                yarn ? "set" :"not set",
-                spark ? "set" :"not set")
+                yarn ? "set" :"not set")
         );
         return defined;
     }
@@ -55,9 +55,9 @@ public class PPRLCLusterCondition implements Condition {
 //                env.getProperty("database.host"),
 //                env.getProperty("database.user"),
 //                env.getProperty("database.password"),
+//                env.getProperty("spark.master"),
                 env.getProperty("hadoop.namenode"),
-                env.getProperty("yarn.resourcemanager"),
-                env.getProperty("spark.master")
+                env.getProperty("yarn.resourcemanager")
         );
     }
 

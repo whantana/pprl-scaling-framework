@@ -1,6 +1,7 @@
 package gr.upatras.ceid.pprl.datasets.service;
 
 import gr.upatras.ceid.pprl.datasets.DatasetException;
+import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
 import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import org.apache.avro.Schema;
 import org.apache.hadoop.fs.FileSystem;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.SortedSet;
 
 @Service
@@ -30,12 +32,13 @@ public class DatasetsService implements InitializingBean {
             boolean onlyOwnerPermissionbaseDir = hdfs.getFileStatus(basePath)
                     .getPermission().equals(ONLY_OWNER_PERMISSION);
             LOG.info(String.format("Dataset service initialized [" +
-                    " nn=%s, " +
-                    " basePath = %s (ONLY_OWNER_PERMISION = %s)," +
-                    " toolRunnerSet = %s]",
+                            " nn=%s, " +
+                            " basePath = %s (ONLY_OWNER_PERMISION = %s)," +
+                            " Tool#1 = %s, Tool#2 = %s]",
                     hdfs.getUri(),
                     basePath,onlyOwnerPermissionbaseDir,
-                    (dblpXmlToAvroToolRunner != null)));
+                    (dblpXmlToAvroToolRunner != null),
+                    (qGramCountingToolRunner != null)));
         } catch (IOException e) {
             LOG.error(e.getMessage());
         }
@@ -43,7 +46,7 @@ public class DatasetsService implements InitializingBean {
 
     private static SecureRandom RANDOM = new SecureRandom();
 
-    protected static final FsPermission ONLY_OWNER_PERMISSION
+    private static final FsPermission ONLY_OWNER_PERMISSION
             = new FsPermission(FsAction.ALL, FsAction.NONE, FsAction.NONE, false);
 
     @Autowired
@@ -55,6 +58,9 @@ public class DatasetsService implements InitializingBean {
     @Autowired
     private ToolRunner dblpXmlToAvroToolRunner;
 
+    @Autowired
+    private ToolRunner qGramCountingToolRunner;
+
     public FileSystem getLocalFs() {
         return localFs;
     }
@@ -64,12 +70,6 @@ public class DatasetsService implements InitializingBean {
     }
 
     private Path basePath;
-
-
-    // TODO sample files (need spark here)
-
-    // TODO Add a an int UID field for a sample
-
 
     public Path uploadFiles(final Path[] avroPaths, final Path schemaPath,final  String name)
             throws IOException {
@@ -194,13 +194,51 @@ public class DatasetsService implements InitializingBean {
         }
     }
 
+    public Path countQGrams(final Path inputPath, final Path inputSchemaPath, final Path basePath,
+                            final String[] fieldNames)
+            throws Exception {
+        try {
+            if(!hdfs.exists(basePath)) hdfs.mkdirs(basePath,ONLY_OWNER_PERMISSION);
+            final Path statsPath = new Path(basePath,
+                    String.format("stats_%s.properties",System.currentTimeMillis()));
+            runQGramCountingTool(inputPath, inputSchemaPath, statsPath,fieldNames);
+            hdfs.setPermission(statsPath, ONLY_OWNER_PERMISSION);
+            return statsPath;
+        } catch (Exception e) {
+            LOG.error(e.getMessage());
+            throw e;
+        }
+    }
+
     private void runDblpXmlToAvroTool(final Path inputPath, final Path outputPath)
             throws Exception {
+        if(dblpXmlToAvroToolRunner == null) throw new IllegalStateException("tool-runner not set");
         LOG.info("input={}", inputPath);
         LOG.info("output={}", outputPath);
         dblpXmlToAvroToolRunner.setArguments(inputPath.toString(), outputPath.toString());
         dblpXmlToAvroToolRunner.call();
     }
+
+    private void runQGramCountingTool(final Path inputPath, final Path inputSchemaPath,
+                                      final Path propertiesOutputPath,
+                                      final String[] fieldNames)
+            throws Exception {
+        if(qGramCountingToolRunner == null) throw new IllegalStateException("tool-runner not set");
+        LOG.info("input={}", inputPath);
+        LOG.info("inputSchemaPath={}", inputSchemaPath);
+        final StringBuilder fsb = new StringBuilder(fieldNames[0]);
+        if(fieldNames.length > 1)
+            for (int i = 1; i <fieldNames.length; i++)
+                fsb.append(",").append(fieldNames[i]);
+        LOG.info("fieldNames={}", fsb.toString());
+        qGramCountingToolRunner.setArguments(
+                inputPath.toString(),
+                inputSchemaPath.toString(),
+                propertiesOutputPath.toString(),
+                fsb.toString());
+        qGramCountingToolRunner.call();
+    }
+
 
     private void removeSuccessFile(final Path path) throws IOException {
         final Path p = new Path(path + "/_SUCCESS");
@@ -209,5 +247,7 @@ public class DatasetsService implements InitializingBean {
         }
     }
 
-    // TODO Run the stats mapreduce on statistics
+    // TODO sample files (need spark here?)
+
+    // TODO Add a an int UID field for a sample
 }

@@ -33,7 +33,7 @@ public class DblpXmlToAvroTool extends Configured implements Tool {
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
         if (args.length != 2) {
             LOG.error("Usage: DblpXmlToAvroTool <input-path> <output-path>");
-            return -1;
+            throw new IllegalArgumentException("Invalid number of arguments.");
         }
 
         // set confuguration and params

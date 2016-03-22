@@ -181,16 +181,18 @@ public class LocalDatasetsService implements InitializingBean {
         }
     }
 
-    public DatasetStatistics loadStats(final Path propertiesPath)
+    public DatasetStatistics loadStats(final Path... propertiesPaths)
             throws IOException, DatasetException {
         try {
-            if (!localFs.exists(propertiesPath))
-                throw new DatasetException(String.format("Cannot find file \"%s\"", propertiesPath));
-            LOG.info("Loading stats from [path={}]",propertiesPath);
             Properties properties = new Properties();
-            FSDataInputStream fsdis = localFs.open(propertiesPath);
-            properties.load(fsdis);
-            fsdis.close();
+            for (Path propertiesPath : propertiesPaths) {
+                if (!localFs.exists(propertiesPath))
+                    throw new DatasetException(String.format("Cannot find file \"%s\"", propertiesPath));
+                LOG.info("Loading stats from [path={}]", propertiesPath);
+                FSDataInputStream fsdis = localFs.open(propertiesPath);
+                properties.load(fsdis);
+                fsdis.close();
+            }
             DatasetStatistics statistics = new DatasetStatistics();
             statistics.fromProperties(properties);
             return statistics;

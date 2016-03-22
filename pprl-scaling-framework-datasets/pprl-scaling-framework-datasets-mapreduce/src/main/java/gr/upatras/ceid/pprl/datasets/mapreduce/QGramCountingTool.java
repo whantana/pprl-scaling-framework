@@ -78,16 +78,17 @@ public class QGramCountingTool extends Configured implements Tool {
         // run job
         boolean success  = job.waitForCompletion(true);
         if(success) {
-            counters2HdfsFile(FileSystem.get(conf), outputPath, job.getCounters(),fieldNames);
+            counters2Properties(FileSystem.get(conf), outputPath, job.getCounters(),fieldNames);
             return 0;
         } else throw new IllegalStateException("Job not successfull.");
     }
 
-    public static void counters2HdfsFile(final FileSystem fs,final Path outputPath, final Counters counters, final String[] fieldNames) throws IOException {
+    public static void counters2Properties(final FileSystem fs,final Path outputPath, final Counters counters, final String[] fieldNames) throws IOException {
         final Properties properties = counters2Properties(counters,fieldNames);
         final FSDataOutputStream fsdos = fs.create(outputPath, true);
-        properties.store(fsdos,"Q Count stats");
+        properties.store(fsdos, "Q Count stats");
         fsdos.close();
+        LOG.info("Properties stored at {}.",fs.makeQualified(outputPath));
     }
 
     public static Properties counters2Properties(final Counters counters, final String[] fieldNames) {

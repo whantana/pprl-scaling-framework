@@ -7,6 +7,12 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.Properties;
+
 import static org.junit.Assert.assertTrue;
 
 public class DatasetsStatisticsTest {
@@ -39,5 +45,17 @@ public class DatasetsStatisticsTest {
         stats2.fromProperties(stats1.toProperties());
         LOG.info("\n" + stats1.toString() + "\n" + stats2.toString());
         assertTrue(stats2.equals(stats1));
+    }
+
+    @Test
+    public void test1() throws IOException {
+        DatasetStatistics statistics = new DatasetStatistics();
+        File prop1 = new File("data/stats_1.properties");
+        File prop2 = new File("data/stats_2.properties");
+        Properties p = new Properties();
+        p.load(new FileInputStream(prop1));
+        p.load(new FileInputStream(prop2));
+        statistics.fromProperties(p);
+        LOG.info(statistics.toString());
     }
 }

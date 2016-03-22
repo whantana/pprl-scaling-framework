@@ -83,9 +83,14 @@ public class DatasetsServiceTest extends AbstractMapReduceTests {
         final Path basePath = new Path("person_small/stats");
         final Path propertiesPath = ds.countQGrams(inputPath,schemaPath,basePath,FIELDS);
         Properties p = new Properties();
+        Path dst = new Path("data/person_small/stats");
+        if(!ds.getLocalFs().exists(dst))
+            ds.getLocalFs().mkdirs(new Path(ds.getLocalFs().getWorkingDirectory(),dst));
+        dst = ds.getLocalFs().makeQualified(new Path(dst,propertiesPath.getName()));
+        LOG.info("Stats saved at : {}",dst);
+        getFileSystem().copyToLocalFile(propertiesPath,new Path(dst,propertiesPath.getName()));
         p.load(getFileSystem().open(propertiesPath));
         p.list(System.out);
-
         DatasetStatistics stats = new DatasetStatistics();
         stats.fromProperties(p);
         LOG.info(stats.toString());

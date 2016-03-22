@@ -4,6 +4,7 @@ import gr.upatras.ceid.pprl.datasets.DatasetException;
 import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
 import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import org.apache.avro.Schema;
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsAction;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.Properties;
 import java.util.SortedSet;
 
 @Service
@@ -200,7 +202,7 @@ public class DatasetsService implements InitializingBean {
         try {
             if(!hdfs.exists(basePath)) hdfs.mkdirs(basePath,ONLY_OWNER_PERMISSION);
             final Path statsPath = new Path(basePath,
-                    String.format("stats_%s.properties",System.currentTimeMillis()));
+                    String.format("stats_%s.properties",System.currentTimeMillis())); // TODO add name for file
             runQGramCountingTool(inputPath, inputSchemaPath, statsPath,fieldNames);
             hdfs.setPermission(statsPath, ONLY_OWNER_PERMISSION);
             return statsPath;
@@ -244,6 +246,30 @@ public class DatasetsService implements InitializingBean {
         final Path p = new Path(path + "/_SUCCESS");
         if (hdfs.exists(p)) {
             hdfs.delete(p, false);
+        }
+    }
+
+    public DatasetStatistics loadStats(final Path... propertiesPaths)
+            throws IOException, DatasetException {
+        try {
+            Properties properties = new Properties();
+            for (Path propertiesPath : propertiesPaths) {
+                if (!hdfs.exists(propertiesPath))
+                    throw new DatasetException(String.format("Cannot find file \"%s\"", propertiesPath));
+                LOG.info("Loading stats from [path={}]", propertiesPath);
+                FSDataInputStream fsdis = hdfs.open(propertiesPath);
+                properties.load(fsdis);
+                fsdis.close();
+            }
+            DatasetStatistics statistics = new DatasetStatistics();
+            statistics.fromProperties(properties);
+            return statistics;
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        } catch (DatasetException e) {
+            LOG.error(e.getMessage());
+            throw e;
         }
     }
 

@@ -1,0 +1,23 @@
+{
+  "type" : "record",
+  "name" : "person_small",
+  "namespace" : "gr.upatas.ceid.pprl.datasets.person_small",
+  "doc" : "",
+  "fields" : [ {
+    "name" : "id",
+    "type" : "string",
+    "doc" : ""
+  }, {
+    "name" : "name",
+    "type" : "string",
+    "doc" : ""
+  }, {
+    "name" : "surname",
+    "type" : "string",
+    "doc" : ""
+  }, {
+    "name" : "location",
+    "type" : "string",
+    "doc" : ""
+  } ]
+}

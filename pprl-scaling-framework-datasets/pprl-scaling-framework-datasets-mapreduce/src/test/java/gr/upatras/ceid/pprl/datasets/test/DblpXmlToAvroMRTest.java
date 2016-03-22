@@ -6,6 +6,8 @@ import gr.upatras.ceid.pprl.datasets.mapreduce.DblpXmlToAvroMapper;
 import org.apache.avro.hadoop.io.AvroSerialization;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -41,8 +43,11 @@ public class DblpXmlToAvroMRTest {
     @Before
     public void setUp() throws URISyntaxException, IOException, InterruptedException {
         // find test file
-        File testFile = new File("dblp.xml");
-        assertNotNull("Test file missing",testFile);
+        final LocalFileSystem fs = FileSystem.getLocal(new Configuration());
+        final Path basePath = fs.getWorkingDirectory();
+        final Path xmlPath = new Path(basePath,"data/dblp/xml/dblp.xml");
+        final long len = fs.getFileStatus(xmlPath).getLen();
+        assertTrue(fs.exists(xmlPath));
 
         // set configuration
         final Configuration conf = new Configuration(false);
@@ -50,8 +55,7 @@ public class DblpXmlToAvroMRTest {
                 "article","phdthesis","mastersthesis");
 
         // open reader and read first value
-        final FileSplit split = new FileSplit(
-                new Path(testFile.getAbsoluteFile().toURI()), 0, testFile.length(), null);
+        final FileSplit split = new FileSplit(xmlPath, 0, len, null);
         MultiTagXmlInputFormat inputFormat = ReflectionUtils.newInstance(MultiTagXmlInputFormat.class, conf);
         TaskAttemptContext context = new TaskAttemptContextImpl(conf, new TaskAttemptID());
         RecordReader<LongWritable, Text> reader = inputFormat.createRecordReader(split, context);

@@ -11,8 +11,10 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Counters;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
 import org.slf4j.Logger;
@@ -28,7 +30,7 @@ import java.util.regex.Pattern;
 
 public class QGramCountingTool extends Configured implements Tool {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DblpXmlToAvroTool.class);
+    private static final Logger LOG = LoggerFactory.getLogger(QGramCountingTool.class);
 
     private static final String JOB_DESCRIPTION = "Count QGrams of AVRO Records";
 
@@ -70,31 +72,53 @@ public class QGramCountingTool extends Configured implements Tool {
         // setup mapper
         job.setMapperClass(QGramCountingMapper.class);
 
+        // set ouput
+        job.setOutputFormatClass(NullOutputFormat.class);
+
         // run job
         boolean success  = job.waitForCompletion(true);
         if(success) {
-            counters2HdfsFile(FileSystem.get(conf), outputPath, job.getCounters());
+            counters2HdfsFile(FileSystem.get(conf), outputPath, job.getCounters(),fieldNames);
             return 0;
         } else throw new IllegalStateException("Job not successfull.");
     }
 
-    public static void counters2HdfsFile(final FileSystem fs,final Path outputPath, final Counters counters) throws IOException {
-        Properties properties = new Properties();
+    public static void counters2HdfsFile(final FileSystem fs,final Path outputPath, final Counters counters, final String[] fieldNames) throws IOException {
+        final Properties properties = counters2Properties(counters,fieldNames);
+        final FSDataOutputStream fsdos = fs.create(outputPath, true);
+        properties.store(fsdos,"Q Count stats");
+        fsdos.close();
+    }
+
+    public static Properties counters2Properties(final Counters counters, final String[] fieldNames) {
+        final Properties properties = new Properties();
         long recordCount = counters.findCounter("", QGramCountingMapper.RECORD_COUNT_KEY).getValue();
-        properties.setProperty("record.count",String.valueOf((double)recordCount));
-        for (String counterGroupName : counters.getGroupNames()) {
-            if(counterGroupName.equals("")) continue;
+        properties.setProperty("record.count",String.valueOf(recordCount));
+        LOG.info("Setting record.count : {} ",recordCount);
+
+        final StringBuilder sb = new StringBuilder(fieldNames[0]);
+        for (int i = 1; i < fieldNames.length; i++)
+            sb.append(",").append(fieldNames[i]);
+        properties.setProperty("field.names",sb.toString());
+        LOG.info("Setting field.names : {} ",sb.toString());
+
+
+        for (String fieldName : fieldNames) {
+            final String counterGroupName = "f." + fieldName;
             for (String counterName : QGramCountingMapper.STATISTICS) {
-                long val = counters.findCounter(counterGroupName, counterName).getValue();
+                final Counter counter = counters.findCounter(counterGroupName, counterName);
+                if(counter == null) {
+                    LOG.debug("counter not found");
+                    continue;
+                }
+                long val = counter.getValue();
                 final String key = counterGroupName + ".avg." + counterName;
                 double avg = (double) val / (double) recordCount;
-                LOG.info("Key = {} , value = {}", key, avg);
                 properties.setProperty(key,String.valueOf(avg));
+                LOG.info("Setting {} : {} ",key,String.valueOf(avg));
             }
         }
-
-        final FSDataOutputStream fsdos = fs.create(outputPath, true);
-        properties.store(fsdos,"");
+        return properties;
     }
 
     private static Schema loadAvroSchemaFromHdfs(final FileSystem fs,final Path schemaPath)

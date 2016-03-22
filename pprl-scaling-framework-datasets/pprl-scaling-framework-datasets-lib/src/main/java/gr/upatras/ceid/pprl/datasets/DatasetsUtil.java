@@ -8,9 +8,7 @@ import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.mapred.FsInput;
 import org.apache.hadoop.fs.AvroFSInput;
-import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -52,17 +50,24 @@ public class DatasetsUtil {
                 fsIsLocal(fs) ? "local" : fs.getUri(), name));
         final Path datasetPath = new Path(basePath,name);
         if (fs.exists(datasetPath)) {
-            LOG.debug(String.format("Deleting directory because it already exists " +
+            LOG.debug(String.format("Directory it already exists " +
                             "[FileSystem=%s,basePath=%s]",
                     fsIsLocal(fs) ? "local" : fs.getUri(), name));
-            fs.delete(datasetPath, true);
+        } else {
+            LOG.debug(String.format("Making base directory [FileSystem=%s,basePath=%s]",
+                    fsIsLocal(fs) ? "local" : fs.getUri(), datasetPath));
+            if(permission == null ) fs.mkdirs(datasetPath);
+            else fs.mkdirs(datasetPath, permission);
         }
-        LOG.debug(String.format("Making base directory [FileSystem=%s,basePath=%s]",
-                fsIsLocal(fs) ? "local" : fs.getUri(), datasetPath));
-        if(permission == null ) fs.mkdirs(datasetPath);
-        else fs.mkdirs(datasetPath, permission);
 
         final Path datasetAvroPath = new Path(datasetPath,"avro");
+        if (fs.exists(datasetAvroPath)) {
+            LOG.debug(String.format("Deleting avro directory because it exists " +
+                            "[FileSystem=%s,datasetAvroPath=%s]",
+                            fsIsLocal(fs) ? "local" : fs.getUri(), datasetAvroPath));
+            fs.delete(datasetAvroPath, true);
+
+        }
         LOG.debug(String.format("Making avro directory [FileSystem=%s,datasetAvroPath=%s]",
                 fsIsLocal(fs) ? "local" : fs.getUri(), datasetAvroPath));
         if(permission == null ) fs.mkdirs(datasetPath);
@@ -70,6 +75,12 @@ public class DatasetsUtil {
 
 
         final Path datasetSchemaPath = new Path(datasetPath,"schema");
+        if (fs.exists(datasetSchemaPath)) {
+            LOG.debug(String.format("Deleting avro directory because it exists " +
+                            "[FileSystem=%s,datasetAvroPath=%s]",
+                            fsIsLocal(fs) ? "local" : fs.getUri(), datasetSchemaPath));
+            fs.delete(datasetSchemaPath,true);
+        }
         LOG.debug(String.format("Making schema directory [FileSystem=%s,datasetSchemaPath=%s]",
                 fsIsLocal(fs) ? "local" : fs.getUri(), datasetSchemaPath));
         if(permission == null ) fs.mkdirs(datasetPath);
@@ -118,22 +129,17 @@ public class DatasetsUtil {
     }
 
     public static Path csv2avro(final FileSystem fs, final Schema schema ,
+                                final Path basePath,
                                 final Path csvPath)
             throws DatasetException, IOException {
-        final Path[] paths = createDatasetDirectories(fs,schema.getName(),csvPath.getParent());
-        final Path basePath = paths[0];
+        final Path[] paths = createDatasetDirectories(fs,schema.getName(),basePath);
         final Path avroBasePath = paths[1];
         final Path schemaBasePath = paths[2];
 
         saveSchemaToFSPath(fs, schema, new Path(schemaBasePath,schema.getName()+".avsc"));
-        final Path avroPath = new Path(avroBasePath,schema.getName()+".avro");
-
-        DataFileWriter<GenericRecord> writer = new DataFileWriter<GenericRecord>(
-                new GenericDatumWriter<GenericRecord>(schema));
+        DatasetRecordWriter writer = new DatasetRecordWriter(fs,schema.getName(),schema,avroBasePath);
         BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(csvPath)));
         try {
-
-            writer.create(schema, fs.create(avroPath, true));
 
             final String[] fieldNames = new String[schema.getFields().size()];
             int j = 0;
@@ -173,11 +179,11 @@ public class DatasetsUtil {
                     }
                     record.put(fieldNames[i], obj);
                 }
-                writer.append(record);
+                writer.writeRecord(record);
             }
             writer.close();
             reader.close();
-            return basePath;
+            return paths[0];
         } finally {
             writer.close();
             reader.close();
@@ -207,7 +213,7 @@ public class DatasetsUtil {
                 throws IOException {
             fileWriters = new ArrayList<DataFileWriter<GenericRecord>>(partitions);
             this.partitions = partitions;
-            LOG.debug("#Writers=",partitions);
+            LOG.debug("#Writers= {}",partitions);
             for (int i = 0; i < partitions; i++) {
                 DataFileWriter<GenericRecord> fw =
                         new DataFileWriter<GenericRecord>(new GenericDatumWriter<GenericRecord>(schema));
@@ -219,15 +225,25 @@ public class DatasetsUtil {
                     filePath = new Path(partitionPath,name + ".avro");
                 }
                 try {
-                    fw.create(schema,fs.create(filePath));
+                    fw.create(schema,fs.create(filePath,true));
                     fileWriters.add(i,fw);
                     LOG.debug("Adding writer {}",i);
                 } catch (IOException e) {
+                    LOG.error(e.getMessage());
                     fw.close();
                     if(!fileWriters.isEmpty()) close();
                 }
             }
         }
+
+        public void writeRecord(final GenericRecord record) throws IOException {
+            try {
+                fileWriters.get(0).append(record);
+            } catch (IOException e) {
+                fileWriters.get(0).close();
+            }
+        }
+
 
         public void writeRecords(final GenericRecord[] records) throws IOException {
             final int[] recordIndexOfPartition = new int[partitions];
@@ -341,8 +357,8 @@ public class DatasetsUtil {
                     count, fsIsLocal(fs) ? "local" : fs.getUri(), Arrays.toString(avroPaths)));
             fileReaders = new ArrayList<FileReader<GenericRecord>>();
             for (Path p : paths) {
-                LOG.debug("Creating reader for file {} (len : {})", p, fs.getFileStatus(p).getLen());
                 final long len = fs.getFileStatus(p).getLen();
+                LOG.debug("Creating reader for file {} (len : {})", p, len);
                 fileReaders.add(DataFileReader.openReader(
                         new AvroFSInput(fs.open(p), len), new GenericDatumReader<GenericRecord>(schema)));
             }

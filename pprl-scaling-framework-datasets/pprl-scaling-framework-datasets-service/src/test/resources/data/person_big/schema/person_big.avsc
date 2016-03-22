@@ -1,0 +1,23 @@
+{
+  "type" : "record",
+  "name" : "person_big",
+  "namespace" : "pprl.datasets",
+  "doc" : "People",
+  "fields" : [ {
+    "name" : "id",
+    "type" : "long",
+    "doc" : "unique id"
+  }, {
+    "name" : "name",
+    "type" : "string",
+    "doc" : "First name"
+  }, {
+    "name" : "surname",
+    "type" : "string",
+    "doc" : "Last name"
+  }, {
+    "name" : "gender",
+    "type" : "string",
+    "doc" : "Gender"
+  } ]
+}

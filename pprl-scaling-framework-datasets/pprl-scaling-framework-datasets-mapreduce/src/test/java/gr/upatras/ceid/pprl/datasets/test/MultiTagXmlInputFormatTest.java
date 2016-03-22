@@ -3,6 +3,8 @@ package gr.upatras.ceid.pprl.datasets.test;
 
 import gr.upatras.ceid.pprl.datasets.input.MultiTagXmlInputFormat;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
@@ -14,14 +16,20 @@ import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class MultiTagXmlInputFormatTest {
+
+    private static final Logger LOG = LoggerFactory.getLogger(QGramCountingMRTest.class);
+
     private Configuration conf;
     private FileSplit split;
     private FileSplit split1;
@@ -32,13 +40,17 @@ public class MultiTagXmlInputFormatTest {
     private final int SAMPLE_MSC_ARTICLE_TAG_PAIR_COUNT = 1;
 
     @Before
-    public void setUp() throws URISyntaxException {
-        File testFile = new File("dblp.xml");
-        conf = new Configuration(false);
-        split = new FileSplit(new Path(testFile.getAbsoluteFile().toURI()), 0, testFile.length(), null);
-        long splitPos = testFile.length() / 2;
-        split1 =  new FileSplit(new Path(testFile.getAbsoluteFile().toURI()), 0, splitPos, null);
-        split2 =  new FileSplit(new Path(testFile.getAbsoluteFile().toURI()), splitPos , testFile.length() - splitPos, null);
+    public void setUp() throws URISyntaxException, IOException {
+        conf = new Configuration();
+        final LocalFileSystem fs = FileSystem.getLocal(conf);
+        final Path basePath = fs.getWorkingDirectory();
+        final Path xmlPath = new Path(basePath,"data/dblp/xml/dblp.xml");
+        assertTrue(fs.exists(xmlPath));
+        final long len = fs.getFileStatus(xmlPath).getLen();
+        split = new FileSplit(xmlPath, 0, len, null);
+        long splitPos = len / 2;
+        split1 =  new FileSplit(xmlPath, 0, splitPos, null);
+        split2 =  new FileSplit(xmlPath, splitPos , len - splitPos, null);
     }
 
     @Test

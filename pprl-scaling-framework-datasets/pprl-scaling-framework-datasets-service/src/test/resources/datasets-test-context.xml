@@ -13,16 +13,19 @@
     <hdp:tool-runner id="dblpXmlToAvroToolRunner"
                      jar="file://${build.test.dir}/pprl-scaling-framework-datasets-mapreduce-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.datasets.mapreduce.DblpXmlToAvroTool"
-                     close-fs="false" libs="file://${build.test.dir}/avro-mapred-1.7.6-cdh5.4.0-hadoop2.jar"/>
+                     close-fs="false" libs="file://${build.test.dir}/avro-mapred-1.7.6-hadoop2.jar"/>
 
     <hdp:tool-runner id="qGramCountingToolRunner"
                          jar="file://${build.test.dir}/pprl-scaling-framework-datasets-mapreduce-${build.version}.jar"
                          tool-class="gr.upatras.ceid.pprl.datasets.mapreduce.QGramCountingTool"
-                         close-fs="false" libs="file://${build.test.dir}/avro-mapred-1.7.6-cdh5.4.0-hadoop2.jar"/>
+                         close-fs="false" libs="file://${build.test.dir}/avro-mapred-1.7.6-hadoop2.jar"/>
 
 
 
-    <bean id="localFs" class="org.apache.hadoop.fs.LocalFileSystem"/>
+    <hdp:configuration id="hadoopConfiguration"/>
     <hdp:file-system id="hdfs"/>
+    <bean id="localFs" class="org.apache.hadoop.fs.FileSystem" factory-method="getLocal">
+        <constructor-arg type="org.apache.hadoop.conf.Configuration" ref="hadoopConfiguration"/>
+    </bean>
     <bean id="datasetsService" class="gr.upatras.ceid.pprl.datasets.service.DatasetsService"/>
 </beans>

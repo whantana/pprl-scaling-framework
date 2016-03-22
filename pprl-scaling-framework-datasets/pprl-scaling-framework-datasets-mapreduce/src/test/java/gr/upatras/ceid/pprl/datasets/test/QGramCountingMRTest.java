@@ -1,8 +1,7 @@
 package gr.upatras.ceid.pprl.datasets.test;
 
-
-import gr.upatras.ceid.pprl.datasets.mapreduce.DblpXmlToAvroTool;
 import gr.upatras.ceid.pprl.datasets.mapreduce.QGramCountingMapper;
+import gr.upatras.ceid.pprl.datasets.mapreduce.QGramCountingTool;
 import org.apache.avro.Schema;
 import org.apache.avro.file.DataFileReader;
 import org.apache.avro.generic.GenericDatumReader;
@@ -22,6 +21,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 
@@ -35,9 +35,9 @@ public class QGramCountingMRTest {
     @Before
     public void setup() throws IOException {
         Schema schema = loadAvroSchemaFromFile(
-                new File("person_small/schema/person_small.avsc"));
+                new File("data/person_small/schema/person_small.avsc"));
         records = loadAvroRecordsFromFiles(schema, new File[]{
-                new File("person_small/avro/person_small.avro")});
+                new File("data/person_small/avro/person_small.avro")});
 
         mapDriver = MapDriver.newMapDriver(new QGramCountingMapper());
         mapDriver.getContext().getConfiguration().set(QGramCountingMapper.SCHEMA_KEY, schema.toString());
@@ -57,20 +57,9 @@ public class QGramCountingMRTest {
                     new AvroKey<GenericRecord>(record),NullWritable.get()));
         mapDriver.withAll(input);
         mapDriver.run();
-        long recordCount = mapDriver.getCounters().findCounter("","record.count").getValue();
-        LOG.info("Record count : {}",recordCount);
-        for (String counterGroupName : mapDriver.getCounters().getGroupNames()) {
-            if(counterGroupName.equals("")) continue;
-            for (String counterName : QGramCountingMapper.STATISTICS) {
-                long val = mapDriver.getCounters().findCounter(counterGroupName, counterName).getValue();
-                final String key = counterGroupName + ".avg." + counterName;
-                double avg = (double) val / (double) recordCount;
-                LOG.info("Key = {} , value = {}", key, avg);
-            }
-        }
 
-        assertEquals(recordCount, 120);
-
+        final Properties p = QGramCountingTool.counters2Properties(mapDriver.getCounters(),fieldNames);
+        p.list(System.out);
     }
 
     private static Schema loadAvroSchemaFromFile(final File schemaFile) throws IOException {

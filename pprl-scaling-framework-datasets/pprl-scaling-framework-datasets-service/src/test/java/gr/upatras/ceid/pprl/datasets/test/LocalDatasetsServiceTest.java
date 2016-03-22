@@ -1,6 +1,5 @@
 package gr.upatras.ceid.pprl.datasets.test;
 
-
 import gr.upatras.ceid.pprl.base.CombinatoricsUtil;
 import gr.upatras.ceid.pprl.datasets.DatasetException;
 import gr.upatras.ceid.pprl.datasets.DatasetFieldStatistics;
@@ -10,10 +9,8 @@ import gr.upatras.ceid.pprl.datasets.service.LocalDatasetsService;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -23,7 +20,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,52 +38,54 @@ public class LocalDatasetsServiceTest {
     @Autowired
     private LocalDatasetsService lds;
 
-    private Path[] AVRO_PATHS;
-    private Path SCHEMA_PATH;
-    private String[] FIELDS =  new String[]{"name", "surname"};
-
     @Before
     public void setUp() throws IOException {
         assertNotNull(lds);
         assertNotNull(lds.getLocalFs());
-        if (lds.getLocalFs().getConf() == null) {
-            lds.getLocalFs().initialize(URI.create("file:///"), new Configuration());
-        }
-        AVRO_PATHS = new Path[]{new Path("person_small/avro")};
-        SCHEMA_PATH = new Path("person_small/schema/person_small.avsc");
     }
 
     @Test
     public void test0() throws IOException, DatasetException {
-        final Schema schema = lds.loadSchema(SCHEMA_PATH);
+        final Path schemaPath = new Path("data/da_int/schema/da_int.avsc");
+        final Schema schema = lds.loadSchema(schemaPath);
         LOG.info(schema.toString(true));
     }
 
     @Test
     public void test1() throws IOException, DatasetException {
-        final GenericRecord[] sample = lds.sample(AVRO_PATHS, SCHEMA_PATH, 20);
-        final Schema schema = lds.loadSchema(SCHEMA_PATH);
-        final String sampleName = "person_small_sample";
-        lds.saveRecords(sampleName, sample, schema);
+        final Path avroPath = new Path("data/da_int/avro");
+        final Path schemaPath = new Path("data/da_int/schema/da_int.avsc");
+        final GenericRecord[] records = lds.loadRecords(new Path[]{avroPath},schemaPath);
+        LOG.info("Loaded {} records.",records.length);
     }
 
     @Test
     public void test2() throws IOException, DatasetException {
-        final GenericRecord[] records = lds.loadRecords(AVRO_PATHS, SCHEMA_PATH);
-        final Schema schema = lds.loadSchema(SCHEMA_PATH);
+        final Path avroPath = new Path("data/da_int/avro");
+        final Path schemaPath = new Path("data/da_int/schema/da_int.avsc");
+        final GenericRecord[] records = lds.sample(new Path[]{avroPath}, schemaPath,5);
+        LOG.info("Loaded {} records.",records.length);
+    }
+    @Test
+    public void test3() throws IOException, DatasetException {
+        final Path avroPath = new Path("data/person_small/avro");
+        final Path schemaPath = new Path("data/person_small/schema/person_small.avsc");
+        final String[] fieldNames = new String[]{"name","surname","location"};
+        final GenericRecord[] records = lds.loadRecords(new Path[]{avroPath}, schemaPath);
+        final Schema schema = lds.loadSchema(schemaPath);
         final DatasetStatistics statistics = new DatasetStatistics();
         statistics.setRecordCount(records.length);
         statistics.setEmPairs(CombinatoricsUtil.twoCombinationsCount(records.length));
-        statistics.setFieldNames(FIELDS);
-        DatasetStatistics.calculateQgramStatistics(records, schema, statistics, FIELDS);
-        final double[] estimatedM = new double[]{0.9,0.9};
-        final double[] estimatedU = new double[]{0.1,0.5};
+        statistics.setFieldNames(fieldNames);
+        DatasetStatistics.calculateQgramStatistics(records, schema, statistics, fieldNames);
+        final double[] estimatedM = new double[]{0.9,0.9,0.9};
+        final double[] estimatedU = new double[]{0.1,0.5,0.1};
         final double estimatedP = 0.01;
         final int iterations = 3;
         statistics.setEmAlgorithmIterations(iterations);
         statistics.setP(estimatedP);
         DatasetStatistics.calculateStatsUsingEstimates(
-                statistics,FIELDS,
+                statistics,fieldNames,
                 estimatedM,estimatedU);
         StringBuilder report = new StringBuilder(prettyStats(statistics));
         report.append(prettyBFEStats(statistics.getFieldStatistics(), 15, 2));
@@ -96,27 +94,19 @@ public class LocalDatasetsServiceTest {
         LOG.info(report.toString());
         final String reportName = "stats_report";
         lds.saveStats(reportName, statistics);
-        lds.saveStats(reportName, statistics, new Path("person_small"));
+        lds.saveStats(reportName, statistics, new Path("data/dblp"));
         lds.saveStats(reportName, statistics, new Path("asdf"));
     }
 
 
     @Test
-    public void test3() throws IOException, DatasetException {
-        Path[] avroPaths = new Path[]{new Path("random/avro/random.avro")};
-        Path schemaPath = new Path("random/schema/random.avsc");
-        LOG.info(
-                prettyRecords(
-                        lds.loadRecords(avroPaths, schemaPath),
-                        lds.loadSchema(schemaPath)
-                )
-        );
-
-        schemaPath = new Path("da_int/schema/da_int.avsc");
+    public void test4() throws IOException, DatasetException {
+        Path schemaPath = new Path("data/da_int/schema/da_int.avsc");
+        Path[] avroPaths;
 
         avroPaths = new Path[]{
-                new Path("da_int/avro/da_int_1.avro"),
-                new Path("da_int/avro/da_int_2.avro")
+                new Path("data/da_int/avro/da_int_1.avro"),
+                new Path("data/da_int/avro/da_int_2.avro")
         };
         LOG.info(
                 prettyRecords(
@@ -126,9 +116,9 @@ public class LocalDatasetsServiceTest {
         );
 
         avroPaths = new Path[]{
-                new Path("da_int/avro/da_int_1.avro"),
-                new Path("da_int/avro/da_int_2.avro"),
-                new Path("da_int/avro/da_int_3.avro")
+                new Path("data/da_int/avro/da_int_1.avro"),
+                new Path("data/da_int/avro/da_int_2.avro"),
+                new Path("data/da_int/avro/da_int_3.avro")
         };
         LOG.info(
                 prettyRecords(
@@ -138,7 +128,7 @@ public class LocalDatasetsServiceTest {
         );
 
         avroPaths = new Path[]{
-                new Path("da_int/avro")
+                new Path("data/da_int/avro")
         };
         LOG.info(
                 prettyRecords(
@@ -149,19 +139,23 @@ public class LocalDatasetsServiceTest {
     }
 
     @Test
-    public void test4() throws DatasetException, IOException {
-        Path[] avroPaths = new Path[]{new Path("random/avro/random.avro")};
-        Path schemaPath = new Path("random/schema/random.avsc");
+    public void test5() throws DatasetException, IOException {
+        Path[] avroPaths = new Path[]{new Path("data/da_int/avro")};
+        Path schemaPath = new Path("data/da_int/schema/da_int.avsc");
+
         final Schema schema = lds.loadSchema(schemaPath);
         final GenericRecord[] records = lds.loadRecords(avroPaths,schemaPath);
         LOG.info(prettyRecords(records,schema));
+
         final Schema updatedSchema = DatasetsUtil.updateSchemaWithULID(schema,"ulid");
         final GenericRecord[] updatedRecords = DatasetsUtil.updateRecordsWithULID(records,updatedSchema,"ulid");
-        LOG.info(prettyRecords(updatedRecords,schema));
-        final GenericRecord[] updatedRecords1 = DatasetsUtil.updateRecordsWithULID(records,updatedSchema,"ulid");
-        LOG.info(prettyRecords(updatedRecords1,schema));
-        lds.saveRecords("updated_random",updatedRecords,updatedSchema);
-        lds.saveRecords("updated_random1",updatedRecords1,updatedSchema);
+        LOG.info(prettyRecords(updatedRecords,updatedSchema));
+        lds.saveRecords("data/updated_da_int",updatedRecords,updatedSchema);
+
+        final Schema updatedSchema1 = DatasetsUtil.updateSchemaWithULID(updatedSchema,"ulid_100");
+        final GenericRecord[] updatedRecords1 = DatasetsUtil.updateRecordsWithULID(updatedRecords,updatedSchema1,"ulid_100",100);
+        LOG.info(prettyRecords(updatedRecords1,updatedSchema1));
+        lds.saveRecords("updated_da_int_1",updatedRecords1,updatedSchema,new Path("data"));
     }
 
 

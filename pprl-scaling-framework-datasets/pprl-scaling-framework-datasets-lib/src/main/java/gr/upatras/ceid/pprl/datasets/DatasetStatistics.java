@@ -133,23 +133,33 @@ public class DatasetStatistics implements Serializable {
     }
 
     public void fromProperties(final Properties properties) {
+        if(properties.getProperty("record.count") != null)
+            setRecordCount(Long.parseLong(properties.getProperty("record.count")));
+        if(properties.getProperty("em.pair.count") != null)
+            setEmPairs(Long.parseLong(properties.getProperty("em.pair.count")));
+        if(properties.getProperty("em.algorithm.iterations") != null)
+            setEmAlgorithmIterations(Integer.parseInt(properties.getProperty("em.algorithm.iterations")));
+        if(properties.getProperty("em.estimated.p") != null)
+            setP(Double.parseDouble(properties.getProperty("em.estimated.p")));
 
-        setRecordCount(Long.parseLong(properties.getProperty("record.count")));
-        setEmPairs(Long.parseLong(properties.getProperty("em.pair.count")));
-        setEmAlgorithmIterations(Integer.parseInt(properties.getProperty("em.algorithm.iterations")));
-        setP(Double.parseDouble(properties.getProperty("em.estimated.p")));
+        if(properties.getProperty("field.names") != null) {
+            String[] fieldNames = properties.getProperty("field.names").split(",");
+            setFieldNames(fieldNames);
+        }
 
-        String[] fieldNames = properties.getProperty("field.names").split(",");
-        setFieldNames(fieldNames);
+        if(getFieldStatistics().isEmpty()) return;
 
         for (Map.Entry<String,DatasetFieldStatistics> entry : getFieldStatistics().entrySet()) {
             final String fieldName = entry.getKey();
             final DatasetFieldStatistics fieldStats = entry.getValue();
-            final String firstKey = "f." + fieldName;
             int i = 0;
             double[] stats = new double[DatasetFieldStatistics.props.length];
-            for (String prop : DatasetFieldStatistics.props)
-                stats[i++] = Double.valueOf(properties.getProperty(firstKey + "." + prop));
+            for (String prop : DatasetFieldStatistics.props) {
+                final String key = "f." + fieldName + "." + prop;
+                if(properties.getProperty(key) != null)
+                    stats[i] = Double.valueOf(properties.getProperty(key));
+                i++;
+            }
             fieldStats.setStats(stats);
         }
     }

@@ -26,7 +26,6 @@ import java.util.Properties;
 import static org.junit.Assert.assertEquals;
 
 public class QGramCountingMRTest {
-    private static final Logger LOG = LoggerFactory.getLogger(QGramCountingMRTest.class);
     private static final String[] fieldNames = {"name","surname","location"};
     private MapDriver<AvroKey<GenericRecord>, NullWritable , NullWritable  ,NullWritable > mapDriver;
     private GenericRecord[] records;

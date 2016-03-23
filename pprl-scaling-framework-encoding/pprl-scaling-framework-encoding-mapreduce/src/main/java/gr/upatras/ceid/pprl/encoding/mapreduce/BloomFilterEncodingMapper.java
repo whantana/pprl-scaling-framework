@@ -14,12 +14,11 @@ import java.io.IOException;
 
 public class BloomFilterEncodingMapper extends Mapper<AvroKey<GenericRecord>, NullWritable, AvroKey<GenericRecord>, NullWritable> {
 
-    public static final String INPUT_SCHEMA_KEY = "pprl.encoding.input.schema";
-    public static final String OUTPUT_SCHEMA_KEY = "pprl.encoding.encoding.schema";
+    public static final String INPUT_SCHEMA_KEY = "input.schema";
+    public static final String OUTPUT_SCHEMA_KEY = "output.schema";
 
     protected Schema inputSchema;
     protected Schema outputSchema;
-    protected String methodName;
     protected BloomFilterEncoding encoding;
 
     @Override
@@ -27,10 +26,10 @@ public class BloomFilterEncodingMapper extends Mapper<AvroKey<GenericRecord>, Nu
         super.setup(context);
         try {
             final Configuration config = context.getConfiguration();
-
             inputSchema = (new Schema.Parser()).parse(config.get(INPUT_SCHEMA_KEY));
             outputSchema = (new Schema.Parser()).parse(config.get(OUTPUT_SCHEMA_KEY));
-            encoding = BloomFilterEncodingUtil.newInstance(methodName);
+            encoding = BloomFilterEncodingUtil.newInstance(
+                    BloomFilterEncodingUtil.retrieveSchemeName(outputSchema));
             encoding.setupFromSchema(outputSchema);
             if(!encoding.isEncodingOfSchema(inputSchema))
                 throw new BloomFilterEncodingException("Encoding schema does not match input schema");

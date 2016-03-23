@@ -36,7 +36,7 @@
         <dependency>
             <groupId>info.debatty</groupId>
             <artifactId>java-string-similarity</artifactId>
-            <version>RELEASE</version>
+            <version>${string.similarity.version}</version>
         </dependency>
 
     </dependencies>

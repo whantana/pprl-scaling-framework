@@ -36,6 +36,7 @@ public class CreateHashesBenchmarkTest {
     private static DescriptiveStatistics stats =  new DescriptiveStatistics();
 
     // TODO rewrite benchmark to load from existing data
+    // TODO benchmarking accuracy/
     static {
         Mac tmp;
         Mac tmp1;

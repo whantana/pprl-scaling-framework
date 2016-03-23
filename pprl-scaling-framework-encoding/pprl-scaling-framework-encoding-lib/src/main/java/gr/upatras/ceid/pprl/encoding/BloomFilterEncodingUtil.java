@@ -40,7 +40,7 @@ public class BloomFilterEncodingUtil {
             throw new BloomFilterEncodingException("String \"" + scheme +"\" does not belong in available schemes.");
     }
 
-    public static BloomFilterEncoding newInstance(final Schema schema)
+    public static String retrieveSchemeName(final Schema schema)
             throws BloomFilterEncodingException {
         String ns = schema.getNamespace();
         if(!ns.startsWith("encoding.schema"))
@@ -48,7 +48,12 @@ public class BloomFilterEncodingUtil {
         String s = ns.substring("encoding.schema.".length());
         String[] sParts = s.split("\\.");
         assert sParts.length == 3;
-        return newInstance(sParts[0].toUpperCase());
+        return sParts[0].toUpperCase();
+    }
+
+    public static BloomFilterEncoding newInstance(final Schema schema)
+            throws BloomFilterEncodingException {
+        return newInstance(retrieveSchemeName(schema));
     }
 
     public static BloomFilterEncoding newInstance(final String scheme)

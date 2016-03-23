@@ -1,20 +1,40 @@
 package gr.upatras.ceid.pprl.matching.test;
 
-import gr.upatras.ceid.pprl.base.CombinatoricsUtil;
 import gr.upatras.ceid.pprl.matching.SimilarityMatrix;
+import gr.upatras.ceid.pprl.matching.test.naive.NaiveSimilarityMatrix;
+import org.apache.avro.Schema;
+import org.apache.avro.file.DataFileReader;
+import org.apache.avro.generic.GenericDatumReader;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
 public class SimilarityMatrixTest {
 
     private static Logger LOG = LoggerFactory.getLogger(SimilarityMatrixTest.class);
+    public String[] fieldNames = {"name","surname","location"};
+    private GenericRecord[] records;
+    private Schema schema;
+
+    @Before
+    public void setup() throws IOException {
+        schema = loadAvroSchemaFromFile(
+                new File("data/person_small/schema/person_small.avsc"));
+        records = loadAvroRecordsFromFiles(schema, new File[]{
+                new File("data/person_small/avro/person_small.avro")});
+    }
 
     @Test
     public void test0() {
@@ -105,7 +125,7 @@ public class SimilarityMatrixTest {
         NaiveSimilarityMatrix matrix = null;
         for (int i = 0; i < 5; i++) {
             long start = System.currentTimeMillis();
-            matrix = NaiveSimilarityMatrix.createMatrix(records);
+            matrix = SimilarityMatricesUtil.naiveMatrix(records,fieldNames);
             long end = System.currentTimeMillis();
             long time = end - start;
             stats.addValue(time);
@@ -119,7 +139,7 @@ public class SimilarityMatrixTest {
         SimilarityMatrix matrix = null;
         for (int i = 0; i < 5; i++) {
             long start = System.currentTimeMillis();
-            matrix = SimilarityMatrixTest.createSimilarityMatrix(records);
+            matrix = SimilarityMatricesUtil.similarityMatrix(records,fieldNames);
             long end = System.currentTimeMillis();
             long time = end - start;
             stats.addValue(time);
@@ -148,134 +168,24 @@ public class SimilarityMatrixTest {
         }
     }
 
-    public static SimilarityMatrix createSimilarityMatrix(final String[][] records,
-                                                          final String similarityMethodName) {
-        final long pairCount = CombinatoricsUtil.twoCombinationsCount(records.length);
-        final int fieldCount = records[0].length;
-        if(Long.compare(pairCount*fieldCount,Integer.MAX_VALUE) > 0)
-            throw new UnsupportedOperationException("Cannot create gamma. #N*#F < Integer.MAX");
-        final SimilarityMatrix matrix = new SimilarityMatrix(fieldCount);
-        final Iterator<int[]> pairIter = CombinatoricsUtil.getPairs(records.length);
-        do {
-            int pair[] = pairIter.next();
-            boolean[] row = new boolean[records[0].length];
-            for(int j=0; j < records[0].length; j++) {
-                String s1 = records[pair[0]][j];
-                String s2 = records[pair[1]][j];
-                if(SimilarityMatrix.similarity(similarityMethodName, s1, s2)) row[j] = true;
-            }
-            matrix.set(row);
 
-        }while(pairIter.hasNext());
-        return matrix;
+    private static Schema loadAvroSchemaFromFile(final File schemaFile) throws IOException {
+        FileInputStream fis = new FileInputStream(schemaFile);
+        Schema schema = (new Schema.Parser()).parse(fis);
+        fis.close();
+        return schema;
     }
 
-    public static SimilarityMatrix createSimilarityMatrix(final String[][] records) {
-        return createSimilarityMatrix(records, SimilarityMatrix.DEFAULT_SIMILARITY_METHOD_NAME);
+    private static GenericRecord[] loadAvroRecordsFromFiles(final Schema schema,final File[] avroFiles) throws IOException {
+        final List<GenericRecord> recordList =  new ArrayList<GenericRecord>();
+        int i = 0;
+        for (File avroFile : avroFiles) {
+            final DataFileReader<GenericRecord> reader =
+                    new DataFileReader<GenericRecord>(avroFile,
+                            new GenericDatumReader<GenericRecord>(schema));
+            for (GenericRecord record : reader) recordList.add(i++,record);
+            reader.close();
+        }
+        return recordList.toArray(new GenericRecord[recordList.size()]);
     }
-    // TODO Load real ones
-    public static String[][] records = {
-            {"conner","draiden","irving"}, {"connor","dradien","irving"}, {"connor","draiden","irving"},
-            {"lucas","paterson","seattle"},
-            {"amaya","mitsoulis","chicago"},
-            {"amber","white","newark"},
-            {"seamus","hirose","newark"},
-            {"joshua","coulson","newark"},
-            {"michael","reid","newark"},
-            {"hayden","ryan","san diego"},
-            {"shelby","wilkins","fremont"},
-            {"bailey","snell","san antonio"},
-            {"stephanie","walch","newark"},
-            {"dylan","meale","newark"},
-            {"jacob","dixon","newark"},
-            {"hayley","bellchambers","newark"},
-            {"niamh","clarke","colorado springs"},
-            {"vanessa","gunillasson","newark"},
-            {"charlotte","kassos","los angeles"},
-            {"isabelle","gryen","laredo"},
-            {"isabelle","green","laredo"},
-            {"claire","clarke","newark"},
-            {"helena","reid","newark"},
-            {"keely","gimbrere","newark"},
-            {"mystique","campbell","newark"},
-            {"nacoya","mitton","newark"},
-            {"daniel","bishop","newark"},
-            {"sara","comlpton","oakland"}, {"sara","compton","oakland"},
-            {"sophie","loqelock","newark"}, {"sophie","lovel0ck","newark"}, {"sophie","lovelock","newark"},
-            {"jackson","pascoe","newark"},
-            {"reuben","webb","newark"},
-            {"benjamin","emllin","dallas"},
-            {"lewis","armanini","newark"},
-            {"mikhaili","wh:te","newark"}, {"mikhaili","hite","newark"}, {"mikhaili","white","newark"},
-            {"jaslyn","lamprey","newark"},
-            {"james","ryan","newark"},
-            {"ella","schembri","hialeah"},
-            {"kenneth","brgles","madison"},
-            {"lachlan","bishop","newark"},
-            {"benjamin","au","newark"},
-            {"jasmyn","montuori","newark"},
-            {"max","jolly","newark"},
-            {"ryleh","campbell","newark"},
-            {"kobe","jongebloed","newark"},
-            {"caitlin","fang","newark"},
-            {"koula","heerev","newark"}, {"koula","hierey","newark"}, {"koula","heerey","newark"},
-            {"jasmine","neville","newark"},
-            {"jye","mason","newark"},
-            {"anneliese","boaz","newark"},
-            {"montana","large","newark"},
-            {"jaiden","oliveri","newark"},
-            {"savannah","bishop","chicago"},
-            {"kane","colquhoun","st. petersburg"},
-            {"zac","tweedie","newark"},
-            {"erin","crook","washington"},
-            {"thomas","wraight","newark"},
-            {"jayden","wohltmann","newark"},
-            {"georgia","wyllie","long beach"},
-            {"tyrone","petersen","newark"},
-            {"toby","leslie","newark"},
-            {"cameron","rudd","newark"},
-            {"emma","berrymlan","newark"}, {"emma","qberryman","newark"}, {"emma","berryman","newark"},
-            {"jackson","lihou","newark"},
-            {"mitchell","estcourt","phoenix"},
-            {"alexandra","rankine","newark"},
-            {"amber","purdon","newark"},
-            {"micheal","colquhoun","newark"}, {"mitchell","colquhoun","newark"},
-            {"ruby","howie","oakland"},
-            {"tiana","fletcher-jones","newark"},
-            {"emiily","jolly","newark"},
-            {"caitlin","clarke","newark"},
-            {"benjamin","jolhly","newark"}, {"benjamin","jol1y","newark"}, {"benjamin","jolly","newark"},
-            {"alisa","mcgregor","newark"},
-            {"amber","rudd","newark"},
-            {"joshua","szkolik","newark"},
-            {"michaela","mason","newark"},
-            {"oakleigh","ottens","newark"},
-            {"katelyn","saffoury","newark"},
-            {"lewis","absenger","newark"},
-            {"mitchell","spillings","newark"},
-            {"emiily","purtell","dallas"},
-            {"lachlan","george","newark"},
-            {"chelsea","burford","newark"},
-            {"trevor","stubbs","newark"},
-            {"tristan","mesit'l","newark"}, {"tristan","mesiti","newark"}, {"tristan","mesiti","newark"},
-            {"noah","lanyon","chicago"},
-            {"sonja","lodge","newark"},
-            {"ruby","degasperi","newark"},
-            {"kyle","mcfadden","newark"},
-            {"kyah","swoboda","newark"},
-            {"tahnee","steed","boston"},
-            {"zoe","callahan","newark"},
-            {"nicole","permyakoff","newark"},
-            {"samuel","hackenberg","newark"},
-            {"thomas","mcclay","newark"},
-            {"hugo","chandler","newark"},
-            {"sophie","web1>","newark"}, {"sophie","webb","newark"},
-            {"bronte","beckwith","baton rouge"},
-            {"lucy","noack","newark"},
-            {"levi","webb","newark"},
-            {"madison","monteleone","newark"},
-            {"channing","ziln","detroit"}, {"channing","izlm","detroit"}, {"channing","zilm","detroit"},
-            {"grace","lock","los angeles"}
-    };
-    public static String[] fieldNames = {"name","surname","location"};
 }

@@ -58,13 +58,30 @@ public class BloomFilterTest {
         LOG.info("#hexstring : {}",bloomFilter.toHexString());
         LOG.info("after inserts FPP={}", bloomFilter.calcFPP());
         LOG.info("bits per element = {}",bloomFilter.calcBitsPerElement());
+//        LOG.info("clearing bloom filter");
+//        bloomFilter.clear();
+//        LOG.info("#1 : {}",bloomFilter.getOnesCount());
+//        LOG.info("#0 : {}",bloomFilter.getZeroesCount());
+//        assertEquals(bloomFilter.getOnesCount(),bloomFilter.countOnes());
+//        assertEquals(bloomFilter.getZeroesCount(),bloomFilter.countZeroes());
+        LOG.info("--New Copy--");
+        final BloomFilter bloomFilter1 = new BloomFilter(N,K,bloomFilter.getByteArray());
+        LOG.info("Bytes length : {}",bloomFilter1.getByteArray().length);
+        LOG.info("Added elements : {}",bloomFilter1.getAddedElementsCount());
+        LOG.info("#1 : {}",bloomFilter1.getOnesCount());
+        LOG.info("#0 : {}",bloomFilter1.getZeroesCount());
+        assertEquals(bloomFilter1.getOnesCount(),bloomFilter1.countOnes());
+        assertEquals(bloomFilter1.getZeroesCount(),bloomFilter1.countZeroes());
+        LOG.info("#bitstring : {}",bloomFilter1.toString());
+        LOG.info("#hexstring : {}",bloomFilter1.toHexString());
+        LOG.info("after inserts FPP={}", bloomFilter1.calcFPP());
+        LOG.info("bits per element = {}",bloomFilter1.calcBitsPerElement());
         LOG.info("clearing bloom filter");
         bloomFilter.clear();
-        LOG.info("#1 : {}",bloomFilter.getOnesCount());
-        LOG.info("#0 : {}",bloomFilter.getZeroesCount());
-        assertEquals(bloomFilter.getOnesCount(),bloomFilter.countOnes());
-        assertEquals(bloomFilter.getZeroesCount(),bloomFilter.countZeroes());
-
+        LOG.info("#1 : {}",bloomFilter1.getOnesCount());
+        LOG.info("#0 : {}",bloomFilter1.getZeroesCount());
+        assertEquals(bloomFilter1.getOnesCount(),bloomFilter1.countOnes());
+        assertEquals(bloomFilter1.getZeroesCount(),bloomFilter1.countZeroes());
     }
 
     @Test

@@ -5,7 +5,9 @@ import gr.upatras.ceid.pprl.matching.mapreduce.GeneratePairsMapper;
 import gr.upatras.ceid.pprl.matching.mapreduce.PairSimilarityCombiner;
 import gr.upatras.ceid.pprl.matching.mapreduce.PairSimilarityReducer;
 import org.apache.avro.Schema;
+import org.apache.avro.file.DataFileReader;
 import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.hadoop.io.AvroSerialization;
 import org.apache.avro.mapred.AvroKey;
@@ -38,25 +40,18 @@ public class ExhaustivePairSimilarityMRTest {
 
 
     private Schema schema;
-    private GenericRecord[] records = new GenericRecord[10];
+    private GenericRecord[] records;
     private final String[] fieldNames = {"name","surname","location"};
 
     @Before
     public void setup() throws IOException {
-        // TODO load real records
-        schema = loadAvroSchemaFromFile(new File("person_small/schema/person_small.avsc"));
-        for (int i = 0; i < 10; i++) {
-            records[i] = new GenericData.Record(schema);
-            records[i].put("id",String.valueOf(i));
-            records[i].put("name",String.format("Name #%d",i));
-            records[i].put("surname",String.format("Surname #%d",i));
-            records[i].put("location",String.format("Location #%d",i));
-        }
-        LOG.info(10 + " records ready.");
-
+        schema = loadAvroSchemaFromFile(
+                new File("data/person_small/schema/person_small.avsc"));
+        records = loadAvroRecordsFromFiles(schema, new File[]{
+                new File("data/person_small/avro/person_small.avro")});
 
         mapDriver = MapDriver.newMapDriver(new GeneratePairsMapper());
-        mapDriver.getContext().getConfiguration().setInt("record.count", 10);
+        mapDriver.getContext().getConfiguration().setInt("record.count", records.length);
         mapDriver.getContext().getConfiguration().set("uid.field.name", "id");
         AvroSerialization.setKeyWriterSchema(mapDriver.getConfiguration(), schema);
         AvroSerialization.setKeyReaderSchema(mapDriver.getConfiguration(), schema);
@@ -71,7 +66,7 @@ public class ExhaustivePairSimilarityMRTest {
                 new PairSimilarityReducer(),
                 new PairSimilarityCombiner()
         );
-        mapReduceDriver.getConfiguration().setInt("record.count", 10);
+        mapReduceDriver.getConfiguration().setInt("record.count", records.length);
         mapReduceDriver.getConfiguration().set("uid.field.name", "id");
         mapReduceDriver.getConfiguration().setStrings("field.names",fieldNames);
         AvroSerialization.setKeyWriterSchema(mapReduceDriver.getConfiguration(), schema);
@@ -88,8 +83,8 @@ public class ExhaustivePairSimilarityMRTest {
         mapDriver.withInput(new AvroKey<GenericRecord>(records[0]), NullWritable.get());
         List<Pair<LongWritable, AvroKey<GenericRecord>>> expectedOutputs =
                 new ArrayList<Pair<LongWritable,  AvroKey<GenericRecord>>>();
-        long[] ranksWith0 = CombinatoricsUtil.ranksContaining(0,10);
-        LOG.info("Ranks of element 0 in 10 : {}", Arrays.toString(ranksWith0));
+        long[] ranksWith0 = CombinatoricsUtil.ranksContaining(0,records.length);
+        LOG.info("Ranks of element 0 in {} : {}",records.length, Arrays.toString(ranksWith0));
         for (int i = 0; i <ranksWith0.length; i++) {
             expectedOutputs.add(new Pair<LongWritable, AvroKey<GenericRecord>>(
                     new LongWritable(ranksWith0[i]),
@@ -114,10 +109,10 @@ public class ExhaustivePairSimilarityMRTest {
         mapDriver.withAll(inputs);
         List<Pair<LongWritable, AvroKey<GenericRecord>>> expectedOutputs =
                 new ArrayList<Pair<LongWritable,  AvroKey<GenericRecord>>>();
-        long[] ranksWith0 = CombinatoricsUtil.ranksContaining(0,10);
-        long[] ranksWith1 = CombinatoricsUtil.ranksContaining(1,10);
-        LOG.info("Ranks of element 0 in 10 : {}", Arrays.toString(ranksWith0));
-        LOG.info("Ranks of element 1 in 10 : {}", Arrays.toString(ranksWith1));
+        long[] ranksWith0 = CombinatoricsUtil.ranksContaining(0,records.length);
+        long[] ranksWith1 = CombinatoricsUtil.ranksContaining(1,records.length);
+        LOG.info("Ranks of element 0 in {} : {}",records.length, Arrays.toString(ranksWith0));
+        LOG.info("Ranks of element 1 in {} : {}",records.length, Arrays.toString(ranksWith1));
         assert ranksWith0.length == ranksWith1.length;
         for (int i = 0; i <ranksWith0.length; i++) {
             expectedOutputs.add(new Pair<LongWritable, AvroKey<GenericRecord>>(
@@ -138,11 +133,21 @@ public class ExhaustivePairSimilarityMRTest {
     public void test2() throws IOException {
         List<Pair<AvroKey<GenericRecord>,NullWritable>> inputs
                 = new ArrayList<Pair<AvroKey<GenericRecord>, NullWritable>>();
-        for (int i = 0; i < 10; i++) {
+        for (GenericRecord record : records) {
             inputs.add(new Pair<AvroKey<GenericRecord>, NullWritable>(
-                    new AvroKey<GenericRecord>(records[i]), NullWritable.get()));
+                    new AvroKey<GenericRecord>(record), NullWritable.get()));
         }
+        mapReduceDriver.withAll(inputs);
         mapReduceDriver.run();
+
+        long pairsDoneInCombine =
+                mapReduceDriver.getCounters().findCounter("pairs.done","combine").getValue();
+
+        long pairsDoneInReduce =
+                mapReduceDriver.getCounters().findCounter("pairs.done","reduce").getValue();
+
+        LOG.info("pairsDoneInCombine={} pairsDoneInReduce={}",pairsDoneInCombine,pairsDoneInReduce);
+
         for (int i = 0 ; i < (1 << fieldNames.length);i++) {
             String counterName = mapReduceDriver.getCounters()
                     .findCounter("similarity.vectors", String.valueOf(i)).getDisplayName();
@@ -159,6 +164,19 @@ public class ExhaustivePairSimilarityMRTest {
         Schema schema = (new Schema.Parser()).parse(fis);
         fis.close();
         return schema;
+    }
+
+    private static GenericRecord[] loadAvroRecordsFromFiles(final Schema schema,final File[] avroFiles) throws IOException {
+        final List<GenericRecord> recordList =  new ArrayList<GenericRecord>();
+        int i = 0;
+        for (File avroFile : avroFiles) {
+            final DataFileReader<GenericRecord> reader =
+                    new DataFileReader<GenericRecord>(avroFile,
+                            new GenericDatumReader<GenericRecord>(schema));
+            for (GenericRecord record : reader) recordList.add(i++,record);
+            reader.close();
+        }
+        return recordList.toArray(new GenericRecord[recordList.size()]);
     }
 }
 

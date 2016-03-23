@@ -51,20 +51,20 @@
 
     </dependencies>
     <build>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/build.properties</include>
+                </includes>
+            </testResource>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>false</filtering>
+            </testResource>
+        </testResources>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.12.4</version>
-                <configuration>
-                    <systemProperties>
-                        <property>
-                            <name>pprl.encoding.test.dir</name>
-                            <value>${project.build.directory}/test-classes</value>
-                        </property>
-                    </systemProperties>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
@@ -80,13 +80,6 @@
                             <artifactItems>
                                 <artifactItem>
                                     <groupId>gr.upatras.ceid</groupId>
-                                    <artifactId>pprl-scaling-framework-datasets-mapreduce</artifactId>
-                                    <version>${project.version}</version>
-                                    <type>jar</type>
-                                    <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>gr.upatras.ceid</groupId>
                                     <artifactId>pprl-scaling-framework-encoding-mapreduce</artifactId>
                                     <version>${project.version}</version>
                                     <type>jar</type>
@@ -95,13 +88,6 @@
                                 <artifactItem>
                                     <groupId>gr.upatras.ceid</groupId>
                                     <artifactId>pprl-scaling-framework-encoding-lib</artifactId>
-                                    <version>${project.version}</version>
-                                    <type>jar</type>
-                                    <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>gr.upatras.ceid</groupId>
-                                    <artifactId>pprl-scaling-framework-datasets-lib</artifactId>
                                     <version>${project.version}</version>
                                     <type>jar</type>
                                     <outputDirectory>${project.build.directory}/test-classes</outputDirectory>

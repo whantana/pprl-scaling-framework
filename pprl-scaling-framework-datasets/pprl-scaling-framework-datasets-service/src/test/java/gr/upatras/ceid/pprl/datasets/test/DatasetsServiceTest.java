@@ -81,7 +81,7 @@ public class DatasetsServiceTest extends AbstractMapReduceTests {
         final Path inputPath = new Path("person_small/avro");
         final Path schemaPath = new Path("person_small/schema/person_small.avsc");
         final Path basePath = new Path("person_small/stats");
-        final Path propertiesPath = ds.countQGrams(inputPath,schemaPath,basePath,FIELDS);
+        final Path propertiesPath = ds.countQGrams(inputPath,schemaPath,basePath,"my_stats",FIELDS);
         Properties p = new Properties();
         Path dst = new Path("data/person_small/stats");
         if(!ds.getLocalFs().exists(dst))

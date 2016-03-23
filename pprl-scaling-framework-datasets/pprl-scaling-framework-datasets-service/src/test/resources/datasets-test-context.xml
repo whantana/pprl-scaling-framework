@@ -20,8 +20,6 @@
                          tool-class="gr.upatras.ceid.pprl.datasets.mapreduce.QGramCountingTool"
                          close-fs="false" libs="file://${build.test.dir}/avro-mapred-1.7.6-hadoop2.jar"/>
 
-
-
     <hdp:configuration id="hadoopConfiguration"/>
     <hdp:file-system id="hdfs"/>
     <bean id="localFs" class="org.apache.hadoop.fs.FileSystem" factory-method="getLocal">

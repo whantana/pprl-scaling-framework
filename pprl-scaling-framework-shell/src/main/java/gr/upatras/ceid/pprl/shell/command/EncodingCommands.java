@@ -243,8 +243,9 @@ public class EncodingCommands implements CommandMarker {
 
             final Schema existingEncodingSchema = lds.loadSchema(encodingSchemaPath);
             final Schema schema = lds.loadSchema(schemaPath);
+            final String schemeName = BloomFilterEncodingUtil.retrieveSchemeName(existingEncodingSchema);
             final BloomFilterEncoding encoding =
-                    BloomFilterEncodingUtil.newInstance(existingEncodingSchema);
+                    BloomFilterEncodingUtil.newInstance(schemeName);
             encoding.setupFromSchema(
                     BloomFilterEncodingUtil.basedOnExistingSchema(
                             schema, fields, included,

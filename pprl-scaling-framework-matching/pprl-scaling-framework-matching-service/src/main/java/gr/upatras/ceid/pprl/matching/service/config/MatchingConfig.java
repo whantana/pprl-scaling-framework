@@ -19,5 +19,4 @@ public class MatchingConfig {
     public LocalMatchingService localMatchingService() {
         return new LocalMatchingService ();
     }
-
 }

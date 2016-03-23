@@ -38,6 +38,7 @@ public class PairSimilarityReducer extends Reducer<LongWritable, AvroKey<Generic
             vector[i++] =  SimilarityMatrix.similarity(SimilarityMatrix.DEFAULT_SIMILARITY_METHOD_NAME,v0,v1);
         }
 
+        context.getCounter("pairs.done","reduce").increment(1);
         context.getCounter(
                 "similarity.vectors",
                 String.valueOf(SimilarityMatrix.vector2Index(vector))).increment(1);

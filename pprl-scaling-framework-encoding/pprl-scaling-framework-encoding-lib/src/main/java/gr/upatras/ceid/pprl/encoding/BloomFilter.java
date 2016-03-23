@@ -27,9 +27,25 @@ public class BloomFilter {
         this.N = N;
         this.K = K;
         byteArray = new byte[(int) Math.ceil(N/(double)8)];
-        addedElementsCount = 0;
         onesCount = 0;
         zeroesCount = N;
+        addedElementsCount = 0;
+        HMAC_MD5 = Mac.getInstance("HmacMD5");
+        HMAC_MD5.init(new SecretKeySpec(SECRET_KEY.getBytes(), "HmacMD5"));
+        HMAC_SHA1 = Mac.getInstance("HmacSHA1");
+        HMAC_SHA1.init(new SecretKeySpec(SECRET_KEY.getBytes(), "HmacSHA1"));
+    }
+
+    public BloomFilter(final int N, final int K, final byte[] byteArray)
+            throws NoSuchAlgorithmException, InvalidKeyException {
+        assert Math.ceil(N/(double)8) == byteArray.length;
+        this.N = N;
+        this.K = K;
+        this.byteArray = new byte[(int) Math.ceil(N/(double)8)];
+        System.arraycopy(byteArray,0,this.byteArray,0,byteArray.length);
+        onesCount = countOnes();
+        zeroesCount = countZeroes();
+        addedElementsCount = (int) Math.ceil(onesCount/(double)K); // an estimate
         HMAC_MD5 = Mac.getInstance("HmacMD5");
         HMAC_MD5.init(new SecretKeySpec(SECRET_KEY.getBytes(), "HmacMD5"));
         HMAC_SHA1 = Mac.getInstance("HmacSHA1");
@@ -88,7 +104,7 @@ public class BloomFilter {
 
     public int[] addData(final byte[] data) {
         final int[] positions = createHashesV1(data,N,K,getHmacMD5(),getHmacSHA1());
-        //final int[] positions = createHashesV2(data,N,K,getHmacMD5()); // TODO benchmark not enough check similarity
+        //final int[] positions = createHashesV2(data,N,K,getHmacMD5()); //
         return setPositions(positions);
     }
 

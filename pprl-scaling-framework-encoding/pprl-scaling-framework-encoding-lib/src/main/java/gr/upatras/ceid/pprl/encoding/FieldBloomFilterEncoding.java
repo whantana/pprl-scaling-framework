@@ -120,8 +120,6 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
             else {
                 final Object obj = record.get(name);
                 final Schema.Type type = record.getSchema().getField(name).schema().getType();
-                LOG.debug("encodeRecord : field : {}",name);
-                LOG.debug("encodeRecord : String.valueOf(obj) : {}",String.valueOf(obj));
                 encodeObject(obj, type, getQ(), getFBF(name));
                 final Schema schema = encodingRecord.getSchema().getField(mappedName).schema();
                 final GenericData.Fixed fixed = new GenericData.Fixed(schema,
@@ -129,7 +127,6 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
                                 getFBF(name).getByteArray(),
                                 getFBF(name).getByteArray().length)
                 );
-                LOG.debug("encodeRecord : Putting encoding in name : {}",mappedName);
                 encodingRecord.put(mappedName,fixed);
             }
         }

@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.Properties;
 import java.util.SortedSet;
 
@@ -48,14 +47,17 @@ public class DatasetsService implements InitializingBean {
 
     private static SecureRandom RANDOM = new SecureRandom();
 
-    private static final FsPermission ONLY_OWNER_PERMISSION
+    public static final FsPermission ONLY_OWNER_PERMISSION
             = new FsPermission(FsAction.ALL, FsAction.NONE, FsAction.NONE, false);
 
-    @Autowired
-    protected FileSystem hdfs;
+    public static final FsPermission OTHERS_CAN_READ_PERMISSION
+            = new FsPermission(FsAction.ALL, FsAction.NONE, FsAction.READ, false);
 
     @Autowired
-    protected FileSystem localFs;
+    private FileSystem hdfs;
+
+    @Autowired
+    private FileSystem localFs;
 
     @Autowired
     private ToolRunner dblpXmlToAvroToolRunner;
@@ -72,6 +74,17 @@ public class DatasetsService implements InitializingBean {
     }
 
     private Path basePath;
+
+    public Path createDirectories(final String name, final FsPermission permission)
+            throws IOException {
+        return createDirectories(name,basePath,permission);
+    }
+
+    public Path createDirectories(final String name,final Path basePath, final FsPermission permission)
+            throws IOException {
+        final Path[] dirs = DatasetsUtil.createDatasetDirectories(hdfs, name, basePath, permission);
+        return dirs[0];
+    }
 
     public Path uploadFiles(final Path[] avroPaths, final Path schemaPath,final  String name)
             throws IOException {
@@ -197,12 +210,13 @@ public class DatasetsService implements InitializingBean {
     }
 
     public Path countQGrams(final Path inputPath, final Path inputSchemaPath, final Path basePath,
+                            final String statsFileName,
                             final String[] fieldNames)
             throws Exception {
         try {
             if(!hdfs.exists(basePath)) hdfs.mkdirs(basePath,ONLY_OWNER_PERMISSION);
             final Path statsPath = new Path(basePath,
-                    String.format("stats_%s.properties",System.currentTimeMillis())); // TODO add name for file
+                    String.format("%s.properties",statsFileName));
             runQGramCountingTool(inputPath, inputSchemaPath, statsPath,fieldNames);
             hdfs.setPermission(statsPath, ONLY_OWNER_PERMISSION);
             return statsPath;

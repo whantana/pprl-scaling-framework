@@ -50,8 +50,9 @@ public class DatasetsCommands implements CommandMarker {
     }
     @CliAvailabilityIndicator(value = {"local_data_stats"})
     public boolean availability1() { return lds != null && lms != null;}
-    @CliAvailabilityIndicator(value = {"upload_local_data"})
+    @CliAvailabilityIndicator(value = {"local_data_update","data_download"})
     public boolean availability2() { return ds != null;}
+
 
     // TODO commands
     //      -LOCAL-
@@ -198,7 +199,7 @@ public class DatasetsCommands implements CommandMarker {
         }
     }
 
-    @CliCommand(value = "upload_local_data", help = "Upload local data to the PPRL-site hdfs cluster.")
+    @CliCommand(value = "local_data_upload", help = "Upload local data to the PPRL-site hdfs cluster.")
     public String command3(
             @CliOption(key = {"avro"}, mandatory = true, help = "Local data avro files (comma separated) or including directory.")
             final String avroStr,
@@ -255,4 +256,17 @@ public class DatasetsCommands implements CommandMarker {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         }
     }
+
+    @CliCommand(value = "data_download", help = "Download remote dataset to local machine.")
+    public String command5(
+    ) {
+        try {
+
+            return "DONE";
+        } catch (Exception e) {
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
+        }
+    }
+
+
 }

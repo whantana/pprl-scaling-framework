@@ -1,16 +1,18 @@
 package gr.upatras.ceid.pprl.matching.test;
 
 import gr.upatras.ceid.pprl.base.CombinatoricsUtil;
-import gr.upatras.ceid.pprl.matching.mapreduce.GeneratePairsMapper;
-import gr.upatras.ceid.pprl.matching.mapreduce.PairSimilarityCombiner;
-import gr.upatras.ceid.pprl.matching.mapreduce.PairSimilarityReducer;
+import gr.upatras.ceid.pprl.matching.SimilarityMatrix;
+import gr.upatras.ceid.pprl.matching.mapreduce.ExhaustiveRecordPairSimilarityTool;
+import gr.upatras.ceid.pprl.matching.mapreduce.GenerateRecordPairsMapper;
+import gr.upatras.ceid.pprl.matching.mapreduce.RecordPairSimilarityCombiner;
+import gr.upatras.ceid.pprl.matching.mapreduce.RecordPairSimilarityReducer;
 import org.apache.avro.Schema;
 import org.apache.avro.file.DataFileReader;
-import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.hadoop.io.AvroSerialization;
 import org.apache.avro.mapred.AvroKey;
+import org.apache.avro.mapred.AvroValue;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapDriver;
@@ -26,17 +28,21 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Properties;
 
-public class ExhaustivePairSimilarityMRTest {
+import static org.junit.Assert.assertEquals;
 
-    private MapDriver<AvroKey<GenericRecord>, NullWritable, LongWritable, AvroKey<GenericRecord>> mapDriver;
+public class ExhaustiveRecordPairSimilarityMRTest {
+
+    private MapDriver<AvroKey<GenericRecord>, NullWritable, LongWritable, AvroValue<GenericRecord>> mapDriver;
     private MapReduceDriver<
             AvroKey<GenericRecord>, NullWritable,
-            LongWritable, AvroKey<GenericRecord>,
+            LongWritable, AvroValue<GenericRecord>,
             NullWritable,NullWritable> mapReduceDriver;
 
-    private static final Logger LOG = LoggerFactory.getLogger(ExhaustivePairSimilarityMRTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ExhaustiveRecordPairSimilarityMRTest.class);
 
 
     private Schema schema;
@@ -50,7 +56,7 @@ public class ExhaustivePairSimilarityMRTest {
         records = loadAvroRecordsFromFiles(schema, new File[]{
                 new File("data/person_small/avro/person_small.avro")});
 
-        mapDriver = MapDriver.newMapDriver(new GeneratePairsMapper());
+        mapDriver = MapDriver.newMapDriver(new GenerateRecordPairsMapper());
         mapDriver.getContext().getConfiguration().setInt("record.count", records.length);
         mapDriver.getContext().getConfiguration().set("uid.field.name", "id");
         AvroSerialization.setKeyWriterSchema(mapDriver.getConfiguration(), schema);
@@ -62,9 +68,9 @@ public class ExhaustivePairSimilarityMRTest {
         LOG.info("MapDriver ready.");
 
         mapReduceDriver = MapReduceDriver.newMapReduceDriver(
-                new GeneratePairsMapper(),
-                new PairSimilarityReducer(),
-                new PairSimilarityCombiner()
+                new GenerateRecordPairsMapper(),
+                new RecordPairSimilarityReducer(),
+                new RecordPairSimilarityCombiner()
         );
         mapReduceDriver.getConfiguration().setInt("record.count", records.length);
         mapReduceDriver.getConfiguration().set("uid.field.name", "id");
@@ -81,14 +87,14 @@ public class ExhaustivePairSimilarityMRTest {
     @Test
     public void test0() throws IOException {
         mapDriver.withInput(new AvroKey<GenericRecord>(records[0]), NullWritable.get());
-        List<Pair<LongWritable, AvroKey<GenericRecord>>> expectedOutputs =
-                new ArrayList<Pair<LongWritable,  AvroKey<GenericRecord>>>();
+        List<Pair<LongWritable, AvroValue<GenericRecord>>> expectedOutputs =
+                new ArrayList<Pair<LongWritable,  AvroValue<GenericRecord>>>();
         long[] ranksWith0 = CombinatoricsUtil.ranksContaining(0,records.length);
         LOG.info("Ranks of element 0 in {} : {}",records.length, Arrays.toString(ranksWith0));
         for (int i = 0; i <ranksWith0.length; i++) {
-            expectedOutputs.add(new Pair<LongWritable, AvroKey<GenericRecord>>(
+            expectedOutputs.add(new Pair<LongWritable, AvroValue<GenericRecord>>(
                     new LongWritable(ranksWith0[i]),
-                    new AvroKey<GenericRecord>(records[0])));
+                    new AvroValue<GenericRecord>(records[0])));
         }
 
         mapDriver.withAllOutput(expectedOutputs);
@@ -107,23 +113,23 @@ public class ExhaustivePairSimilarityMRTest {
                 new AvroKey<GenericRecord>(records[1]), NullWritable.get()));
 
         mapDriver.withAll(inputs);
-        List<Pair<LongWritable, AvroKey<GenericRecord>>> expectedOutputs =
-                new ArrayList<Pair<LongWritable,  AvroKey<GenericRecord>>>();
+        List<Pair<LongWritable, AvroValue<GenericRecord>>> expectedOutputs =
+                new ArrayList<Pair<LongWritable,  AvroValue<GenericRecord>>>();
         long[] ranksWith0 = CombinatoricsUtil.ranksContaining(0,records.length);
         long[] ranksWith1 = CombinatoricsUtil.ranksContaining(1,records.length);
         LOG.info("Ranks of element 0 in {} : {}",records.length, Arrays.toString(ranksWith0));
         LOG.info("Ranks of element 1 in {} : {}",records.length, Arrays.toString(ranksWith1));
         assert ranksWith0.length == ranksWith1.length;
         for (int i = 0; i <ranksWith0.length; i++) {
-            expectedOutputs.add(new Pair<LongWritable, AvroKey<GenericRecord>>(
+            expectedOutputs.add(new Pair<LongWritable, AvroValue<GenericRecord>>(
                     new LongWritable(ranksWith0[i]),
-                    new AvroKey<GenericRecord>(records[0])));
-            expectedOutputs.add(new Pair<LongWritable, AvroKey<GenericRecord>>(
+                    new AvroValue<GenericRecord>(records[0])));
+            expectedOutputs.add(new Pair<LongWritable, AvroValue<GenericRecord>>(
                     new LongWritable(ranksWith1[i]),
-                    new AvroKey<GenericRecord>(records[1])));
+                    new AvroValue<GenericRecord>(records[1])));
         }
 
-        final List<Pair<LongWritable, AvroKey<GenericRecord>>> result = mapDriver.run();
+        final List<Pair<LongWritable, AvroValue<GenericRecord>>> result = mapDriver.run();
         for (Pair p : result) {
             LOG.info(String.format("Rank %s -> contains %s records",p.getFirst(),p.getSecond()));
         }
@@ -148,14 +154,12 @@ public class ExhaustivePairSimilarityMRTest {
 
         LOG.info("pairsDoneInCombine={} pairsDoneInReduce={}",pairsDoneInCombine,pairsDoneInReduce);
 
-        for (int i = 0 ; i < (1 << fieldNames.length);i++) {
-            String counterName = mapReduceDriver.getCounters()
-                    .findCounter("similarity.vectors", String.valueOf(i)).getDisplayName();
-            long value =
-                    mapReduceDriver.getCounters()
-                            .findCounter("similarity.vectors", String.valueOf(i)).getValue();
-            LOG.info("Counter {} value {}",counterName,value);
-        }
+        final Properties properties =
+            ExhaustiveRecordPairSimilarityTool.counters2Properties(mapReduceDriver.getCounters(), fieldNames);
+        final Properties expectedProperties = similarityMatrix(records,fieldNames).toProperties();
+        LOG.info("matrix = " + properties);
+        LOG.info("expectedMatrix = " + expectedProperties);
+        assertEquals(properties,expectedProperties);
     }
 
 
@@ -177,6 +181,34 @@ public class ExhaustivePairSimilarityMRTest {
             reader.close();
         }
         return recordList.toArray(new GenericRecord[recordList.size()]);
+    }
+
+    public static SimilarityMatrix similarityMatrix(final GenericRecord[] records,
+                                                    final String[] fieldNames,
+                                                    final String similarityMethodName) {
+        final long pairCount = CombinatoricsUtil.twoCombinationsCount(records.length);
+        final int fieldCount = fieldNames.length;
+        if(Long.compare(pairCount*fieldCount,Integer.MAX_VALUE) > 0)
+            throw new UnsupportedOperationException("Cannot create gamma. #N*#F < Integer.MAX");
+        final SimilarityMatrix matrix = new SimilarityMatrix(fieldCount);
+        final Iterator<int[]> pairIter = CombinatoricsUtil.getPairs(records.length);
+        do {
+            int pair[] = pairIter.next();
+            boolean[] row = new boolean[fieldCount];
+            for(int j = 0 ; j < fieldCount ; j++) {
+                String s1 = String.valueOf(records[pair[0]].get(fieldNames[j]));
+                String s2 = String.valueOf(records[pair[1]].get(fieldNames[j]));
+                if(SimilarityMatrix.similarity(similarityMethodName, s1, s2)) row[j] = true;
+            }
+            matrix.set(row);
+
+        }while(pairIter.hasNext());
+        return matrix;
+    }
+
+    public static SimilarityMatrix similarityMatrix(final GenericRecord[] records,
+                                                    final String[] fieldNames) {
+        return similarityMatrix(records, fieldNames, SimilarityMatrix.DEFAULT_SIMILARITY_METHOD_NAME);
     }
 }
 

@@ -9,8 +9,6 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.permission.FsAction;
-import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Counters;
 import org.apache.hadoop.mapreduce.Job;
@@ -22,8 +20,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -33,9 +29,6 @@ public class QGramCountingTool extends Configured implements Tool {
     private static final Logger LOG = LoggerFactory.getLogger(QGramCountingTool.class);
 
     private static final String JOB_DESCRIPTION = "Count QGrams of AVRO Records";
-
-    private static final FsPermission ONLY_OWNER_PERMISSION
-            = new FsPermission(FsAction.ALL, FsAction.NONE, FsAction.NONE, false);
 
     public int run(String[] args) throws Exception {
         final Configuration conf = getConf();
@@ -48,14 +41,19 @@ public class QGramCountingTool extends Configured implements Tool {
         final Path input = new Path(args[0]);
         final Path inputSchemaPath = new Path(args[1]);
         final Path outputPath = new Path(args[2]);
+        final String[] fieldNames = args[3].contains(",") ? args[3].split(",") : new String[]{args[3]};
+
         final Schema inputSchema = loadAvroSchemaFromHdfs(FileSystem.get(conf), inputSchemaPath);
         conf.set(QGramCountingMapper.SCHEMA_KEY,inputSchema.toString());
-        final String[] fieldNames = args[3].contains(",") ? args[3].split(",") : new String[]{args[3]};
         conf.setStrings(QGramCountingMapper.FIELD_NAMES_KEY,fieldNames);
 
         // set description and log it
-        final String description = JOB_DESCRIPTION + "(input : " + shortenUrl(input.toString()) +
-                ", field-names : " + Arrays.toString(fieldNames) + ")";
+        final String description = String.format("%s(" +
+                "input-path : %s, input-schema-path : %s" +
+                "output-path : %s, field-names : %s)",
+                JOB_DESCRIPTION,
+                shortenUrl(input.toString()),shortenUrl(inputSchemaPath.toString()),
+                shortenUrl(outputPath.toString()),Arrays.toString(fieldNames));
         LOG.info("Running :" + description);
 
         // setup map only job
@@ -83,7 +81,9 @@ public class QGramCountingTool extends Configured implements Tool {
         } else throw new IllegalStateException("Job not successfull.");
     }
 
-    public static void counters2Properties(final FileSystem fs,final Path outputPath, final Counters counters, final String[] fieldNames) throws IOException {
+    public static void counters2Properties(final FileSystem fs,final Path outputPath,
+                                           final Counters counters, final String[] fieldNames)
+            throws IOException {
         final Properties properties = counters2Properties(counters,fieldNames);
         final FSDataOutputStream fsdos = fs.create(outputPath, true);
         properties.store(fsdos, "Q Count stats");

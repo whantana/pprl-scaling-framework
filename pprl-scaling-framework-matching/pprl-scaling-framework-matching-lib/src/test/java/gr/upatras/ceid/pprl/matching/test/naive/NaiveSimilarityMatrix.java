@@ -4,6 +4,7 @@ import gr.upatras.ceid.pprl.base.CombinatoricsUtil;
 import info.debatty.java.stringsimilarity.Cosine;
 import info.debatty.java.stringsimilarity.Jaccard;
 import info.debatty.java.stringsimilarity.JaroWinkler;
+import org.apache.avro.generic.GenericRecord;
 
 import java.util.BitSet;
 import java.util.Iterator;
@@ -54,7 +55,7 @@ public class NaiveSimilarityMatrix {
 
     @Override
     public String toString() {
-        return String.format("Similarity Matrix [pairs=%d, fields= %d, minIndex = %d, maxIndex = %d, nnz= %d, nz = %d]",
+        return String.format("NaiveSimilarity Matrix [pairs=%d, fields= %d, minIndex = %d, maxIndex = %d, nnz= %d, nz = %d]",
                 pairCount,fieldCount,minIndex,maxIndex,nnzCount,totalBits - nnzCount);
     }
 
@@ -80,5 +81,30 @@ public class NaiveSimilarityMatrix {
         if(name.equals("exact"))
             return s1.equals(s2);
         throw new UnsupportedOperationException("Unsupported Matching for name " + name + " .");
+    }
+
+    public static NaiveSimilarityMatrix naiveMatrix(final GenericRecord[] records,
+                                                    final String[] fieldNames,
+                                                    final String similarityMethodName) {
+        final int pairCount = (int)CombinatoricsUtil.twoCombinationsCount(records.length);
+        final int fieldCount = fieldNames.length;
+        if(Long.compare(pairCount*fieldCount,Integer.MAX_VALUE) > 0)
+            throw new UnsupportedOperationException("Cannot create gamma. #N*#F < Integer.MAX");
+        final NaiveSimilarityMatrix matrix = new NaiveSimilarityMatrix(pairCount,fieldCount);
+        final Iterator<int[]> pairIter = CombinatoricsUtil.getPairs(records.length);
+        do {
+            int pair[] = pairIter.next();
+            long i = CombinatoricsUtil.rankTwoCombination(pair);
+            for(int j=0; j < fieldCount; j++) {
+                String s1 = String.valueOf(records[pair[0]].get(fieldNames[j]));
+                String s2 = String.valueOf(records[pair[1]].get(fieldNames[j]));
+                if(NaiveSimilarityMatrix.similarity(similarityMethodName, s1, s2)) matrix.set((int)i, j);
+            }
+        }while(pairIter.hasNext());
+        return matrix;
+    }
+
+    public static NaiveSimilarityMatrix naiveMatrix(final GenericRecord[] records,final String[] fieldNames) {
+        return naiveMatrix(records,fieldNames, NaiveSimilarityMatrix.DEFAULT_SIMILARITY_METHOD_NAME);
     }
 }

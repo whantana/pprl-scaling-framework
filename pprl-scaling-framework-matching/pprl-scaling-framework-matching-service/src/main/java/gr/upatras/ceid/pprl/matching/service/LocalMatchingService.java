@@ -95,6 +95,8 @@ public class LocalMatchingService implements InitializingBean {
         }
     }
 
+    // TODO Create Matrix from properties
+
     public SimilarityMatrix createMatrix(final GenericRecord[] recordsA,
                                          final String[] fieldNamesA,
                                          final GenericRecord[] recordsB,

@@ -44,7 +44,7 @@ public class ExpectationMaximazationTest {
         NaiveExpectationMaximization estimator = null;
         for (int i = 0; i < 5; i++) {
             long start = System.currentTimeMillis();
-            matrix = SimilarityMatricesUtil.naiveMatrix(records, fieldNames);
+            matrix = NaiveSimilarityMatrix.naiveMatrix(records, fieldNames);
             estimator = new NaiveExpectationMaximization (fieldNames,0.9,0.1,0.01);
             estimator.runAlgorithm(matrix);
             long end = System.currentTimeMillis();
@@ -62,7 +62,7 @@ public class ExpectationMaximazationTest {
         ExpectationMaximization estimator = null;
         for (int i = 0; i < 5; i++) {
             long start = System.currentTimeMillis();
-            matrix = SimilarityMatricesUtil.similarityMatrix(records,fieldNames);
+            matrix = SimilarityMatrixTest.similarityMatrix(records,fieldNames);
             estimator = new ExpectationMaximization (fieldNames,0.9,0.1,0.01);
             estimator.runAlgorithm(matrix);
             long end = System.currentTimeMillis();
@@ -86,7 +86,7 @@ public class ExpectationMaximazationTest {
             stats.clear();
             for (int it = 0; it < iterations; it++) {
                 long start = System.currentTimeMillis();
-                matrix1 = SimilarityMatricesUtil.naiveMatrix(bigRecords, fieldNames);
+                matrix1 = NaiveSimilarityMatrix.naiveMatrix(bigRecords, fieldNames);
                 long stop = System.currentTimeMillis();
                 long time = stop - start;
                 stats.addValue(time);
@@ -97,7 +97,7 @@ public class ExpectationMaximazationTest {
             stats.clear();
             for (int it = 0; it < iterations; it++) {
                 long start = System.currentTimeMillis();
-                matrix2 = SimilarityMatricesUtil.similarityMatrix(bigRecords, fieldNames);
+                matrix2 = SimilarityMatrixTest.similarityMatrix(bigRecords, fieldNames);
                 long stop = System.currentTimeMillis();
                 long time = stop - start;
                 stats.addValue(time);

@@ -52,11 +52,14 @@ public class EncodingTool extends Configured implements Tool {
         conf.set(BloomFilterEncodingMapper.OUTPUT_SCHEMA_KEY,outputSchema.toString());
 
         // set description
-        String description = JOB_DESCRIPTION + " ("+
-                "input-path=" + shortenUrl(inputDataPath.toString()) + ", " +
-                "input-schema-path=" + shortenUrl(inputSchemaPath.toString()) + ", " +
-                "output-path=" + shortenUrl(outputDataPath.toString()) + ", " +
-                "output-schema-path=" + shortenUrl(outputDataPath.toString()) + ")";
+        final String description = String.format("%s(" +
+                        "input-path : %s, input-schema-path : %s," +
+                        " output-path : %s, output-schema-path : %s)",
+                JOB_DESCRIPTION,
+                shortenUrl(inputDataPath.toString()),shortenUrl(inputSchemaPath.toString()),
+                shortenUrl(outputDataPath.toString()),shortenUrl(outputDataPath.toString())
+        );
+        LOG.info("Running :" + description);
 
         // setup map only job
         final Job job = Job.getInstance(conf);

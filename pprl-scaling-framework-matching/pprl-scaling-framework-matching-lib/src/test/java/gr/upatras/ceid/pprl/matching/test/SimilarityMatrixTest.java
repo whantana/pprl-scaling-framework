@@ -1,5 +1,6 @@
 package gr.upatras.ceid.pprl.matching.test;
 
+import gr.upatras.ceid.pprl.base.CombinatoricsUtil;
 import gr.upatras.ceid.pprl.matching.SimilarityMatrix;
 import gr.upatras.ceid.pprl.matching.test.naive.NaiveSimilarityMatrix;
 import org.apache.avro.Schema;
@@ -14,10 +15,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 
@@ -125,7 +129,7 @@ public class SimilarityMatrixTest {
         NaiveSimilarityMatrix matrix = null;
         for (int i = 0; i < 5; i++) {
             long start = System.currentTimeMillis();
-            matrix = SimilarityMatricesUtil.naiveMatrix(records,fieldNames);
+            matrix = NaiveSimilarityMatrix.naiveMatrix(records,fieldNames);
             long end = System.currentTimeMillis();
             long time = end - start;
             stats.addValue(time);
@@ -139,7 +143,7 @@ public class SimilarityMatrixTest {
         SimilarityMatrix matrix = null;
         for (int i = 0; i < 5; i++) {
             long start = System.currentTimeMillis();
-            matrix = SimilarityMatricesUtil.similarityMatrix(records,fieldNames);
+            matrix = similarityMatrix(records, fieldNames);
             long end = System.currentTimeMillis();
             long time = end - start;
             stats.addValue(time);
@@ -168,6 +172,21 @@ public class SimilarityMatrixTest {
         }
     }
 
+    @Test
+    public void test5() throws IOException {
+        SimilarityMatrix matrix = similarityMatrix(records, fieldNames);
+        Properties properties = matrix.toProperties();
+        properties.store(new FileOutputStream(new File("similarity_matrix.properties")),"Similarity Matrix");
+
+        Properties properties1 = new Properties();
+        properties1.load(new FileInputStream(new File("similarity_matrix.properties")));
+        SimilarityMatrix matrix1 = new SimilarityMatrix();
+        matrix1.fromProperties(properties1);
+        assertEquals(matrix,matrix1);
+    }
+
+
+
 
     private static Schema loadAvroSchemaFromFile(final File schemaFile) throws IOException {
         FileInputStream fis = new FileInputStream(schemaFile);
@@ -187,5 +206,34 @@ public class SimilarityMatrixTest {
             reader.close();
         }
         return recordList.toArray(new GenericRecord[recordList.size()]);
+    }
+
+
+    public static SimilarityMatrix similarityMatrix(final GenericRecord[] records,
+                                                    final String[] fieldNames,
+                                                    final String similarityMethodName) {
+        final long pairCount = CombinatoricsUtil.twoCombinationsCount(records.length);
+        final int fieldCount = fieldNames.length;
+        if(Long.compare(pairCount*fieldCount,Integer.MAX_VALUE) > 0)
+            throw new UnsupportedOperationException("Cannot create gamma. #N*#F < Integer.MAX");
+        final SimilarityMatrix matrix = new SimilarityMatrix(fieldCount);
+        final Iterator<int[]> pairIter = CombinatoricsUtil.getPairs(records.length);
+        do {
+            int pair[] = pairIter.next();
+            boolean[] row = new boolean[fieldCount];
+            for(int j = 0 ; j < fieldCount ; j++) {
+                String s1 = String.valueOf(records[pair[0]].get(fieldNames[j]));
+                String s2 = String.valueOf(records[pair[1]].get(fieldNames[j]));
+                if(SimilarityMatrix.similarity(similarityMethodName, s1, s2)) row[j] = true;
+            }
+            matrix.set(row);
+
+        }while(pairIter.hasNext());
+        return matrix;
+    }
+
+    public static SimilarityMatrix similarityMatrix(final GenericRecord[] records,
+                                                    final String[] fieldNames) {
+        return similarityMatrix(records, fieldNames, SimilarityMatrix.DEFAULT_SIMILARITY_METHOD_NAME);
     }
 }

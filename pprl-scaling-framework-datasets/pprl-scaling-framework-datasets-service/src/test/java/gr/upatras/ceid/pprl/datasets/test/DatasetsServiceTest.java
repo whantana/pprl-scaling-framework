@@ -1,12 +1,10 @@
 package gr.upatras.ceid.pprl.datasets.test;
 
 import gr.upatras.ceid.pprl.datasets.DatasetException;
-import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
 import gr.upatras.ceid.pprl.datasets.service.DatasetsService;
 import org.apache.avro.Schema;
 import org.apache.hadoop.fs.Path;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +16,6 @@ import org.springframework.data.hadoop.test.junit.AbstractMapReduceTests;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.io.IOException;
-import java.util.Properties;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -68,10 +65,9 @@ public class DatasetsServiceTest extends AbstractMapReduceTests {
     @Test
     public void test2() throws Exception {
         final Path xmlPath = new Path("data/dblp/xml/dblp.xml");
-        final Path schemaPath = new Path("data/dblp/schema/dblp.avsc");
-        final Path uploadedPath = ds.importDblpXmlDataset(xmlPath,schemaPath,"small_dblp");
+        final Path uploadedPath = ds.importDblpXmlDataset(xmlPath,"small_dblp");
         LOG.info("Uploaded to path : {} ",uploadedPath);
-        final Path uploadedSchemaPath = new Path(uploadedPath,"schema/dblp.avsc");
+        final Path uploadedSchemaPath = new Path(uploadedPath,"schema/small_dblp.avsc");
         final Schema uploadedSchema = ds.loadSchema(uploadedSchemaPath);
         LOG.info("Uploaded Schema : {} ",uploadedSchema.toString(true));
     }
@@ -81,20 +77,11 @@ public class DatasetsServiceTest extends AbstractMapReduceTests {
         final Path inputPath = new Path("person_small/avro");
         final Path schemaPath = new Path("person_small/schema/person_small.avsc");
         final Path basePath = new Path("person_small/stats");
-        final Path propertiesPath = ds.countQGrams(inputPath,schemaPath,basePath,"my_stats",FIELDS);
-        Properties p = new Properties();
-        Path dst = new Path("data/person_small/stats");
-        if(!ds.getLocalFs().exists(dst))
-            ds.getLocalFs().mkdirs(new Path(ds.getLocalFs().getWorkingDirectory(),dst));
-        dst = ds.getLocalFs().makeQualified(new Path(dst,propertiesPath.getName()));
-        LOG.info("Stats saved at : {}",dst);
-        getFileSystem().copyToLocalFile(propertiesPath,new Path(dst,propertiesPath.getName()));
-        p.load(getFileSystem().open(propertiesPath));
-        p.list(System.out);
-        DatasetStatistics stats = new DatasetStatistics();
-        stats.fromProperties(p);
-        LOG.info(stats.toString());
+        final Path propertiesPath = ds.countAvgQgrams(inputPath, schemaPath, basePath, "my_stats", FIELDS);
+        Path p = ds.downloadFiles("person_small","person_small_dl",new Path(cwd));
+        LOG.info("Downloaded at " + p);
     }
 
     // TODO test the add ulid
+    // TODO BIG TODO MOVE ALL TESTING IN ONE MODULE
 }

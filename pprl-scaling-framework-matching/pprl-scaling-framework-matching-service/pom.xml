@@ -28,6 +28,36 @@
             <artifactId>pprl-scaling-framework-matching-lib</artifactId>
             <version>${project.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>gr.upatras.ceid</groupId>
+            <artifactId>pprl-scaling-framework-matching-mapreduce</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources/</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/build.properties</include>
+                </includes>
+            </resource>
+        </resources>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/build.properties</include>
+                </includes>
+            </testResource>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>false</filtering>
+            </testResource>
+        </testResources>
+    </build>
+
 </project>

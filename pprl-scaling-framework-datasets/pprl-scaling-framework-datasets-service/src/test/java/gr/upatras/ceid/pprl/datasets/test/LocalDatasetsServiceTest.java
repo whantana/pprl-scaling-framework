@@ -150,12 +150,23 @@ public class LocalDatasetsServiceTest {
         final Schema updatedSchema = DatasetsUtil.updateSchemaWithULID(schema,"ulid");
         final GenericRecord[] updatedRecords = DatasetsUtil.updateRecordsWithULID(records,updatedSchema,"ulid");
         LOG.info(prettyRecords(updatedRecords,updatedSchema));
-        lds.saveRecords("data/updated_da_int",updatedRecords,updatedSchema);
+        lds.saveRecords("updated_da_int",updatedRecords,updatedSchema,new Path("data"),2);
 
         final Schema updatedSchema1 = DatasetsUtil.updateSchemaWithULID(updatedSchema,"ulid_100");
         final GenericRecord[] updatedRecords1 = DatasetsUtil.updateRecordsWithULID(updatedRecords,updatedSchema1,"ulid_100",100);
         LOG.info(prettyRecords(updatedRecords1,updatedSchema1));
-        lds.saveRecords("updated_da_int_1",updatedRecords1,updatedSchema,new Path("data"));
+        lds.saveRecords("updated_da_int_1",updatedRecords1,updatedSchema,new Path("data"),3);
+    }
+
+    @Test
+    public void test6() throws DatasetException, IOException {
+        Path[] avroPaths = new Path[]{new Path("data/updated_da_int/avro")};
+        Path schemaPath = new Path("data/updated_da_int/schema/updated_da_int.avsc");
+
+        final Schema schema = lds.loadSchema(schemaPath);
+        final GenericRecord[] records = lds.loadRecords(avroPaths,schemaPath);
+        LOG.info(prettyRecords(records,schema));
+
     }
 
 

@@ -69,7 +69,7 @@ public class BloomFilterEncodingUtil {
         }
     }
 
-    public static boolean nameBelongsToSchema(final Schema schema, final String[] selectedNames) {
+    public static boolean nameBelongsToSchema(final Schema schema, final String... selectedNames) {
         for(String name : selectedNames) {
             boolean nameFound = false;
             for(Schema.Field field : schema.getFields())

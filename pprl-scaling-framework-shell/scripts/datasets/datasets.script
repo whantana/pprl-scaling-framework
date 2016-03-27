@@ -1,3 +1,0 @@
-script scripts/datasets/local_data_describe.script
-script scripts/datasets/local_data_sample.script
-script scripts/datasets/local_data_stats.script

@@ -117,16 +117,31 @@ public class LocalDatasetsService implements InitializingBean {
 
     public Path saveRecords(final String name,
                             final GenericRecord[] records, final Schema schema,
+                            final int partitions)
+            throws DatasetException, IOException {
+        return saveRecords(name, records, schema, localFs.getWorkingDirectory(),partitions);
+    }
+
+    public Path saveRecords(final String name,
+                            final GenericRecord[] records, final Schema schema,
                             final Path parent)
+            throws DatasetException, IOException {
+        return saveRecords(name,records, schema, parent, 1);
+    }
+
+    public Path saveRecords(final String name,
+                            final GenericRecord[] records, final Schema schema,
+                            final Path parent,
+                            final int partitions)
             throws DatasetException, IOException {
         try {
             final Path[] dataset = DatasetsUtil.createDatasetDirectories(localFs,name,parent);
             final Path basePath = dataset[0];
             final Path avroPath = dataset[1];
             final Path schemaPath = dataset[2];
-            DatasetsUtil.saveSchemaToFSPath(localFs, schema, schemaPath);
+            DatasetsUtil.saveSchemaToFSPath(localFs, schema, new Path(schemaPath,String.format("%s.avsc",name)));
             final DatasetsUtil.DatasetRecordWriter writer =
-                    new DatasetsUtil.DatasetRecordWriter(localFs,name,schema,avroPath);
+                    new DatasetsUtil.DatasetRecordWriter(localFs,name,schema,avroPath,partitions);
             writer.writeRecords(records);
             writer.close();
             return basePath;
@@ -165,11 +180,11 @@ public class LocalDatasetsService implements InitializingBean {
             throws IOException, DatasetException {
         try {
             if(!localFs.exists(parent) && !localFs.mkdirs(parent,ONLY_OWNER_PERMISSION))
-                    throw new DatasetException(String.format("Cannot create dir \"%s\"",parent));
+                throw new DatasetException(String.format("Cannot create dir \"%s\"",parent));
             final Path path = new Path(parent,name + ".properties");
             LOG.info("Saving stats to [path={}]",path);
             FSDataOutputStream fsdos = localFs.create(path);
-            statistics.toProperties().store(fsdos, "statistics");
+            statistics.toProperties().store(fsdos, "Statistics");
             fsdos.close();
             return path;
         } catch (IOException e) {

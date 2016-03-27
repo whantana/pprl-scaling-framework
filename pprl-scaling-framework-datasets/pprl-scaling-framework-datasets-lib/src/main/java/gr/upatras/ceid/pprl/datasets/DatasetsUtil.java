@@ -8,6 +8,9 @@ import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.hadoop.io.AvroKeyComparator;
+import org.apache.avro.mapred.AvroKey;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.AvroFSInput;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
@@ -25,8 +28,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -38,9 +43,44 @@ public class DatasetsUtil {
         return fs.getUri().toString().contains("file");
     }
 
+    public static Path[] retrieveDatasetDirectories(final FileSystem fs, final String name, final Path basePath)
+            throws IOException {
+        return retrieveDatasetDirectories(fs,new Path(basePath,name));
+    }
+
+    public static Path[] retrieveDatasetDirectories(final FileSystem fs, final Path path)
+            throws IOException {
+        final Path paths[] = new Path[3];
+        paths[0] = path;
+        checkIfExists(fs,paths[0]);
+        paths[1] = new Path(paths[0],"avro");
+        checkIfExists(fs,paths[1]);
+        paths[2] = new Path(paths[0],"schema");
+        checkIfExists(fs,paths[2]);
+        return paths;
+    }
+
+    public static void checkIfExists(final FileSystem fs, final Path path)
+            throws IOException {
+        boolean baseExists = fs.exists(path);
+        if(!baseExists) throw new IllegalArgumentException(
+                String.format("Path does not exist  [FileSystem=%s,Path=%s]",
+                        fsIsLocal(fs) ? "local" : fs.getUri(), path));
+    }
+
     public static Path[] createDatasetDirectories(final FileSystem fs, final String name, final Path basePath)
             throws IOException {
         return createDatasetDirectories(fs,name,basePath,null);
+    }
+
+    public static boolean nameBelongsToSchema(final Schema schema, final String... selectedNames) {
+        for(String name : selectedNames) {
+            boolean nameFound = false;
+            for(Schema.Field field : schema.getFields())
+                if(field.name().equals(name)) { nameFound = true ; break; }
+            if(!nameFound) return false;
+        }
+        return true;
     }
 
     public static Path[] createDatasetDirectories(final FileSystem fs, final String name, final Path basePath,
@@ -64,7 +104,7 @@ public class DatasetsUtil {
         if (fs.exists(datasetAvroPath)) {
             LOG.debug(String.format("Deleting avro directory because it exists " +
                             "[FileSystem=%s,datasetAvroPath=%s]",
-                            fsIsLocal(fs) ? "local" : fs.getUri(), datasetAvroPath));
+                    fsIsLocal(fs) ? "local" : fs.getUri(), datasetAvroPath));
             fs.delete(datasetAvroPath, true);
 
         }
@@ -78,7 +118,7 @@ public class DatasetsUtil {
         if (fs.exists(datasetSchemaPath)) {
             LOG.debug(String.format("Deleting avro directory because it exists " +
                             "[FileSystem=%s,datasetAvroPath=%s]",
-                            fsIsLocal(fs) ? "local" : fs.getUri(), datasetSchemaPath));
+                    fsIsLocal(fs) ? "local" : fs.getUri(), datasetSchemaPath));
             fs.delete(datasetSchemaPath,true);
         }
         LOG.debug(String.format("Making schema directory [FileSystem=%s,datasetSchemaPath=%s]",
@@ -318,6 +358,26 @@ public class DatasetsUtil {
         throw new IOException("Could not find schema path.");
     }
 
+    public static SortedSet<Path> getAllPropertiesPaths(final FileSystem fs, final Path[] pathArray) throws IOException {
+        final SortedSet<Path> paths = new TreeSet<Path>();
+        for(Path p : pathArray) {
+            if (fs.isDirectory(p)) {
+                final RemoteIterator<LocatedFileStatus> iterator = fs.listFiles(p, true);
+                while (iterator.hasNext()) {
+                    final LocatedFileStatus lfs = iterator.next();
+                    if (lfs.isFile() && lfs.getPath().toString().endsWith(".properties"))
+                        paths.add(lfs.getPath());
+                }
+
+            } else {
+                if (fs.isFile(p) && p.toString().endsWith(".properties"))
+                    paths.add(p);
+            }
+        }
+        LOG.debug("getAllPropertiesPaths returns {}", paths);
+        return paths;
+    }
+
 
 
     public static class DatasetRecordReader implements Iterator<GenericRecord>, Closeable {
@@ -433,5 +493,63 @@ public class DatasetsUtil {
             ulid++;
         }
         return newRecords;
+    }
+
+    public static Schema updateSchemaWithOrderByFields(final Schema schema, final String[] fieldNames) {
+        final Schema.Field.Order[] orders = new Schema.Field.Order[fieldNames.length];
+        Arrays.fill(orders,Schema.Field.Order.ASCENDING);
+        return updateSchemaWithOrderByFields(schema,fieldNames,orders);
+    }
+
+    public static Schema updateSchemaWithOrderByFields(final Schema schema, final String[] fieldNames,
+                                                       Schema.Field.Order[] orders) {
+        assert orders.length == fieldNames.length;
+        final Schema newSchema = Schema.createRecord(
+                schema.getName(),schema.getDoc(),schema.getNamespace(),schema.isError());
+
+        List<Schema.Field> fields = schema.getFields();
+        Schema.Field[] selectedFields = new Schema.Field[fieldNames.length];
+        List<Schema.Field> otherFields = new ArrayList<Schema.Field>();
+        for (Schema.Field f : fields) {
+            if(Arrays.asList(fieldNames).contains(f.name())) {
+                int index = Arrays.asList(fieldNames).indexOf(f.name());
+                assert index < fieldNames.length;
+                selectedFields[index] = new Schema.Field(f.name(),
+                        f.schema(),f.doc(),f.defaultValue(), orders[index]);
+            }
+            else otherFields.add(
+                    new Schema.Field(f.name(),
+                            f.schema(),f.doc(),f.defaultValue(),f.order()));
+        }
+        List<Schema.Field> newFields = new ArrayList<Schema.Field>();
+
+        Collections.addAll(newFields, selectedFields);
+        for(Schema.Field f : otherFields)
+            newFields.add(f);
+        newSchema.setFields(newFields);
+        return newSchema;
+    }
+
+    public static GenericRecord[] updateRecordsWithOrderByFields(final GenericRecord[] records,
+                                                                 final Schema newSchema) {
+        AvroKeyComparator<GenericRecord> comparator = new AvroKeyComparator<GenericRecord>();
+        if (comparator.getConf() == null) {
+            final Configuration conf = new Configuration();
+            conf.set("avro.serialization.key.writer.schema", newSchema.toString());
+            comparator.setConf(conf);
+        }
+
+        final Set<AvroKey<GenericRecord>> avroKeys = new TreeSet<AvroKey<GenericRecord>>(comparator);
+        for (GenericRecord record : records) {
+            GenericRecord updatedRecord = new GenericData.Record(newSchema);
+            for (Schema.Field f : record.getSchema().getFields())
+                updatedRecord.put(f.name(), record.get(f.name()));
+            avroKeys.add(new AvroKey<GenericRecord>(updatedRecord));
+        }
+        assert avroKeys.size() == records.length;
+        final GenericRecord[] updatedRecords = new GenericRecord[records.length];
+        int i = 0;
+        for (AvroKey<GenericRecord> key : avroKeys ) updatedRecords[i++] = key.datum();
+        return updatedRecords;
     }
 }

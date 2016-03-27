@@ -51,12 +51,17 @@ public class EncodingCommands implements CommandMarker {
 
     private List<String> ENCODING_SCHEMES = BloomFilterEncodingUtil.SCHEME_NAMES;
 
-    @CliAvailabilityIndicator(value = {"encode_supported_schemes","encode_calculate_encoding_sizes"})
+    @CliAvailabilityIndicator(value = {"encode_supported_schemes"})
     public boolean availability0() { return true; }
     @CliAvailabilityIndicator(value = {"encode_local_data","encode_local_data_by_schema"})
     public boolean availability1() { return les != null && lds != null; }
+    @CliAvailabilityIndicator(value = {"encode_calculate_encoding_sizes"})
+    public boolean availability2() { return lds != null; }
 
+    @CliAvailabilityIndicator(value = {"encode_data","encode_data_by_schema"})
+    public boolean availability3() { return ds != null && es != null; }
     // TODO commands
+    //      HDFS
     //      encode_data
     //      encode_data_by_schema
 
@@ -76,6 +81,8 @@ public class EncodingCommands implements CommandMarker {
     public String command1(
             @CliOption(key = {"stats"}, mandatory = true, help = "Path to property file containing the required data statistics")
             final String pathStr,
+            @CliOption(key = {"local"}, mandatory = false, help = "(Optional).Either local file or HDFS look up for stats. Default is true")
+            final String localStr,
             @CliOption(key = {"Q"}, mandatory = false, help = "Q for q-grams. Limited to Q={2,3,4}. Default is 2.")
             final String qStr,
             @CliOption(key = {"K"}, mandatory = false, help = "K for number of hash functions.Default is 15.")
@@ -83,13 +90,19 @@ public class EncodingCommands implements CommandMarker {
     ) {
         try {
             final Path statsPath = CommandUtil.retrievePath(pathStr);
+            final boolean localFile = CommandUtil.retrieveBoolean(localStr,true);
             LOG.info("Calculating encoding sizes :");
             LOG.info("\tSelected stats file : {}", statsPath);
             final int Q = CommandUtil.retrieveInt(qStr, 2);
             if(Q < 2 || Q > 4) throw new IllegalArgumentException("Q is limited to {2,3,4}.");
             final int K = CommandUtil.retrieveInt(kStr, 15);
             if(K < 1) throw new IllegalArgumentException("K must be at least 1.");
-            DatasetStatistics statistics = lds.loadStats(statsPath);
+            DatasetStatistics statistics;
+            if(localFile) statistics = lds.loadStats(statsPath);
+            else {
+                if(ds == null) throw new IllegalArgumentException("Cannot look up in the pprl site");
+                statistics = ds.loadStats(statsPath);
+            }
             LOG.info(CommandUtil.prettyBFEStats(statistics.getFieldStatistics(), K, Q));
             return "DONE";
         } catch (Exception e) {
@@ -124,7 +137,9 @@ public class EncodingCommands implements CommandMarker {
             @CliOption(key= {"Q"}, mandatory = false, help = "(Optional) Q for Q-Grams. Limited to {2,3,4} .Default value is 2.")
             final String Qstr,
             @CliOption(key = {"stats"}, mandatory = true, help = "Path to property file containing the required data statistics")
-            final String pathStr
+            final String pathStr,
+            @CliOption(key = {"partitions"}, mandatory = false, help = "(Optional) Partitions of the output. Default is 1 (No partitioning).")
+            final String partitionsStr
     ) {
         try {
             BloomFilterEncodingUtil.schemeNameSupported(scheme);
@@ -151,6 +166,7 @@ public class EncodingCommands implements CommandMarker {
                     i++;
                 }
             }
+            final int partitions = CommandUtil.retrieveInt(partitionsStr,1);
 
             LOG.info("Encoding local data :");
             LOG.info("\tEncoding name : {}", name);
@@ -177,6 +193,7 @@ public class EncodingCommands implements CommandMarker {
                 LOG.info("\tRBF size : {}", N > 0 ? N : RowBloomFilterEncoding.weightedsize(fbfNs, weights));
             }else if(scheme.equals("CLK"))
                 LOG.info("\tCLK size : {}", N);
+            LOG.info("\tPartitions : {} ",(partitions==1)?"No partitioning":partitions);
 
             final BloomFilterEncoding encoding = BloomFilterEncodingUtil.instanceFactory(
                     scheme, fields.length, N, fbfN, K, Q, avgQgrams, weights);
@@ -189,7 +206,7 @@ public class EncodingCommands implements CommandMarker {
             final GenericRecord[] encodedRecords = les.encodeRecords(records, encoding);
             final Schema encodingSchema = encoding.getEncodingSchema();
 
-            final Path encodingDatapath = lds.saveRecords(name,encodedRecords,encodingSchema);
+            final Path encodingDatapath = lds.saveRecords(name,encodedRecords,encodingSchema,partitions);
 
             LOG.info("\tEncoded data path = {}",encodingDatapath);
             LOG.info("\n");
@@ -214,7 +231,9 @@ public class EncodingCommands implements CommandMarker {
             @CliOption(key = {"mapping"}, mandatory = true, help = "Mapping of fields with the encoded counterparts.")
             final String mappingStr,
             @CliOption(key = {"include"}, mandatory = false, help = "(Optional) Fields to be included")
-            final String includeStr
+            final String includeStr,
+            @CliOption(key = {"partitions"}, mandatory = false, help = "(Optional) Partitions of the output. Default is 1 (No partitioning).")
+            final String partitionsStr
     ) {
         try { // TODO Test this command. Need to have at least two datasets here
 
@@ -224,6 +243,7 @@ public class EncodingCommands implements CommandMarker {
             final String[] included = CommandUtil.retrieveFields(includeStr);
             final Path encodingSchemaPath = CommandUtil.retrievePath(encodingSchemaStr);
             final String[] existingFieldNames = CommandUtil.retrieveFields(fieldsStr);
+            final int partitions = CommandUtil.retrieveInt(partitionsStr,1);
 
             if(fields.length != existingFieldNames.length)
                 throw new IllegalArgumentException("Not the same length of fields");
@@ -240,6 +260,8 @@ public class EncodingCommands implements CommandMarker {
             for (int i = 0; i < fields.length; i++)
                 field2fieldMap.put(fields[i],existingFieldNames[i]);
             LOG.info("\tField Mappings are : {}",field2fieldMap);
+            LOG.info("\tPartitions : {} ",(partitions==1)?"No partitioning":partitions);
+
 
             final Schema existingEncodingSchema = lds.loadSchema(encodingSchemaPath);
             final Schema schema = lds.loadSchema(schemaPath);
@@ -260,7 +282,7 @@ public class EncodingCommands implements CommandMarker {
             final GenericRecord[] encodedRecords = les.encodeRecords(records, encoding);
             final Schema encodingSchema = encoding.getEncodingSchema();
 
-            final Path encodingDatapath = lds.saveRecords(name,encodedRecords,encodingSchema);
+            final Path encodingDatapath = lds.saveRecords(name,encodedRecords,encodingSchema,partitions);
 
             LOG.info("\tEncoded data path = {}",encodingDatapath);
             LOG.info("\n");

@@ -106,7 +106,7 @@ public class ExhaustiveRecordPairSimilarityTool extends Configured implements To
                             RecordPairSimilarityReducer.PAIRS_DONE_KEY, "reduce").getValue();
             LOG.info("Pairs Done during COMBINE={}\tPairs Done during REDUCE={}",
                     pairsDoneInCombine,pairsDoneInReduce);
-
+            counters2Properties(FileSystem.get(conf),outputPath,job.getCounters(),fieldNames);
             return 0;
         } else throw new IllegalStateException("Job not successfull.");
     }

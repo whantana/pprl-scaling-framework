@@ -1,7 +1,0 @@
-# Describe available datasets
-local_data_describe --schema data/dblp/schema/dblp.avsc
-local_data_describe --schema data/da_int/schema/da_int.avsc
-local_data_describe --schema data/random/schema/random.avsc
-local_data_describe --schema data/person_big/schema/person_big.avsc
-local_data_describe --schema data/person_medium/schema/person_medium.avsc
-local_data_describe --schema data/person_small/schema/person_small.avsc

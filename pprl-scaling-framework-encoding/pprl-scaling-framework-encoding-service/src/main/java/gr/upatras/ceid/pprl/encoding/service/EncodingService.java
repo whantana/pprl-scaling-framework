@@ -30,8 +30,8 @@ public class EncodingService implements InitializingBean{
     @Autowired
     private ToolRunner encodeDatasetToolRunner;
 
-    public void encodeData(final Path input, final Path inputSchema,
-                            final Path output, final Path outputSchema)
+    public void runEncodeDatasetTool(final Path input, final Path inputSchema,
+                                     final Path output, final Path outputSchema)
             throws Exception {
         try {
             final List<String> argsList = new ArrayList<String>();

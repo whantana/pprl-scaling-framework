@@ -385,7 +385,6 @@ public class DatasetsCommands implements CommandMarker {
             LOG.info("\tDataset name : {}",uplodadedName);
             LOG.info("\tSelected fields : {}", Arrays.toString(fields));
 
-
             final Path[] paths = ds.retrieveDirectories(name);
             final Path basePath = paths[0];
             final Path avroPath = paths[1];

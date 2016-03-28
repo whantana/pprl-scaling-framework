@@ -29,9 +29,11 @@ public class DatasetsService implements InitializingBean {
     protected static final Logger LOG = LoggerFactory.getLogger(DatasetsService.class);
 
     public void afterPropertiesSet() {
-        basePath = hdfs.getHomeDirectory();
-
         try {
+            basePath = new Path(hdfs.getHomeDirectory(),"pprl");
+            if(!hdfs.exists(basePath))
+                hdfs.mkdirs(basePath,ONLY_OWNER_PERMISSION);
+
             boolean onlyOwnerPermissionbaseDir = hdfs.getFileStatus(basePath)
                     .getPermission().equals(ONLY_OWNER_PERMISSION);
             LOG.info(String.format("Dataset service initialized [" +
@@ -77,15 +79,14 @@ public class DatasetsService implements InitializingBean {
 
     private Path basePath;
 
-    public Path createDirectories(final String name, final FsPermission permission)
+    public Path[] createDirectories(final String name, final FsPermission permission)
             throws IOException {
         return createDirectories(name,basePath,permission);
     }
 
-    public Path createDirectories(final String name,final Path basePath, final FsPermission permission)
+    public Path[] createDirectories(final String name,final Path basePath, final FsPermission permission)
             throws IOException {
-        final Path[] dirs = DatasetsUtil.createDatasetDirectories(hdfs, name, basePath, permission);
-        return dirs[0];
+        return DatasetsUtil.createDatasetDirectories(hdfs, name, basePath, permission);
     }
 
     public Path[] retrieveDirectories(final String name) throws IOException {
@@ -96,6 +97,30 @@ public class DatasetsService implements InitializingBean {
             throws IOException {
         try {
             return DatasetsUtil.retrieveDatasetDirectories(hdfs,name,basePath);
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        }
+    }
+
+    public Schema retrieveSchema(final Path basePath)
+            throws IOException, DatasetException {
+        try {
+            final Path schemaPath = DatasetsUtil.getSchemaPath(hdfs,basePath);
+            return DatasetsUtil.loadSchemaFromFSPath(hdfs,schemaPath);
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        } catch (DatasetException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        }
+    }
+
+    public Path retrieveSchemaPath(final Path basePath)
+            throws IOException {
+        try {
+            return DatasetsUtil.getSchemaPath(hdfs,basePath);
         } catch (IOException e) {
             LOG.error(e.getMessage());
             throw e;
@@ -336,6 +361,19 @@ public class DatasetsService implements InitializingBean {
             LOG.error(e.getMessage());
             throw e;
         } catch (DatasetException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        }
+    }
+
+    public void saveSchema(final Path schemaPath, final Schema schema)
+            throws IOException, DatasetException {
+        try {
+            DatasetsUtil.saveSchemaToFSPath(hdfs, schema, schemaPath);
+        } catch (DatasetException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        } catch (IOException e) {
             LOG.error(e.getMessage());
             throw e;
         }

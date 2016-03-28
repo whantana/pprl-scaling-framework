@@ -139,12 +139,26 @@ public class LocalDatasetsService implements InitializingBean {
             final Path basePath = dataset[0];
             final Path avroPath = dataset[1];
             final Path schemaPath = dataset[2];
-            DatasetsUtil.saveSchemaToFSPath(localFs, schema, new Path(schemaPath,String.format("%s.avsc",name)));
+            final Path schemaFilePath = new Path(schemaPath,String.format("%s.avsc",name));
+            saveSchema(schemaFilePath,schema);
             final DatasetsUtil.DatasetRecordWriter writer =
                     new DatasetsUtil.DatasetRecordWriter(localFs,name,schema,avroPath,partitions);
             writer.writeRecords(records);
             writer.close();
             return basePath;
+        } catch (DatasetException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        }
+    }
+
+    public void saveSchema(final Path schemaPath, final Schema schema)
+            throws IOException, DatasetException {
+        try {
+            DatasetsUtil.saveSchemaToFSPath(localFs, schema, schemaPath);
         } catch (DatasetException e) {
             LOG.error(e.getMessage());
             throw e;

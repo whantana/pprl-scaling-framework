@@ -43,16 +43,16 @@ public class ExpectationMaximazationTest {
         NaiveSimilarityMatrix matrix = null;
         NaiveExpectationMaximization estimator = null;
         for (int i = 0; i < 5; i++) {
-            long start = System.currentTimeMillis();
+            long start = System.nanoTime();
             matrix = NaiveSimilarityMatrix.naiveMatrix(records, fieldNames);
             estimator = new NaiveExpectationMaximization (fieldNames,0.9,0.1,0.01);
             estimator.runAlgorithm(matrix);
-            long end = System.currentTimeMillis();
+            long end = System.nanoTime();
             long time = end - start;
             stats.addValue(time);
         }
         LOG.info("matrix={} , estimator={}",matrix,estimator);
-        LOG.info("Took {} ms.",stats.getPercentile(50));
+        LOG.info("Took {} ns.",stats.getPercentile(50));
     }
 
     @Test
@@ -61,16 +61,16 @@ public class ExpectationMaximazationTest {
         SimilarityMatrix matrix = null;
         ExpectationMaximization estimator = null;
         for (int i = 0; i < 5; i++) {
-            long start = System.currentTimeMillis();
+            long start = System.nanoTime();
             matrix = SimilarityMatrixTest.similarityMatrix(records,fieldNames);
             estimator = new ExpectationMaximization (fieldNames,0.9,0.1,0.01);
             estimator.runAlgorithm(matrix);
-            long end = System.currentTimeMillis();
+            long end = System.nanoTime();
             long time = end - start;
             stats.addValue(time);
         }
         LOG.info("matrix={} , estimator={}",matrix,estimator);
-        LOG.info("Took {} ms.",stats.getPercentile(50));
+        LOG.info("Took {} ns.",stats.getPercentile(50));
     }
 
     @Test
@@ -78,55 +78,64 @@ public class ExpectationMaximazationTest {
         DescriptiveStatistics stats =  new DescriptiveStatistics();
         NaiveSimilarityMatrix matrix1 = null;
         SimilarityMatrix matrix2 = null;
-        int iterations = 5;
+        int iterations = 10;
         for (int i = 1; i < 5; i++) {
             GenericRecord[] bigRecords = new GenericRecord[i*records.length];
             for (int j = 0 ; j < i ; j++)
                 System.arraycopy(records, 0, bigRecords, j * records.length, records.length);
             stats.clear();
             for (int it = 0; it < iterations; it++) {
-                long start = System.currentTimeMillis();
+                long start = System.nanoTime();
                 matrix1 = NaiveSimilarityMatrix.naiveMatrix(bigRecords, fieldNames);
-                long stop = System.currentTimeMillis();
+                long stop = System.nanoTime();
                 long time = stop - start;
                 stats.addValue(time);
             }
-            LOG.info(String.format("Naive similarity matrix records[%d,%d] time %.2f ms",
+			LOG.info("--Person_small x {}--",i);
+			LOG.info(matrix1.toString());
+
+            LOG.info(String.format("Naive similarity matrix records[%d,%d] time %.2f ns",
                     bigRecords.length, fieldNames.length, stats.getPercentile(50)));
 
             stats.clear();
             for (int it = 0; it < iterations; it++) {
-                long start = System.currentTimeMillis();
+                long start = System.nanoTime();
                 matrix2 = SimilarityMatrixTest.similarityMatrix(bigRecords, fieldNames);
-                long stop = System.currentTimeMillis();
+                long stop = System.nanoTime();
                 long time = stop - start;
                 stats.addValue(time);
             }
-            LOG.info(String.format("Similarity matrix records[%d,%d] time %.2f ms",
+			LOG.info(matrix2.toString());
+
+			LOG.info(String.format("Similarity matrix records[%d,%d] time %.2f ns",
                     bigRecords.length, fieldNames.length, stats.getPercentile(50)));
 
             stats.clear();
+            NaiveExpectationMaximization naiveEstimator  = new NaiveExpectationMaximization(fieldNames,0.9,0.1,0.01);
             for (int it = 0; it < iterations; it++) {
-                NaiveExpectationMaximization estimator = new NaiveExpectationMaximization(fieldNames,0.9,0.1,0.01);
-                long start = System.currentTimeMillis();
-                estimator.runAlgorithm(matrix1);
-                long stop = System.currentTimeMillis();
+				naiveEstimator = new NaiveExpectationMaximization(fieldNames,0.9,0.1,0.01);
+                long start = System.nanoTime();
+                naiveEstimator.runAlgorithm(matrix1);
+                long stop = System.nanoTime();
                 long time = stop - start;
                 stats.addValue(time);
             }
-            LOG.info(String.format("Naive Expectation Maximation on records[%d,%d] time %.2f ms",
+			LOG.info(naiveEstimator.toString());
+            LOG.info(String.format("Naive Expectation Maximation on records[%d,%d] time %.2f ns",
                     bigRecords.length, fieldNames.length, stats.getPercentile(50)));
 
             stats.clear();
+			ExpectationMaximization estimator = new ExpectationMaximization(fieldNames,0.9,0.1,0.01);
             for (int it = 0; it < iterations; it++) {
-                ExpectationMaximization estimator = new ExpectationMaximization(fieldNames,0.9,0.1,0.01);
-                long start = System.currentTimeMillis();
+                estimator = new ExpectationMaximization(fieldNames,0.9,0.1,0.01);
+                long start = System.nanoTime();
                 estimator.runAlgorithm(matrix2);
-                long stop = System.currentTimeMillis();
+                long stop = System.nanoTime();
                 long time = stop - start;
                 stats.addValue(time);
             }
-            LOG.info(String.format("Expectation Maximation matrix records[%d,%d] time %.2f ms",
+			LOG.info(estimator.toString());
+            LOG.info(String.format("Expectation Maximation matrix records[%d,%d] time %.2f ns",
                     bigRecords.length, fieldNames.length, stats.getPercentile(50)));
         }
     }

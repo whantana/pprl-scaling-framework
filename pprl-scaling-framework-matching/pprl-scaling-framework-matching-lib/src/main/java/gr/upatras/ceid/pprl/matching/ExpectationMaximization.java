@@ -62,7 +62,7 @@ public class ExpectationMaximization {
             }
 
             // Maximization Step - Using g to estimate m,u and p.
-            // For each j 2^fieldCount - 1 iterations occur.
+            // For each j 2^{fieldCount - 1} iterations occur.
             for (int j = 0; j < fieldCount; j++) {
                 double a = 0.0;
                 double b = 0.0;

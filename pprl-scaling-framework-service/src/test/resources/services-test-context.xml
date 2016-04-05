@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:hdp="http://www.springframework.org/schema/hadoop"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/hadoop http://www.springframework.org/schema/hadoop/spring-hadoop.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <context:property-placeholder location="build.properties"/>
+
+    <!-- Tool Runner configuration -->
+    <hdp:tool-runner id="dblpXmlToAvroToolRunner"
+                     jar="file://${build.test.dir}/pprl-scaling-framework-mapreduce-datasets-${build.version}.jar"
+                     tool-class="gr.upatras.ceid.pprl.mapreduce.DblpXmlToAvroTool"
+                     close-fs="false" libs="file://${build.test.dir}/avro-mapred-1.7.6-hadoop2.jar"/>
+
+    <hdp:tool-runner id="qGramCountingToolRunner"
+                         jar="file://${build.test.dir}/pprl-scaling-framework-mapreduce-datasets-${build.version}.jar"
+                         tool-class="gr.upatras.ceid.pprl.mapreduce.QGramCountingTool"
+                         close-fs="false" libs="file://${build.test.dir}/avro-mapred-1.7.6-hadoop2.jar"/>
+
+    <hdp:tool-runner id="encodeDatasetToolRunner"
+                     jar="file://${build.test.dir}/pprl-scaling-framework-mapreduce-encoding-${build.version}.jar"
+                     tool-class="gr.upatras.ceid.pprl.mapreduce.EncodingTool"
+                     close-fs="false"
+                     libs="file://${build.test.dir}/avro-mapred-1.7.6-cdh5.4.0-hadoop2.jar,
+                           file://${build.test.dir}/avro-1.7.6-cdh5.4.0.jar,
+                           file://${build.test.dir}/pprl-scaling-framework-lib-${build.version}.jar"/>
+
+    <!-- TODO add for matching -->
+    <!-- TODO version of dependencies set by property -->
+
+
+    <hdp:configuration id="hadoopConfiguration"/>
+    <hdp:file-system id="hdfs"/>
+    <bean id="localFs" class="org.apache.hadoop.fs.FileSystem" factory-method="getLocal">
+        <constructor-arg type="org.apache.hadoop.conf.Configuration" ref="hadoopConfiguration"/>
+    </bean>
+
+    <bean id="datasetsService" class="gr.upatras.ceid.pprl.service.datasets.DatasetsService"/>
+    <bean id="encodingService" class="gr.upatras.ceid.pprl.service.encoding.EncodingService"/>
+    <bean id="matchingService" class="gr.upatras.ceid.pprl.service.matching.MatchingService"/>
+
+</beans>

@@ -23,6 +23,36 @@
             <artifactId>pprl-scaling-framework-lib</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>gr.upatras.ceid</groupId>
+            <artifactId>pprl-scaling-framework-mapreduce-datasets</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>gr.upatras.ceid</groupId>
+            <artifactId>pprl-scaling-framework-mapreduce-encoding</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>gr.upatras.ceid</groupId>
+            <artifactId>pprl-scaling-framework-mapreduce-matching</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+
+        <!-- Testing -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>${spring.framework.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-hadoop-test</artifactId>
+            <version>${spring.data.hadoop.test.version}</version>
+            <scope>test</scope>
+        </dependency>
 
         <!-- Spring dependencies -->
         <dependency>
@@ -96,4 +126,94 @@
         </dependency>
 
     </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources/</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/build.properties</include>
+                </includes>
+            </resource>
+        </resources>
+
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/build.properties</include>
+                </includes>
+            </testResource>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>false</filtering>
+            </testResource>
+        </testResources>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.8</version>
+                <executions>
+                    <execution>
+                        <id>copy</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>gr.upatras.ceid</groupId>
+                                    <artifactId>pprl-scaling-framework-mapreduce-datasets</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>gr.upatras.ceid</groupId>
+                                    <artifactId>pprl-scaling-framework-mapreduce-encoding</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>gr.upatras.ceid</groupId>
+                                    <artifactId>pprl-scaling-framework-mapreduce-matching</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>gr.upatras.ceid</groupId>
+                                    <artifactId>pprl-scaling-framework-lib</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.apache.avro</groupId>
+                                    <artifactId>avro-mapred</artifactId>
+                                    <version>${avro.version}</version>
+                                    <classifier>hadoop2</classifier>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.apache.avro</groupId>
+                                    <artifactId>avro</artifactId>
+                                    <version>${avro.version}</version>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

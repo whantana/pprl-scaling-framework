@@ -2,12 +2,12 @@ package gr.upatras.ceid.pprl.shell.command;
 
 import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
 import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
-import gr.upatras.ceid.pprl.datasets.service.DatasetsService;
-import gr.upatras.ceid.pprl.datasets.service.LocalDatasetsService;
+import gr.upatras.ceid.pprl.service.datasets.DatasetsService;
+import gr.upatras.ceid.pprl.service.datasets.LocalDatasetsService;
 import gr.upatras.ceid.pprl.matching.ExpectationMaximization;
 import gr.upatras.ceid.pprl.matching.SimilarityMatrix;
-import gr.upatras.ceid.pprl.matching.service.LocalMatchingService;
-import gr.upatras.ceid.pprl.matching.service.MatchingService;
+import gr.upatras.ceid.pprl.service.matching.LocalMatchingService;
+import gr.upatras.ceid.pprl.service.matching.MatchingService;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.fs.Path;
@@ -165,7 +165,7 @@ public class DatasetsCommands implements CommandMarker {
 
             final Schema schema = lds.loadSchema(schemaPath);
             if(fields.length == 0 ) fields = DatasetsUtil.fieldNames(schema);
-            else if(!DatasetsUtil.nameBelongsToSchema(schema,fields))
+            else if(!DatasetsUtil.fieldNamesBelongsToSchema(schema,fields))
                 throw new IllegalArgumentException(String.format("fields %s not found in schema",
                         Arrays.toString(fields)));
 
@@ -180,7 +180,7 @@ public class DatasetsCommands implements CommandMarker {
             final ExpectationMaximization estimator = lms.newEMInstance(fields,m0,u0,p0);
             estimator.runAlgorithm(matrix);
 
-            statistics.setEmPairs(estimator.getPairCount());
+            statistics.setEmPairsCount(estimator.getPairCount());
             statistics.setEmAlgorithmIterations(estimator.getIteration());
             statistics.setP(estimator.getP());
             DatasetStatistics.calculateStatsUsingEstimates(
@@ -392,10 +392,10 @@ public class DatasetsCommands implements CommandMarker {
 
             final Schema schema = ds.loadSchema(schemaPath);
             if(fields.length == 0 ) fields = DatasetsUtil.fieldNames(schema);
-            else if(!DatasetsUtil.nameBelongsToSchema(schema,fields))
+            else if(!DatasetsUtil.fieldNamesBelongsToSchema(schema,fields))
                 throw new IllegalArgumentException(String.format("fields %s not found in schema",
                         Arrays.toString(fields)));
-            if(!DatasetsUtil.nameBelongsToSchema(schema,uidFieldName))
+            if(!DatasetsUtil.fieldNamesBelongsToSchema(schema,uidFieldName))
                 throw new IllegalArgumentException(String.format("Field %s not found in schema",uidFieldName));
             final Path statsPath = new Path(basePath,"stats");
 
@@ -411,7 +411,7 @@ public class DatasetsCommands implements CommandMarker {
             final ExpectationMaximization estimator = ms.newEMInstance(fields,m0,u0,p0);
             estimator.runAlgorithm(matrix);
 
-            statistics.setEmPairs(estimator.getPairCount());
+            statistics.setEmPairsCount(estimator.getPairCount());
             statistics.setEmAlgorithmIterations(estimator.getIteration());
             statistics.setP(estimator.getP());
             DatasetStatistics.calculateStatsUsingEstimates(

@@ -278,6 +278,8 @@ public class DatasetsUtil {
                                 final Path basePath,
                                 final Path csvPath)
             throws DatasetException, IOException {
+		// TODO options for sorting and adding ulid
+		// TODO ids should be string like "PS004"
         final Path[] paths = createDatasetDirectories(fs,schema.getName(),basePath);
         final Path avroBasePath = paths[1];
         final Path schemaBasePath = paths[2];

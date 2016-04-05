@@ -12,7 +12,7 @@
     <import resource="classpath*:/META-INF/spring/encoding-context.xml"/>
     <import resource="classpath*:/META-INF/spring/matching-context.xml"/>
 
-    <context:property-placeholder location="classpath:build.properties"/>
+    <context:property-placeholder location="build.properties"/>
 
     <!-- scan the provider package -->
     <context:component-scan base-package="gr.upatras.ceid.pprl.shell.provider"/>

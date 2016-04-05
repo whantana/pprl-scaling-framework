@@ -7,7 +7,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>pprl-scaling-framwork-webapp</artifactId>
+    <artifactId>pprl-scaling-framework-webapp</artifactId>
     <packaging>war</packaging>
 
     <name>Webapp - PPRL Scaling Framework</name>

@@ -194,7 +194,7 @@ public class CommandUtil {
         final StringBuilder sb = new StringBuilder();
         sb.append("#Records=").append(statistics.getRecordCount()).append("\n");
         sb.append("#Fields=").append(statistics.getFieldCount()).append("\n");
-        sb.append("#Pairs=").append(statistics.getEmPairs()).append("\n");
+        sb.append("#Pairs=").append(statistics.getEmPairsCount()).append("\n");
         sb.append("#Expectation Maximization Estimator iterations=")
                 .append(statistics.getEmAlgorithmIterations())
                 .append("\n");

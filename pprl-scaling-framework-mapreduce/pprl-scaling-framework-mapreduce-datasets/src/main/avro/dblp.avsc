@@ -1,0 +1,24 @@
+{
+  "type" : "record",
+  "name" : "DblpPublication",
+  "namespace" : "gr.upatras.ceid.pprl.avro.dblp",
+  "fields" : [ {
+    "name"  : "key",
+    "type"  : "string",
+	"order" : "ascending",
+    "doc"   : "DBLP key i.e /journals/acta/Author99"
+  },{
+    "name" : "author",
+    "type" : "string",
+    "doc"  : "First author of the publication"
+  }, {
+    "name" : "title",
+    "type" : "string",
+    "doc"  : "Title of publication"
+  }, {
+    "name" : "year",
+    "type" : "string",
+    "doc"  : "Year of publication"
+  }],
+  "doc:" : "A cut-down version of the dblp schema for the PPRL Framework"
+}

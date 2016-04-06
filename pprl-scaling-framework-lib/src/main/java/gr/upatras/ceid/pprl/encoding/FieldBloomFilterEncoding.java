@@ -15,31 +15,62 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Field Bloom Filter (FBF) encoding class.
+ */
 public class FieldBloomFilterEncoding extends BloomFilterEncoding {
 
     private static final Logger LOG = LoggerFactory.getLogger(FieldBloomFilterEncoding.class);
 
-    protected Map<String,BloomFilter> name2FBFMap = new HashMap<String,BloomFilter>();
-    protected Map<String,Integer> name2indexMap = new HashMap<String,Integer>();
+    protected Map<String,BloomFilter> name2FBFMap = new HashMap<String,BloomFilter>(); // fieldName to bloom filter map.
+    protected Map<String,Integer> name2indexMap = new HashMap<String,Integer>();   // fieldName to index map.
 
+    /**
+     * Constructor
+     */
     public FieldBloomFilterEncoding(){}
 
     public FieldBloomFilterEncoding(final int N, final int Ncount , final int K, final int Q){
         this(staticsizes(N,Ncount),K,Q);
     }
 
+    /**
+     * Constructor (dynamic FBF).
+     *
+     * @param avgQCount average Q grams count per field.
+     * @param K number of hash values.
+     * @param Q Q as in Q-Grams.
+     */
     public FieldBloomFilterEncoding(final double[] avgQCount, final int K, final int Q) {
         this(dynamicsizes(avgQCount,K),K,Q);
     }
 
+    /**
+     * Constructor (Static FBF).
+     *
+     * @param N bloom filter size per field.
+     * @param K number of hash values.
+     * @param Q Q as in Q-Grams.
+     */
     public FieldBloomFilterEncoding(final int[] N, final int K, final int Q) {
         setN(N);
         setK(K);
         setQ(Q);
     }
 
+    /**
+     * Returns "FBF".
+     *
+     * @return "FBF
+     */
+    @Override
     public String schemeName() { return "FBF"; }
 
+    /**
+     * Initializes encoding (makes it ready to encode records).
+     *
+     * @throws BloomFilterEncodingException
+     */
     @Override
     public void initialize() throws BloomFilterEncodingException {
         for(String name : name2indexMap.keySet()) addFBF(name);
@@ -53,6 +84,12 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
                 '}';
     }
 
+    /**
+     * Setup an encoding based on existing encoding schema.
+     *
+     * @param encodingSchema encoding schema.
+     * @throws BloomFilterEncodingException
+     */
     @Override
     public void setupFromSchema(Schema encodingSchema) throws BloomFilterEncodingException {
         assert N == null && getEncodingSchema() == null && encodingSchema != null;
@@ -90,6 +127,13 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
         setEncodingSchema(encodingSchema);
     }
 
+    /**
+     * Setup source field (selected field names) to return encoding fields.
+     *
+     * @param selectedFieldNames selected field names
+     * @return encoding fields.
+     * @throws BloomFilterEncodingException
+     */
     public List<Schema.Field> setupSelectedForEncodingFields(final String[] selectedFieldNames) throws BloomFilterEncodingException {
         assert N != null && N.length == selectedFieldNames.length && getK() > 0 && getQ() > 0;
         Schema.Field[] encodingFields = new Schema.Field[selectedFieldNames.length];
@@ -108,6 +152,13 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
         return Arrays.asList(encodingFields);
     }
 
+    /**
+     * Returns encoded record based on the encoding scheme and input record.
+     *
+     * @param record input generic record.
+     * @return encoded records (generic record).
+     * @throws BloomFilterEncodingException
+     */
     @Override
     public GenericRecord encodeRecord(GenericRecord record)
             throws BloomFilterEncodingException {
@@ -133,6 +184,15 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
         return encodingRecord;
     }
 
+    /**
+     * Encodes object by adding it's q-grams to its bloom filter.
+     *
+     * @param obj object
+     * @param type type
+     * @param Q Q as in q-gram.
+     * @param bloomFilter a bloom filter.
+     * @throws BloomFilterEncodingException
+     */
     protected void encodeObject(final Object obj, final Schema.Type type, final int Q,
                                 final BloomFilter bloomFilter)
             throws BloomFilterEncodingException {
@@ -145,14 +205,20 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
         }
     }
 
-    protected void addFBF(final String name)
+    /**
+     * Adds a Bloom-Filter for an input field name.
+     *
+     * @param fieldName field name.
+     * @throws BloomFilterEncodingException
+     */
+    protected void addFBF(final String fieldName)
             throws BloomFilterEncodingException{
         try {
-            final int index = getIndex(name);
+            final int index = getIndex(fieldName);
             final int fbfN = getN(index);
             final int K = getK();
-            LOG.debug("name {} -to-> fbfN,K={}",name,String.format("%d,%d",fbfN,K));
-            name2FBFMap.put(name, new BloomFilter(fbfN, K));
+            LOG.debug("fieldName {} -to-> fbfN,K={}", fieldName,String.format("%d,%d",fbfN,K));
+            name2FBFMap.put(fieldName, new BloomFilter(fbfN, K));
         } catch (NoSuchAlgorithmException e) {
             throw new BloomFilterEncodingException(e.getMessage());
         } catch (InvalidKeyException e) {
@@ -160,33 +226,72 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
         }
     }
 
-    public BloomFilter getFBF(final String name) {
-        if(!name2FBFMap.containsKey(name))
-            throw new IllegalArgumentException("Cannot find FBF name for name " + name);
-        return name2FBFMap.get(name);
+    /**
+     * Returns the Bloom-Filter instance for an input field name.
+     *
+     * @param fieldName field name.
+     * @return bloom filter instance.
+     */
+    public BloomFilter getFBF(final String fieldName) {
+        if(!name2FBFMap.containsKey(fieldName))
+            throw new IllegalArgumentException("Cannot find FBF fieldName for fieldName " + fieldName);
+        return name2FBFMap.get(fieldName);
     }
 
-    protected void addIndex(final String name, final int index) {
-        LOG.debug("name {} -to-> index {}",name,index);
-        name2indexMap.put(name, index);
+    /**
+     * Maps index to field name (adds to a map).
+     *
+     * @param fieldName field name.
+     * @param index index an integer.
+     */
+    protected void addIndex(final String fieldName, final int index) {
+        LOG.debug("fieldName {} -to-> index {}",fieldName,index);
+        name2indexMap.put(fieldName, index);
     }
 
-    public int getIndex(final String name) {
-        if(!name2indexMap.containsKey(name))
-            throw new IllegalArgumentException("Cannot find index name for name " + name);
-        return name2indexMap.get(name);
+    /**
+     * Returns index mapped with a name.
+     *
+     * @param fieldName field name.
+     * @return index (an integer).
+     */
+    public int getIndex(final String fieldName) {
+        if(!name2indexMap.containsKey(fieldName))
+            throw new IllegalArgumentException("Cannot find index fieldName for fieldName " + fieldName);
+        return name2indexMap.get(fieldName);
     }
 
+    /**
+     * Returns an integer array filled with N (single static size for all fbfs).
+     *
+     * @param N bloom filter size.
+     * @param Ncount number of fields to be encoded.
+     * @return an integer array filled with N
+     */
     public static int[] staticsizes(int N,int Ncount) {
         int[] Ns = new int[Ncount];
         Arrays.fill(Ns,N);
         return Ns;
     }
 
+    /**
+     * Calculate and return the dynamic size of a bloom filter according to g and K.
+     *
+     * @param g expected number of elements.
+     * @param K number of hash values.
+     * @return the dynamic size of a bloom filter
+     */
     public static int dynamicsize(double g, int K) {
         return (int) Math.ceil((1 / (1 - Math.pow(0.5, (double) 1 / (g * K)))));
     }
 
+    /**
+     * Calculate and return the dynamic size of all field bloom filters according to g and K.
+     *
+     * @param g expected number of elements per field.
+     * @param K number of hash values.
+     * @return the dynamic size of a bloom filter
+     */
     public static int[] dynamicsizes(double[] g, int K) {
         int Ns[] = new int[g.length];
         for (int i = 0; i < g.length; i++) {

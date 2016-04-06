@@ -1,6 +1,5 @@
 package gr.upatras.ceid.pprl.encoding;
 
-
 import org.apache.avro.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,11 +10,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Bloom Filter Encoding utility class.
+ */
 public class BloomFilterEncodingUtil {
 
     private static final Logger LOG = LoggerFactory.getLogger(BloomFilterEncodingUtil.class);
 
-    public static final List<String> SCHEME_NAMES = new ArrayList<String>();
+    public static final List<String> SCHEME_NAMES = new ArrayList<String>(); // Available Encoding Schemes
     public static final Map<String,Class<?>> SCHEMES = new HashMap<String, Class<?>>();
     static {
         SCHEMES.put("FBF", FieldBloomFilterEncoding.class);
@@ -24,7 +26,7 @@ public class BloomFilterEncodingUtil {
         SCHEME_NAMES.addAll(SCHEMES.keySet());
     }
 
-    public static final List<Schema.Type> SUPPORTED_TYPES = new ArrayList<Schema.Type>();
+    public static final List<Schema.Type> SUPPORTED_TYPES = new ArrayList<Schema.Type>(); // Supported field types.
     static {
         SUPPORTED_TYPES.add(Schema.Type.INT);
         SUPPORTED_TYPES.add(Schema.Type.LONG);
@@ -34,12 +36,25 @@ public class BloomFilterEncodingUtil {
         SUPPORTED_TYPES.add(Schema.Type.STRING);
     }
 
+    /**
+     * Does nothing if scheme name is supported, throws exception othewise.
+     *
+     * @param scheme encoding scheme name.
+     * @throws BloomFilterEncodingException
+     */
     public static void schemeNameSupported(final String scheme)
             throws BloomFilterEncodingException {
         if(!SCHEME_NAMES.contains(scheme))
             throw new BloomFilterEncodingException("String \"" + scheme +"\" does not belong in available schemes.");
     }
 
+    /**
+     * Retrieves and returns scheme name from an encoded dataset schema.
+     *
+     * @param schema encoded dataset schema.
+     * @return encoding schema name.
+     * @throws BloomFilterEncodingException
+     */
     public static String retrieveSchemeName(final Schema schema)
             throws BloomFilterEncodingException {
         String ns = schema.getNamespace();
@@ -51,11 +66,27 @@ public class BloomFilterEncodingUtil {
         return sParts[0].toUpperCase();
     }
 
+    /**
+     * Creates new instance of an encoding based on an encoded dataset schema.
+     * This instance is uninitialized and not setup fully.
+     *
+     * @param schema encoded dataset schema.
+     * @return instance of the encoding
+     * @throws BloomFilterEncodingException
+     */
     public static BloomFilterEncoding newInstance(final Schema schema)
             throws BloomFilterEncodingException {
         return newInstance(retrieveSchemeName(schema));
     }
 
+    /**
+     * Creates new instance of an encoding based on an encoding scheme name.
+     * This instance is uninitialized and not setup fully.
+     *
+     * @param scheme encoding scheme name.
+     * @return instance of the encoding
+     * @throws BloomFilterEncodingException
+     */
     public static BloomFilterEncoding newInstance(final String scheme)
             throws BloomFilterEncodingException {
         schemeNameSupported(scheme);
@@ -69,8 +100,15 @@ public class BloomFilterEncodingUtil {
         }
     }
 
-    public static boolean nameBelongsToSchema(final Schema schema, final String... selectedNames) {
-        for(String name : selectedNames) {
+    /**
+     * Returns true if all field names are members (fields) of the input schema. Retursn false otherwise.
+     *
+     * @param schema  input avro schema.
+     * @param fieldNames field names.
+     * @return true if all field names are members, false otherwise.
+     */
+    public static boolean nameBelongsToSchema(final Schema schema, final String... fieldNames) {
+        for(String name : fieldNames) {
             boolean nameFound = false;
             for(Schema.Field field : schema.getFields())
                 if(field.name().equals(name)) { nameFound = true ; break; }
@@ -79,6 +117,30 @@ public class BloomFilterEncodingUtil {
         return true;
     }
 
+    /**
+     * Instance factory method. New instances now can be one of the folowing:
+     * <ul>
+     *     <li>CLK</li>
+     *     <li>FBF/Static</li>
+     *     <li>FBF/Dynamic</li>
+     *     <li>RBF/Uniform/FBF/Static</li>
+     *     <li>RBF/Uniform/FBF/Dynamic</li>
+     *     <li>RBF/Weighted/FBF/Static</li>
+     *     <li>RBF/Weighted/FBF/Dynamic</li>
+     * </ul>
+     * But still require an input avro schema to complete and initialize.
+     *
+     *
+     * @param scheme scheme name.
+     * @param fieldCount field count.
+     * @param N bloom filter size (for encoding RBF/Uniform and CLK).
+     * @param fbfN bloom filter size for Field Bloom Filters (for encoding FBF/Static)
+     * @param K number of hash values.
+     * @param Q Q as in Q-Grams.
+     * @param avgQgrams avg q-gram count for each field to be encoded.
+     * @param weights weights that each FBF should be sampled for RBF encoding.
+     * @return new instance.
+     */
     public static BloomFilterEncoding instanceFactory(final String scheme,
                                                       final int fieldCount, final int N,
                                                       final int fbfN, final int K, final int Q,
@@ -142,17 +204,37 @@ public class BloomFilterEncodingUtil {
         } else throw new IllegalStateException("illegal state.");
     }
 
+    /**
+     * Return true if the input array contains a NaN, false otherwise.
+     *
+     * @param doubles input double array.
+     * @return true if the input array contains a NaN, false otherwise.
+     */
     public static boolean containsNan(final double[] doubles) {
         for(double d : doubles) if(Double.isNaN(d)) return true;
         return false;
     }
 
+    /**
+     * Returns true if the input array elements add up to 1 (within a small error), false otherwise.
+     *
+     * @param doubles input double array.
+     * @param error error.
+     * @return true if the input array elements add up to 1, false othwerwise.
+     */
     public static boolean doublesAddUpTo1(final double[] doubles, double error) {
         double sum = 0;
         for(double d : doubles) sum += d;
         return Math.abs(1.0 - sum) <= error;
     }
 
+    /**
+     * Returns a list of the included fields based on the included field names.
+     *
+     * @param schema avro schema of a dataset.
+     * @param includedFieldNames included field names.
+     * @return  a list of the included fields.
+     */
     public static List<Schema.Field> setupIncludedFields(final Schema schema, final String[] includedFieldNames) {
         List<Schema.Field> nonSelectedFields = new ArrayList<Schema.Field>();
         for(Schema.Field field : schema.getFields()) {
@@ -163,6 +245,18 @@ public class BloomFilterEncodingUtil {
         return nonSelectedFields;
     }
 
+    /**
+     * Returns an encoding schema based on an existing schema, with the respected encoding fields changed
+     * according to the user's selection.
+     *
+     * @param schema input avro schema.
+     * @param selectedFieldNames selected field names.
+     * @param includedFieldNames included field names.
+     * @param existingSchema existing encoding schema.
+     * @param existingFieldNames existing encoding field names.
+     * @return an encoding schema based on an existing schema.
+     * @throws BloomFilterEncodingException
+     */
     public static Schema basedOnExistingSchema(final Schema schema,
                                                final String[] selectedFieldNames, final String[] includedFieldNames,
                                                final Schema existingSchema,

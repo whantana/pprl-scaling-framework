@@ -10,88 +10,129 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * An abstract class for a PPRL Bloom-Filter Encoding scheme.
+ */
 public abstract class BloomFilterEncoding {
 
     private static final Logger LOG = LoggerFactory.getLogger(BloomFilterEncoding.class);
 
-    protected Schema encodingSchema;
-    protected Map<String,String> name2nameMap = new HashMap<String,String>();
-    protected int[] N;
-    protected int K;
-    protected int Q;
+    protected Schema encodingSchema;                                // avro schema for encoding dataset
+    protected Map<String,String> name2nameMap = new HashMap<String,String>();   // Mapping between source field name to encoding field name
+    protected int[] N;                                              // Array of bloom filter lengths for the encoding
+    protected int K;                                                // Number of hash value for each data put in a bloom filter
+    protected int Q;                                                // Q as in Q-grams.
 
+    /**
+     * Constructor
+     */
     public BloomFilterEncoding() {}
 
+    /**
+     * Set encoding schema.
+     *
+     * @param encodingSchema encoding schema.
+     */
     public void setEncodingSchema(Schema encodingSchema) {
         this.encodingSchema = encodingSchema;
     }
 
-    public int getK() {
-        return K;
-    }
+    /**
+     * Returns the number of hash values.
+     *
+     * @return the number of hash values.
+     */
+    public int getK() { return K; }
 
-    public void setK(int k) {
-        K = k;
-    }
+    /**
+     * Sets the number of hash values.
+     *
+     * @param K the number of hash values.
+     */
+    public void setK(int K) { this.K = K; }
 
-    public int getQ() {
-        return Q;
-    }
+    /**
+     * Returns Q as in Q-Grams.
+     *
+     * @return Q as in Q-Grams.
+     */
+    public int getQ() { return Q; }
 
-    public void setQ(int q) {
-        Q = q;
-    }
+    /**
+     * Sets Q as in Q-Grams.
+     *
+     * @param Q as in Q-Grams.
+     */
+    public void setQ(int Q) { this.Q = Q; }
 
-    public int[] getN() {
-        return N;
-    }
+    /**
+     * Returns sizes of bloom filters.
+     *
+     * @return sizes of bloom filters.
+     */
+    public int[] getN() { return N; }
 
-    public int getN(int i) {
-        return N[i];
-    }
+    /**
+     * Returns size of the i-th bloom filter.
+     *
+     * @param i index of i-th bloom filter
+     * @return size of the i-th bloom filter.
+     */
+    public int getN(int i) { return N[i]; }
 
-    public void setN(int[] n) {
-        N = n;
-    }
+    /**
+     * Set sizes of bloom filters.
+     *
+     * @param N sizes of bloom filters.
+     */
+    public void setN(int[] N) { this.N = N;}
 
-    public void setN(int n,int i) {
-        N[i] = n;
-    }
+    /**
+     * Set size of the i-th bloom filter.
+     *
+     * @param N bloom filter size.
+     * @param i index of i-th bloom filter.
+     */
+    public void setN(int N,int i) { this.N[i] = N; }
 
-    public Schema getEncodingSchema() {
-        return encodingSchema;
-    }
+    /**
+     * Returns encoding schema.
+     *
+     * @return encoding schema.
+     */
+    public Schema getEncodingSchema() { return encodingSchema; }
 
+    /**
+     * Returns name of encoding like : schemeName_K_Q;
+     *
+     * @return name of encoding.
+     */
     public String getName() {
         return String.format("%s_%d_%d",schemeName(), K, Q);
     }
 
+    /**
+     * Add mapping from name to mappedName (usually source fields to encoding fields).
+     *
+     * @param name name.
+     * @param mappedName mappedName.
+     */
     protected void addMappedName(final String name, final String mappedName) {
         LOG.debug("Mapping name {} -to-> {}",name,mappedName);
         name2nameMap.put(name, mappedName);
     }
 
+    /**
+     * Returns mapped name for name.
+     *
+     * @param name name.
+     * @return mappedName.
+     */
     public String getMappedFieldName(final String name) {
         if(!name2nameMap.containsKey(name))
             throw new IllegalArgumentException("Cannot find mapped name for name " + name);
         return name2nameMap.get(name);
     }
-
-//    public String getFullName() {
-//        if(encodingSchema !=null) {
-//            StringBuilder sb = new StringBuilder(getName());
-//            for(Schema.Field field : encodingSchema.getFields()) {
-//                if(field.name().startsWith("encoding_field_")) {
-//                    String[] fieldNameParts = field.name().split(("_src_"));
-//                    for (int i = 1; i < fieldNameParts.length ; i++)
-//                        sb.append("_").append((fieldNameParts[fieldNameParts.length - 1]));
-//                }
-//            }
-//            return sb.toString();
-//        } else
-//            return "(encoding schema not set)";
-//    }
-
 
     @Override
     public String toString() {
@@ -102,18 +143,56 @@ public abstract class BloomFilterEncoding {
                 ", Q=" + Q;
     }
 
+    /**
+     * Returns scheme name.
+     *
+     * @return scheme name.
+     */
     public abstract String schemeName();
 
+    /**
+     * Initializes encoding (makes it ready to encode records).
+     *
+     * @throws BloomFilterEncodingException
+     */
     public abstract void initialize() throws BloomFilterEncodingException;
 
+    /**
+     * Setup source field (selected field names) to return encoding fields.
+     *
+     * @param selectedFieldNames selected field names
+     * @return encoding fields.
+     * @throws BloomFilterEncodingException
+     */
     public abstract List<Schema.Field> setupSelectedForEncodingFields(final String[] selectedFieldNames)
             throws BloomFilterEncodingException;
 
+    /**
+     * Returns encoded record based on the encoding scheme and input record.
+     *
+     * @param record input generic record.
+     * @return encoded records (generic record).
+     * @throws BloomFilterEncodingException
+     */
     public abstract GenericRecord encodeRecord(final GenericRecord record)
             throws BloomFilterEncodingException;
 
+    /**
+     * Setup an encoding based on existing encoding schema.
+     *
+     * @param encodingSchema encoding schema.
+     * @throws BloomFilterEncodingException
+     */
     public abstract void setupFromSchema(final Schema encodingSchema) throws BloomFilterEncodingException;
 
+    /**
+     * Setup an encoding based on an input schema, selected fields and included fields.
+     *
+     * @param schema schema
+     * @param selectedFieldNames selected field names.
+     * @param includedFieldNames included field names
+     * @throws BloomFilterEncodingException
+     */
     public void makeFromSchema(final Schema schema,
                                final String[] selectedFieldNames, final String[] includedFieldNames)
             throws BloomFilterEncodingException {
@@ -143,6 +222,13 @@ public abstract class BloomFilterEncoding {
         setEncodingSchema(encodingSchema);
     }
 
+    /**
+     * Returns true if this encoding is based on the input schema, false otherwise.
+     *
+     * @param schema input schema.
+     * @return true if this encoding is based on the input schema, false otherwise.
+     * @throws BloomFilterEncodingException
+     */
     public boolean isEncodingOfSchema(final Schema schema)
             throws BloomFilterEncodingException {
         assert getEncodingSchema() != null;

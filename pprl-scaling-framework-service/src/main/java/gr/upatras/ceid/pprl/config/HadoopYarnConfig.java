@@ -42,7 +42,7 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
         config.resourceManagerAddress(String.format("%s:8032", yarnResourceManager));
         config
                 .withProperties()
-                .property("mapreduce.framework.name", yarnMapReduceFramework)
+                .property("mapreduce.framework.fieldName", yarnMapReduceFramework)
                 .property("yarn.nodemanager.aux-services", "mapreduce_shuffle")
                 .property("dfs.client.use.datanode.hostname", "true")
                 .property("yarn.application.classpath", yarnApplicationClasspath);

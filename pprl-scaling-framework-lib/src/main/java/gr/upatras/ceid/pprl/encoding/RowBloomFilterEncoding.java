@@ -17,23 +17,37 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+/**
+ * Row Bloom Filter (RBF) Encoding class.
+ */
 public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
 
     private static final Logger LOG = LoggerFactory.getLogger(RowBloomFilterEncoding.class);
 
-    private static final SecureRandom SECURE_RANDOM_GENERATOR = new SecureRandom();
+    private static final SecureRandom SECURE_RANDOM_GENERATOR = new SecureRandom(); // random generator
 
-    private int[] rbfCompositionCount;
-    private int[] rbfCompositionSeeds;
-    private int rbfBitPermutationSeed;
+    private int[] rbfCompositionCount; // how many bits to be sampled from each FBF.
+    private int[] rbfCompositionSeeds; // seeds for producing random sequence of integers (limit : rbfCompositionCount).
+    private int rbfBitPermutationSeed; // a seed for the random bit permutation
 
-    private int[][] selectedBits;
-    private BloomFilter rbf;
-    private int[] bitPermutation;
-    private String encodingFieldName;
+    private int[][] selectedBits;      // selected bits from each FBF.
+    private BloomFilter rbf;           // the Bloom filter for the rbf
+    private int[] bitPermutation;      // the random bit permutation
+    private String encodingFieldName;  // the encoding field name (contains the RBF)
 
+    /**
+     * Constructor
+     */
     public RowBloomFilterEncoding(){}
 
+    /**
+     * Constructor for RBF(Uniform bit selection, Dynamic FBFs).
+     *
+     * @param avgQCount average q-gram count per field.
+     * @param N bloom filter (RBF) length.
+     * @param K number of hash values.
+     * @param Q Q as in Q-Grams.
+     */
     public RowBloomFilterEncoding(final double[] avgQCount, final int N, final int K, final int Q) {
         int[] fbfNs = FieldBloomFilterEncoding.dynamicsizes(avgQCount, K);
         int[] Ns = new int[fbfNs.length + 1];
@@ -56,6 +70,14 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
         rbfBitPermutationSeed = SECURE_RANDOM_GENERATOR.nextInt(1000);
     }
 
+    /**
+     * Constructor for RBF(Weighted bit selection, Dynamic FBFs).
+     *
+     * @param avgQCount average q-gram count per field.
+     * @param weights weighted selection of bits from the FBFs.
+     * @param K number of hash values.
+     * @param Q Q as in Q-Grams.
+     */
     public RowBloomFilterEncoding(final double[] avgQCount, final double[] weights, final int K, final int Q) {
         assert avgQCount.length == weights.length;
         int[] fbfNs = FieldBloomFilterEncoding.dynamicsizes(avgQCount,K);
@@ -75,6 +97,14 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
         rbfBitPermutationSeed = SECURE_RANDOM_GENERATOR.nextInt(1000);
     }
 
+    /**
+     * Constructor for RBF(Uniform bit selection, Static FBFs).
+     *
+     * @param fbfNs sizes of the FBFs.
+     * @param N bloom filter (RBF) length.
+     * @param K number of hash values.
+     * @param Q Q as in Q-Grams.
+     */
     public RowBloomFilterEncoding(int[] fbfNs, final int N, final int K, final int Q) {
         int[] Ns = new int[fbfNs.length + 1];
         System.arraycopy(fbfNs,0,Ns,0,fbfNs.length);
@@ -96,6 +126,14 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
         rbfBitPermutationSeed = SECURE_RANDOM_GENERATOR.nextInt(1000);
     }
 
+    /**
+     * Constructor for RBF(Weighted bit selection, Static FBFs).
+     *
+     * @param fbfNs sizes of the FBFs.
+     * @param weights weighted selection of bits from the FBFs.
+     * @param K number of hash values.
+     * @param Q Q as in Q-Grams.
+     */
     public RowBloomFilterEncoding(int[] fbfNs, final double[] weights, final int K, final int Q) {
         assert fbfNs.length == weights.length;
         int[] Ns = new int[fbfNs.length + 1];
@@ -114,12 +152,29 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
         rbfBitPermutationSeed = SECURE_RANDOM_GENERATOR.nextInt(1000);
     }
 
+    /**
+     * Returns "RBF".
+     *
+     * @return "RBF".
+     */
+    @Override
     public String schemeName() { return "RBF"; }
 
+    /**
+     * Returns the size of the bloom filter.
+     *
+     * @return the size of the bloom filter.
+     */
     public int getRBFN() {
         return N[N.length - 1];
     }
 
+    /**
+     * Initializes encoding (makes it ready to encode records).
+     *
+     * @throws BloomFilterEncodingException
+     */
+    @Override
     public void initialize()
             throws BloomFilterEncodingException {
         try {
@@ -149,7 +204,12 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
         }
     }
 
-
+    /**
+     * Setup an encoding based on existing encoding schema.
+     *
+     * @param encodingSchema encoding schema.
+     * @throws BloomFilterEncodingException
+     */
     @Override
     public void setupFromSchema(Schema encodingSchema)
             throws BloomFilterEncodingException {
@@ -191,6 +251,14 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
         setEncodingSchema(encodingSchema);
     }
 
+    /**
+     * Setup source field (selected field names) to return encoding fields.
+     *
+     * @param selectedFieldNames selected field names
+     * @return encoding fields.
+     * @throws BloomFilterEncodingException
+     */
+    @Override
     public List<Schema.Field> setupSelectedForEncodingFields(final String[] selectedFieldNames) throws BloomFilterEncodingException {
         assert N != null && (N.length == selectedFieldNames.length + 1) && getK() > 0 && getQ() > 0;
 
@@ -222,7 +290,13 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
         return Arrays.asList(encodingField);
     }
 
-
+    /**
+     * Returns encoded record based on the encoding scheme and input record.
+     *
+     * @param record input generic record.
+     * @return encoded records (generic record).
+     * @throws BloomFilterEncodingException
+     */
     @Override
     public GenericRecord encodeRecord(GenericRecord record)
             throws BloomFilterEncodingException {
@@ -270,6 +344,14 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
                 '}';
     }
 
+    /**
+     * Generate and return a random bit selection from a bit sequence.
+     *
+     * @param bitCount size of bit selection.
+     * @param maxBit bit sequence length
+     * @param seed an integer as a seed.
+     * @return a random bit selection from a bit sequence.
+     */
     public static int[] randomBitSelection(final int bitCount, final int maxBit,final int seed) {
         final int[] randomBits = new int[bitCount];
         Random random = new Random(seed);
@@ -278,12 +360,19 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
         return randomBits;
     }
 
-    public static int[] randomBitPermutation(final int bitCount, final int seed) {
+    /**
+     * Generate and return a random permutation of a bit sequence.
+     *
+     * @param maxBit bit sequence length
+     * @param seed an integer as a seed.
+     * @return a random permutation of a bit sequence.
+     */
+    public static int[] randomBitPermutation(final int maxBit, final int seed) {
         List<Integer> c = new ArrayList<Integer>();
-        for (int i = 0; i < bitCount; i++) c.add(i);
+        for (int i = 0; i < maxBit; i++) c.add(i);
         Collections.shuffle(c, new Random(seed));
         Integer[] array = c.toArray(new Integer[c.size()]);
-        int[] retArray = new int[bitCount];
+        int[] retArray = new int[maxBit];
         int i = 0;
         for(Integer ii : array) {
             retArray[i] = ii;
@@ -292,6 +381,14 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
         return retArray;
     }
 
+    /**
+     * Calculate and return the RBF bloom filter size when in weighted
+     * bit selection from the FBFs. The weight that maximizes the RBF is chosen.
+     *
+     * @param fbfNs sizes of the FBFs.
+     * @param weights weighted selection of bits from the FBFs.
+     * @return the RBF bloom filter size
+     */
     public static int weightedsize(final int[] fbfNs, final double[] weights) {
         int N = 0;
         for (int i = 0; i < fbfNs.length; i++) {

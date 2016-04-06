@@ -15,25 +15,50 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class CLKEncoding extends BloomFilterEncoding{
+/**
+ * Cryptographically Long Key (CLK) Encoding class.
+ */
+public class CLKEncoding extends BloomFilterEncoding {
 
     private static final Logger LOG = LoggerFactory.getLogger(CLKEncoding.class);
-    private String encodingFieldName;
-    private BloomFilter bf;
 
+    private String encodingFieldName; // encoding field names (only 1 encoding field name for all sources).
+    private BloomFilter bf; // bloom filter (only need 1 bloom filter)
+
+    /**
+     * Constructor
+     */
     public CLKEncoding(){}
 
+    /**
+     * Constructor.
+     *
+     * @param N bloom filter size.
+     * @param K number of hash values.
+     * @param Q as in Q-Grams.
+     */
     public CLKEncoding(final int N, final int K, final int Q){
         setN(new int[]{N});
         setK(K);
         setQ(Q);
     }
 
+
+    /**
+     * Returns "CLK".
+     *
+     * @return "CLK".
+     */
     @Override
     public String schemeName() {
         return "CLK";
     }
 
+    /**
+     * Initializes encoding (makes it ready to encode records).
+     *
+     * @throws BloomFilterEncodingException
+     */
     @Override
     public void initialize() throws BloomFilterEncodingException {
         try {
@@ -54,10 +79,22 @@ public class CLKEncoding extends BloomFilterEncoding{
         }
     }
 
+    /**
+     * Returns bloom filter's length.
+     *
+     * @return bloom filter's length.
+     */
     public int getCLKN() {
         return N[0];
     }
 
+    /**
+     * Setup source field (selected field names) to return encoding fields.
+     *
+     * @param selectedFieldNames selected field names
+     * @return encoding fields.
+     * @throws BloomFilterEncodingException
+     */
     @Override
     public List<Schema.Field> setupSelectedForEncodingFields(String[] selectedFieldNames) throws BloomFilterEncodingException {
         assert N != null && (N.length == 1) && getK() > 0 && getQ() > 0;
@@ -76,6 +113,13 @@ public class CLKEncoding extends BloomFilterEncoding{
         return Arrays.asList(encodingField);
     }
 
+    /**
+     * Returns encoded record based on the encoding scheme and input record.
+     *
+     * @param record input generic record.
+     * @return encoded records (generic record).
+     * @throws BloomFilterEncodingException
+     */
     @Override
     public GenericRecord encodeRecord(GenericRecord record) throws BloomFilterEncodingException {
         final GenericRecord encodingRecord = new GenericData.Record(getEncodingSchema());
@@ -102,6 +146,15 @@ public class CLKEncoding extends BloomFilterEncoding{
         return encodingRecord;
     }
 
+    /**
+     * Encodes object by adding it's q-grams to its bloom filter.
+     *
+     * @param obj object
+     * @param type type
+     * @param Q Q as in q-gram.
+     * @param bloomFilter a bloom filter.
+     * @throws BloomFilterEncodingException
+     */
     private void encodeObject(final Object obj, final Schema.Type type, final int Q,
                               final BloomFilter bloomFilter)
             throws BloomFilterEncodingException {
@@ -113,6 +166,12 @@ public class CLKEncoding extends BloomFilterEncoding{
         }
     }
 
+    /**
+     * Setup an encoding based on existing encoding schema.
+     *
+     * @param encodingSchema encoding schema.
+     * @throws BloomFilterEncodingException
+     */
     @Override
     public void setupFromSchema(Schema encodingSchema) throws BloomFilterEncodingException {
         assert N == null && getEncodingSchema() == null && encodingSchema != null;

@@ -21,12 +21,25 @@ import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Encoding Tool class.
+ */
 public class EncodingTool extends Configured implements Tool {
 
     private static final String JOB_DESCRIPTION = "Encode HDFS Data";
 
     private static final Logger LOG = LoggerFactory.getLogger(EncodingTool.class);
 
+    /**
+     * Run tool.
+     *
+     * @param args input args
+     * @return 0 if job is successfully run, 1 otherwise.
+     * @throws InterruptedException
+     * @throws IOException
+     * @throws ClassNotFoundException
+     * @throws BloomFilterEncodingException
+     */
     public int run(String[] args) throws InterruptedException, IOException, ClassNotFoundException,
             BloomFilterEncodingException {
 
@@ -84,12 +97,23 @@ public class EncodingTool extends Configured implements Tool {
         return (job.waitForCompletion(true) ? 0 : 1);
     }
 
-
+    /**
+     * Main
+     *
+     * @param args input arguments.
+     * @throws Exception
+     */
     public static void main(String[] args) throws Exception {
         int res = ToolRunner.run(new EncodingTool(), args);
         System.exit(res);
     }
 
+    /**
+     * Returns shorten URL.
+     *
+     * @param url URL to be shorten.
+     * @return shorten URL.
+     */
     private static String shortenUrl(final String url) {
         Pattern p = Pattern.compile(".*://.*?(/.*)");
         Matcher m = p.matcher(url);
@@ -103,6 +127,14 @@ public class EncodingTool extends Configured implements Tool {
         }
     }
 
+    /**
+     * Load avro schema from the filesystem.
+     *
+     * @param fs a <code>FileSystem</code> reference.
+     * @param schemaPath a path to schema file.
+     * @return a <code>Schema</code> instance.
+     * @throws IOException
+     */
     private static Schema loadAvroSchemaFromHdfs(final FileSystem fs,final Path schemaPath)
             throws IOException {
         FSDataInputStream fsdis = fs.open(schemaPath);

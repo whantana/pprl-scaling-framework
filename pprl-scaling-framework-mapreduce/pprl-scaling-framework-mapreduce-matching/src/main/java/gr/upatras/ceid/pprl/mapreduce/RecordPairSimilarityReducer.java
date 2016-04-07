@@ -10,6 +10,9 @@ import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
 
+/**
+ * Record-Pair similarity reducer class.
+ */
 public class RecordPairSimilarityReducer extends Reducer<LongWritable, AvroValue<GenericRecord>,NullWritable,NullWritable> {
     public static String SIMILARITY_VECTORS_KEY = "similarity.vectors";
     public static String FIELD_NAMES_KEY = "field.names";
@@ -36,6 +39,12 @@ public class RecordPairSimilarityReducer extends Reducer<LongWritable, AvroValue
         context.getCounter(PAIRS_DONE_KEY,"reduce").increment(1);
     }
 
+    /**
+     * Retrieve and return record pair from <code>values</code>.
+     *
+     * @param values generic records <code>Iterable</code>.
+     * @return an avro generic record array.
+     */
     public static GenericRecord[] getRecordPair(Iterable<AvroValue<GenericRecord>> values) {
         int i = 0;
         final GenericRecord[] pair = new GenericRecord[2];
@@ -49,6 +58,12 @@ public class RecordPairSimilarityReducer extends Reducer<LongWritable, AvroValue
         return pair;
     }
 
+    /**
+     * Returns true if pair is complete (pair[0] and pair[1] are not null), false otherwise.
+     *
+     * @param pair  an avro generic record array.
+     * @return true if pair is complete, false otherwise.
+     */
     public static boolean pairComplete(final GenericRecord[] pair) {
         return (pair[0] != null) && (pair[1] != null);
     }

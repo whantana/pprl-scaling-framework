@@ -27,12 +27,22 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Exhaustive Record Pair Similarity Tool
+ */
 public class ExhaustiveRecordPairSimilarityTool extends Configured implements Tool {
 
     private static final Logger LOG = LoggerFactory.getLogger(ExhaustiveRecordPairSimilarityTool.class);
 
     private static final String JOB_DESCRIPTION = "Exhaustive Record-pair similiarity";
 
+    /**
+     * Run tool.
+     *
+     * @param args input arguments
+     * @return 0 if job is succesfully run, throws exception otherwise.
+     * @throws Exception
+     */
     public int run(String[] args) throws Exception {
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
@@ -110,6 +120,16 @@ public class ExhaustiveRecordPairSimilarityTool extends Configured implements To
             return 0;
         } else throw new IllegalStateException("Job not successfull.");
     }
+
+    /**
+     * Save the MapReduce counters to a properties file on the filesystem.
+     *
+     * @param fs a <code>FileSystem</code> reference.
+     * @param outputPath an output path.
+     * @param counters MapReduce counters.
+     * @param fieldNames field names.
+     * @throws IOException
+     */
     public static void counters2Properties(final FileSystem fs,final Path outputPath,
                                            final Counters counters, final String[] fieldNames)
             throws IOException {
@@ -120,6 +140,13 @@ public class ExhaustiveRecordPairSimilarityTool extends Configured implements To
         LOG.info("Properties stored at {}.",fs.makeQualified(outputPath));
     }
 
+    /**
+     * Returns a <code>Properties</code> instance of the current counters.
+     *
+     * @param counters MapReduce counters.
+     * @param fieldNames field names.
+     * @return a <code>Properties</code> instance.
+     */
     public static Properties counters2Properties(final Counters counters, String[] fieldNames) {
         final SimilarityVectorFrequencies matrix = new SimilarityVectorFrequencies(fieldNames.length);
         for (int i = 0; i <  matrix.getVectorFrequencies().length; i++) {
@@ -133,6 +160,14 @@ public class ExhaustiveRecordPairSimilarityTool extends Configured implements To
         return matrix.toProperties();
     }
 
+    /**
+     * Load avro schema from the filesystem.
+     *
+     * @param fs a <code>FileSystem</code> reference.
+     * @param schemaPath a path to schema file.
+     * @return a <code>Schema</code> instance.
+     * @throws IOException
+     */
     private static Schema loadAvroSchemaFromHdfs(final FileSystem fs,final Path schemaPath)
             throws IOException {
         FSDataInputStream fsdis = fs.open(schemaPath);
@@ -141,6 +176,12 @@ public class ExhaustiveRecordPairSimilarityTool extends Configured implements To
         return schema;
     }
 
+    /**
+     * Returns shorten URL.
+     *
+     * @param url URL to be shorten.
+     * @return shorten URL.
+     */
     private static String shortenUrl(final String url) {
         Pattern p = Pattern.compile(".*://.*?(/.*)");
         Matcher m = p.matcher(url);

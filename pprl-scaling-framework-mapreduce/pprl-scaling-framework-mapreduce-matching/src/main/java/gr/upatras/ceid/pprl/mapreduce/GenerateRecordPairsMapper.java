@@ -12,7 +12,9 @@ import org.apache.hadoop.mapreduce.Mapper;
 import java.io.IOException;
 import java.util.Iterator;
 
-
+/**
+ * Generate Pairs of Records Mapper class.
+ */
 public class GenerateRecordPairsMapper extends Mapper<AvroKey<GenericRecord>, NullWritable, LongWritable, AvroValue<GenericRecord>> {
 
     public static String RECORD_COUNT_KEY = "record.count";

@@ -30,13 +30,7 @@ public class QGramCountingMapper extends Mapper<AvroKey<GenericRecord>,NullWrita
     String[] fieldNames;   // field names
     Schema.Type[] types;   // field types
 
-    /**
-     * Setup method.
-     *
-     * @param context context.
-     * @throws IOException
-     * @throws InterruptedException
-     */
+
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         fieldNames = context.getConfiguration().getStrings(FIELD_NAMES_KEY,new String[0]);
@@ -50,15 +44,6 @@ public class QGramCountingMapper extends Mapper<AvroKey<GenericRecord>,NullWrita
             types[i] = schema.getField(fieldNames[i]).schema().getType();
     }
 
-    /**
-     * Map method.
-     *
-     * @param key an <code>AvroKey</code> wrapping records.
-     * @param value a <code>NullWritable</code>.
-     * @param context context
-     * @throws IOException
-     * @throws InterruptedException
-     */
     @Override
     protected void map(AvroKey<GenericRecord> key, NullWritable value, Context context) throws IOException, InterruptedException {
         final GenericRecord record = key.datum();

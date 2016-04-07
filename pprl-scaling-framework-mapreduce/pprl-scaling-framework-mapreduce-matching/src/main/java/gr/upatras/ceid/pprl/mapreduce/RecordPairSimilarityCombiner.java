@@ -13,6 +13,9 @@ import java.io.IOException;
 import static gr.upatras.ceid.pprl.mapreduce.RecordPairSimilarityReducer.getRecordPair;
 import static gr.upatras.ceid.pprl.mapreduce.RecordPairSimilarityReducer.pairComplete;
 
+/**
+ * Record Pair Similarity combiner class.
+ */
 public class RecordPairSimilarityCombiner extends Reducer<LongWritable, AvroValue<GenericRecord>,LongWritable,AvroValue<GenericRecord>> {
 
     private String[] fieldNames;

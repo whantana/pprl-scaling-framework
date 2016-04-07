@@ -15,6 +15,7 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,12 +25,22 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Q-Gram Counting Tool class.
+ */
 public class QGramCountingTool extends Configured implements Tool {
 
     private static final Logger LOG = LoggerFactory.getLogger(QGramCountingTool.class);
 
     private static final String JOB_DESCRIPTION = "Count QGrams of AVRO Records";
 
+    /**
+     * Run the tool.
+     *
+     * @param args input args
+     * @return 0 for sucessfull run. An exception is thrown on error.
+     * @throws Exception
+     */
     public int run(String[] args) throws Exception {
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
@@ -43,7 +54,7 @@ public class QGramCountingTool extends Configured implements Tool {
         final Path outputPath = new Path(args[2]);
         final String[] fieldNames = args[3].contains(",") ? args[3].split(",") : new String[]{args[3]};
 
-        final Schema inputSchema = loadAvroSchemaFromHdfs(FileSystem.get(conf), inputSchemaPath);
+        final Schema inputSchema = loadAvroSchemaFromFS(FileSystem.get(conf), inputSchemaPath);
         conf.set(QGramCountingMapper.SCHEMA_KEY,inputSchema.toString());
         conf.setStrings(QGramCountingMapper.FIELD_NAMES_KEY,fieldNames);
 
@@ -81,6 +92,26 @@ public class QGramCountingTool extends Configured implements Tool {
         } else throw new IllegalStateException("Job not successfull.");
     }
 
+    /**
+     * Main
+     *
+     * @param args input args
+     * @throws Exception
+     */
+    public static void main(String[] args) throws Exception {
+        int res = ToolRunner.run(new QGramCountingTool(), args);
+        System.exit(res);
+    }
+
+    /**
+     * Save the MapReduce counters to a properties file on the filesystem.
+     *
+     * @param fs a <code>FileSystem</code> reference.
+     * @param outputPath an output path.
+     * @param counters MapReduce counters.
+     * @param fieldNames field names.
+     * @throws IOException
+     */
     public static void counters2Properties(final FileSystem fs,final Path outputPath,
                                            final Counters counters, final String[] fieldNames)
             throws IOException {
@@ -91,6 +122,13 @@ public class QGramCountingTool extends Configured implements Tool {
         LOG.info("Properties stored at {}.",fs.makeQualified(outputPath));
     }
 
+    /**
+     * Returns a <code>Properties</code> instance of the current counters.
+     *
+     * @param counters MapReduce counters.
+     * @param fieldNames field names.
+     * @return a <code>Properties</code> instance.
+     */
     public static Properties counters2Properties(final Counters counters, final String[] fieldNames) {
         final Properties properties = new Properties();
         long recordCount = counters.findCounter("", QGramCountingMapper.RECORD_COUNT_KEY).getValue();
@@ -122,7 +160,15 @@ public class QGramCountingTool extends Configured implements Tool {
         return properties;
     }
 
-    private static Schema loadAvroSchemaFromHdfs(final FileSystem fs,final Path schemaPath)
+    /**
+     * Load avro schema from the filesystem.
+     *
+     * @param fs a <code>FileSystem</code> reference.
+     * @param schemaPath a path to schema file.
+     * @return a <code>Schema</code> instance.
+     * @throws IOException
+     */
+    private static Schema loadAvroSchemaFromFS(final FileSystem fs, final Path schemaPath)
             throws IOException {
         FSDataInputStream fsdis = fs.open(schemaPath);
         Schema schema = (new Schema.Parser()).parse(fsdis);
@@ -130,6 +176,12 @@ public class QGramCountingTool extends Configured implements Tool {
         return schema;
     }
 
+    /**
+     * Shortens the given URL string.
+     *
+     * @param url URL string
+     * @return shorten URL string.
+     */
     private static String shortenUrl(final String url) {
         Pattern p = Pattern.compile(".*://.*?(/.*)");
         Matcher m = p.matcher(url);

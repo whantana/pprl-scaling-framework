@@ -2,6 +2,7 @@ package gr.upatras.ceid.pprl.service.matching;
 
 import gr.upatras.ceid.pprl.combinatorics.CombinatoricsUtil;
 import gr.upatras.ceid.pprl.matching.ExpectationMaximization;
+import gr.upatras.ceid.pprl.matching.SimilarityUtil;
 import gr.upatras.ceid.pprl.matching.SimilarityVectorFrequencies;
 import org.apache.avro.generic.GenericRecord;
 import org.slf4j.Logger;
@@ -20,6 +21,8 @@ public class LocalMatchingService implements InitializingBean {
     public void afterPropertiesSet() {
         LOG.info("Local Matching service initialized.");
     }
+
+    // TODO might remove this will see.
 
     public SimilarityVectorFrequencies createMatrix(final GenericRecord[] records,
                                          final String[] fieldNames,
@@ -40,7 +43,7 @@ public class LocalMatchingService implements InitializingBean {
                 for(int j=0; j < fieldNames.length; j++) {
                     String s1 = String.valueOf(records[pair[0]].get(fieldNames[j]));
                     String s2 = String.valueOf(records[pair[1]].get(fieldNames[j]));
-                    if(SimilarityVectorFrequencies.similarity(similarityMethodName, s1, s2)) row[j] = true;
+                    if(SimilarityUtil.similarity(similarityMethodName, s1, s2)) row[j] = true;
                 }
                 matrix.set(row);
                 pairsDone++;
@@ -57,7 +60,7 @@ public class LocalMatchingService implements InitializingBean {
     public SimilarityVectorFrequencies createMatrix(final GenericRecord[] records,
                                          final String[] fieldNames)
             throws Exception {
-        return createMatrix(records,fieldNames, SimilarityVectorFrequencies.DEFAULT_SIMILARITY_METHOD_NAME);
+        return createMatrix(records,fieldNames, SimilarityUtil.DEFAULT_SIMILARITY_METHOD_NAME);
     }
 
     public SimilarityVectorFrequencies createMatrix(final GenericRecord[] recordsA,
@@ -80,7 +83,7 @@ public class LocalMatchingService implements InitializingBean {
                     for(int j=0; j < fieldNamesA.length; j++) {
                         String s1 = String.valueOf(recA.get(fieldNamesA[j]));
                         String s2 = String.valueOf(recB.get(fieldNamesB[j]));
-                        if(SimilarityVectorFrequencies.similarity(similarityMethodName, s1, s2)) row[j] = true;
+                        if(SimilarityUtil.similarity(similarityMethodName, s1, s2)) row[j] = true;
                     }
                     matrix.set(row);
                     pairsDone++;
@@ -100,7 +103,7 @@ public class LocalMatchingService implements InitializingBean {
                                          final GenericRecord[] recordsB,
                                          final String[] fieldNamesB)
             throws Exception {
-        return createMatrix(recordsA,fieldNamesA,recordsB,fieldNamesB, SimilarityVectorFrequencies.DEFAULT_SIMILARITY_METHOD_NAME);
+        return createMatrix(recordsA,fieldNamesA,recordsB,fieldNamesB, SimilarityUtil.DEFAULT_SIMILARITY_METHOD_NAME);
     }
 
     public ExpectationMaximization newEMInstance(final String[] fieldNames, final double[] m, final double[] u, double p) {

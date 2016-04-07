@@ -9,7 +9,9 @@ import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
 
-
+/**
+ * Q-Gram Counting Mapper class.
+ */
 public class QGramCountingMapper extends Mapper<AvroKey<GenericRecord>,NullWritable,NullWritable,NullWritable> {
     public static final String SCHEMA_KEY = "schema";
     public static final String FIELD_NAMES_KEY = "field.names";
@@ -25,8 +27,16 @@ public class QGramCountingMapper extends Mapper<AvroKey<GenericRecord>,NullWrita
             "unique.4grams.count"
     };
 
-    String[] fieldNames;
-    Schema.Type[] types;
+    String[] fieldNames;   // field names
+    Schema.Type[] types;   // field types
+
+    /**
+     * Setup method.
+     *
+     * @param context context.
+     * @throws IOException
+     * @throws InterruptedException
+     */
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         fieldNames = context.getConfiguration().getStrings(FIELD_NAMES_KEY,new String[0]);
@@ -40,11 +50,20 @@ public class QGramCountingMapper extends Mapper<AvroKey<GenericRecord>,NullWrita
             types[i] = schema.getField(fieldNames[i]).schema().getType();
     }
 
+    /**
+     * Map method.
+     *
+     * @param key an <code>AvroKey</code> wrapping records.
+     * @param value a <code>NullWritable</code>.
+     * @param context context
+     * @throws IOException
+     * @throws InterruptedException
+     */
     @Override
     protected void map(AvroKey<GenericRecord> key, NullWritable value, Context context) throws IOException, InterruptedException {
         final GenericRecord record = key.datum();
         context.getCounter("",RECORD_COUNT_KEY).increment(1);
-        for (int i = 0; i < fieldNames.length;  i++) {
+        for (int i = 0; i < fieldNames.length;  i++) {     // for each field we calculate the count of {2,3,4}-grams(unique and not).
             final Object obj = record.get(fieldNames[i]);
             final Schema.Type type = types[i];
             final String counterGroupName = "f." + fieldNames[i];

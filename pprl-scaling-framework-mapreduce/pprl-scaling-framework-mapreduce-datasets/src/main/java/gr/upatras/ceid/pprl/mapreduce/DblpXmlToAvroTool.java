@@ -18,6 +18,9 @@ import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * DBLP XML to Avro Tool class.
+ */
 public class DblpXmlToAvroTool extends Configured implements Tool {
 
     private static final Logger LOG = LoggerFactory.getLogger(DblpXmlToAvroTool.class);
@@ -26,6 +29,15 @@ public class DblpXmlToAvroTool extends Configured implements Tool {
 
     private static final String[] TAGS = new String[]{"article","phdthesis","mastersthesis"};
 
+    /**
+     * Run the tool.
+     *
+     * @param args input args
+     * @return 0 for successful job execution, 1 for failed job execution.
+     * @throws InterruptedException
+     * @throws IOException
+     * @throws ClassNotFoundException
+     */
     public int run(String[] args) throws InterruptedException, IOException, ClassNotFoundException {
 
         // get args
@@ -71,11 +83,23 @@ public class DblpXmlToAvroTool extends Configured implements Tool {
         return (job.waitForCompletion(true) ? 0 : 1);
     }
 
+    /**
+     * Main
+     *
+     * @param args input args
+     * @throws Exception
+     */
     public static void main(String[] args) throws Exception {
         int res = ToolRunner.run(new DblpXmlToAvroTool(), args);
         System.exit(res);
     }
 
+    /**
+     * Shortens the given URL string.
+     *
+     * @param url URL string
+     * @return shorten URL string.
+     */
     public static String shortenUrl(final String url) {
         Pattern p = Pattern.compile(".*://.*?(/.*)");
         Matcher m = p.matcher(url);

@@ -154,8 +154,8 @@ public class SimilarityUtil {
         final boolean[] vector = new boolean[fieldNames.length];
         int i = 0;
         for (String fieldName : fieldNames) {
-            final String v0 =  (String) recordPair[0].get(fieldName);
-            final String v1 =  (String) recordPair[1].get(fieldName);
+            final String v0 =  String.valueOf(recordPair[0].get(fieldName));
+            final String v1 =  String.valueOf(recordPair[1].get(fieldName));
             vector[i++] =  similarity(similarityMethodName, v0, v1);
         }
         return vector;

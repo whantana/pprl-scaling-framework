@@ -17,9 +17,19 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 
 import java.io.IOException;
 
+/**
+ * Multi Tag XML Input Format class.
+ */
 public class MultiTagXmlInputFormat extends TextInputFormat {
     public static final String TAGS_KEY = "xmlinput.tags";
 
+    /**
+     * Creates the record reader.
+     *
+     * @param split input split.
+     * @param context context.
+     * @return
+     */
     @Override
     public RecordReader<LongWritable, Text> createRecordReader(InputSplit split, TaskAttemptContext context) {
         try {
@@ -29,6 +39,9 @@ public class MultiTagXmlInputFormat extends TextInputFormat {
         }
     }
 
+    /**
+     * Multi tag XML record reader class.
+     */
     public static class MultiTagXmlRecordReader extends RecordReader<LongWritable, Text> {
 
         private final byte[][] startTags;
@@ -44,7 +57,13 @@ public class MultiTagXmlInputFormat extends TextInputFormat {
         private int[] matchCounters;
         private int tagCount;
 
-
+        /**
+         * Constructor.
+         *
+         * @param split input split.
+         * @param conf configuration.
+         * @throws IOException
+         */
         public MultiTagXmlRecordReader(FileSplit split, Configuration conf) throws IOException{
 
             // tags and tag count
@@ -94,6 +113,14 @@ public class MultiTagXmlInputFormat extends TextInputFormat {
             }
         }
 
+        /**
+         * Next (key,value).
+         *
+         * @param key a key.
+         * @param value a value.
+         * @return
+         * @throws IOException
+         */
         private boolean next(LongWritable key, Text value) throws IOException {
             if(!inOriginalSplit) return false;
             try {
@@ -115,7 +142,11 @@ public class MultiTagXmlInputFormat extends TextInputFormat {
             return false;
         }
 
-
+        /**
+         * Read file until a start tag is found.
+         *
+         * @throws IOException
+         */
         private void readUntilAnyStartTagIsFound() throws IOException {
             while (true) {
                 int b = fsin.read();
@@ -140,6 +171,11 @@ public class MultiTagXmlInputFormat extends TextInputFormat {
             }
         }
 
+        /**
+         * Read until any end tag is found.
+         *
+         * @throws IOException
+         */
         private void readUntilAnyEndTagIsFound() throws IOException {
             while(true) {
                 int b = fsin.read();
@@ -162,6 +198,12 @@ public class MultiTagXmlInputFormat extends TextInputFormat {
             }
         }
 
+        /**
+         * Read until current end tag is found.
+         *
+         * @return boolean true if end tag is found, false if split reaches end or file reaches end.
+         * @throws IOException
+         */
         private boolean readUntilCurrentEndTagIsFound() throws IOException {
             int i = 0;
             while(true) {
@@ -188,11 +230,20 @@ public class MultiTagXmlInputFormat extends TextInputFormat {
             }
         }
 
+        /**
+         * Reset match counters ((start,end)-tag matching).
+         */
         private void resetMatchCounters() {
             for (int i = 0; i < matchCounters.length; i++) {
                 resetMatchCounter(i);
             }
         }
+
+        /**
+         * Reset the i-th match counter.
+         *
+         * @param i index of counter.
+         */
         private void resetMatchCounter(int i) {
             matchCounters[i] = 0;
         }

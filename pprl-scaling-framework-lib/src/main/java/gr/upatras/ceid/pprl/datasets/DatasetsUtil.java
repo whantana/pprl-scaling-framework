@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -268,6 +269,7 @@ public class DatasetsUtil {
      *
      * @param fs a <code>FileSystem</code> reference.
      * @param schema an avro schema.
+     * @param name name of the dataset.
      * @param basePath a base path.
      * @param csvPath a csv path.
      * @return created dataset base path.
@@ -275,17 +277,16 @@ public class DatasetsUtil {
      * @throws IOException
      */
     public static Path csv2avro(final FileSystem fs, final Schema schema ,
+                                final String name,
                                 final Path basePath,
                                 final Path csvPath)
             throws DatasetException, IOException {
-		// TODO options for sorting and adding ulid
-		// TODO ids should be string like "PS004"
-        final Path[] paths = createDatasetDirectories(fs,schema.getName(),basePath);
+        final Path[] paths = createDatasetDirectories(fs,name,basePath);
         final Path avroBasePath = paths[1];
         final Path schemaBasePath = paths[2];
 
-        saveSchemaToFSPath(fs, schema, new Path(schemaBasePath,schema.getName()+".avsc"));
-        DatasetRecordWriter writer = new DatasetRecordWriter(fs,schema.getName(),schema,avroBasePath);
+        saveSchemaToFSPath(fs, schema, new Path(schemaBasePath,name+".avsc"));
+        DatasetRecordWriter writer = new DatasetRecordWriter(fs,name,schema,avroBasePath);
         BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(csvPath)));
         try {
 
@@ -773,5 +774,27 @@ public class DatasetsUtil {
         int i = 0;
         for (AvroKey<GenericRecord> key : avroKeys ) updatedRecords[i++] = key.datum();
         return updatedRecords;
+    }
+
+    /**
+     * Load Avro Records from local files.
+     *
+     * @param schema schema.
+     * @param avroFiles a file <code>Path</code> array.
+     * @return an array of avro generic records.
+     * @throws IOException
+     */
+    public static GenericRecord[] loadAvroRecordsFromFiles(final FileSystem fs,final Schema schema,final Path[] avroFiles) throws IOException {
+        final List<GenericRecord> recordList =  new ArrayList<GenericRecord>();
+        int i = 0;
+        for (Path p : avroFiles) {
+            final long len = fs.getFileStatus(p).getLen();
+            final DataFileReader<GenericRecord> reader =
+                    new DataFileReader<GenericRecord>(new AvroFSInput(fs.open(p),len),
+                            new GenericDatumReader<GenericRecord>(schema));
+            for (GenericRecord record : reader) recordList.add(i++,record);
+            reader.close();
+        }
+        return recordList.toArray(new GenericRecord[recordList.size()]);
     }
 }

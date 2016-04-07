@@ -99,7 +99,7 @@ public class SimilarityVectorFrequencies {
      * @return the i-th vector frequency.
      */
     public long getVectorFrequency(final int i) {
-        assert i > 0 && i < vectorFrequencies.length;
+        assert i >= 0 && i < vectorFrequencies.length;
         return vectorFrequencies[i];
     }
 

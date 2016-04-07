@@ -23,7 +23,7 @@ public class Csv2AvroTest {
     private static final String[] BIG_HEADER  =  {"id","name","surname","gender"};
 
     private static Schema.Type[] SMALL_TYPES = {
-            Schema.Type.LONG,Schema.Type.STRING,
+            Schema.Type.STRING,Schema.Type.STRING,
             Schema.Type.STRING,Schema.Type.STRING
     };
     private static String[] SMALL_DOCS = {
@@ -31,7 +31,7 @@ public class Csv2AvroTest {
     };
 
     private static Schema.Type[] MED_TYPES = {
-            Schema.Type.LONG,Schema.Type.STRING,
+            Schema.Type.STRING,Schema.Type.STRING,
             Schema.Type.STRING,Schema.Type.INT
     };
     private static String[] MED_DOCS = {
@@ -40,7 +40,7 @@ public class Csv2AvroTest {
 
 
     private static Schema.Type[] BIG_TYPES = {
-            Schema.Type.LONG,Schema.Type.STRING,
+            Schema.Type.STRING,Schema.Type.STRING,
             Schema.Type.STRING,Schema.Type.STRING
     };
     private static String[] BIG_DOCS = {
@@ -51,7 +51,7 @@ public class Csv2AvroTest {
     public void test1() throws IOException, DatasetException {
         Schema schema = DatasetsUtil.avroSchema("person_small","People","pprl.datasets",SMALL_HEADER,SMALL_TYPES,SMALL_DOCS);
         final FileSystem fs = FileSystem.getLocal(new Configuration());
-        final Path p = DatasetsUtil.csv2avro(fs,schema,new Path(fs.getWorkingDirectory(),"data"),
+        final Path p = DatasetsUtil.csv2avro(fs,schema,"new_person_small",new Path(fs.getWorkingDirectory(),"data"),
                 new Path(fs.getWorkingDirectory(), "data/person_small/csv/person_small.csv"));
         LOG.info("Saved at path {} ", p);
     }
@@ -60,7 +60,7 @@ public class Csv2AvroTest {
     public void test2() throws IOException, DatasetException {
         Schema schema = DatasetsUtil.avroSchema("person_medium","People","pprl.datasets",MED_HEADER,MED_TYPES,MED_DOCS);
         final FileSystem fs = FileSystem.getLocal(new Configuration());
-        final Path p = DatasetsUtil.csv2avro(fs,schema,new Path(fs.getWorkingDirectory(),"data"),
+        final Path p = DatasetsUtil.csv2avro(fs,schema,"new_person_medium",new Path(fs.getWorkingDirectory(),"data"),
                 new Path(fs.getWorkingDirectory(), "data/person_medium/csv/person_medium.csv"));
         LOG.info("Saved at path {} ", p);
     }
@@ -69,7 +69,7 @@ public class Csv2AvroTest {
     public void test3() throws IOException, DatasetException {
         Schema schema = DatasetsUtil.avroSchema("person_big","People","pprl.datasets",BIG_HEADER,BIG_TYPES,BIG_DOCS);
         final FileSystem fs = FileSystem.getLocal(new Configuration());
-        final Path p = DatasetsUtil.csv2avro(fs,schema,new Path(fs.getWorkingDirectory(),"data"),
+        final Path p = DatasetsUtil.csv2avro(fs,schema,"new_person_big",new Path(fs.getWorkingDirectory(),"data"),
                 new Path(fs.getWorkingDirectory(), "data/person_big/csv/person_big.csv"));
         LOG.info("Saved at path {} ", p);
     }

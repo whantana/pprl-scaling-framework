@@ -18,6 +18,9 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
+/**
+ * DBLP XML to Avro Mapper class.
+ */
 public class DblpXmlToAvroMapper extends Mapper<LongWritable, Text, AvroKey<DblpPublication>, NullWritable> {
 
     private DocumentBuilder dBuilder;
@@ -27,7 +30,13 @@ public class DblpXmlToAvroMapper extends Mapper<LongWritable, Text, AvroKey<Dblp
             "<!DOCTYPE dblp SYSTEM \"http://dblp.uni-trier.de/xml/dblp.dtd\"><dblp>";
     private static final String XML_DBLP_END = "</dblp>";
 
-
+    /**
+     * Setup method.
+     *
+     * @param context context
+     * @throws IOException
+     * @throws InterruptedException
+     */
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         try {
@@ -39,6 +48,15 @@ public class DblpXmlToAvroMapper extends Mapper<LongWritable, Text, AvroKey<Dblp
         }
     }
 
+    /**
+     * Map method.
+     *
+     * @param key a <code>LongWritable</code> key.
+     * @param value  a <code>Text</code> value.
+     * @param context context.
+     * @throws IOException
+     * @throws InterruptedException
+     */
     @Override
     protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
         final String xmlString = XML_DBLP_START + value.toString() + XML_DBLP_END;

@@ -2,9 +2,10 @@ package gr.upatras.ceid.pprl.test;
 
 
 import gr.upatras.ceid.pprl.matching.ExpectationMaximization;
-import gr.upatras.ceid.pprl.matching.SimilarityMatrix;
+import gr.upatras.ceid.pprl.matching.SimilarityUtil;
+import gr.upatras.ceid.pprl.matching.SimilarityVectorFrequencies;
 import gr.upatras.ceid.pprl.matching.NaiveExpectationMaximization;
-import gr.upatras.ceid.pprl.matching.NaiveSimilarityMatrix;
+import gr.upatras.ceid.pprl.matching.SimilarityMatrix;
 import org.apache.avro.Schema;
 import org.apache.avro.file.DataFileReader;
 import org.apache.avro.generic.GenericDatumReader;
@@ -40,11 +41,11 @@ public class ExpectationMaximazationTest {
     @Test
     public void test1() throws IOException {
         DescriptiveStatistics stats = new DescriptiveStatistics();
-        NaiveSimilarityMatrix matrix = null;
+        SimilarityMatrix matrix = null;
         NaiveExpectationMaximization estimator = null;
         for (int i = 0; i < 5; i++) {
             long start = System.nanoTime();
-            matrix = NaiveSimilarityMatrix.naiveMatrix(records, fieldNames);
+            matrix = SimilarityUtil.matrix(records, fieldNames);
             estimator = new NaiveExpectationMaximization (fieldNames,0.9,0.1,0.01);
             estimator.runAlgorithm(matrix);
             long end = System.nanoTime();
@@ -58,26 +59,26 @@ public class ExpectationMaximazationTest {
     @Test
     public void test2() throws IOException {
         DescriptiveStatistics stats = new DescriptiveStatistics();
-        SimilarityMatrix matrix = null;
+        SimilarityVectorFrequencies frequencies = null;
         ExpectationMaximization estimator = null;
         for (int i = 0; i < 5; i++) {
             long start = System.nanoTime();
-            matrix = SimilarityMatrixTest.similarityMatrix(records,fieldNames);
+            frequencies = SimilarityUtil.vectorFrequencies(records, fieldNames);
             estimator = new ExpectationMaximization (fieldNames,0.9,0.1,0.01);
-            estimator.runAlgorithm(matrix);
+            estimator.runAlgorithm(frequencies);
             long end = System.nanoTime();
             long time = end - start;
             stats.addValue(time);
         }
-        LOG.info("matrix={} , estimator={}",matrix,estimator);
+        LOG.info("matrix={} , estimator={}",frequencies,estimator);
         LOG.info("Took {} ns.",stats.getPercentile(50));
     }
 
     @Test
     public void test3() throws IOException {
         DescriptiveStatistics stats =  new DescriptiveStatistics();
-        NaiveSimilarityMatrix matrix1 = null;
-        SimilarityMatrix matrix2 = null;
+        SimilarityMatrix matrix = null;
+        SimilarityVectorFrequencies frequencies = null;
         int iterations = 10;
         for (int i = 1; i < 5; i++) {
             GenericRecord[] bigRecords = new GenericRecord[i*records.length];
@@ -86,13 +87,14 @@ public class ExpectationMaximazationTest {
             stats.clear();
             for (int it = 0; it < iterations; it++) {
                 long start = System.nanoTime();
-                matrix1 = NaiveSimilarityMatrix.naiveMatrix(bigRecords, fieldNames);
+                matrix = SimilarityUtil.matrix(bigRecords, fieldNames);
                 long stop = System.nanoTime();
                 long time = stop - start;
                 stats.addValue(time);
             }
 			LOG.info("--Person_small x {}--",i);
-			LOG.info(matrix1.toString());
+            assert matrix != null;
+            LOG.info(matrix.toString());
 
             LOG.info(String.format("Naive similarity matrix records[%d,%d] time %.2f ns",
                     bigRecords.length, fieldNames.length, stats.getPercentile(50)));
@@ -100,12 +102,13 @@ public class ExpectationMaximazationTest {
             stats.clear();
             for (int it = 0; it < iterations; it++) {
                 long start = System.nanoTime();
-                matrix2 = SimilarityMatrixTest.similarityMatrix(bigRecords, fieldNames);
+                frequencies = SimilarityUtil.vectorFrequencies(bigRecords, fieldNames);
                 long stop = System.nanoTime();
                 long time = stop - start;
                 stats.addValue(time);
             }
-			LOG.info(matrix2.toString());
+            assert frequencies != null;
+            LOG.info(frequencies.toString());
 
 			LOG.info(String.format("Similarity matrix records[%d,%d] time %.2f ns",
                     bigRecords.length, fieldNames.length, stats.getPercentile(50)));
@@ -115,7 +118,7 @@ public class ExpectationMaximazationTest {
             for (int it = 0; it < iterations; it++) {
 				naiveEstimator = new NaiveExpectationMaximization(fieldNames,0.9,0.1,0.01);
                 long start = System.nanoTime();
-                naiveEstimator.runAlgorithm(matrix1);
+                naiveEstimator.runAlgorithm(matrix);
                 long stop = System.nanoTime();
                 long time = stop - start;
                 stats.addValue(time);
@@ -129,7 +132,7 @@ public class ExpectationMaximazationTest {
             for (int it = 0; it < iterations; it++) {
                 estimator = new ExpectationMaximization(fieldNames,0.9,0.1,0.01);
                 long start = System.nanoTime();
-                estimator.runAlgorithm(matrix2);
+                estimator.runAlgorithm(frequencies);
                 long stop = System.nanoTime();
                 long time = stop - start;
                 stats.addValue(time);

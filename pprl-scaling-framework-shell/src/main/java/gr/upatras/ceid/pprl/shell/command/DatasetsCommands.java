@@ -5,7 +5,7 @@ import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import gr.upatras.ceid.pprl.service.datasets.DatasetsService;
 import gr.upatras.ceid.pprl.service.datasets.LocalDatasetsService;
 import gr.upatras.ceid.pprl.matching.ExpectationMaximization;
-import gr.upatras.ceid.pprl.matching.SimilarityMatrix;
+import gr.upatras.ceid.pprl.matching.SimilarityVectorFrequencies;
 import gr.upatras.ceid.pprl.service.matching.LocalMatchingService;
 import gr.upatras.ceid.pprl.service.matching.MatchingService;
 import org.apache.avro.Schema;
@@ -176,7 +176,7 @@ public class DatasetsCommands implements CommandMarker {
             statistics.setFieldNames(fields);
             DatasetStatistics.calculateQgramStatistics(records, schema, statistics, fields);
 
-            final SimilarityMatrix matrix = lms.createMatrix(records,fields);
+            final SimilarityVectorFrequencies matrix = lms.createMatrix(records,fields);
             final ExpectationMaximization estimator = lms.newEMInstance(fields,m0,u0,p0);
             estimator.runAlgorithm(matrix);
 
@@ -404,7 +404,7 @@ public class DatasetsCommands implements CommandMarker {
             final DatasetStatistics statistics = ds.loadStats(qGramsPropertiesPath);
 
             long recordCount = statistics.getRecordCount();
-            final SimilarityMatrix matrix = ms.createMatrix(avroPath,schemaPath,uidFieldName,
+            final SimilarityVectorFrequencies matrix = ms.createMatrix(avroPath,schemaPath,uidFieldName,
                     recordCount,reducersCount,statsPath,"similarity_matrix",fields);
 
 

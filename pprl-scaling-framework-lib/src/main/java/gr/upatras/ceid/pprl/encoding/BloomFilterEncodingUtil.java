@@ -132,7 +132,7 @@ public class BloomFilterEncodingUtil {
      *
      *
      * @param scheme scheme name.
-     * @param fieldCount field count.
+     * @param fieldCount count of field names to be encoded.
      * @param N bloom filter size (for encoding RBF/Uniform and CLK).
      * @param fbfN bloom filter size for Field Bloom Filters (for encoding FBF/Static)
      * @param K number of hash values.
@@ -145,6 +145,8 @@ public class BloomFilterEncodingUtil {
                                                       final int fieldCount, final int N,
                                                       final int fbfN, final int K, final int Q,
                                                       final double[] avgQgrams, final double[] weights) {
+        assert fieldCount == avgQgrams.length;
+        assert fieldCount == weights.length;
         final boolean clk = scheme.equals("CLK");
         final boolean fbf = scheme.equals("FBF");
         final boolean rbf = scheme.equals("RBF");
@@ -202,6 +204,37 @@ public class BloomFilterEncodingUtil {
                     Arrays.toString(fbfNs),Arrays.toString(weights),K,Q));
             return new RowBloomFilterEncoding(fbfNs, weights,K,Q);
         } else throw new IllegalStateException("illegal state.");
+    }
+
+    /**
+     * Instance factory method. New instances now can be one of the folowing:
+     * <ul>
+     *     <li>CLK</li>
+     *     <li>FBF/Static</li>
+     *     <li>FBF/Dynamic</li>
+     *     <li>RBF/Uniform/FBF/Static</li>
+     *     <li>RBF/Uniform/FBF/Dynamic</li>
+     *     <li>RBF/Weighted/FBF/Static</li>
+     *     <li>RBF/Weighted/FBF/Dynamic</li>
+     * </ul>
+     * But still require an input avro schema to complete and initialize.
+     *
+     *
+     * @param scheme scheme name.
+     * @param fieldNames field names to be encoded.
+     * @param N bloom filter size (for encoding RBF/Uniform and CLK).
+     * @param fbfN bloom filter size for Field Bloom Filters (for encoding FBF/Static)
+     * @param K number of hash values.
+     * @param Q Q as in Q-Grams.
+     * @param avgQgrams avg q-gram count for each field to be encoded.
+     * @param weights weights that each FBF should be sampled for RBF encoding.
+     * @return new instance.
+     */
+    public static BloomFilterEncoding instanceFactory(final String scheme,
+                                                      final String[] fieldNames, final int N,
+                                                      final int fbfN, final int K, final int Q,
+                                                      final double[] avgQgrams, final double[] weights) {
+        return instanceFactory(scheme,fieldNames.length,N,fbfN,K,Q,avgQgrams,weights);
     }
 
     /**

@@ -1,8 +1,8 @@
 package gr.upatras.ceid.pprl.test;
 
-import gr.upatras.ceid.pprl.combinatorics.CombinatoricsUtil;
+import gr.upatras.ceid.pprl.matching.SimilarityUtil;
+import gr.upatras.ceid.pprl.matching.SimilarityVectorFrequencies;
 import gr.upatras.ceid.pprl.matching.SimilarityMatrix;
-import gr.upatras.ceid.pprl.matching.NaiveSimilarityMatrix;
 import org.apache.avro.Schema;
 import org.apache.avro.file.DataFileReader;
 import org.apache.avro.generic.GenericDatumReader;
@@ -19,7 +19,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 
@@ -50,7 +49,7 @@ public class SimilarityMatrixTest {
         assertEquals(rows.length , (1 << 1));
         int rowPos = 0;
         for(boolean[] row : rows) {
-            int index = SimilarityMatrix.vector2Index(row);
+            int index = SimilarityVectorFrequencies.vector2Index(row);
             LOG.info("Row : {}",rowPos);
             LOG.info("vector {} -index-> {}", Arrays.toString(row),index);
             assertEquals(rowPos, index);
@@ -66,7 +65,7 @@ public class SimilarityMatrixTest {
         assertEquals(rows.length , (1 << 2));
         rowPos = 0;
         for(boolean[] row : rows) {
-            int index = SimilarityMatrix.vector2Index(row);
+            int index = SimilarityVectorFrequencies.vector2Index(row);
             LOG.info("Row : {}",rowPos);
             LOG.info("vector {} -index-> {}", Arrays.toString(row),index);
             assertEquals(rowPos, index);
@@ -86,7 +85,7 @@ public class SimilarityMatrixTest {
         assertEquals(rows.length , (1 << 3));
         rowPos = 0;
         for(boolean[] row : rows) {
-            int index = SimilarityMatrix.vector2Index(row);
+            int index = SimilarityVectorFrequencies.vector2Index(row);
             LOG.info("Row : {}",rowPos);
             LOG.info("vector {} -index-> {}", Arrays.toString(row),index);
             assertEquals(rowPos, index);
@@ -114,7 +113,7 @@ public class SimilarityMatrixTest {
         assertEquals(rows.length , (1 << 4));
         rowPos = 0;
         for(boolean[] row : rows) {
-            int index = SimilarityMatrix.vector2Index(row);
+            int index = SimilarityVectorFrequencies.vector2Index(row);
             LOG.info("Row : {}",rowPos);
             LOG.info("vector {} -index-> {}", Arrays.toString(row),index);
             assertEquals(rowPos, index);
@@ -126,10 +125,10 @@ public class SimilarityMatrixTest {
     @Test
     public void test1() {
         DescriptiveStatistics stats = new DescriptiveStatistics();
-        NaiveSimilarityMatrix matrix = null;
+        SimilarityMatrix matrix = null;
         for (int i = 0; i < 5; i++) {
             long start = System.currentTimeMillis();
-            matrix = NaiveSimilarityMatrix.naiveMatrix(records,fieldNames);
+            matrix = SimilarityUtil.matrix(records, fieldNames);
             long end = System.currentTimeMillis();
             long time = end - start;
             stats.addValue(time);
@@ -140,22 +139,22 @@ public class SimilarityMatrixTest {
     @Test
     public void test2() {
         DescriptiveStatistics stats = new DescriptiveStatistics();
-        SimilarityMatrix matrix = null;
+        SimilarityVectorFrequencies frequencies = null;
         for (int i = 0; i < 5; i++) {
             long start = System.currentTimeMillis();
-            matrix = similarityMatrix(records, fieldNames);
+            frequencies = SimilarityUtil.vectorFrequencies(records, fieldNames);
             long end = System.currentTimeMillis();
             long time = end - start;
             stats.addValue(time);
         }
-        LOG.info("{} took {} ms.",matrix,stats.getPercentile(50));
+        LOG.info("{} took {} ms.",frequencies,stats.getPercentile(50));
     }
 
     @Test
     public void test3() {
         for (int fieldCount= 1; fieldCount < 6; fieldCount++) {
             for (int i = 0; i < (1 << fieldCount); i++) {
-                LOG.info("{} , {}",i,SimilarityMatrix.index2Vector(i,fieldCount));
+                LOG.info("{} , {}",i, SimilarityVectorFrequencies.index2Vector(i, fieldCount));
             }
             LOG.info("\n\n");
         }
@@ -165,7 +164,7 @@ public class SimilarityMatrixTest {
     public void test4() {
         for(int f=1 ; f <= 5; f++ ) {
             for(int j=0; j < f ; j++) {
-                int[] indexes = SimilarityMatrix.indexesWithJset(j, f);
+                int[] indexes = SimilarityVectorFrequencies.indexesWithJset(j, f);
                 LOG.info("j=" + j +", f=" + f + " -indexes(" + indexes.length +")->" + Arrays.toString(indexes));
             }
             LOG.info("\n");
@@ -174,15 +173,15 @@ public class SimilarityMatrixTest {
 
     @Test
     public void test5() throws IOException {
-        SimilarityMatrix matrix = similarityMatrix(records, fieldNames);
-        Properties properties = matrix.toProperties();
-        properties.store(new FileOutputStream(new File("similarity_matrix.properties")),"Similarity Matrix");
+        SimilarityVectorFrequencies frequencies = SimilarityUtil.vectorFrequencies(records, fieldNames);
+        Properties properties = frequencies.toProperties();
+        properties.store(new FileOutputStream(new File("sim_freqs.properties")),"Similarity Vector Frequencies");
 
         Properties properties1 = new Properties();
-        properties1.load(new FileInputStream(new File("similarity_matrix.properties")));
-        SimilarityMatrix matrix1 = new SimilarityMatrix();
-        matrix1.fromProperties(properties1);
-        assertEquals(matrix,matrix1);
+        properties1.load(new FileInputStream(new File("sim_freqs.properties")));
+        SimilarityVectorFrequencies frequencies1 = new SimilarityVectorFrequencies();
+        frequencies1.fromProperties(properties1);
+        assertEquals(frequencies,frequencies1);
     }
 
 
@@ -206,34 +205,5 @@ public class SimilarityMatrixTest {
             reader.close();
         }
         return recordList.toArray(new GenericRecord[recordList.size()]);
-    }
-
-
-    public static SimilarityMatrix similarityMatrix(final GenericRecord[] records,
-                                                    final String[] fieldNames,
-                                                    final String similarityMethodName) {
-        final long pairCount = CombinatoricsUtil.twoCombinationsCount(records.length);
-        final int fieldCount = fieldNames.length;
-        if(Long.compare(pairCount*fieldCount,Integer.MAX_VALUE) > 0)
-            throw new UnsupportedOperationException("Cannot create gamma. #N*#F < Integer.MAX");
-        final SimilarityMatrix matrix = new SimilarityMatrix(fieldCount);
-        final Iterator<int[]> pairIter = CombinatoricsUtil.getPairs(records.length);
-        do {
-            int pair[] = pairIter.next();
-            boolean[] row = new boolean[fieldCount];
-            for(int j = 0 ; j < fieldCount ; j++) {
-                String s1 = String.valueOf(records[pair[0]].get(fieldNames[j]));
-                String s2 = String.valueOf(records[pair[1]].get(fieldNames[j]));
-                if(SimilarityMatrix.similarity(similarityMethodName, s1, s2)) row[j] = true;
-            }
-            matrix.set(row);
-
-        }while(pairIter.hasNext());
-        return matrix;
-    }
-
-    public static SimilarityMatrix similarityMatrix(final GenericRecord[] records,
-                                                    final String[] fieldNames) {
-        return similarityMatrix(records, fieldNames, SimilarityMatrix.DEFAULT_SIMILARITY_METHOD_NAME);
     }
 }

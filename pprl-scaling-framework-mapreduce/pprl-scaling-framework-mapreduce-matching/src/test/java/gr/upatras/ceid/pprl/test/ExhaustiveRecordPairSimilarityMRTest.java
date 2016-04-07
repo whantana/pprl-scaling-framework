@@ -1,7 +1,7 @@
 package gr.upatras.ceid.pprl.test;
 
 import gr.upatras.ceid.pprl.combinatorics.CombinatoricsUtil;
-import gr.upatras.ceid.pprl.matching.SimilarityMatrix;
+import gr.upatras.ceid.pprl.matching.SimilarityUtil;
 import gr.upatras.ceid.pprl.mapreduce.ExhaustiveRecordPairSimilarityTool;
 import gr.upatras.ceid.pprl.mapreduce.GenerateRecordPairsMapper;
 import gr.upatras.ceid.pprl.mapreduce.RecordPairSimilarityCombiner;
@@ -28,7 +28,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 
@@ -156,7 +155,7 @@ public class ExhaustiveRecordPairSimilarityMRTest {
 
         final Properties properties =
             ExhaustiveRecordPairSimilarityTool.counters2Properties(mapReduceDriver.getCounters(), fieldNames);
-        final Properties expectedProperties = similarityMatrix(records,fieldNames).toProperties();
+        final Properties expectedProperties = SimilarityUtil.vectorFrequencies(records,fieldNames).toProperties();
         LOG.info("matrix = " + properties);
         LOG.info("expectedMatrix = " + expectedProperties);
         assertEquals(properties,expectedProperties);
@@ -181,34 +180,6 @@ public class ExhaustiveRecordPairSimilarityMRTest {
             reader.close();
         }
         return recordList.toArray(new GenericRecord[recordList.size()]);
-    }
-
-    public static SimilarityMatrix similarityMatrix(final GenericRecord[] records,
-                                                    final String[] fieldNames,
-                                                    final String similarityMethodName) {
-        final long pairCount = CombinatoricsUtil.twoCombinationsCount(records.length);
-        final int fieldCount = fieldNames.length;
-        if(Long.compare(pairCount*fieldCount,Integer.MAX_VALUE) > 0)
-            throw new UnsupportedOperationException("Cannot create gamma. #N*#F < Integer.MAX");
-        final SimilarityMatrix matrix = new SimilarityMatrix(fieldCount);
-        final Iterator<int[]> pairIter = CombinatoricsUtil.getPairs(records.length);
-        do {
-            int pair[] = pairIter.next();
-            boolean[] row = new boolean[fieldCount];
-            for(int j = 0 ; j < fieldCount ; j++) {
-                String s1 = String.valueOf(records[pair[0]].get(fieldNames[j]));
-                String s2 = String.valueOf(records[pair[1]].get(fieldNames[j]));
-                if(SimilarityMatrix.similarity(similarityMethodName, s1, s2)) row[j] = true;
-            }
-            matrix.set(row);
-
-        }while(pairIter.hasNext());
-        return matrix;
-    }
-
-    public static SimilarityMatrix similarityMatrix(final GenericRecord[] records,
-                                                    final String[] fieldNames) {
-        return similarityMatrix(records, fieldNames, SimilarityMatrix.DEFAULT_SIMILARITY_METHOD_NAME);
     }
 }
 

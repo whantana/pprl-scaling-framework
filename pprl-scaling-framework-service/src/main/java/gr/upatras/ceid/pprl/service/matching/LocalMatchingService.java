@@ -2,7 +2,7 @@ package gr.upatras.ceid.pprl.service.matching;
 
 import gr.upatras.ceid.pprl.combinatorics.CombinatoricsUtil;
 import gr.upatras.ceid.pprl.matching.ExpectationMaximization;
-import gr.upatras.ceid.pprl.matching.SimilarityMatrix;
+import gr.upatras.ceid.pprl.matching.SimilarityVectorFrequencies;
 import org.apache.avro.generic.GenericRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +21,7 @@ public class LocalMatchingService implements InitializingBean {
         LOG.info("Local Matching service initialized.");
     }
 
-    public SimilarityMatrix createMatrix(final GenericRecord[] records,
+    public SimilarityVectorFrequencies createMatrix(final GenericRecord[] records,
                                          final String[] fieldNames,
                                          final String similarityMethodName)
             throws Exception {
@@ -31,7 +31,7 @@ public class LocalMatchingService implements InitializingBean {
             if(Long.compare(pairCount*fieldCount,Integer.MAX_VALUE) > 0)
                 throw new UnsupportedOperationException("Cannot create similarity matrix. #N*#F < Integer.MAX");
             LOG.info("Creating similarity matrix");
-            final SimilarityMatrix matrix = new SimilarityMatrix(fieldCount);
+            final SimilarityVectorFrequencies matrix = new SimilarityVectorFrequencies(fieldCount);
             int pairsDone = 0;
             final Iterator<int[]> pairIter = CombinatoricsUtil.getPairs(records.length);
             do {
@@ -40,7 +40,7 @@ public class LocalMatchingService implements InitializingBean {
                 for(int j=0; j < fieldNames.length; j++) {
                     String s1 = String.valueOf(records[pair[0]].get(fieldNames[j]));
                     String s2 = String.valueOf(records[pair[1]].get(fieldNames[j]));
-                    if(SimilarityMatrix.similarity(similarityMethodName, s1, s2)) row[j] = true;
+                    if(SimilarityVectorFrequencies.similarity(similarityMethodName, s1, s2)) row[j] = true;
                 }
                 matrix.set(row);
                 pairsDone++;
@@ -54,13 +54,13 @@ public class LocalMatchingService implements InitializingBean {
         }
     }
 
-    public SimilarityMatrix createMatrix(final GenericRecord[] records,
+    public SimilarityVectorFrequencies createMatrix(final GenericRecord[] records,
                                          final String[] fieldNames)
             throws Exception {
-        return createMatrix(records,fieldNames, SimilarityMatrix.DEFAULT_SIMILARITY_METHOD_NAME);
+        return createMatrix(records,fieldNames, SimilarityVectorFrequencies.DEFAULT_SIMILARITY_METHOD_NAME);
     }
 
-    public SimilarityMatrix createMatrix(final GenericRecord[] recordsA,
+    public SimilarityVectorFrequencies createMatrix(final GenericRecord[] recordsA,
                                          final String[] fieldNamesA,
                                          final GenericRecord[] recordsB,
                                          final String[] fieldNamesB,
@@ -72,7 +72,7 @@ public class LocalMatchingService implements InitializingBean {
             if(Long.compare(pairCount*fieldCount,Integer.MAX_VALUE) > 0)
                 throw new UnsupportedOperationException("Cannot create gamma. #N*#F < Integer.MAX");
             LOG.info("Creating similarity matrix");
-            final SimilarityMatrix matrix = new SimilarityMatrix(fieldCount);
+            final SimilarityVectorFrequencies matrix = new SimilarityVectorFrequencies(fieldCount);
             int pairsDone = 0;
             for (GenericRecord recA : recordsA) {
                 for(GenericRecord recB : recordsB) {
@@ -80,7 +80,7 @@ public class LocalMatchingService implements InitializingBean {
                     for(int j=0; j < fieldNamesA.length; j++) {
                         String s1 = String.valueOf(recA.get(fieldNamesA[j]));
                         String s2 = String.valueOf(recB.get(fieldNamesB[j]));
-                        if(SimilarityMatrix.similarity(similarityMethodName, s1, s2)) row[j] = true;
+                        if(SimilarityVectorFrequencies.similarity(similarityMethodName, s1, s2)) row[j] = true;
                     }
                     matrix.set(row);
                     pairsDone++;
@@ -95,12 +95,12 @@ public class LocalMatchingService implements InitializingBean {
         }
     }
 
-    public SimilarityMatrix createMatrix(final GenericRecord[] recordsA,
+    public SimilarityVectorFrequencies createMatrix(final GenericRecord[] recordsA,
                                          final String[] fieldNamesA,
                                          final GenericRecord[] recordsB,
                                          final String[] fieldNamesB)
             throws Exception {
-        return createMatrix(recordsA,fieldNamesA,recordsB,fieldNamesB, SimilarityMatrix.DEFAULT_SIMILARITY_METHOD_NAME);
+        return createMatrix(recordsA,fieldNamesA,recordsB,fieldNamesB, SimilarityVectorFrequencies.DEFAULT_SIMILARITY_METHOD_NAME);
     }
 
     public ExpectationMaximization newEMInstance(final String[] fieldNames, final double[] m, final double[] u, double p) {

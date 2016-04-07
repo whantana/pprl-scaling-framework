@@ -1,7 +1,7 @@
 package gr.upatras.ceid.pprl.service.matching;
 
 import gr.upatras.ceid.pprl.matching.ExpectationMaximization;
-import gr.upatras.ceid.pprl.matching.SimilarityMatrix;
+import gr.upatras.ceid.pprl.matching.SimilarityVectorFrequencies;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -38,7 +38,7 @@ public class MatchingService implements InitializingBean {
     @Autowired
     private FileSystem hdfs;
 
-    public SimilarityMatrix createMatrix(final Path inputPath, final Path inputSchemaPath,
+    public SimilarityVectorFrequencies createMatrix(final Path inputPath, final Path inputSchemaPath,
                                          final String uidFieldName,
                                          final long recordCount, final int reducerCount,
                                          final Path basePath,
@@ -50,7 +50,7 @@ public class MatchingService implements InitializingBean {
             final Path statsPath = new Path(basePath, String.format("%s.properties",matrixName));
             runExhaustiveRecordPairSimilarityTool(inputPath, inputSchemaPath, statsPath, fieldNames,
                     uidFieldName, recordCount, reducerCount);
-            final SimilarityMatrix matrix = new SimilarityMatrix();
+            final SimilarityVectorFrequencies matrix = new SimilarityVectorFrequencies();
             final Properties properties = new Properties();
             final FSDataInputStream fsdis = hdfs.open(statsPath);
             properties.load(fsdis);

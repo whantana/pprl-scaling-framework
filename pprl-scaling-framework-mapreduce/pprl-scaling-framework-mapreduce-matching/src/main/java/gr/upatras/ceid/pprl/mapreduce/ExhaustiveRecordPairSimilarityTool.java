@@ -1,7 +1,7 @@
 package gr.upatras.ceid.pprl.mapreduce;
 
 
-import gr.upatras.ceid.pprl.matching.SimilarityMatrix;
+import gr.upatras.ceid.pprl.matching.SimilarityVectorFrequencies;
 import org.apache.avro.Schema;
 import org.apache.avro.mapreduce.AvroJob;
 import org.apache.avro.mapreduce.AvroKeyInputFormat;
@@ -121,14 +121,14 @@ public class ExhaustiveRecordPairSimilarityTool extends Configured implements To
     }
 
     public static Properties counters2Properties(final Counters counters, String[] fieldNames) {
-        final SimilarityMatrix matrix = new SimilarityMatrix(fieldNames.length);
-        for (int i = 0; i <  matrix.getVectorCounts().length; i++) {
+        final SimilarityVectorFrequencies matrix = new SimilarityVectorFrequencies(fieldNames.length);
+        for (int i = 0; i <  matrix.getVectorFrequencies().length; i++) {
             final Counter counter = counters.findCounter(
                     RecordPairSimilarityReducer.SIMILARITY_VECTORS_KEY,
                     String.valueOf(i));
             long value = counter.getValue();
             LOG.info("Counter {} value {}",counter.getDisplayName(),value);
-            matrix.getVectorCounts()[i] = value;
+            matrix.getVectorFrequencies()[i] = value;
         }
         return matrix.toProperties();
     }

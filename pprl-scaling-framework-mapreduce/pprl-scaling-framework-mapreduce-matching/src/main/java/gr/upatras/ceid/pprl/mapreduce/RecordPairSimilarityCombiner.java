@@ -1,7 +1,8 @@
 package gr.upatras.ceid.pprl.mapreduce;
 
 
-import gr.upatras.ceid.pprl.matching.SimilarityMatrix;
+import gr.upatras.ceid.pprl.matching.SimilarityUtil;
+import gr.upatras.ceid.pprl.matching.SimilarityVectorFrequencies;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroValue;
 import org.apache.hadoop.io.LongWritable;
@@ -32,10 +33,10 @@ public class RecordPairSimilarityCombiner extends Reducer<LongWritable, AvroValu
             return;
         }
 
-        boolean[] vector = SimilarityMatrix.recordPairSimilarity(recordPair, fieldNames);
+        boolean[] vector = SimilarityUtil.recordPairSimilarity(recordPair, fieldNames);
         context.getCounter(
                 RecordPairSimilarityReducer.SIMILARITY_VECTORS_KEY ,
-                String.valueOf(SimilarityMatrix.vector2Index(vector))).increment(1);
+                String.valueOf(SimilarityVectorFrequencies.vector2Index(vector))).increment(1);
 
         context.getCounter(RecordPairSimilarityReducer.PAIRS_DONE_KEY,"combine").increment(1);
     }

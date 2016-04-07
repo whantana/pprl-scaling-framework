@@ -2,16 +2,27 @@ package gr.upatras.ceid.pprl.matching;
 
 import java.util.Arrays;
 
+/**
+ * Expectation Maximization class.
+ */
 public class ExpectationMaximization {
-    public static final int MAX_ITERATIONS = 1000;
-    private long pairCount;
-    private int fieldCount;
-    private int iteration;
-    private double[] m;
-    private double[] u;
-    private double p;
-    private double[][] g;
+    public static final int MAX_ITERATIONS = 1000;  // Maximum iterations
+    private long pairCount;                         // Count of pairs
+    private int fieldCount;                         // Count of fields
+    private int iteration;                          // current iteration
+    private double[] m;                             // probability m for each field
+    private double[] u;                             // probability u for each field
+    private double p;                               // proportion of estimated True-Matching Pairs to Total Pairs.
+    private double[][] g;                           // vectors g
 
+    /**
+     * Constructor.
+     *
+     * @param fieldCount field count.
+     * @param m0 initial m for all fields.
+     * @param u0 initial u for all fields.
+     * @param p0 initial p.
+     */
     public ExpectationMaximization(int fieldCount, double m0, double u0, double p0) {
         this.fieldCount = fieldCount;
         this.m = new double[fieldCount];
@@ -21,6 +32,14 @@ public class ExpectationMaximization {
         this.p = p0;
     }
 
+    /**
+     * Constructor.
+     *
+     * @param fieldCount field count.
+     * @param m0 initial m.
+     * @param u0 initial u.
+     * @param p0 initial p.
+     */
     public ExpectationMaximization(int fieldCount, double[] m0, double[] u0, double p0) {
         assert fieldCount == m0.length;
         assert m0.length == u0.length;
@@ -30,35 +49,57 @@ public class ExpectationMaximization {
         this.p  = p0;
     }
 
+    /**
+     * Constructor.
+     *
+     * @param fieldNames field names.
+     * @param m0 initial m for all fields.
+     * @param u0 initial u for all fields.
+     * @param p0 initial p.
+     */
     public ExpectationMaximization(String[] fieldNames, double m0, double u0, double p0) {
         this(fieldNames.length,m0,u0,p0);
     }
 
+    /**
+     * Constructor.
+     *
+     * @param fieldNames field names.
+     * @param m0 initial m.
+     * @param u0 initial u.
+     * @param p0 initial p.
+     */
     public ExpectationMaximization(String[] fieldNames, double[] m0, double[] u0, double p0) {
         this(fieldNames.length,m0,u0,p0);
     }
 
-    public void runAlgorithm(final SimilarityMatrix matrix) {
+    /**
+     * Run algorithm.
+     *
+     * @param frequencies a <code>SimilarityVectorFrequencies</code> instance.
+     */
+    public void runAlgorithm(final SimilarityVectorFrequencies frequencies) {
         pairCount = 0;
+        assert frequencies.getFieldCount() == fieldCount;
         for(iteration = 1; iteration <= MAX_ITERATIONS; iteration++ ) {
 
-            // Expectation Step - calculate g from matrix. Size of g is 2^fieldCount
+            // Expectation Step - calculate g from frequencies. Size of g is 2^fieldCount
             g = new double[1 << fieldCount][2];
             double mSum = 0;
             double uSum = 0;
             for (int i = 0; i < g.length; i++) {
                 double a = p;
                 double b = 1 - p;
-                boolean[] row = SimilarityMatrix.index2Vector(i,fieldCount);
+                boolean[] row = SimilarityVectorFrequencies.index2Vector(i, fieldCount);
                 for(int j = 0; j < fieldCount ; j++) {
                     a *= row[j] ? m[j] : (1 - m[j]);
                     b *= row[j] ? u[j] : (1 - u[j]);
                 }
                 g[i][0] = a/(a+b);
                 g[i][1] = b/(a+b);
-                mSum += g[i][0]*matrix.getVectorCounts()[i];
-                uSum += g[i][1]*matrix.getVectorCounts()[i];
-                if(iteration == 1)pairCount += matrix.getVectorCounts()[i];
+                mSum += g[i][0]* frequencies.getVectorFrequency(i);
+                uSum += g[i][1]* frequencies.getVectorFrequency(i);
+                if(iteration == 1)pairCount += frequencies.getVectorFrequencies()[i];
             }
 
             // Maximization Step - Using g to estimate m,u and p.
@@ -66,10 +107,10 @@ public class ExpectationMaximization {
             for (int j = 0; j < fieldCount; j++) {
                 double a = 0.0;
                 double b = 0.0;
-                final int[] indexes = SimilarityMatrix.indexesWithJset(j,fieldCount);
+                final int[] indexes = SimilarityVectorFrequencies.indexesWithJset(j, fieldCount);
                 for(int i : indexes) {
-                    a += g[i][0]*matrix.getVectorCounts()[i]/mSum;
-                    b += g[i][1]*matrix.getVectorCounts()[i]/uSum;
+                    a += g[i][0] * frequencies.getVectorFrequency(i)/mSum;
+                    b += g[i][1] * frequencies.getVectorFrequency(i)/uSum;
                 }
                 m[j] = a;
                 u[j] = b;
@@ -82,24 +123,58 @@ public class ExpectationMaximization {
         }
     }
 
+    /**
+     * Return current iteration.
+     *
+     * @return current iteration.
+     */
     public int getIteration() {
         return iteration;
     }
 
+    /**
+     * Return current m probability for all selected fields.
+     *
+     * @return current m probability for all selected fields.
+     */
     public double[] getM() {
         return m;
     }
 
+    /**
+     * Return current u probability for all selected fields.
+     *
+     * @return current u probability for all selected fields.
+     */
     public double[] getU() {
         return u;
     }
 
+    /**
+     * Return current p.
+     *
+     * @return current p.
+     */
     public double getP() {
         return p;
     }
 
+    /**
+     * Return pair count.
+     *
+     * @return pair count.
+     */
     public long getPairCount() {
         return pairCount;
+    }
+
+    /**
+     * Return field count.
+     *
+     * @return field count.
+     */
+    public int getFieldCount() {
+        return fieldCount;
     }
 
     @Override

@@ -1,6 +1,7 @@
 package gr.upatras.ceid.pprl.mapreduce;
 
-import gr.upatras.ceid.pprl.matching.SimilarityMatrix;
+import gr.upatras.ceid.pprl.matching.SimilarityUtil;
+import gr.upatras.ceid.pprl.matching.SimilarityVectorFrequencies;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroValue;
 import org.apache.hadoop.io.LongWritable;
@@ -27,10 +28,10 @@ public class RecordPairSimilarityReducer extends Reducer<LongWritable, AvroValue
 
         if(!pairComplete(recordPair)) throw new IllegalStateException("Pair must be complete at this point");
 
-        boolean[] vector = SimilarityMatrix.recordPairSimilarity(recordPair,fieldNames);
+        boolean[] vector = SimilarityUtil.recordPairSimilarity(recordPair, fieldNames);
         context.getCounter(
                 SIMILARITY_VECTORS_KEY ,
-                String.valueOf(SimilarityMatrix.vector2Index(vector))).increment(1);
+                String.valueOf(SimilarityVectorFrequencies.vector2Index(vector))).increment(1);
 
         context.getCounter(PAIRS_DONE_KEY,"reduce").increment(1);
     }

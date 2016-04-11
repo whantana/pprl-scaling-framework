@@ -9,11 +9,16 @@ import java.util.Properties;
 public class SimilarityVectorFrequencies {
     private int fieldCount;           // field count.
     private long[] vectorFrequencies; // similarity vector frequencies.
+    private long pairCount;           // pair count.
 
     /**
      * Constructor.
      */
-    public SimilarityVectorFrequencies() {}
+    public SimilarityVectorFrequencies() {
+        fieldCount = 0;
+        vectorFrequencies = new long[0];
+        pairCount = 0;
+    }
 
     /**
      * Constructor.
@@ -23,6 +28,7 @@ public class SimilarityVectorFrequencies {
     public SimilarityVectorFrequencies(int fieldCount) {
         this.fieldCount = fieldCount;
         vectorFrequencies = new long[1 << fieldCount];
+        pairCount = 0;
     }
 
     /**
@@ -126,6 +132,20 @@ public class SimilarityVectorFrequencies {
         int result = fieldCount;
         result = 31 * result + Arrays.hashCode(vectorFrequencies);
         return result;
+    }
+
+    /**
+     * Return pair count;
+     *
+     * @return pair count;
+     */
+    public long getPairCount() {
+        if (this.pairCount == 0) {
+            long pairCount = 0;
+            for (long freq : vectorFrequencies) pairCount += freq;
+            this.pairCount = pairCount;
+        }
+        return this.pairCount;
     }
 
     /**

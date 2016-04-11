@@ -6,8 +6,6 @@ import gr.upatras.ceid.pprl.matching.SimilarityUtil;
 import gr.upatras.ceid.pprl.matching.SimilarityVectorFrequencies;
 import gr.upatras.ceid.pprl.matching.SimilarityMatrix;
 import org.apache.avro.Schema;
-import org.apache.avro.file.DataFileReader;
-import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.hadoop.conf.Configuration;
@@ -22,9 +20,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
@@ -40,8 +36,7 @@ public class SimilarityMatrixTest {
     public void setup() throws IOException, DatasetException {
         FileSystem fs = FileSystem.getLocal(new Configuration());
         Schema schema = DatasetsUtil.loadSchemaFromFSPath(fs, new Path("data/person_small/schema/person_small.avsc"));
-        records = DatasetsUtil.loadAvroRecordsFromFiles(fs, schema, new Path[]{
-                new Path("data/person_small/avro/person_small.avro")});
+        records = DatasetsUtil.loadAvroRecordsFromFSPaths(fs, schema, new Path("data/person_small/avro/person_small.avro"));
     }
 
     @Test

@@ -1,7 +1,6 @@
 package gr.upatras.ceid.pprl.shell.command;
 
 import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
-import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import gr.upatras.ceid.pprl.service.datasets.DatasetsService;
 import gr.upatras.ceid.pprl.service.datasets.LocalDatasetsService;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
@@ -87,19 +86,28 @@ public class EncodingCommands implements CommandMarker {
         try {
             final Path statsPath = CommandUtil.retrievePath(pathStr);
             final boolean localFile = CommandUtil.retrieveBoolean(localStr,true);
-            LOG.info("Calculating encoding sizes :");
-            LOG.info("\tSelected stats file : {}", statsPath);
             final int Q = CommandUtil.retrieveInt(qStr, 2);
             if(Q < 2 || Q > 4) throw new IllegalArgumentException("Q is limited to {2,3,4}.");
             final int K = CommandUtil.retrieveInt(kStr, 15);
             if(K < 1) throw new IllegalArgumentException("K must be at least 1.");
+
+
+            LOG.info("Calculating encoding sizes :");
+            LOG.info("\tSelected stats file : {}", statsPath);
+            LOG.info("\tQ : {}",Q);
+            LOG.info("\tK : {}",K);
+            LOG.info("\n");
+
             DatasetStatistics statistics;
             if(localFile) statistics = lds.loadStats(statsPath);
             else {
                 if(ds == null) throw new IllegalArgumentException("Cannot look up in the pprl site");
                 statistics = ds.loadStats(statsPath);
             }
-            LOG.info(CommandUtil.prettyBFEStats(statistics.getFieldStatistics(), K, Q));
+
+            LOG.info(DatasetStatistics.prettyBFEStats(statistics.getFieldStatistics(), K, Q));
+            LOG.info("\n");
+
             return "DONE";
         } catch (Exception e) {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
@@ -190,6 +198,7 @@ public class EncodingCommands implements CommandMarker {
             }else if(scheme.equals("CLK"))
                 LOG.info("\tCLK size : {}", N);
             LOG.info("\tPartitions : {} ",(partitions==1)?"No partitioning":partitions);
+            LOG.info("\n");
 
             final BloomFilterEncoding encoding = BloomFilterEncodingUtil.instanceFactory(
                     scheme, fields.length, N, fbfN, K, Q, avgQgrams, weights);
@@ -197,15 +206,23 @@ public class EncodingCommands implements CommandMarker {
             encoding.makeFromSchema(schema,fields,included);
             if(!encoding.isEncodingOfSchema(schema))
                 throw new BloomFilterEncodingException("Encoding does not validate with source dataset.");
-            final GenericRecord[] records = lds.loadRecords(avroPaths,schemaPath);
+            final GenericRecord[] records = lds.loadDatasetRecords(avroPaths, schemaPath);
 
             final GenericRecord[] encodedRecords = les.encodeRecords(records, encoding);
             final Schema encodingSchema = encoding.getEncodingSchema();
 
-            final Path encodingDatapath = lds.saveRecords(name,encodedRecords,encodingSchema,partitions);
+            final Path[] datasetPaths = lds.createDirectories(name,DatasetsService.OTHERS_CAN_READ_PERMISSION);
 
-            LOG.info("\tEncoded data path = {}",encodingDatapath);
+            final Path encodingSchemaPath = datasetPaths[2];
+            lds.saveSchema(name,encodingSchemaPath,encodingSchema);
+
+            final Path encodingAvroPath = datasetPaths[1];
+            lds.saveDatasetRecords(name, encodedRecords, encodingSchema, encodingAvroPath, partitions);
+
+            final Path encodingBasePath = datasetPaths[0];
+            LOG.info("Encoded data path : {}",encodingBasePath);
             LOG.info("\n");
+
             return "DONE";
         } catch (Exception e) {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
@@ -238,7 +255,7 @@ public class EncodingCommands implements CommandMarker {
             final Path[] avroPaths = CommandUtil.retrievePaths(avroStr);
             final String[] fields = CommandUtil.retrieveFields(fieldsStr);
             final String[] included = CommandUtil.retrieveFields(includeStr);
-            final Path encodingSchemaPath = CommandUtil.retrievePath(encodingSchemaStr);
+            final Path existingEncodingSchemaPath = CommandUtil.retrievePath(encodingSchemaStr);
             final String[] mappings = CommandUtil.retrieveFields(mappingStr);
             final int partitions = CommandUtil.retrieveInt(partitionsStr,1);
 
@@ -252,14 +269,15 @@ public class EncodingCommands implements CommandMarker {
             LOG.info("\tSelected fields to be encoded : {}", Arrays.toString(fields));
             if(included.length !=0)
                 LOG.info("\tSelected fields to included   : {}", Arrays.toString(included));
-            LOG.info("\tBase Encoding schema stored in file : {}",encodingSchemaPath);
+            LOG.info("\tBase Encoding schema stored in file : {}",existingEncodingSchemaPath);
             final Map<String,String> field2fieldMap = new HashMap<String,String>();
             for (int i = 0; i < fields.length; i++)
                 field2fieldMap.put(fields[i],mappings[i]);
             LOG.info("\tField Mappings are : {}",field2fieldMap);
             LOG.info("\tPartitions : {} ",(partitions==1)?"No partitioning":partitions);
+            LOG.info("\n");
 
-            final Schema existingEncodingSchema = lds.loadSchema(encodingSchemaPath);
+            final Schema existingEncodingSchema = lds.loadSchema(existingEncodingSchemaPath);
             final Schema schema = lds.loadSchema(schemaPath);
             final String schemeName = BloomFilterEncodingUtil.retrieveSchemeName(existingEncodingSchema);
             final BloomFilterEncoding encoding =
@@ -273,14 +291,21 @@ public class EncodingCommands implements CommandMarker {
             if(!encoding.isEncodingOfSchema(schema))
                 throw new BloomFilterEncodingException("Encoding does not validate with source dataset.");
 
-            final GenericRecord[] records = lds.loadRecords(avroPaths,schemaPath);
+            final GenericRecord[] records = lds.loadDatasetRecords(avroPaths, schemaPath);
 
             final GenericRecord[] encodedRecords = les.encodeRecords(records, encoding);
             final Schema encodingSchema = encoding.getEncodingSchema();
 
-            final Path encodingDatapath = lds.saveRecords(name,encodedRecords,encodingSchema,partitions);
+            final Path[] datasetPaths = lds.createDirectories(name,DatasetsService.OTHERS_CAN_READ_PERMISSION);
 
-            LOG.info("\tEncoded data path = {}",encodingDatapath);
+            final Path encodingSchemaPath = datasetPaths[2];
+            lds.saveSchema(name,encodingSchemaPath,encodingSchema);
+
+            final Path encodingAvroPath = datasetPaths[1];
+            lds.saveDatasetRecords(name, encodedRecords, encodingSchema, encodingAvroPath, partitions);
+
+            final Path encodingBasePath = datasetPaths[0];
+            LOG.info("Encoded data path : {}",encodingBasePath);
             LOG.info("\n");
 
             return "DONE";
@@ -364,6 +389,7 @@ public class EncodingCommands implements CommandMarker {
                 LOG.info("\tRBF size : {}", N > 0 ? N : RowBloomFilterEncoding.weightedsize(fbfNs, weights));
             }else if(scheme.equals("CLK"))
                 LOG.info("\tCLK size : {}", N);
+            LOG.info("\n");
 
             final Path[] datasetPaths = ds.retrieveDirectories(name);
             final Path basePath = datasetPaths[0];
@@ -372,7 +398,7 @@ public class EncodingCommands implements CommandMarker {
 
             final BloomFilterEncoding encoding = BloomFilterEncodingUtil.instanceFactory(
                     scheme, fields.length, N, fbfN, K, Q, avgQgrams, weights);
-            final Schema schema = ds.retrieveSchema(schemaPath);
+            final Schema schema = ds.loadSchema(schemaPath);
             encoding.makeFromSchema(schema,fields,included);
             if(!encoding.isEncodingOfSchema(schema))
                 throw new BloomFilterEncodingException("Encoding does not validate with source dataset.");
@@ -389,7 +415,7 @@ public class EncodingCommands implements CommandMarker {
             final Path inputSchemaPath = ds.retrieveSchemaPath(schemaPath);
             es.runEncodeDatasetTool(avroPath,inputSchemaPath,avroEncodingPath,schemaFilePath);
 
-            LOG.info("\tEncoded data path = {}",baseEncodingPath);
+            LOG.info("\tEncoded data path : {}",baseEncodingPath);
             LOG.info("\n");
             return "DONE";
         } catch(Exception e) {
@@ -439,7 +465,7 @@ public class EncodingCommands implements CommandMarker {
             final Path schemaPath = datasetPaths[2];
 
             final Schema existingEncodingSchema = lds.loadSchema(encodingSchemaPath);
-            final Schema schema = ds.retrieveSchema(schemaPath);
+            final Schema schema = ds.loadSchema(schemaPath);
             final String schemeName = BloomFilterEncodingUtil.retrieveSchemeName(existingEncodingSchema);
             final BloomFilterEncoding encoding =
                     BloomFilterEncodingUtil.newInstance(schemeName);
@@ -463,8 +489,9 @@ public class EncodingCommands implements CommandMarker {
             final Path inputSchemaPath = ds.retrieveSchemaPath(schemaPath);
             es.runEncodeDatasetTool(avroPath,inputSchemaPath,avroEncodingPath,schemaFilePath);
 
-            LOG.info("\tEncoded data path = {}",baseEncodingPath);
+            LOG.info("Encoded data path : {}",baseEncodingPath);
             LOG.info("\n");
+
             return "DONE";
 
         } catch(Exception e) {

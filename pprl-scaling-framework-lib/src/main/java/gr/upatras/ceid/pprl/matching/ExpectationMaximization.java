@@ -79,7 +79,7 @@ public class ExpectationMaximization {
      * @param frequencies a <code>SimilarityVectorFrequencies</code> instance.
      */
     public void runAlgorithm(final SimilarityVectorFrequencies frequencies) {
-        pairCount = 0;
+        pairCount = frequencies.getPairCount();
         assert frequencies.getFieldCount() == fieldCount;
         for(iteration = 1; iteration <= MAX_ITERATIONS; iteration++ ) {
 
@@ -99,7 +99,6 @@ public class ExpectationMaximization {
                 g[i][1] = b/(a+b);
                 mSum += g[i][0]* frequencies.getVectorFrequency(i);
                 uSum += g[i][1]* frequencies.getVectorFrequency(i);
-                if(iteration == 1)pairCount += frequencies.getVectorFrequencies()[i];
             }
 
             // Maximization Step - Using g to estimate m,u and p.

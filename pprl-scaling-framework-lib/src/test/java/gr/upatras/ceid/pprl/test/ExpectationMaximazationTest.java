@@ -26,16 +26,12 @@ public class ExpectationMaximazationTest {
     private static Logger LOG = LoggerFactory.getLogger(ExpectationMaximazationTest.class);
     private String[] fieldNames = {"name","surname","location"};
     private GenericRecord[] records;
-    private Schema schema;
-    private FileSystem fs;
-
 
     @Before
     public void setup() throws IOException, DatasetException {
-        fs = FileSystem.getLocal(new Configuration());
-        schema = DatasetsUtil.loadSchemaFromFSPath(fs,new Path("data/person_small/schema/person_small.avsc"));
-        records = DatasetsUtil.loadAvroRecordsFromFiles(fs,schema, new Path[]{
-                new Path("data/person_small/avro/person_small.avro")});
+        FileSystem fs = FileSystem.getLocal(new Configuration());
+        Schema schema = DatasetsUtil.loadSchemaFromFSPath(fs, new Path("data/person_small/schema/person_small.avsc"));
+        records = DatasetsUtil.loadAvroRecordsFromFSPaths(fs, schema, new Path("data/person_small/avro/person_small.avro"));
     }
 
     @Test

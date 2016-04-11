@@ -46,7 +46,7 @@ public class DatasetsCommands implements CommandMarker {
 
     @CliAvailabilityIndicator(value = {
             "local_data_sample", "local_data_describe",
-            "local_data_add_ulid", "local_data_sort_by_field"})
+            "local_data_sort"})
     public boolean availability0() {
         return lds != null;
     }
@@ -92,16 +92,25 @@ public class DatasetsCommands implements CommandMarker {
             LOG.info("\tSelected schema path : {}", schemaPath);
             LOG.info("\tSample size : {} ",size);
             LOG.info("\tPartitions : {} ",(partitions==1)?"No partitioning":partitions);
-
-            final Schema schema = lds.loadSchema(schemaPath);
-            final GenericRecord[] sample = lds.sample(avroPaths, schemaPath, size);
-            if(save) {
-                final Path savePath = lds.saveRecords(name, sample, schema,partitions);
-                LOG.info("\t Saved to path : {}",savePath);
-            }
             LOG.info("\n");
 
-            LOG.info(CommandUtil.prettyRecords(sample, schema));
+            final Schema schema = lds.loadSchema(schemaPath);
+            final GenericRecord[] sample = lds.sampleDataset(avroPaths, schemaPath, size);
+
+            LOG.info(DatasetsUtil.prettyRecords(sample, schema));
+            LOG.info("\n");
+
+            if(save) {
+                final Path[] datasetPaths = lds.createDirectories(name);
+                final Path datasetAvroPath = datasetPaths[1];
+                lds.saveDatasetRecords(name, sample, schema,datasetAvroPath, partitions);
+                final Path datasetSchemaPath  = datasetPaths[2];
+                lds.saveSchema(name,datasetSchemaPath,schema);
+                final Path datasetBasePath = datasetPaths[0];
+
+                LOG.info("Sample saved to path : {}",datasetBasePath);
+                LOG.info("\n");
+            }
             return "DONE";
         } catch (Exception e) {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
@@ -121,7 +130,9 @@ public class DatasetsCommands implements CommandMarker {
 
             final Schema schema = lds.loadSchema(schemaPath);
 
-            LOG.info(CommandUtil.prettySchemaDescription(schema));
+            LOG.info(DatasetsUtil.prettySchemaDescription(schema));
+            LOG.info("\n");
+
             return "DONE";
         } catch (Exception e) {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
@@ -151,7 +162,7 @@ public class DatasetsCommands implements CommandMarker {
             final Path[] avroPaths = CommandUtil.retrievePaths(avroStr);
             String[] fields = CommandUtil.retrieveFields(fieldsStr);
             final String name = CommandUtil.retrieveString(nameStr, null);
-            final boolean save = name != null;
+            final boolean save = (name != null);
             if(save && !CommandUtil.isValidName(name)) throw new IllegalArgumentException("name is not valid");
             final double[] m0 = CommandUtil.retrieveProbabilities(mStr, fields.length, 0.9);
             final double[] u0 = CommandUtil.retrieveProbabilities(uStr, fields.length, 0.001);
@@ -169,16 +180,16 @@ public class DatasetsCommands implements CommandMarker {
                 throw new IllegalArgumentException(String.format("fields %s not found in schema",
                         Arrays.toString(fields)));
 
-            final GenericRecord[] records = lds.loadRecords(avroPaths, schemaPath);
+            final GenericRecord[] records = lds.loadDatasetRecords(avroPaths, schema);
             final DatasetStatistics statistics = new DatasetStatistics();
 
             statistics.setRecordCount(records.length);
             statistics.setFieldNames(fields);
             DatasetStatistics.calculateQgramStatistics(records, schema, statistics, fields);
 
-            final SimilarityVectorFrequencies matrix = lms.createMatrix(records,fields);
+            final SimilarityVectorFrequencies frequencies = lms.vectorFrequencies(records, fields);
             final ExpectationMaximization estimator = lms.newEMInstance(fields,m0,u0,p0);
-            estimator.runAlgorithm(matrix);
+            estimator.runAlgorithm(frequencies);
 
             statistics.setEmPairsCount(estimator.getPairCount());
             statistics.setEmAlgorithmIterations(estimator.getIteration());
@@ -187,13 +198,14 @@ public class DatasetsCommands implements CommandMarker {
                     statistics,fields,
                     estimator.getM(),estimator.getU());
 
-            if(save) {
-                final Path statsPath = lds.saveStats(name, statistics);
-                LOG.info("\tStatistics path : {}",statsPath);
-            }
+            LOG.info(DatasetStatistics.prettyStats(statistics));
             LOG.info("\n");
 
-            LOG.info(CommandUtil.prettyStats(statistics));
+            if(save) {
+                final Path statsPath = lds.saveStats(name, statistics);
+                LOG.info("Statistics path : {}",statsPath);
+                LOG.info("\n");
+            }
 
             return "DONE";
         } catch (Exception e) {
@@ -220,47 +232,74 @@ public class DatasetsCommands implements CommandMarker {
             LOG.info("\n");
 
             final Path uploadedPath = ds.uploadFiles(avroPaths,schemaPath,name);
-            LOG.info("\tDestination path : {}",uploadedPath);
+
+            LOG.info("Destination path : {}",uploadedPath);
+            LOG.info("\n");
+
             return "DONE";
         } catch (Exception e) {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         }
     }
 
-    @CliCommand(value = "local_data_add_ulid", help = "Add a Unique Long Identifier as a field to existing avro data.")
-    public String command4(
+
+    @CliCommand(value = "local_data_sort", help = "Sort local data records by a selected field name.")
+    public String command7(
             @CliOption(key = {"avro"}, mandatory = true, help = "Local data avro files (comma separated) or including directory.")
             final String avroStr,
             @CliOption(key = {"schema"}, mandatory = true, help = "Local schema avro file.")
             final String schemaStr,
-            @CliOption(key = {"name"}, mandatory = true, help = "Name to save the updated records.")
-            final String name,
-            @CliOption(key = {"field"}, mandatory = false, help = "(Optional) Name of the ULID field. Default is \"ulid\"")
+            @CliOption(key = {"sort_by"}, mandatory = true, help = "Fields to be used in sorting. Order matters. Sort by first field then second and so on.")
+            final String fieldsStr,
+            @CliOption(key = {"name"}, mandatory = false, help = "(Optional)Name to save the updated records.")
+            final String nameStr,
+            @CliOption(key = {"ulid_field"}, mandatory = false, help = "(Optional) Name of the ULID field. If none provided no extra field will be added")
             final String fieldStr,
             @CliOption(key = {"partitions"}, mandatory = false, help = "(Optional) Partitions of the output. Default is 1 (No partitioning).")
             final String partitionsStr
+
     ) {
         try {
             final Path schemaPath = CommandUtil.retrievePath(schemaStr);
             final Path[] avroPaths = CommandUtil.retrievePaths(avroStr);
-            final String fieldName = CommandUtil.retrieveString(fieldStr,"ulid");
+            final String[] fieldNames = CommandUtil.retrieveFields(fieldsStr);
             final int partitions = CommandUtil.retrieveInt(partitionsStr,1);
-            if(!CommandUtil.isValidFieldName(fieldName)) throw new IllegalArgumentException("Invalid field name.");
+            final String fieldName = CommandUtil.retrieveString(fieldStr,null);
+            final String name = CommandUtil.retrieveString(nameStr, null);
+            final boolean save = (name != null);
+            final boolean sort = true;
+            final boolean addUlid = (fieldName != null);
 
-            LOG.info("Add a ULID field to local data:");
+            LOG.info("Sort by selected fields:");
             LOG.info("\tSelected data files : {}", Arrays.toString(avroPaths));
             LOG.info("\tSelected schema file : {}", schemaPath);
             LOG.info("\tName : {}",name);
-            LOG.info("\tField Name : {}",fieldName);
+            LOG.info("\tSort-By field names : {}", Arrays.toString(fieldNames));
+            if(addUlid)LOG.info("\tAdding ULID field name : {}",fieldName);
             LOG.info("\tPartitions : {} ",(partitions==1)?"No partitioning":partitions);
             LOG.info("\n");
 
-            final Schema updatedSchema = DatasetsUtil.updateSchemaWithULID(lds.loadSchema(schemaPath),
-                    fieldName);
-            final GenericRecord[] updatedRecords = DatasetsUtil.updateRecordsWithULID(lds.loadRecords(avroPaths, schemaPath),
-                    updatedSchema, fieldName);
-            LOG.info(CommandUtil.prettyRecords(updatedRecords, updatedSchema));
-            lds.saveRecords(name,updatedRecords,updatedSchema,partitions);
+            final Schema schema = lds.loadSchema(schemaPath);
+            final GenericRecord[] records = lds.loadDatasetRecords(avroPaths,schema);
+
+            final Schema updatedSchema = lds.updateDatasetSchema(schema,sort,addUlid,fieldName,fieldNames);
+            final GenericRecord[] updatedRecords = lds.updateDatasetRecords(records,updatedSchema,sort,addUlid,fieldName);
+
+            LOG.info(DatasetsUtil.prettyRecords(updatedRecords, updatedSchema));
+            LOG.info("\n");
+
+            if(save) {
+                final Path[] datasetPaths = lds.createDirectories(name);
+                final Path datasetAvroPath = datasetPaths[1];
+                lds.saveDatasetRecords(name, updatedRecords, schema,datasetAvroPath, partitions);
+                final Path datasetSchemaPath  = datasetPaths[2];
+                lds.saveSchema(name,datasetSchemaPath,updatedSchema);
+                final Path datasetBasePath = datasetPaths[0];
+
+                LOG.info("Sorted records saved at : {}",datasetBasePath);
+                LOG.info("\n");
+            }
+
             return "DONE";
         } catch (Exception e) {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
@@ -310,48 +349,6 @@ public class DatasetsCommands implements CommandMarker {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         }
     }
-
-    @CliCommand(value = "local_data_sort_by_field", help = "Sort local data records by a selected field name.")
-    public String command7(
-            @CliOption(key = {"avro"}, mandatory = true, help = "Local data avro files (comma separated) or including directory.")
-            final String avroStr,
-            @CliOption(key = {"schema"}, mandatory = true, help = "Local schema avro file.")
-            final String schemaStr,
-            @CliOption(key = {"name"}, mandatory = true, help = "Name to save the updated records.")
-            final String name,
-            @CliOption(key = {"fields"}, mandatory = true, help = "Fields to be used in sorting. Order matters. Sort by first field then second and so on.")
-            final String fieldsStr,
-            @CliOption(key = {"partitions"}, mandatory = false, help = "(Optional) Partitions of the output. Default is 1 (No partitioning).")
-            final String partitionsStr
-
-    ) {
-        try {
-            final Path schemaPath = CommandUtil.retrievePath(schemaStr);
-            final Path[] avroPaths = CommandUtil.retrievePaths(avroStr);
-            final String[] fieldNames = CommandUtil.retrieveFields(fieldsStr);
-            final int partitions = CommandUtil.retrieveInt(partitionsStr,1);
-
-            LOG.info("Sort by selected fields:");
-            LOG.info("\tSelected data files : {}", Arrays.toString(avroPaths));
-            LOG.info("\tSelected schema file : {}", schemaPath);
-            LOG.info("\tName : {}",name);
-            LOG.info("\tField Names : {}", Arrays.toString(fieldNames));
-            LOG.info("\tPartitions : {} ",(partitions==1)?"No partitioning":partitions);
-            LOG.info("\n");
-
-            final Schema updatedSchema = DatasetsUtil.updateSchemaWithOrderByFields(lds.loadSchema(schemaPath),
-                    fieldNames);
-            final GenericRecord[] updatedRecords = DatasetsUtil.updateRecordsWithOrderByFields(
-                    lds.loadRecords(avroPaths, schemaPath), updatedSchema);
-            LOG.info(CommandUtil.prettyRecords(updatedRecords, updatedSchema));
-            lds.saveRecords(name,updatedRecords,updatedSchema,partitions);
-
-            return "DONE";
-        } catch (Exception e) {
-            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
-        }
-    }
-
 
     @CliCommand(value = "data_stats", help = "Calculate usefull field statistics from hdfs data.")
     public String command8(
@@ -404,8 +401,8 @@ public class DatasetsCommands implements CommandMarker {
             final DatasetStatistics statistics = ds.loadStats(qGramsPropertiesPath);
 
             long recordCount = statistics.getRecordCount();
-            final SimilarityVectorFrequencies matrix = ms.createMatrix(avroPath,schemaPath,uidFieldName,
-                    recordCount,reducersCount,statsPath,"similarity_matrix",fields);
+            final SimilarityVectorFrequencies matrix = ms.vectorFrequencies(avroPath, schemaPath, uidFieldName,
+                    recordCount, reducersCount, statsPath, "similarity_matrix", fields);
 
 
             final ExpectationMaximization estimator = ms.newEMInstance(fields,m0,u0,p0);
@@ -422,7 +419,7 @@ public class DatasetsCommands implements CommandMarker {
             LOG.info("Stats saved at : {}",propertiesPath);
             LOG.info("\n");
 
-            LOG.info(CommandUtil.prettyStats(statistics));
+            LOG.info(DatasetStatistics.prettyStats(statistics));
 
             return "DONE";
         } catch (Exception e) {
@@ -445,7 +442,7 @@ public class DatasetsCommands implements CommandMarker {
             final Path schemaPath = paths[2];
             final Schema schema = ds.loadSchema(schemaPath);
 
-            LOG.info(CommandUtil.prettySchemaDescription(schema));
+            LOG.info(DatasetsUtil.prettySchemaDescription(schema));
             return "DONE";
         } catch (Exception e) {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();

@@ -19,6 +19,14 @@ public class LocalEncodingService implements InitializingBean {
         LOG.info("Local Encoding service initialized.");
     }
 
+    /**
+     * Encode records.
+     *
+     * @param records generic avro records array.
+     * @param encoding encoding instance.
+     * @return encoded generic avro records array.
+     * @throws BloomFilterEncodingException
+     */
     public GenericRecord[] encodeRecords(final GenericRecord[] records,
                                          final BloomFilterEncoding encoding)
             throws BloomFilterEncodingException {

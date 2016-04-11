@@ -22,11 +22,18 @@ public class LocalMatchingService implements InitializingBean {
         LOG.info("Local Matching service initialized.");
     }
 
-    // TODO might remove this will see.
-
-    public SimilarityVectorFrequencies createMatrix(final GenericRecord[] records,
-                                         final String[] fieldNames,
-                                         final String similarityMethodName)
+    /**
+     * Returns Similarity vector frequencies.
+     *
+     * @param records generic avro records array (self-similarity).
+     * @param fieldNames field names to check for similarity.
+     * @param similarityMethodName similarity method name.
+     * @return an array of similarity vector freqs.
+     * @throws Exception
+     */
+    public SimilarityVectorFrequencies vectorFrequencies(final GenericRecord[] records,
+                                                         final String[] fieldNames,
+                                                         final String similarityMethodName)
             throws Exception {
         try {
             final long pairCount = CombinatoricsUtil.twoCombinationsCount(records.length);
@@ -57,17 +64,36 @@ public class LocalMatchingService implements InitializingBean {
         }
     }
 
-    public SimilarityVectorFrequencies createMatrix(final GenericRecord[] records,
-                                         final String[] fieldNames)
+    /**
+     * Returns Similarity vector frequencies.
+     *
+     * @param records generic avro records array (self-similarity).
+     * @param fieldNames field names to check for similarity.
+     * @return an array of similarity vector freqs.
+     * @throws Exception
+     */
+    public SimilarityVectorFrequencies vectorFrequencies(final GenericRecord[] records,
+                                                         final String[] fieldNames)
             throws Exception {
-        return createMatrix(records,fieldNames, SimilarityUtil.DEFAULT_SIMILARITY_METHOD_NAME);
+        return vectorFrequencies(records, fieldNames, SimilarityUtil.DEFAULT_SIMILARITY_METHOD_NAME);
     }
 
-    public SimilarityVectorFrequencies createMatrix(final GenericRecord[] recordsA,
-                                         final String[] fieldNamesA,
-                                         final GenericRecord[] recordsB,
-                                         final String[] fieldNamesB,
-                                         final String similarityMethodName) throws Exception {
+    /**
+     * Returns Similarity vector frequencies.
+     *
+     * @param recordsA generic avro records array (left dataset).
+     * @param fieldNamesA field names to check for similarity (left dataset).
+     * @param recordsB generic avro records array (right dataset).
+     * @param fieldNamesB field names to check for similarity (right dataset).
+     * @param similarityMethodName similarity method name.
+     * @return an array of similarity vector freqs.
+     * @throws Exception
+     */
+    public SimilarityVectorFrequencies vectorFrequencies(final GenericRecord[] recordsA,
+                                                         final String[] fieldNamesA,
+                                                         final GenericRecord[] recordsB,
+                                                         final String[] fieldNamesB,
+                                                         final String similarityMethodName) throws Exception {
         try{
             assert fieldNamesA.length == fieldNamesB.length;
             final int pairCount = recordsA.length*recordsB.length;
@@ -98,26 +124,60 @@ public class LocalMatchingService implements InitializingBean {
         }
     }
 
-    public SimilarityVectorFrequencies createMatrix(final GenericRecord[] recordsA,
-                                         final String[] fieldNamesA,
-                                         final GenericRecord[] recordsB,
-                                         final String[] fieldNamesB)
+    /**
+     * Returns Similarity vector frequencies.
+     *
+     * @param recordsA generic avro records array (left dataset).
+     * @param fieldNamesA field names to check for similarity (left dataset).
+     * @param recordsB generic avro records array (right dataset).
+     * @param fieldNamesB field names to check for similarity (right dataset).
+     * @return an array of similarity vector freqs.
+     * @throws Exception
+     */
+    public SimilarityVectorFrequencies vectorFrequencies(final GenericRecord[] recordsA,
+                                                         final String[] fieldNamesA,
+                                                         final GenericRecord[] recordsB,
+                                                         final String[] fieldNamesB)
             throws Exception {
-        return createMatrix(recordsA,fieldNamesA,recordsB,fieldNamesB, SimilarityUtil.DEFAULT_SIMILARITY_METHOD_NAME);
+        return vectorFrequencies(recordsA, fieldNamesA, recordsB, fieldNamesB, SimilarityUtil.DEFAULT_SIMILARITY_METHOD_NAME);
     }
 
+    /**
+     * A new instance of Expecation Maximization estimator.
+     *
+     * @param fieldNames field names.
+     * @param m initial m values.
+     * @param u initial u values.
+     * @param p initial p value.
+     * @return a new EM estimator instance.
+     */
     public ExpectationMaximization newEMInstance(final String[] fieldNames, final double[] m, final double[] u, double p) {
         LOG.info(String.format("New EM Instance [fieldNames=%s,m=%s,u=%s,p=%f].",
                 Arrays.toString(fieldNames),Arrays.toString(m),Arrays.toString(u),p));
         return new ExpectationMaximization(fieldNames,m,u,p);
     }
 
+    /**
+     * A new instance of Expecation Maximization estimator.
+     *
+     * @param fieldNames field names.
+     * @param m initial m value (for all fields).
+     * @param u initial u value (for all fields).
+     * @param p initial p value.
+     * @return a new EM estimator instance.
+     */
     public ExpectationMaximization newEMInstance(final String[] fieldNames, final double m, final double u, double p) {
         LOG.info(String.format("New EM Instance [fieldNames=%s,m=%f,u=%f,p=%f].",
                 Arrays.toString(fieldNames),m,u,p));
         return new ExpectationMaximization(fieldNames,m,u,p);
     }
 
+    /**
+     * A new instance of Expecation Maximization estimator.
+     *
+     * @param fieldNames field names.
+     * @return a new EM estimator instance.
+     */
     public ExpectationMaximization newEMInstance(final String[] fieldNames) {
         return newEMInstance(fieldNames,0.9,0.9,0.001);
     }

@@ -1,13 +1,16 @@
 package gr.upatras.ceid.pprl.datasets;
 
+import gr.upatras.ceid.pprl.encoding.FieldBloomFilterEncoding;
 import gr.upatras.ceid.pprl.qgram.QGramUtil;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 /**
  * Dataset statistics class.
@@ -312,5 +315,114 @@ public class DatasetStatistics implements Serializable {
             statistics.getFieldStatistics().get(fieldName)
                     .setNormalizedRange(wrangeNormalized);
         }
+    }
+
+    /**
+     * Pretty statistics.
+     *
+     * @param statistics a <code>DatasetStatistics</code> instance.
+     * @return a pretty statistics representation.
+     */
+    public static String prettyStats(DatasetStatistics statistics) {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("#Records=").append(statistics.getRecordCount()).append("\n");
+        sb.append("#Fields=").append(statistics.getFieldCount()).append("\n");
+        sb.append("#Pairs=").append(statistics.getEmPairsCount()).append("\n");
+        sb.append("#Expectation Maximization Estimator iterations=")
+                .append(statistics.getEmAlgorithmIterations())
+                .append("\n");
+        sb.append("#Estimated Duplicate Portion(p)=")
+                .append(String.format("%.3f", statistics.getP()))
+                .append("\n");
+        final StringBuilder hsb = new StringBuilder(String.format("%50s","Metric\\Field name"));
+        final Set<String> fieldNames = statistics.getFieldStatistics().keySet();
+        for (String fieldName : fieldNames)
+            hsb.append(String.format("|%25s", fieldName));
+        final String header = hsb.toString();
+        sb.append(header).append("\n");
+        sb.append(new String(new char[header.length()]).replace("\0", "-")).append("\n");
+        for (int i = 0; i < DatasetFieldStatistics.description.length; i++) {
+            final StringBuilder ssb = new StringBuilder(
+                    String.format("%50s",DatasetFieldStatistics.description[i]));
+            for (String fieldName : fieldNames) {
+                final double value = statistics.getFieldStatistics().get(fieldName).getStats()[i];
+                ssb.append(String.format("|%25s", String.format((value < 0.00001) ? "%6.3e" : "%.5f", value)));
+            }
+            sb.append(ssb.toString()).append("\n");
+        }
+        sb.append(new String(new char[header.length()]).replace("\0", "-")).append("\n");
+
+        return sb.toString();
+    }
+
+    /**
+     * Pretty Bloom Filter Encoding related stats.
+     *
+     * @param fieldStatistics field statistic.s
+     * @param K a Count of hash values.
+     * @param Q a Q as in Q-Grams.
+     * @return
+     */
+    public static String prettyBFEStats(Map<String, DatasetFieldStatistics> fieldStatistics, final int K, final int Q) {
+        assert K > 0 && Q >= 2 && Q <= 4;
+        final StringBuilder sb = new StringBuilder();
+        Map<String,Integer> fbfNs = new HashMap<String,Integer>();
+        Map<String,Integer> fbfNsUQ = new HashMap<String,Integer>();
+        Map<String,Integer> rbfNs = new HashMap<String,Integer>();
+        sb.append("#Encoding Bloom Filters K=").append(K).append("\n");
+        sb.append("#Encoding Bloom Filters Q=").append(Q).append("\n");
+
+        final StringBuilder hsb = new StringBuilder(String.format("%50s","Metric\\Field name"));
+        final Set<String> fieldNames = fieldStatistics.keySet();
+        for (String fieldName : fieldNames)
+            hsb.append(String.format("|%25s", fieldName));
+        final String header = hsb.toString();
+        sb.append(header).append("\n");
+        sb.append(new String(new char[header.length()]).replace("\0", "-")).append("\n");
+        StringBuilder ssb = new StringBuilder(String.format("%50s","Dynamic FBF size"));
+        for (String fieldName : fieldStatistics.keySet()) {
+            double g = fieldStatistics.get(fieldName).getQgramCount(Q);
+            int fbfN = FieldBloomFilterEncoding.dynamicsize(g, K);
+            fbfNs.put(fieldName,fbfN);
+            ssb.append(String.format("|%25s", String.format("%d",fbfN)));
+        }
+        sb.append(ssb.toString()).append("\n");
+
+//        StringBuilder ssb = new StringBuilder(String.format("%50s","Dynamic FBF size (unique q-grams)"));
+//        for (String fieldName : fieldStatistics.keySet()) {
+//            double g = fieldStatistics.get(fieldName).getUniqueQgramCount(Q);
+//            int fbfN = FieldBloomFilterEncoding.dynamicsize(g,K);
+//            fbfNsUQ.put(fieldName,fbfN);
+//            ssb.append(String.format("|%25s", String.format("%d",fbfN)));
+//        }
+//        sb.append(ssb.toString()).append("\n");
+
+        ssb = new StringBuilder(String.format("%50s","Candidate RBF length"));
+        for (String fieldName : fieldStatistics.keySet()) {
+            double fbfN = fbfNs.get(fieldName);
+            double nr = fieldStatistics.get(fieldName).getNormalizedRange();
+            int rbfN  = (int) Math.ceil(fbfN/ nr);
+            rbfNs.put(fieldName,rbfN);
+            ssb.append(String.format("|%25s", String.format("%d", rbfN)));
+        }
+        sb.append(ssb.toString()).append("\n");
+
+        int rbfN = Collections.max(rbfNs.values());
+        sb.append(new String(new char[header.length()]).replace("\0", "-")).append("\n");
+        sb.append("#RBF length=").append(rbfN).append("\n");
+        sb.append(new String(new char[header.length()]).replace("\0", "-")).append("\n");
+
+        ssb = new StringBuilder(String.format("%50s","Selected bit length"));
+        for (String fieldName : fieldStatistics.keySet()) {
+            double nr = fieldStatistics.get(fieldName).getNormalizedRange();
+            int selectedBitCount = (int)Math.ceil(rbfN * nr);
+            ssb.append(String.format("|%25s",
+                    String.format("%d (%.1f %%)",
+                            selectedBitCount,nr*100)
+            ));
+        }
+        sb.append(ssb.toString()).append("\n");
+
+        return sb.toString();
     }
 }

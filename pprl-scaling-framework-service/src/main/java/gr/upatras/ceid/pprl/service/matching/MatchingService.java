@@ -38,25 +38,39 @@ public class MatchingService implements InitializingBean {
     @Autowired
     private FileSystem hdfs;
 
-    public SimilarityVectorFrequencies createMatrix(final Path inputPath, final Path inputSchemaPath,
-                                         final String uidFieldName,
-                                         final long recordCount, final int reducerCount,
-                                         final Path basePath,
-                                         final String matrixName,
-                                         final String[] fieldNames)
+    /**
+     * Returns Similarity vector frequencies (runs Hadoop MapReduce Tool).
+     *
+     * @param inputPath input avro path.
+     * @param inputSchemaPath input schema path.
+     * @param uidFieldName uid field name.
+     * @param recordCount record count.
+     * @param reducerCount reducer count.
+     * @param basePath a base path.
+     * @param name a name.
+     * @param fieldNames field names.
+     * @return a Similarity vector frequencies.
+     * @throws Exception
+     */
+    public SimilarityVectorFrequencies vectorFrequencies(final Path inputPath, final Path inputSchemaPath,
+                                                         final String uidFieldName,
+                                                         final long recordCount, final int reducerCount,
+                                                         final Path basePath,
+                                                         final String name,
+                                                         final String[] fieldNames)
             throws Exception {
         try {
             if (!hdfs.exists(basePath)) hdfs.mkdirs(basePath, ONLY_OWNER_PERMISSION);
-            final Path statsPath = new Path(basePath, String.format("%s.properties",matrixName));
+            final Path statsPath = new Path(basePath, String.format("%s.properties",name));
             runExhaustiveRecordPairSimilarityTool(inputPath, inputSchemaPath, statsPath, fieldNames,
                     uidFieldName, recordCount, reducerCount);
-            final SimilarityVectorFrequencies matrix = new SimilarityVectorFrequencies();
+            final SimilarityVectorFrequencies frequencies = new SimilarityVectorFrequencies();
             final Properties properties = new Properties();
             final FSDataInputStream fsdis = hdfs.open(statsPath);
             properties.load(fsdis);
             fsdis.close();
-            matrix.fromProperties(properties);
-            return matrix;
+            frequencies.fromProperties(properties);
+            return frequencies;
         } catch (IOException e) {
             LOG.error(e.getMessage());
             throw e;
@@ -66,6 +80,18 @@ public class MatchingService implements InitializingBean {
         }
     }
 
+    /**
+     * Run Exhaustinve record pair similarity tool.
+     *
+     * @param inputPath an input path.
+     * @param inputSchemaPath an input schema path.
+     * @param propertiesOutputPath a properties output path.
+     * @param fieldNames field names.
+     * @param uidFieldName a unique long identity field name (field value for first record 0 , for second 1, and so on).
+     * @param recordCount record count.
+     * @param reducerCount reducer count.
+     * @throws Exception
+     */
     public void runExhaustiveRecordPairSimilarityTool(final Path inputPath, final Path inputSchemaPath,
                                                       final Path propertiesOutputPath,
                                                       final String[] fieldNames,
@@ -93,18 +119,43 @@ public class MatchingService implements InitializingBean {
         exhaustiveRecordPairSimilarityToolRunner.call();
     }
 
+
+    /**
+     * A new instance of Expecation Maximization estimator.
+     *
+     * @param fieldNames field names.
+     * @param m initial m values.
+     * @param u initial u values.
+     * @param p initial p value.
+     * @return a new EM estimator instance.
+     */
     public ExpectationMaximization newEMInstance(final String[] fieldNames, final double[] m, final double[] u, double p) {
         LOG.info(String.format("New EM Instance [fieldNames=%s,m=%s,u=%s,p=%f].",
                 Arrays.toString(fieldNames),Arrays.toString(m),Arrays.toString(u),p));
         return new ExpectationMaximization(fieldNames,m,u,p);
     }
 
+    /**
+     * A new instance of Expecation Maximization estimator.
+     *
+     * @param fieldNames field names.
+     * @param m initial m value (for all fields).
+     * @param u initial u value (for all fields).
+     * @param p initial p value.
+     * @return a new EM estimator instance.
+     */
     public ExpectationMaximization newEMInstance(final String[] fieldNames, final double m, final double u, double p) {
         LOG.info(String.format("New EM Instance [fieldNames=%s,m=%f,u=%f,p=%f].",
                 Arrays.toString(fieldNames),m,u,p));
         return new ExpectationMaximization(fieldNames,m,u,p);
     }
 
+    /**
+     * A new instance of Expecation Maximization estimator.
+     *
+     * @param fieldNames field names.
+     * @return a new EM estimator instance.
+     */
     public ExpectationMaximization newEMInstance(final String[] fieldNames) {
         return newEMInstance(fieldNames,0.9,0.9,0.001);
     }

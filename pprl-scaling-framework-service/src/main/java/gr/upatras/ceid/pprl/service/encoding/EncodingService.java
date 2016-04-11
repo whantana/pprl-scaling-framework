@@ -1,10 +1,6 @@
 package gr.upatras.ceid.pprl.service.encoding;
 
-import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.permission.FsAction;
-import org.apache.hadoop.fs.permission.FsPermission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -28,8 +24,17 @@ public class EncodingService implements InitializingBean{
     }
 
     @Autowired
-    private ToolRunner encodeDatasetToolRunner;
+    private ToolRunner encodeDatasetToolRunner; // Encode datast tool runner.
 
+    /**
+     * Run encode dataset tool runner tool.
+     *
+     * @param input input path
+     * @param inputSchema input schema path.
+     * @param output output path.
+     * @param outputSchema output schema path.
+     * @throws Exception
+     */
     public void runEncodeDatasetTool(final Path input, final Path inputSchema,
                                      final Path output, final Path outputSchema)
             throws Exception {

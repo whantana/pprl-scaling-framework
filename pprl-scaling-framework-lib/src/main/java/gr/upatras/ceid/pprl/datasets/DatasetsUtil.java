@@ -24,14 +24,16 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -40,7 +42,7 @@ import java.util.TreeSet;
  * Datasets utility class.
  */
 public class DatasetsUtil {
-
+    // TODO more DEBUG LOGGING HERE
     private static final Logger LOG = LoggerFactory.getLogger(DatasetsUtil.class);
 
     /**
@@ -104,11 +106,11 @@ public class DatasetsUtil {
     }
 
     /**
-     * Returns true if selected field names belong to schema
+     * Returns true if selected field names belong to schema.
      *
      * @param schema an avro schema.
      * @param selectedNames selected field names.
-     * @return
+     * @return true if selected field names belong to schema.
      */
     public static boolean fieldNamesBelongsToSchema(final Schema schema, final String... selectedNames) {
         for(String name : selectedNames) {
@@ -188,6 +190,56 @@ public class DatasetsUtil {
         else fs.mkdirs(datasetPath, permission);
 
         return new Path[]{datasetPath,datasetAvroPath,datasetSchemaPath};
+    }
+
+    /**
+     * Load Avro Records.
+     *
+     * @param fs a <code>FileSystem</code> reference.
+     * @param schema schema.
+     * @param paths a <code>Path</code> array.
+     * @return an array of avro generic records.
+     * @throws IOException
+     */
+    public static GenericRecord[] loadAvroRecordsFromFSPaths(final FileSystem fs,
+                                                             final Schema schema,
+                                                             final Path... paths) throws IOException {
+        LOG.debug("Loading records");
+        final List<GenericRecord> recordList = new ArrayList<GenericRecord>();
+        final DatasetsUtil.DatasetRecordReader reader =
+                new DatasetsUtil.DatasetRecordReader(fs, schema, paths);
+        int i = 0;
+        while (reader.hasNext()) {
+            recordList.add(i, reader.next());
+            i++;
+            LOG.debug("Loading Record #{}", i);
+        }
+        LOG.debug("Loaded {} records.",recordList.size());
+        return recordList.toArray(new GenericRecord[recordList.size()]);
+    }
+
+    /**
+     * Save Avro Records.
+     *
+     * @param fs a <code>FileSystem</code> reference.
+     * @param records  a generic records array.
+     * @param schema a schema instance.
+     * @param basePath a base path.
+     * @param name a name.
+     * @param partitions number of partitions.
+     * @throws IOException
+     */
+    public static void saveAvroRecordsToFSPath(final FileSystem fs,
+                                               final GenericRecord[] records,
+                                               final Schema schema,
+                                               final Path basePath,
+                                               final String name,
+                                               final int partitions) throws IOException {
+        LOG.debug("Writing records {} records.",records.length);
+        final DatasetsUtil.DatasetRecordWriter writer =
+                new DatasetsUtil.DatasetRecordWriter(fs,name,schema,basePath,partitions);
+        writer.writeRecords(records);
+        writer.close();
     }
 
     /**
@@ -340,6 +392,96 @@ public class DatasetsUtil {
     }
 
     /**
+     * A pretty schema description.
+     *
+     * @param schema dataset schema.
+     * @return a pretty schema description.
+     */
+    public static String prettySchemaDescription(final Schema schema) {
+        final Map<String, String> description = new HashMap<String, String>();
+        for (Schema.Field f : schema.getFields())
+            description.put(f.name(), f.schema().getType().toString());
+        final StringBuilder sb = new StringBuilder();
+        int i = 1;
+        for(Map.Entry<String,String> entry : description.entrySet())
+            sb.append(String.format("%d, %s %s\n",i++,entry.getKey(),entry.getValue()));
+        return sb.toString();
+    }
+
+    /**
+     * Pretty records listing.
+     *
+     * @param records generic avro record array.
+     * @param schema schema.
+     * @return a pretty records listing.
+     */
+    public static String prettyRecords(final GenericRecord[] records,
+                                       final Schema schema) {
+        final StringBuilder sb = new StringBuilder();
+        final List<Schema.Field> fields = schema.getFields();
+        final List<Schema.Type> types = new ArrayList<Schema.Type>();
+        final List<String> fieldNames = new ArrayList<String>();
+
+        for (int i = 0; i < fields.size() ; i++) {
+            fieldNames.add(i, fields.get(i).name());
+            types.add(i,fields.get(i).schema().getType());
+        }
+        sb.append("#Records =").append(records.length).append("\n");
+        sb.append("#Fields =").append(fields.size()).append("\n");
+
+        final StringBuilder hsb = new StringBuilder();
+        for (int i = 0; i < fields.size() ; i++) {
+            final Schema.Type type = types.get(i);
+            hsb.append(String.format(
+                    (type.equals(Schema.Type.FIXED)) ? "%100s|" : "%25s|",
+                    String.format("%s (%s)", fieldNames.get(i),types.get(i))));
+        }
+        final String header = hsb.toString();
+        sb.append(header).append("\n");
+        sb.append(new String(new char[header.length()]).replace("\0", "-")).append("\n");
+        for (GenericRecord record : records) {
+            final StringBuilder rsb = new StringBuilder();
+            for (int i = 0; i < fields.size(); i++) {
+                final String fieldName = fieldNames.get(i);
+                final Schema.Type type = types.get(i);
+                if (type.equals(Schema.Type.FIXED)) {
+                    GenericData.Fixed fixed = (GenericData.Fixed) record.get(i);
+                    String val = prettyBinary(fixed.bytes());
+                    if(fixed.bytes().length * 8 < 100)
+                        rsb.append(String.format("%100s|", val));
+                    else
+                        rsb.append(String.format("%100s|",
+                                val.substring(0,48) + "..." + val.substring(val.length()-48,val.length())));
+                } else {
+                    String val = String.valueOf(record.get(fieldName));
+                    if (val.length() > 25) {
+                        val = val.substring(0, 10) + "..." + val.substring(val.length() - 10);
+                    }
+                    rsb.append(String.format("%25s|", val));
+                }
+            }
+            sb.append(rsb.toString()).append("\n");
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * Pretty binary representation.
+     *
+     * @param binary a byte array.
+     * @return pretty binary representation.
+     */
+    public static String prettyBinary(final byte[] binary) {
+        final StringBuilder sb = new StringBuilder();
+        for (int i = (binary.length - 1); i >= 0 ; i--) {
+            byte b = binary[i];
+            sb.append(String.format("%8s", Integer.toBinaryString(b & 0xFF)).replace(' ', '0'));
+        }
+        return sb.toString();
+    }
+
+    /**
      * Dataset Record Writer class.
      */
     public static class DatasetRecordWriter implements Closeable {
@@ -482,7 +624,7 @@ public class DatasetsUtil {
      * @return avro data files paths.
      * @throws IOException
      */
-    public static SortedSet<Path> getAllAvroPaths(final FileSystem fs, final Path[] pathArray) throws IOException {
+    public static SortedSet<Path> getAllAvroPaths(final FileSystem fs, final Path... pathArray) throws IOException {
         final SortedSet<Path> paths = new TreeSet<Path>();
         for(Path p : pathArray) {
             if (fs.isDirectory(p)) {
@@ -576,7 +718,7 @@ public class DatasetsUtil {
             current = 0;
         }
 
-        public DatasetRecordReader(final FileSystem fs, final Schema schema, final Path[] avroPaths)
+        public DatasetRecordReader(final FileSystem fs, final Schema schema, final Path... avroPaths)
                 throws IOException {
             final SortedSet<Path> paths = new TreeSet<Path>();
             for (Path avroPath : avroPaths) {
@@ -637,6 +779,30 @@ public class DatasetsUtil {
         public void remove() {
             throw new UnsupportedOperationException("Not supported");
         }
+    }
+
+    /**
+     * Returns a sample (random selection) from the records array.
+     *
+     * @param records generic avro records array.
+     * @param sampleSize sample size;
+     * @return a sample from the records array.
+     */
+    public static GenericRecord[] sampleDataset(final GenericRecord[] records,final int sampleSize) {
+        LOG.debug(String.format("Sampling from records [size=%d]", sampleSize));
+        final SecureRandom RANDOM = new SecureRandom();
+        int i = 0;
+        int sampled = 0;
+        final GenericRecord[] sample = new GenericRecord[sampleSize];
+        do{
+            if(RANDOM.nextBoolean()) {
+                sample[sampled] = records[i];
+                sampled++;
+            }
+            i++;
+            i = (i == records.length) ? 0 : i;
+        }while(sampled < sampleSize);
+        return sample;
     }
 
     /**
@@ -774,27 +940,5 @@ public class DatasetsUtil {
         int i = 0;
         for (AvroKey<GenericRecord> key : avroKeys ) updatedRecords[i++] = key.datum();
         return updatedRecords;
-    }
-
-    /**
-     * Load Avro Records from local files.
-     *
-     * @param schema schema.
-     * @param avroFiles a file <code>Path</code> array.
-     * @return an array of avro generic records.
-     * @throws IOException
-     */
-    public static GenericRecord[] loadAvroRecordsFromFiles(final FileSystem fs,final Schema schema,final Path[] avroFiles) throws IOException {
-        final List<GenericRecord> recordList =  new ArrayList<GenericRecord>();
-        int i = 0;
-        for (Path p : avroFiles) {
-            final long len = fs.getFileStatus(p).getLen();
-            final DataFileReader<GenericRecord> reader =
-                    new DataFileReader<GenericRecord>(new AvroFSInput(fs.open(p),len),
-                            new GenericDatumReader<GenericRecord>(schema));
-            for (GenericRecord record : reader) recordList.add(i++,record);
-            reader.close();
-        }
-        return recordList.toArray(new GenericRecord[recordList.size()]);
     }
 }

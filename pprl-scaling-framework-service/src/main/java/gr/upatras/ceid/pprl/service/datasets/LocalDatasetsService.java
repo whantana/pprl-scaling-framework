@@ -16,18 +16,21 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import sun.net.www.content.text.Generic;
 
 import java.io.IOException;
-import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
+/**
+ * Local Datasets Service class.
+ */
 @Service
 public class LocalDatasetsService implements InitializingBean {
 
     private static final Logger LOG = LoggerFactory.getLogger(LocalDatasetsService.class);
+    // TODO add more logging here
 
     public void afterPropertiesSet() {
         LOG.info("Local Dataset service initialized.");
@@ -36,7 +39,6 @@ public class LocalDatasetsService implements InitializingBean {
     public static final FsPermission ONLY_OWNER_PERMISSION
             = new FsPermission(FsAction.ALL, FsAction.NONE, FsAction.NONE, false);
 
-    private static SecureRandom RANDOM = new SecureRandom();
 
     @Autowired
     private FileSystem localFs;
@@ -49,56 +51,104 @@ public class LocalDatasetsService implements InitializingBean {
         this.localFs = localFs;
     }
 
-    public GenericRecord[] sample(final Path[] avroPaths,
-                                  final Path schemaPath,
-                                  final int sampleSize)
-            throws IOException, DatasetException {
+    /**
+     * Retrieve and returns directories of a datase on the local working directory.
+     *
+     * @param name dataset name.
+     * @return paths used by the dataset.
+     * @throws IOException
+     */
+    public Path[] retrieveDirectories(final String name) throws IOException {
+        return retrieveDirectories(name,localFs.getWorkingDirectory());
+    }
+
+    /**
+     * Retrieve and returns directories of a dataset.
+     *
+     * @param name dataset name.
+     * @param basePath base path (pprl-site).
+     * @return paths used by the dataset.
+     * @throws IOException
+     */
+    public Path[] retrieveDirectories(final String name,final Path basePath)
+            throws IOException {
         try {
-            LOG.info(String.format("Sampling local dataset [size=%d,avroPath=%s,schemaPath=%s]", sampleSize,
-                    Arrays.toString(avroPaths), schemaPath));
-            final Schema schema = DatasetsUtil.loadSchemaFromFSPath(localFs, schemaPath);
-            final DatasetsUtil.DatasetRecordReader reader = new DatasetsUtil.DatasetRecordReader(
-                    localFs, schema, avroPaths);
-            final GenericRecord[] sample = new GenericRecord[sampleSize];
-            int size = sampleSize;
-            while (reader.hasNext()) {
-                GenericRecord record = reader.next();
-                if (RANDOM.nextBoolean()) {
-                    sample[sampleSize - size] = record;
-                    size--;
-                    if (size== 0) break;
-                }
-            }
-            return sample;
-        } catch (DatasetException e) {
-            LOG.error(e.getMessage());
-            throw e;
+            return DatasetsUtil.retrieveDatasetDirectories(localFs,name,basePath);
         } catch (IOException e) {
             LOG.error(e.getMessage());
             throw e;
         }
     }
 
-    public GenericRecord[] loadRecords(final Path[] avroPaths,
-                                       final Path schemaPath)
+    /**
+     * Create Dataset Directories on the local working directory.
+     *
+     * @param name dataset name.
+     * @return paths created by the dataset name.
+     * @throws IOException
+     */
+    public Path[] createDirectories(final String name)
+            throws IOException {
+        return createDirectories(name,localFs.getWorkingDirectory(),ONLY_OWNER_PERMISSION);
+    }
+
+    /**
+     * Create Dataset Directories.
+     *
+     * @param name dataset name.
+     * @param basePath base path.
+     * @return paths created by the dataset name.
+     * @throws IOException
+     */
+    public Path[] createDirectories(final String name,final Path basePath)
+            throws IOException {
+        return DatasetsUtil.createDatasetDirectories(localFs, name, basePath, ONLY_OWNER_PERMISSION);
+    }
+
+    /**
+     * Create Dataset Directories on the local working directory.
+     *
+     * @param name dataset name.
+     * @param permission permission.
+     * @return paths created by the dataset name.
+     * @throws IOException
+     */
+    public Path[] createDirectories(final String name, final FsPermission permission)
+            throws IOException {
+        return createDirectories(name,localFs.getWorkingDirectory(),permission);
+    }
+
+    /**
+     * Create Dataset Directories.
+     *
+     * @param name dataset name.
+     * @param basePath base path.
+     * @param permission permission.
+     * @return paths created by the dataset name.
+     * @throws IOException
+     */
+    public Path[] createDirectories(final String name,final Path basePath, final FsPermission permission)
+            throws IOException {
+        return DatasetsUtil.createDatasetDirectories(localFs, name, basePath, permission);
+    }
+
+    /**
+     * Load dataset records.
+     *
+     * @param avroPaths paths of avro files.
+     * @param schemaPath path of schema file.
+     * @return generic avro record array.
+     * @throws DatasetException
+     * @throws IOException
+     */
+    public GenericRecord[] loadDatasetRecords(final Path[] avroPaths,
+                                              final Path schemaPath)
             throws DatasetException, IOException {
         try{
             LOG.info(String.format("Loading local dataset [avroPath=%s,schemaPath=%s]",
                     Arrays.toString(avroPaths), schemaPath));
             final Schema schema = DatasetsUtil.loadSchemaFromFSPath(localFs, schemaPath);
-            final List<GenericRecord> rlist = new ArrayList<GenericRecord>();
-            final DatasetsUtil.DatasetRecordReader reader = new DatasetsUtil.DatasetRecordReader(
-                    localFs, schema, avroPaths);
-            int i = 0;
-            while (reader.hasNext()) {
-                rlist.add(i,reader.next());
-                i++;
-                LOG.info("Loading Record #{}",i);
-            }
-            GenericRecord[] records = new GenericRecord[rlist.size()];
-            LOG.info("Loaded records count = {}",records.length);
-            records = rlist.toArray(records);
-            return records;
+            return loadDatasetRecords(avroPaths,schema);
         } catch (DatasetException e) {
             LOG.error(e.getMessage());
             throw e;
@@ -108,65 +158,106 @@ public class LocalDatasetsService implements InitializingBean {
         }
     }
 
-    public Path saveRecords(final String name,
-                            final GenericRecord[] records, final Schema schema)
-            throws DatasetException, IOException {
-        return saveRecords(name, records, schema, localFs.getWorkingDirectory());
+    /**
+     * Load dataset records.
+     *
+     * @param avroPaths paths of avro files.
+     * @param schema schema.
+     * @return generic avro record array.
+     * @throws IOException
+     */
+    public GenericRecord[] loadDatasetRecords(final Path[] avroPaths,
+                                              final Schema schema)
+            throws IOException {
+        try {
+            return DatasetsUtil.loadAvroRecordsFromFSPaths(localFs,schema,avroPaths);
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        }
     }
 
-    public Path saveRecords(final String name,
-                            final GenericRecord[] records, final Schema schema,
-                            final int partitions)
+    /**
+     * Save dataset records.
+     *
+     * @param name a name.
+     * @param records generic avro record array.
+     * @param schema  schema.
+     * @throws DatasetException
+     * @throws IOException
+     */
+    public void saveDatasetRecords(final String name,
+                                   final GenericRecord[] records, final Schema schema)
             throws DatasetException, IOException {
-        return saveRecords(name, records, schema, localFs.getWorkingDirectory(),partitions);
+        saveDatasetRecords(name, records, schema, localFs.getWorkingDirectory());
     }
 
-    public Path saveRecords(final String name,
-                            final GenericRecord[] records, final Schema schema,
-                            final Path parent)
+    /**
+     * Save dataset records.
+     *
+     * @param name a name.
+     * @param records generic avro record array.
+     * @param schema  schema.
+     * @param partitions count of partitions (avro files).
+     * @throws DatasetException
+     * @throws IOException
+     */
+    public void saveDatasetRecords(final String name,
+                                   final GenericRecord[] records, final Schema schema,
+                                   final int partitions)
             throws DatasetException, IOException {
-        return saveRecords(name,records, schema, parent, 1);
+        saveDatasetRecords(name, records, schema, localFs.getWorkingDirectory(), partitions);
     }
 
-    public Path saveRecords(final String name,
-                            final GenericRecord[] records, final Schema schema,
-                            final Path parent,
-                            final int partitions)
+    /**
+     * Save dataset records.
+     *
+     * @param name a name.
+     * @param records generic avro record array.
+     * @param schema  schema.
+     * @param basePath a base path.
+     * @throws DatasetException
+     * @throws IOException
+     */
+    public void saveDatasetRecords(final String name,
+                                   final GenericRecord[] records, final Schema schema,
+                                   final Path basePath)
+            throws DatasetException, IOException {
+        saveDatasetRecords(name, records, schema, basePath, 1);
+    }
+
+    /**
+     * Save dataset records.
+     *
+     * @param name a name.
+     * @param records generic avro record array.
+     * @param schema  schema.
+     * @param basePath a base path.
+     * @param partitions count of partitions (avro files).
+     * @throws DatasetException
+     * @throws IOException
+     */
+    public void saveDatasetRecords(final String name,
+                                   final GenericRecord[] records, final Schema schema,
+                                   final Path basePath,
+                                   final int partitions)
             throws DatasetException, IOException {
         try {
-            final Path[] dataset = DatasetsUtil.createDatasetDirectories(localFs,name,parent);
-            final Path basePath = dataset[0];
-            final Path avroPath = dataset[1];
-            final Path schemaPath = dataset[2];
-            final Path schemaFilePath = new Path(schemaPath,String.format("%s.avsc",name));
-            saveSchema(schemaFilePath,schema);
-            final DatasetsUtil.DatasetRecordWriter writer =
-                    new DatasetsUtil.DatasetRecordWriter(localFs,name,schema,avroPath,partitions);
-            writer.writeRecords(records);
-            writer.close();
-            return basePath;
-        } catch (DatasetException e) {
-            LOG.error(e.getMessage());
-            throw e;
+            DatasetsUtil.saveAvroRecordsToFSPath(localFs,records,schema,basePath,name,partitions);
         } catch (IOException e) {
             LOG.error(e.getMessage());
             throw e;
         }
     }
 
-    public void saveSchema(final Path schemaPath, final Schema schema)
-            throws IOException, DatasetException {
-        try {
-            DatasetsUtil.saveSchemaToFSPath(localFs, schema, schemaPath);
-        } catch (DatasetException e) {
-            LOG.error(e.getMessage());
-            throw e;
-        } catch (IOException e) {
-            LOG.error(e.getMessage());
-            throw e;
-        }
-    }
-
+    /**
+     * Load schema.
+     *
+     * @param schemaPath schema path.
+     * @return a <code>Schema</code> instance.
+     * @throws IOException
+     * @throws DatasetException
+     */
     public Schema loadSchema(final Path schemaPath)
             throws IOException, DatasetException {
         try {
@@ -181,20 +272,82 @@ public class LocalDatasetsService implements InitializingBean {
         }
     }
 
+    /**
+     * Load schema.
+     *
+     * @param schemaPath schema path.
+     * @param schema a <code>Schema</code> instance.
+     * @throws IOException
+     * @throws DatasetException
+     */
+    public void saveSchema(final Path schemaPath, final Schema schema)
+            throws IOException, DatasetException {
+        try {
+            DatasetsUtil.saveSchemaToFSPath(localFs, schema, schemaPath);
+        } catch (DatasetException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Load schema.
+     *
+     * @param name a name.
+     * @param basePath base path.
+     * @param schema a <code>Schema</code> instance.
+     * @throws IOException
+     * @throws DatasetException
+     */
+    public void saveSchema(final String name, final Path basePath, final Schema schema)
+            throws IOException, DatasetException {
+        try {
+            DatasetsUtil.saveSchemaToFSPath(localFs, schema, new Path(basePath,name + ".avsc"));
+        } catch (DatasetException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Save dataset statistics
+     *
+     * @param name a name.
+     * @param statistics a <code>DatasetStatistics</code> instance.
+     * @return path statistics are saved.
+     * @throws IOException
+     * @throws DatasetException
+     */
     public Path saveStats(final String name,
                           final DatasetStatistics statistics)
             throws IOException, DatasetException {
         return saveStats(name, statistics, localFs.getWorkingDirectory());
     }
 
+    /**
+     * Save dataset statistics
+     *
+     * @param name a name.
+     * @param statistics a <code>DatasetStatistics</code> instance.
+     * @param basePath a base path.
+     * @return path statistics are saved.
+     * @throws IOException
+     * @throws DatasetException
+     */
     public Path saveStats(final String name,
                           final DatasetStatistics statistics,
-                          final Path parent)
+                          final Path basePath)
             throws IOException, DatasetException {
         try {
-            if(!localFs.exists(parent) && !localFs.mkdirs(parent,ONLY_OWNER_PERMISSION))
-                throw new DatasetException(String.format("Cannot create dir \"%s\"",parent));
-            final Path path = new Path(parent,name + ".properties");
+            if(!localFs.exists(basePath) && !localFs.mkdirs(basePath,ONLY_OWNER_PERMISSION))
+                throw new DatasetException(String.format("Cannot create dir \"%s\"", basePath));
+            final Path path = new Path(basePath,name + ".properties");
             LOG.info("Saving stats to [path={}]",path);
             FSDataOutputStream fsdos = localFs.create(path);
             statistics.toProperties().store(fsdos, "Statistics");
@@ -209,6 +362,14 @@ public class LocalDatasetsService implements InitializingBean {
         }
     }
 
+    /**
+     * Load statistics from paths.
+     *
+     * @param propertiesPaths property file paths.
+     * @return a <code>DatasetStatistics</code> instance.
+     * @throws IOException
+     * @throws DatasetException
+     */
     public DatasetStatistics loadStats(final Path... propertiesPaths)
             throws IOException, DatasetException {
         try {
@@ -231,5 +392,85 @@ public class LocalDatasetsService implements InitializingBean {
             LOG.error(e.getMessage());
             throw e;
         }
+    }
+
+    /**
+     * Sample a dataset.
+     *
+     * @param avroPaths avro paths.
+     * @param schemaPath schema path.
+     * @param sampleSize count of records to be sampled.
+     * @return a sample records array of a dataset.
+     * @throws IOException
+     * @throws DatasetException
+     */
+    public GenericRecord[] sampleDataset(final Path[] avroPaths,
+                                         final Path schemaPath,
+                                         final int sampleSize)
+            throws IOException, DatasetException {
+        try {
+            LOG.info(String.format("Sampling local dataset [size=%d,avroPath=%s,schemaPath=%s]", sampleSize,
+                    Arrays.toString(avroPaths), schemaPath));
+            final Schema schema = DatasetsUtil.loadSchemaFromFSPath(localFs, schemaPath);
+            final GenericRecord[] records = DatasetsUtil.loadAvroRecordsFromFSPaths(localFs,schema,avroPaths);
+            return DatasetsUtil.sampleDataset(records,sampleSize);
+        } catch (DatasetException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Update dataset records.
+     *
+     * @param records records.
+     * @param updatedSchema updated schema.
+     * @param sort if true sort dataset records.
+     * @param addUlid if true add ULID field.
+     * @param ulidFieldName ulidFieldName.
+     * @return updated dataset records.
+     * @throws DatasetException
+     * @throws IOException
+     */
+    public GenericRecord[] updateDatasetRecords(final GenericRecord[] records,
+                                                final Schema updatedSchema,
+                                                final boolean sort, final boolean addUlid,
+                                                final String ulidFieldName)
+            throws DatasetException, IOException {
+        if(!(sort || addUlid)) throw new IllegalArgumentException("Neighter sort or addUlid is set.");
+        GenericRecord[] updatedRecords = null;
+        if(sort) updatedRecords = DatasetsUtil.updateRecordsWithOrderByFields(records,updatedSchema);
+        if(addUlid) updatedRecords = DatasetsUtil.updateRecordsWithULID(
+                (updatedRecords !=null) ? updatedRecords : records, updatedSchema, ulidFieldName);
+        return updatedRecords;
+    }
+
+    /**
+     * Update dataset schema.
+     *
+     * @param schema schema
+     * @param sort if true sort dataset records.
+     * @param addUlid if true add ULID field.
+     * @param ulidFieldName ulidFieldName.
+     * @param orderByFieldNames fields to order by (order of fields matters).
+     * @return updated dataset schema.
+     * @throws DatasetException
+     * @throws IOException
+     */
+    public Schema updateDatasetSchema(final Schema schema,
+                                      final boolean sort, final boolean addUlid,
+                                      final String ulidFieldName,
+                                      final String... orderByFieldNames)
+            throws DatasetException, IOException {
+        if(!(sort || addUlid)) throw new IllegalArgumentException("Neighter sort or addUlid is set.");
+        Schema updatedSchema = null;
+        if(sort) updatedSchema = DatasetsUtil.updateSchemaWithOrderByFields(schema,orderByFieldNames);
+        if(addUlid) updatedSchema = DatasetsUtil.updateSchemaWithULID(
+                (updatedSchema==null)?schema:updatedSchema,
+                ulidFieldName);
+        return updatedSchema;
     }
 }

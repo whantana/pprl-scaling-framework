@@ -23,16 +23,22 @@ import java.security.SecureRandom;
 import java.util.Properties;
 import java.util.SortedSet;
 
+/**
+ * Datasets Service class.
+ */
 @Service
 public class DatasetsService implements InitializingBean {
 
     protected static final Logger LOG = LoggerFactory.getLogger(DatasetsService.class);
+    // TODO add more logging here
 
     public void afterPropertiesSet() {
         try {
             basePath = new Path(hdfs.getHomeDirectory(),"pprl");
-            if(!hdfs.exists(basePath))
-                hdfs.mkdirs(basePath,ONLY_OWNER_PERMISSION);
+            if(!hdfs.exists(basePath)) {
+                LOG.info("PPRL Base Path : {}",basePath);
+                hdfs.mkdirs(basePath, ONLY_OWNER_PERMISSION);
+            }
 
             boolean onlyOwnerPermissionbaseDir = hdfs.getFileStatus(basePath)
                     .getPermission().equals(ONLY_OWNER_PERMISSION);
@@ -49,8 +55,9 @@ public class DatasetsService implements InitializingBean {
         }
     }
 
-    private static SecureRandom RANDOM = new SecureRandom();
-
+    /**
+     * Permissions
+     */
     public static final FsPermission ONLY_OWNER_PERMISSION
             = new FsPermission(FsAction.ALL, FsAction.NONE, FsAction.NONE, false);
 
@@ -58,41 +65,65 @@ public class DatasetsService implements InitializingBean {
             = new FsPermission(FsAction.ALL, FsAction.NONE, FsAction.READ, false);
 
     @Autowired
-    private FileSystem hdfs;
+    private FileSystem hdfs;     // HDFS FileSystem reference
 
     @Autowired
-    private FileSystem localFs;
+    private FileSystem localFs;  // Local FileSystem reference
 
     @Autowired
-    private ToolRunner dblpXmlToAvroToolRunner;
+    private ToolRunner dblpXmlToAvroToolRunner;       // DBLP XML TO AVRO ToolRunner
 
     @Autowired
-    private ToolRunner qGramCountingToolRunner;
+    private ToolRunner qGramCountingToolRunner;       // Q-Gram Counting Tool
 
-    public FileSystem getLocalFs() {
-        return localFs;
-    }
+    private Path basePath;                            // PPRL Base Path on the HDFS (pprl-site).
 
-    public void setLocalFs(FileSystem localFs) {
-        this.localFs = localFs;
-    }
-
-    private Path basePath;
-
+    /**
+     * Create Datasets Directories on the HDFS pprl-site.
+     *
+     * @param name dataset name.
+     * @param permission permission.
+     * @return paths created by the dataset name.
+     * @throws IOException
+     */
     public Path[] createDirectories(final String name, final FsPermission permission)
             throws IOException {
         return createDirectories(name,basePath,permission);
     }
 
+    /**
+     * Create Datasets Directories on the HDFS pprl-site.
+     *
+     * @param name dataset name.
+     * @param basePath base path (pprl-site).
+     * @param permission permission.
+     * @return paths created by the dataset name.
+     * @throws IOException
+     */
     public Path[] createDirectories(final String name,final Path basePath, final FsPermission permission)
             throws IOException {
         return DatasetsUtil.createDatasetDirectories(hdfs, name, basePath, permission);
     }
 
+    /**
+     * Retrieve and returns directories of a datase on the HDFS pprl-site.
+     *
+     * @param name dataset name.
+     * @return paths used by the dataset.
+     * @throws IOException
+     */
     public Path[] retrieveDirectories(final String name) throws IOException {
         return retrieveDirectories(name,basePath);
     }
 
+    /**
+     * Retrieve and returns directories of a datase on the HDFS pprl-site.
+     *
+     * @param name dataset name.
+     * @param basePath base path (pprl-site).
+     * @return paths used by the dataset.
+     * @throws IOException
+     */
     public Path[] retrieveDirectories(final String name,final Path basePath)
             throws IOException {
         try {
@@ -103,20 +134,13 @@ public class DatasetsService implements InitializingBean {
         }
     }
 
-    public Schema retrieveSchema(final Path basePath)
-            throws IOException, DatasetException {
-        try {
-            final Path schemaPath = DatasetsUtil.getSchemaPath(hdfs,basePath);
-            return DatasetsUtil.loadSchemaFromFSPath(hdfs,schemaPath);
-        } catch (IOException e) {
-            LOG.error(e.getMessage());
-            throw e;
-        } catch (DatasetException e) {
-            LOG.error(e.getMessage());
-            throw e;
-        }
-    }
-
+    /**
+     * Retrieve and return path containing schema of a dataset.
+     *
+     * @param basePath datasets base path.
+     * @return datasets schema path.
+     * @throws IOException
+     */
     public Path retrieveSchemaPath(final Path basePath)
             throws IOException {
         try {
@@ -127,11 +151,30 @@ public class DatasetsService implements InitializingBean {
         }
     }
 
+    /**
+     * Upload files as a new dataset.
+     *
+     * @param avroPaths datasets avro paths (local).
+     * @param schemaPath datasets schema path (local).
+     * @param name datasets name.
+     * @return new dataset base path.
+     * @throws IOException
+     */
     public Path uploadFiles(final Path[] avroPaths, final Path schemaPath,final  String name)
             throws IOException {
         return uploadFiles(avroPaths,schemaPath,name,ONLY_OWNER_PERMISSION);
     }
 
+    /**
+     * Upload files as a new dataset.
+     *
+     * @param avroPaths datasets avro paths (local).
+     * @param schemaPath datasets schema path (local).
+     * @param name datasets name.
+     * @param permission permission.
+     * @return new dataset base path.
+     * @throws IOException
+     */
     public Path uploadFiles(final Path[] avroPaths, final Path schemaPath,final  String name,
                             final FsPermission permission)
             throws IOException {
@@ -162,12 +205,31 @@ public class DatasetsService implements InitializingBean {
         }
     }
 
+    /**
+     * Download files from a HDFS pprl-site dataset to local file system.
+     *
+     * @param name datasets name.
+     * @param downloadName download dataset name
+     * @return downloaded dataset base path.
+     * @throws DatasetException
+     * @throws IOException
+     */
     public Path downloadFiles(final String name,
                               final String downloadName) throws DatasetException, IOException {
         final Path uploadedPath = new Path(basePath, name);
         return downloadFiles(uploadedPath,downloadName,localFs.getWorkingDirectory());
     }
 
+    /**
+     * Download files from a HDFS pprl-site dataset to local file system.
+     *
+     * @param name datasets name.
+     * @param downloadName download dataset name.
+     * @param parent base path for the downloaded dataset.
+     * @return downloaded dataset base path.
+     * @throws DatasetException
+     * @throws IOException
+     */
     public Path downloadFiles(final String name,
                               final String downloadName,
                               final Path parent) throws DatasetException, IOException {
@@ -175,6 +237,16 @@ public class DatasetsService implements InitializingBean {
         return downloadFiles(uploadedPath,downloadName,parent);
     }
 
+    /**
+     * Download files from a HDFS pprl-site dataset to local file system.
+     *
+     * @param uploadedPath a dataset base path uploaded on the HDFS pprl-site.
+     * @param downloadName download dataset name.
+     * @param parent base path for the downloaded dataset.
+     * @return downloaded dataset base path.
+     * @throws DatasetException
+     * @throws IOException
+     */
     public Path downloadFiles(final Path uploadedPath,
                               final String downloadName,
                               final Path parent) throws DatasetException, IOException {
@@ -214,11 +286,17 @@ public class DatasetsService implements InitializingBean {
         }
     }
 
-
+    /**
+     * Load a dataset schema from a path.
+     *
+     * @param schemaPath a schema path.
+     * @return a dataset schema.
+     * @throws IOException
+     * @throws DatasetException
+     */
     public Schema loadSchema(final Path schemaPath)
             throws IOException, DatasetException {
         try {
-            LOG.info(String.format("Loading schema [path=%s]",schemaPath));
             return DatasetsUtil.loadSchemaFromFSPath(hdfs,schemaPath);
         } catch (DatasetException e) {
             LOG.error(e.getMessage());
@@ -229,11 +307,49 @@ public class DatasetsService implements InitializingBean {
         }
     }
 
+    /**
+     * Save a dataset schema to an HDFS path.
+     *
+     * @param schemaPath schema hdfs path.
+     * @param schema <code>Schema</code> instance.
+     * @throws IOException
+     * @throws DatasetException
+     */
+    public void saveSchema(final Path schemaPath, final Schema schema)
+            throws IOException, DatasetException {
+        try {
+            DatasetsUtil.saveSchemaToFSPath(hdfs, schema, schemaPath);
+        } catch (DatasetException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Imports the DBLP (dblp.xml) as a new dataset on the HDFS pprl-site.
+     *
+     * @param xmlPath local path to the dblp xml file.
+     * @param name dataset name.
+     * @return base path of the imported dblp dataset.
+     * @throws Exception
+     */
     public Path importDblpXmlDataset(final Path xmlPath, final String name)
             throws Exception {
         return importDblpXmlDataset(xmlPath,name,ONLY_OWNER_PERMISSION);
     }
 
+    /**
+     * Imports the DBLP (dblp.xml) as a new dataset on the HDFS pprl-site.
+     *
+     * @param xmlPath local path to the dblp xml file.
+     * @param name dataset name.
+     * @param permission permission.
+     * @return base path of the imported dblp dataset.
+     * @throws Exception
+     */
     public Path importDblpXmlDataset(final Path xmlPath, final String name,
                                      final FsPermission permission)
             throws Exception {
@@ -270,6 +386,17 @@ public class DatasetsService implements InitializingBean {
         }
     }
 
+    /**
+     * Count Average Q-Grams per field.
+     *
+     * @param inputPath input datasets data HDFS path.
+     * @param inputSchemaPath input datasets schema HDFS path.
+     * @param basePath base output path.
+     * @param statsFileName stats output file.
+     * @param fieldNames field names.
+     * @return HDFS path containing the stats.
+     * @throws Exception
+     */
     public Path countAvgQgrams(final Path inputPath, final Path inputSchemaPath,
                                final Path basePath,
                                final String statsFileName,
@@ -288,6 +415,13 @@ public class DatasetsService implements InitializingBean {
         }
     }
 
+    /**
+     * Run DBLP XML to Avro tool.
+     *
+     * @param inputPath input path.
+     * @param outputPath output path.
+     * @throws Exception
+     */
     public void runDblpXmlToAvroTool(final Path inputPath, final Path outputPath)
             throws Exception {
         if(dblpXmlToAvroToolRunner == null) throw new IllegalStateException("tool-runner not set");
@@ -297,6 +431,15 @@ public class DatasetsService implements InitializingBean {
         dblpXmlToAvroToolRunner.call();
     }
 
+    /**
+     * Run Q-Gram counting tool.
+     *
+     * @param inputPath input path.
+     * @param inputSchemaPath input schema path.
+     * @param propertiesOutputPath output path.
+     * @param fieldNames field names.
+     * @throws Exception
+     */
     public void runQGramCountingTool(final Path inputPath, final Path inputSchemaPath,
                                       final Path propertiesOutputPath,
                                       final String[] fieldNames)
@@ -318,7 +461,12 @@ public class DatasetsService implements InitializingBean {
         qGramCountingToolRunner.call();
     }
 
-
+    /**
+     * Remove _SUCCESS file from path.
+     *
+     * @param path a path.
+     * @throws IOException
+     */
     private void removeSuccessFile(final Path path) throws IOException {
         final Path p = new Path(path + "/_SUCCESS");
         if (hdfs.exists(p)) {
@@ -326,6 +474,15 @@ public class DatasetsService implements InitializingBean {
         }
     }
 
+    /**
+     * Save statistics instance to a HDFS path.
+     *
+     * @param name a name.
+     * @param basePath base path.
+     * @param statistics <code>DatasetStatistics</code> instance.
+     * @return return path statistics saved.
+     * @throws IOException
+     */
     public Path saveStats(final String name, final Path basePath, final DatasetStatistics statistics)
             throws IOException {
         try{
@@ -342,6 +499,14 @@ public class DatasetsService implements InitializingBean {
         }
     }
 
+    /**
+     * Load dataset statistics.
+     *
+     * @param propertiesPaths properties paths.
+     * @return
+     * @throws IOException
+     * @throws DatasetException
+     */
     public DatasetStatistics loadStats(final Path... propertiesPaths)
             throws IOException, DatasetException {
         try {
@@ -366,20 +531,9 @@ public class DatasetsService implements InitializingBean {
         }
     }
 
-    public void saveSchema(final Path schemaPath, final Schema schema)
-            throws IOException, DatasetException {
-        try {
-            DatasetsUtil.saveSchemaToFSPath(hdfs, schema, schemaPath);
-        } catch (DatasetException e) {
-            LOG.error(e.getMessage());
-            throw e;
-        } catch (IOException e) {
-            LOG.error(e.getMessage());
-            throw e;
-        }
-    }
-
     // TODO sample files (need spark here?)
 
     // TODO Add a an int UID field for a sample
+
+    // TODO Add an updated call.
 }

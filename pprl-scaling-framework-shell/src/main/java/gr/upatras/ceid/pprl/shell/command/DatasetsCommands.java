@@ -282,8 +282,12 @@ public class DatasetsCommands implements CommandMarker {
             final Schema schema = lds.loadSchema(schemaPath);
             final GenericRecord[] records = lds.loadDatasetRecords(avroPaths,schema);
 
-            final Schema updatedSchema = lds.updateDatasetSchema(schema,sort,addUlid,fieldName,fieldNames);
-            final GenericRecord[] updatedRecords = lds.updateDatasetRecords(records,updatedSchema,sort,addUlid,fieldName);
+            final Schema updatedSchema = lds.updateDatasetSchema(schema,
+                    sort,addUlid,
+                    fieldName,fieldNames);
+            final GenericRecord[] updatedRecords = lds.updateDatasetRecords(records,schema,
+                    sort,addUlid,
+                    fieldName,fieldNames);
 
             LOG.info(DatasetsUtil.prettyRecords(updatedRecords, updatedSchema));
             LOG.info("\n");

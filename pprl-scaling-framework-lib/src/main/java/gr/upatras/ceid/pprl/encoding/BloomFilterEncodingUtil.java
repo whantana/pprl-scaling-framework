@@ -145,8 +145,6 @@ public class BloomFilterEncodingUtil {
                                                       final int fieldCount, final int N,
                                                       final int fbfN, final int K, final int Q,
                                                       final double[] avgQgrams, final double[] weights) {
-        assert fieldCount == avgQgrams.length;
-        assert fieldCount == weights.length;
         final boolean clk = scheme.equals("CLK");
         final boolean fbf = scheme.equals("FBF");
         final boolean rbf = scheme.equals("RBF");
@@ -155,13 +153,15 @@ public class BloomFilterEncodingUtil {
         if(rbf && (fieldCount < 2)) throw new IllegalArgumentException("RBF Encodings requires at least two fields.");
 
         final boolean fbfStatic = fbf && (fbfN > 0);
-        final boolean fbfDynamic = fbf && (fbfN < 0);
+        final boolean fbfDynamic = fbf && (fbfN <= 0);
+        if(fbfDynamic) assert fieldCount == avgQgrams.length;
         final boolean rbfUniform =  rbf && (N > 0);
-        final boolean rbfWeighted =  rbf && (N < 0);
+        final boolean rbfWeighted =  rbf && (N <= 0);
+        if(rbfWeighted) assert fieldCount == weights.length;
         final boolean rbfUniformFbfStatic = rbfUniform && (fbfN > 0);
-        final boolean rbfUniformFbfDynamic = rbfUniform && (fbfN < 0);
+        final boolean rbfUniformFbfDynamic = rbfUniform && (fbfN <= 0);
         final boolean rbfWeighetdFbfStatic = rbfWeighted && (fbfN > 0);
-        final boolean rbfWeighetdFbfDynamic = rbfWeighted && (fbfN < 0);
+        final boolean rbfWeighetdFbfDynamic = rbfWeighted && (fbfN <= 0);
 
         if(clk) {
             LOG.debug("New Encoding instance is CLK.");

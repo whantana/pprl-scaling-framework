@@ -2,6 +2,8 @@ package gr.upatras.ceid.pprl.mapreduce;
 
 import gr.upatras.ceid.pprl.matching.SimilarityUtil;
 import gr.upatras.ceid.pprl.matching.SimilarityVectorFrequencies;
+import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroValue;
 import org.apache.hadoop.io.LongWritable;
@@ -9,6 +11,8 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Record-Pair similarity reducer class.
@@ -17,54 +21,41 @@ public class RecordPairSimilarityReducer extends Reducer<LongWritable, AvroValue
     public static String SIMILARITY_VECTORS_KEY = "similarity.vectors";
     public static String FIELD_NAMES_KEY = "field.names";
     public static String PAIRS_DONE_KEY = "pairs.done";
+    public static String SCHEMA_KEY = "schema";
+
     private String[] fieldNames;
+    private Schema schema;
+
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
+        schema = (new Schema.Parser()).parse(context.getConfiguration().get(SCHEMA_KEY));
         fieldNames = context.getConfiguration().getStrings(FIELD_NAMES_KEY);
         if(fieldNames == null) throw new InterruptedException("Fields names are not set.");
     }
 
     @Override
     protected void reduce(LongWritable key, Iterable<AvroValue<GenericRecord>> values, Context context) throws IOException, InterruptedException {
-        final GenericRecord[] recordPair = getRecordPair(values);
 
-        if(!pairComplete(recordPair)) throw new IllegalStateException("Pair must be complete at this point");
-
-        boolean[] vector = SimilarityUtil.recordPairSimilarity(recordPair, fieldNames);
-        context.getCounter(
-                SIMILARITY_VECTORS_KEY ,
-                String.valueOf(SimilarityVectorFrequencies.vector2Index(vector))).increment(1);
-
-        context.getCounter(PAIRS_DONE_KEY,"reduce").increment(1);
-    }
-
-    /**
-     * Retrieve and return record pair from <code>values</code>.
-     *
-     * @param values generic records <code>Iterable</code>.
-     * @return an avro generic record array.
-     */
-    public static GenericRecord[] getRecordPair(Iterable<AvroValue<GenericRecord>> values) {
-        int i = 0;
-        final GenericRecord[] pair = new GenericRecord[2];
-        pair[0] = null;
-        pair[1] = null;
-        for (AvroValue<GenericRecord> val : values) {
-            if(i > 2) throw new IllegalStateException("Values must be have size of 2.");
-            pair[i++] = val.datum();
+        final List<GenericRecord> list = new ArrayList<GenericRecord>();
+        for(AvroValue<GenericRecord> value : values) {
+            GenericRecord record = new GenericData.Record(schema);
+            for (String fieldName : fieldNames)
+                record.put(fieldName,value.datum().get(fieldName));
+            list.add(record);
         }
-        if ((pair[0] == null) && (pair[1] == null)) throw new IllegalStateException("Both records are null");
-        return pair;
-    }
 
-    /**
-     * Returns true if pair is complete (pair[0] and pair[1] are not null), false otherwise.
-     *
-     * @param pair  an avro generic record array.
-     * @return true if pair is complete, false otherwise.
-     */
-    public static boolean pairComplete(final GenericRecord[] pair) {
-        return (pair[0] != null) && (pair[1] != null);
+        switch (list.size()) {
+            case 2:
+                final GenericRecord[] recordPair = {list.get(0),list.get(1)};
+                boolean[] vector = SimilarityUtil.recordPairSimilarity(recordPair, fieldNames);
+                context.getCounter(
+                        RecordPairSimilarityReducer.SIMILARITY_VECTORS_KEY ,
+                        String.valueOf(SimilarityVectorFrequencies.vector2Index(vector))).increment(1);
+                context.getCounter(RecordPairSimilarityReducer.PAIRS_DONE_KEY,"reduce").increment(1);
+                break;
+            default:
+                throw new IllegalStateException("No record pair!.");
+        }
     }
 }

@@ -809,14 +809,14 @@ public class DatasetsUtil {
      * Update schema with a Unique Long IDentifier.
      *
      * @param schema an avro schema.
-     * @param fieldName field name for the ULID field.
+     * @param fieldName field name for the UIID field.
      * @return an updated schema.
      */
-    public static Schema updateSchemaWithULID(final Schema schema, final String fieldName) {
+    public static Schema updateSchemaWithUID(final Schema schema, final String fieldName) {
         Schema newSchema = Schema.createRecord(
                 schema.getName(),schema.getDoc(),schema.getNamespace(),schema.isError());
-        final Schema.Field field = new Schema.Field(fieldName,Schema.create(Schema.Type.LONG),
-                "Unique Long IDentifier",null, Schema.Field.Order.ASCENDING);
+        final Schema.Field field = new Schema.Field(fieldName,Schema.create(Schema.Type.INT),
+                "Unique Integer IDentifier",null, Schema.Field.Order.ASCENDING);
         List<Schema.Field> newFields = new ArrayList<Schema.Field>();
         newFields.add(field);
         for(Schema.Field f : schema.getFields())
@@ -829,37 +829,41 @@ public class DatasetsUtil {
      * Update records with a Unique Long IDentifier.
      *
      * @param records avro records array.
-     * @param newSchema the updated schema.
-     * @param fieldName field name for the ULID field.
+     * @param schema schema.
+     * @param fieldName field name for the UIID field.
      * @return updated records array.
      */
-    public static GenericRecord[] updateRecordsWithULID(final GenericRecord[] records, final Schema newSchema,
-                                                        final String fieldName) {
-        return updateRecordsWithULID(records, newSchema, fieldName, 0);
+    public static GenericRecord[] updateRecordsWithUID(final GenericRecord[] records, final Schema schema,
+                                                       final String fieldName) {
+        return updateRecordsWithUID(records, schema, fieldName, 0);
     }
 
     /**
      * Update records with a Unique Long IDentifier.
      *
      * @param records avro records array.
-     * @param newSchema the updated schema.
-     * @param fieldName field name for the ULID field.
+     * @param schema schema.
+     * @param fieldName field name for the UIID field.
      * @param start base of the ULID.
-     * @return updated records array with ULID field.
+     * @return updated records array with UIID field.
      */
-    public static GenericRecord[] updateRecordsWithULID(final GenericRecord[] records, final Schema newSchema,
-                                                        final String fieldName, final long start) {
-        long ulid = start;
-        final GenericRecord[] newRecords = new GenericRecord[records.length];
+    public static GenericRecord[] updateRecordsWithUID(final GenericRecord[] records, final Schema schema,
+                                                       final String fieldName, final int start) {
+        int ulid = start;
+        final Schema updatedSchema = DatasetsUtil.updateSchemaWithUID(schema,fieldName);
+        final GenericRecord[] updatedRecords = new GenericRecord[records.length];
         for (int i = 0 ; i < records.length ; i++) {
-            LOG.debug("{} = {}",fieldName,ulid);
-            newRecords[i] = new GenericData.Record(newSchema);
-            newRecords[i].put(fieldName, ulid);
-            for (String f : fieldNames(records[i].getSchema()))
-                newRecords[i].put(f, records[i].get(f));
+            updatedRecords[i] = new GenericData.Record(updatedSchema);
+            updatedRecords[i].put(fieldName, ulid);
+            if(i==0) LOG.debug("updatedRecords[0].put(\"{}\",{})",fieldName,ulid);
+            for (String f : fieldNames(updatedSchema)) {
+                if(f.equals(fieldName)) continue;
+                updatedRecords[i].put(f, records[i].get(f));
+                if(i==0) LOG.debug("updatedRecords[0].put(\"{}\",{})",f,String.valueOf(records[i].get(f)));
+            }
             ulid++;
         }
-        return newRecords;
+        return updatedRecords;
     }
 
     /**
@@ -916,24 +920,30 @@ public class DatasetsUtil {
      * Update ordering of records using an updated schema.
      *
      * @param records avro records array.
-     * @param newSchema the updated schema.
+     * @param schema schema.
+     * @param fieldNames sequence of field names to order by (order by fieldname1 then by fieldname2...).
      * @return avro records array with updated ordering.
      */
     public static GenericRecord[] updateRecordsWithOrderByFields(final GenericRecord[] records,
-                                                                 final Schema newSchema) {
+                                                                 final Schema schema,
+                                                                 final String... fieldNames) {
+        final Schema updatedSchema = updateSchemaWithOrderByFields(schema,fieldNames);
         AvroKeyComparator<GenericRecord> comparator = new AvroKeyComparator<GenericRecord>();
         if (comparator.getConf() == null) {
             final Configuration conf = new Configuration();
-            conf.set("avro.serialization.key.writer.schema", newSchema.toString());
+            conf.set("avro.serialization.key.writer.schema", updatedSchema.toString());
             comparator.setConf(conf);
         }
 
         final Set<AvroKey<GenericRecord>> avroKeys = new TreeSet<AvroKey<GenericRecord>>(comparator);
-        for (GenericRecord record : records) {
-            GenericRecord updatedRecord = new GenericData.Record(newSchema);
-            for (Schema.Field f : record.getSchema().getFields())
-                updatedRecord.put(f.name(), record.get(f.name()));
+        for (int i = 0 ; i < records.length ; i++) {
+            GenericRecord updatedRecord = new GenericData.Record(updatedSchema);
+            for (String f : fieldNames(updatedSchema)) {
+                updatedRecord.put(f, records[i].get(f));
+                if(i==0) LOG.debug("updatedRecords[0].put(\"{}\",{})",f,String.valueOf(records[i].get(f)));
+            }
             avroKeys.add(new AvroKey<GenericRecord>(updatedRecord));
+
         }
         assert avroKeys.size() == records.length;
         final GenericRecord[] updatedRecords = new GenericRecord[records.length];

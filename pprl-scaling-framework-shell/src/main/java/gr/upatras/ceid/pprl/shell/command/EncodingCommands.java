@@ -1,6 +1,7 @@
 package gr.upatras.ceid.pprl.shell.command;
 
 import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
+import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import gr.upatras.ceid.pprl.service.datasets.DatasetsService;
 import gr.upatras.ceid.pprl.service.datasets.LocalDatasetsService;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
@@ -211,6 +212,9 @@ public class EncodingCommands implements CommandMarker {
             final GenericRecord[] encodedRecords = les.encodeRecords(records, encoding);
             final Schema encodingSchema = encoding.getEncodingSchema();
 
+            LOG.info(DatasetsUtil.prettyRecords(encodedRecords,encodingSchema));
+            LOG.info("\n");
+
             final Path[] datasetPaths = lds.createDirectories(name,DatasetsService.OTHERS_CAN_READ_PERMISSION);
 
             final Path encodingSchemaPath = datasetPaths[2];
@@ -295,6 +299,9 @@ public class EncodingCommands implements CommandMarker {
 
             final GenericRecord[] encodedRecords = les.encodeRecords(records, encoding);
             final Schema encodingSchema = encoding.getEncodingSchema();
+
+            LOG.info(DatasetsUtil.prettyRecords(encodedRecords,encodingSchema));
+            LOG.info("\n");
 
             final Path[] datasetPaths = lds.createDirectories(name,DatasetsService.OTHERS_CAN_READ_PERMISSION);
 

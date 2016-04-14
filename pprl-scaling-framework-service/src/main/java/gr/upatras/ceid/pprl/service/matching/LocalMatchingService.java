@@ -29,39 +29,33 @@ public class LocalMatchingService implements InitializingBean {
      * @param fieldNames field names to check for similarity.
      * @param similarityMethodName similarity method name.
      * @return an array of similarity vector freqs.
-     * @throws Exception
      */
     public SimilarityVectorFrequencies vectorFrequencies(final GenericRecord[] records,
                                                          final String[] fieldNames,
-                                                         final String similarityMethodName)
-            throws Exception {
-        try {
-            final long pairCount = CombinatoricsUtil.twoCombinationsCount(records.length);
-            final int fieldCount = fieldNames.length;
-            if(Long.compare(pairCount*fieldCount,Integer.MAX_VALUE) > 0)
-                throw new UnsupportedOperationException("Cannot create similarity matrix. #N*#F < Integer.MAX");
-            LOG.info("Creating similarity matrix");
-            final SimilarityVectorFrequencies matrix = new SimilarityVectorFrequencies(fieldCount);
-            int pairsDone = 0;
-            final Iterator<int[]> pairIter = CombinatoricsUtil.getPairs(records.length);
-            do {
-                int pair[] = pairIter.next();
-                boolean[] row = new boolean[fieldNames.length];
-                for(int j=0; j < fieldNames.length; j++) {
-                    String s1 = String.valueOf(records[pair[0]].get(fieldNames[j]));
-                    String s2 = String.valueOf(records[pair[1]].get(fieldNames[j]));
-                    if(SimilarityUtil.similarity(similarityMethodName, s1, s2)) row[j] = true;
-                }
-                matrix.set(row);
-                pairsDone++;
-                LOG.info("Pairs done : {}.",pairsDone );
-            }while(pairIter.hasNext());
-            LOG.info("{}",matrix);
-            return matrix;
-        } catch(Exception e) {
-            LOG.error(e.getMessage());
-            throw e;
-        }
+                                                         final String similarityMethodName) {
+        final long pairCount = CombinatoricsUtil.twoCombinationsCount(records.length);
+        final int fieldCount = fieldNames.length;
+        if(Long.compare(pairCount*fieldCount,Integer.MAX_VALUE) > 0)
+            throw new UnsupportedOperationException("Cannot create similarity frequencies. #N*#F < Integer.MAX");
+        LOG.info("Creating similarity frequencies");
+        final SimilarityVectorFrequencies frequencies = new SimilarityVectorFrequencies(fieldCount);
+        int pairsDone = 0;
+        final Iterator<int[]> pairIter = CombinatoricsUtil.getPairs(records.length);
+        do {
+            int pair[] = pairIter.next();
+            boolean[] row = new boolean[fieldNames.length];
+            for(int j=0; j < fieldNames.length; j++) {
+                String s1 = String.valueOf(records[pair[0]].get(fieldNames[j]));
+                String s2 = String.valueOf(records[pair[1]].get(fieldNames[j]));
+
+                if(SimilarityUtil.similarity(similarityMethodName, s1, s2)) row[j] = true;
+            }
+            frequencies.set(row);
+            pairsDone++;
+        }while(pairIter.hasNext());
+        LOG.info("Pairs done : {}.",pairsDone );
+        LOG.info("{}",frequencies);
+        return frequencies;
     }
 
     /**
@@ -73,8 +67,7 @@ public class LocalMatchingService implements InitializingBean {
      * @throws Exception
      */
     public SimilarityVectorFrequencies vectorFrequencies(final GenericRecord[] records,
-                                                         final String[] fieldNames)
-            throws Exception {
+                                                         final String[] fieldNames) {
         return vectorFrequencies(records, fieldNames, SimilarityUtil.DEFAULT_SIMILARITY_METHOD_NAME);
     }
 
@@ -93,35 +86,30 @@ public class LocalMatchingService implements InitializingBean {
                                                          final String[] fieldNamesA,
                                                          final GenericRecord[] recordsB,
                                                          final String[] fieldNamesB,
-                                                         final String similarityMethodName) throws Exception {
-        try{
-            assert fieldNamesA.length == fieldNamesB.length;
-            final int pairCount = recordsA.length*recordsB.length;
-            final int fieldCount = fieldNamesA.length;
-            if(Long.compare(pairCount*fieldCount,Integer.MAX_VALUE) > 0)
-                throw new UnsupportedOperationException("Cannot create gamma. #N*#F < Integer.MAX");
-            LOG.info("Creating similarity matrix");
-            final SimilarityVectorFrequencies matrix = new SimilarityVectorFrequencies(fieldCount);
-            int pairsDone = 0;
-            for (GenericRecord recA : recordsA) {
-                for(GenericRecord recB : recordsB) {
-                    boolean[] row = new boolean[fieldNamesA.length];
-                    for(int j=0; j < fieldNamesA.length; j++) {
-                        String s1 = String.valueOf(recA.get(fieldNamesA[j]));
-                        String s2 = String.valueOf(recB.get(fieldNamesB[j]));
-                        if(SimilarityUtil.similarity(similarityMethodName, s1, s2)) row[j] = true;
-                    }
-                    matrix.set(row);
-                    pairsDone++;
-                    LOG.info("Pairs done : {}.",pairsDone );
+                                                         final String similarityMethodName) {
+        assert fieldNamesA.length == fieldNamesB.length;
+        final int pairCount = recordsA.length*recordsB.length;
+        final int fieldCount = fieldNamesA.length;
+        if(Long.compare(pairCount*fieldCount,Integer.MAX_VALUE) > 0)
+            throw new UnsupportedOperationException("Cannot create gamma. #N*#F < Integer.MAX");
+        LOG.info("Creating similarity matrix");
+        final SimilarityVectorFrequencies matrix = new SimilarityVectorFrequencies(fieldCount);
+        int pairsDone = 0;
+        for (GenericRecord recA : recordsA) {
+            for(GenericRecord recB : recordsB) {
+                boolean[] row = new boolean[fieldNamesA.length];
+                for(int j=0; j < fieldNamesA.length; j++) {
+                    String s1 = String.valueOf(recA.get(fieldNamesA[j]));
+                    String s2 = String.valueOf(recB.get(fieldNamesB[j]));
+                    if(SimilarityUtil.similarity(similarityMethodName, s1, s2)) row[j] = true;
                 }
+                matrix.set(row);
+                pairsDone++;
+                LOG.info("Pairs done : {}.",pairsDone );
             }
-            LOG.info("{}",matrix);
-            return matrix;
-        } catch(Exception e) {
-            LOG.error(e.getMessage());
-            throw e;
         }
+        LOG.info("{}",matrix);
+        return matrix;
     }
 
     /**
@@ -132,13 +120,11 @@ public class LocalMatchingService implements InitializingBean {
      * @param recordsB generic avro records array (right dataset).
      * @param fieldNamesB field names to check for similarity (right dataset).
      * @return an array of similarity vector freqs.
-     * @throws Exception
      */
     public SimilarityVectorFrequencies vectorFrequencies(final GenericRecord[] recordsA,
                                                          final String[] fieldNamesA,
                                                          final GenericRecord[] recordsB,
-                                                         final String[] fieldNamesB)
-            throws Exception {
+                                                         final String[] fieldNamesB) {
         return vectorFrequencies(recordsA, fieldNamesA, recordsB, fieldNamesB, SimilarityUtil.DEFAULT_SIMILARITY_METHOD_NAME);
     }
 

@@ -62,11 +62,12 @@ public class ExhaustiveRecordPairSimilarityTool extends Configured implements To
         final int recordCount  = Integer.valueOf(args[4]);
         final String[] fieldNames = args[5].contains(",") ? args[5].split(",") : new String[]{args[5]};
         final int reducersCount = Integer.valueOf(args[6]);
+        final Schema inputSchema = loadAvroSchemaFromHdfs(FileSystem.get(conf), inputSchemaPath);
 
         conf.set(GenerateRecordPairsMapper.UID_FIELD_NAME_KEY,uidFieldName);
         conf.setInt(GenerateRecordPairsMapper.RECORD_COUNT_KEY, recordCount);
         conf.setStrings(RecordPairSimilarityReducer.FIELD_NAMES_KEY,fieldNames);
-        final Schema inputSchema = loadAvroSchemaFromHdfs(FileSystem.get(conf), inputSchemaPath);
+        conf.set(RecordPairSimilarityReducer.SCHEMA_KEY,inputSchema.toString());
 
 
         // set description and log it

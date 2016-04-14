@@ -5,7 +5,7 @@
   "doc" : "People",
   "fields" : [ {
     "name" : "id",
-    "type" : "long",
+    "type" : "string",
     "doc" : "unique id"
   }, {
     "name" : "name",

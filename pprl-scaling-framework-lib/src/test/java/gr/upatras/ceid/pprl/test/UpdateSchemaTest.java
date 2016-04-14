@@ -32,26 +32,17 @@ public class UpdateSchemaTest {
         while(reader.hasNext()) recordList.add(reader.next());
         GenericRecord[] records = new GenericRecord[recordList.size()];
         records = recordList.toArray(records);
-        LOG.info(records.length + " records ready.");
 
-        final String ulidFieldName = "my_ulid";
-        final Schema updatedSchema = DatasetsUtil.updateSchemaWithULID(schema, ulidFieldName);
-        final GenericRecord[] updatedRecords = DatasetsUtil.updateRecordsWithULID(records, updatedSchema, ulidFieldName);
+        final GenericRecord[] sample = DatasetsUtil.sampleDataset(records,5);
 
-        assertEquals(records.length,updatedRecords.length);
+        LOG.info(sample.length + " records ready.");
+        final String ulidFieldName = "my_id";
+        final Schema updatedSchema = DatasetsUtil.updateSchemaWithUID(schema, ulidFieldName);
+        final GenericRecord[] updatedRecords = DatasetsUtil.updateRecordsWithUID(sample, schema, ulidFieldName);
 
-        final Path[] paths = DatasetsUtil.createDatasetDirectories(fs,"da_int_1",new Path("data"));
-        DatasetsUtil.saveSchemaToFSPath(fs,updatedSchema,new Path(paths[2],"da_int_1.avsc"));
-        DatasetsUtil.DatasetRecordWriter writer =  new DatasetsUtil.DatasetRecordWriter(fs,"da_int_1", updatedSchema,paths[1]);
-        writer.writeRecords(updatedRecords);
-        writer.close();
-    }
+        assertEquals(sample.length,updatedRecords.length);
 
-    @Test
-    public void test1() throws IOException, DatasetException {
-        final FileSystem fs = FileSystem.getLocal(new Configuration());
-        Schema schema = DatasetsUtil.loadSchemaFromFSPath(fs,new Path("data/da_int/schema/da_int.avsc"));
-        LOG.info("Schema after load " + schema.toString());
+        LOG.info(DatasetsUtil.prettyRecords(updatedRecords,updatedSchema));
     }
 
     @Test
@@ -69,17 +60,29 @@ public class UpdateSchemaTest {
         final String[] fieldNames = new String[]{"name", "surname"};
         final Schema.Field.Order[] orders = new Schema.Field.Order[]{
                 Schema.Field.Order.ASCENDING,Schema.Field.Order.ASCENDING};
-        final Schema updatedSchema =
+        final Schema sortedSchema =
                 DatasetsUtil.updateSchemaWithOrderByFields(schema,fieldNames,orders);
+        final GenericRecord[] sortedRecords =
+                DatasetsUtil.updateRecordsWithOrderByFields(records, schema,fieldNames);
+
+        final Schema updatedSchema =
+                DatasetsUtil.updateSchemaWithUID(sortedSchema, "uiid");
+        final GenericRecord [] updatedRecords =
+                DatasetsUtil.updateRecordsWithUID(sortedRecords, sortedSchema, "uiid");
+
+
         final Path[] paths = DatasetsUtil.createDatasetDirectories(fs,"person_small_sorted",new Path("data"));
-        DatasetsUtil.saveSchemaToFSPath(fs,updatedSchema,new Path(paths[2],"person_small_sorted.avsc"));
-        final GenericRecord[] updatedRecords =
-                DatasetsUtil.updateRecordsWithOrderByFields(records, updatedSchema);
+        final Path basePath = paths[0];
+        final Path avroPath = paths[1];
+        final Path schemaPath = paths[2];
+        DatasetsUtil.saveSchemaToFSPath(fs,updatedSchema,new Path(schemaPath,"person_small_sorted.avsc"));
+
         DatasetsUtil.DatasetRecordWriter writer =
                 new DatasetsUtil.DatasetRecordWriter
-                        (fs,"person_small_sorted", updatedSchema, paths[1]);
+                        (fs,"person_small_sorted", updatedSchema, avroPath);
         writer.writeRecords(updatedRecords);
         writer.close();
+        LOG.info("Sorted Dataset at {}", basePath);
     }
 
     @Test
@@ -90,8 +93,10 @@ public class UpdateSchemaTest {
         DatasetsUtil.DatasetRecordReader reader = new DatasetsUtil.DatasetRecordReader(fs,schema,
                 new Path("data/person_small_sorted/avro"));
         LOG.info("Updated schema : " + schema);
-        while(reader.hasNext()) {
-            LOG.info("Sorted record : " + reader.next());
-        }
+        final List<GenericRecord> recordList = new ArrayList<GenericRecord>();
+        while(reader.hasNext()) recordList.add(reader.next());
+        GenericRecord[] records = new GenericRecord[recordList.size()];
+        records = recordList.toArray(records);
+        LOG.info(DatasetsUtil.prettyRecords(records,schema));
     }
 }

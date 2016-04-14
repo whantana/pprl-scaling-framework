@@ -16,7 +16,7 @@
                      jar="file://${app.repo}/pprl-scaling-framework-mapreduce-datasets-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.DblpXmlToAvroTool"
                      close-fs="false"
-                     libs="file://${app.repo}/avro-mapred-1.7.6-cdh5.4.0-hadoop2.jar"/>
+                     libs="file://${app.repo}/avro-mapred-${avro.version}-hadoop2.jar"/>
 
 
     <!-- Tool Runner configuration -->
@@ -25,7 +25,7 @@
                      jar="file://${app.repo}/pprl-scaling-framework-mapreduce-datasets-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.QGramCountingTool"
                      close-fs="false"
-                     libs="file://${app.repo}/avro-mapred-1.7.6-cdh5.4.0-hadoop2.jar"/>
+                     libs="file://${app.repo}/avro-mapred-${avro.version}-hadoop2.jar"/>
 
     <!-- component scan on service package-->
     <context:component-scan base-package="gr.upatras.ceid.pprl.service.datasets.config" />

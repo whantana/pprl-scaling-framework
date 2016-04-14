@@ -16,11 +16,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import sun.net.www.content.text.Generic;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -253,6 +251,20 @@ public class LocalDatasetsService implements InitializingBean {
     /**
      * Load schema.
      *
+     * @param name a name.
+     * @param basePath base path.
+     * @return a <code>Schema</code> instance.
+     * @throws IOException
+     * @throws DatasetException
+     */
+    public Schema loadSchema(final String name , final Path basePath)
+            throws IOException, DatasetException {
+        return loadSchema(new Path(basePath,String.format("%s.avsc",name)));
+    }
+
+    /**
+     * Load schema.
+     *
      * @param schemaPath schema path.
      * @return a <code>Schema</code> instance.
      * @throws IOException
@@ -304,15 +316,7 @@ public class LocalDatasetsService implements InitializingBean {
      */
     public void saveSchema(final String name, final Path basePath, final Schema schema)
             throws IOException, DatasetException {
-        try {
-            DatasetsUtil.saveSchemaToFSPath(localFs, schema, new Path(basePath,name + ".avsc"));
-        } catch (DatasetException e) {
-            LOG.error(e.getMessage());
-            throw e;
-        } catch (IOException e) {
-            LOG.error(e.getMessage());
-            throw e;
-        }
+        saveSchema(new Path(basePath,String.format("%s.avsc",name)),schema);
     }
 
     /**
@@ -424,27 +428,61 @@ public class LocalDatasetsService implements InitializingBean {
     }
 
     /**
+     * Sample a dataset.
+     *
+     * @param avroPaths avro paths.
+     * @param schema schema.
+     * @param sampleSize count of records to be sampled.
+     * @return a sample records array of a dataset.
+     * @throws IOException
+     * @throws DatasetException
+     */
+    public GenericRecord[] sampleDataset(final Path[] avroPaths,
+                                         final Schema schema,
+                                         final int sampleSize)
+            throws IOException, DatasetException {
+        try {
+            LOG.info(String.format("Sampling local dataset [size=%d,avroPath=%s]", sampleSize,
+                    Arrays.toString(avroPaths)));
+            final GenericRecord[] records = DatasetsUtil.loadAvroRecordsFromFSPaths(localFs,schema,avroPaths);
+            return DatasetsUtil.sampleDataset(records,sampleSize);
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
      * Update dataset records.
      *
      * @param records records.
-     * @param updatedSchema updated schema.
+     * @param schema schema.
      * @param sort if true sort dataset records.
-     * @param addUlid if true add ULID field.
-     * @param ulidFieldName ulidFieldName.
+     * @param addUid if true add ULID field.
+     * @param uidFieldName uid field name.
      * @return updated dataset records.
      * @throws DatasetException
      * @throws IOException
      */
     public GenericRecord[] updateDatasetRecords(final GenericRecord[] records,
-                                                final Schema updatedSchema,
-                                                final boolean sort, final boolean addUlid,
-                                                final String ulidFieldName)
+                                                final Schema schema,
+                                                final boolean sort, final boolean addUid,
+                                                final String uidFieldName,
+                                                final String... orderByFieldNames)
             throws DatasetException, IOException {
-        if(!(sort || addUlid)) throw new IllegalArgumentException("Neighter sort or addUlid is set.");
+        if(!(sort || addUid)) throw new IllegalArgumentException("Neighter sort or addUid is set.");
+        if(addUid && uidFieldName == null) throw new IllegalAccessError("Requires a new uid field name.");
         GenericRecord[] updatedRecords = null;
-        if(sort) updatedRecords = DatasetsUtil.updateRecordsWithOrderByFields(records,updatedSchema);
-        if(addUlid) updatedRecords = DatasetsUtil.updateRecordsWithULID(
-                (updatedRecords !=null) ? updatedRecords : records, updatedSchema, ulidFieldName);
+        Schema sortedSchema = null;
+        if(sort) {
+            updatedRecords = DatasetsUtil.updateRecordsWithOrderByFields(
+                    records,schema,orderByFieldNames);
+            sortedSchema = DatasetsUtil.updateSchemaWithOrderByFields(schema,orderByFieldNames);
+        }
+        if(addUid) updatedRecords = DatasetsUtil.updateRecordsWithUID(
+                (updatedRecords != null) ? updatedRecords : records,
+                (sortedSchema != null) ? sortedSchema :schema,
+                uidFieldName);
         return updatedRecords;
     }
 
@@ -453,24 +491,26 @@ public class LocalDatasetsService implements InitializingBean {
      *
      * @param schema schema
      * @param sort if true sort dataset records.
-     * @param addUlid if true add ULID field.
-     * @param ulidFieldName ulidFieldName.
+     * @param addUid if true add ULID field.
+     * @param uidFieldName uidFieldName.
      * @param orderByFieldNames fields to order by (order of fields matters).
      * @return updated dataset schema.
      * @throws DatasetException
      * @throws IOException
      */
     public Schema updateDatasetSchema(final Schema schema,
-                                      final boolean sort, final boolean addUlid,
-                                      final String ulidFieldName,
+                                      final boolean sort, final boolean addUid,
+                                      final String uidFieldName,
                                       final String... orderByFieldNames)
             throws DatasetException, IOException {
-        if(!(sort || addUlid)) throw new IllegalArgumentException("Neighter sort or addUlid is set.");
+        if(!(sort || addUid)) throw new IllegalArgumentException("Neighter sort or addUid is set.");
+        if(addUid && uidFieldName == null) throw new IllegalAccessError("Requires a new uid field name.");
         Schema updatedSchema = null;
-        if(sort) updatedSchema = DatasetsUtil.updateSchemaWithOrderByFields(schema,orderByFieldNames);
-        if(addUlid) updatedSchema = DatasetsUtil.updateSchemaWithULID(
-                (updatedSchema==null)?schema:updatedSchema,
-                ulidFieldName);
+        if(sort) updatedSchema = DatasetsUtil.updateSchemaWithOrderByFields(
+                schema,orderByFieldNames);
+        if(addUid) updatedSchema = DatasetsUtil.updateSchemaWithUID(
+                (updatedSchema == null) ? schema : updatedSchema,
+                uidFieldName);
         return updatedSchema;
     }
 }

@@ -21,11 +21,11 @@ import java.util.Properties;
 @Service
 public class MatchingService implements InitializingBean {
 
-    private static final Logger LOG = LoggerFactory.getLogger(LocalMatchingService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MatchingService.class);
 
     public void afterPropertiesSet() {
-        LOG.info("Matching service initialized[Tool#1 = %s]",
-                (exhaustiveRecordPairSimilarityToolRunner != null));
+        LOG.info(String.format("Matching service initialized[Tool#1 = %s]",
+                (exhaustiveRecordPairSimilarityToolRunner != null)));
     }
 
     public static final FsPermission ONLY_OWNER_PERMISSION
@@ -60,10 +60,11 @@ public class MatchingService implements InitializingBean {
                                                          final String[] fieldNames)
             throws Exception {
         try {
-            if (!hdfs.exists(basePath)) hdfs.mkdirs(basePath, ONLY_OWNER_PERMISSION);
-            final Path statsPath = new Path(basePath, String.format("%s.properties",name));
-            runExhaustiveRecordPairSimilarityTool(inputPath, inputSchemaPath, statsPath, fieldNames,
-                    uidFieldName, recordCount, reducerCount);
+            final Path statsPath = vectorFrequenciesPropertiesPath(
+                    inputPath,inputSchemaPath,
+                    uidFieldName,
+                    recordCount,reducerCount,
+                    basePath,name,fieldNames);
             final SimilarityVectorFrequencies frequencies = new SimilarityVectorFrequencies();
             final Properties properties = new Properties();
             final FSDataInputStream fsdis = hdfs.open(statsPath);
@@ -71,6 +72,42 @@ public class MatchingService implements InitializingBean {
             fsdis.close();
             frequencies.fromProperties(properties);
             return frequencies;
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            LOG.error(e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Returns Similarity vector frequencies (runs Hadoop MapReduce Tool).
+     *
+     * @param inputPath input avro path.
+     * @param inputSchemaPath input schema path.
+     * @param uidFieldName uid field name.
+     * @param recordCount record count.
+     * @param reducerCount reducer count.
+     * @param basePath a base path.
+     * @param name a name.
+     * @param fieldNames field names.
+     * @return a properties path.
+     * @throws Exception
+     */
+    public Path vectorFrequenciesPropertiesPath(final Path inputPath, final Path inputSchemaPath,
+                                                final String uidFieldName,
+                                                final long recordCount, final int reducerCount,
+                                                final Path basePath,
+                                                final String name,
+                                                final String[] fieldNames)
+            throws Exception {
+        try {
+            if (!hdfs.exists(basePath)) hdfs.mkdirs(basePath, ONLY_OWNER_PERMISSION);
+            final Path statsPath = new Path(basePath, String.format("%s.properties",name));
+            runExhaustiveRecordPairSimilarityTool(inputPath, inputSchemaPath, statsPath, fieldNames,
+                    uidFieldName, recordCount, reducerCount);
+            return statsPath;
         } catch (IOException e) {
             LOG.error(e.getMessage());
             throw e;

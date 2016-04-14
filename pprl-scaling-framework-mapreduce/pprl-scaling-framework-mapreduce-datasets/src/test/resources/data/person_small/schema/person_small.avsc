@@ -1,23 +1,27 @@
 {
   "type" : "record",
   "name" : "person_small",
-  "namespace" : "gr.upatas.ceid.pprl.datasets.person_small",
-  "doc" : "",
+  "namespace" : "pprl.datasets",
+  "doc" : "People",
   "fields" : [ {
-    "name" : "id",
-    "type" : "string",
-    "doc" : ""
+    "name" : "uiid",
+    "type" : "int",
+    "doc" : "Unique Integer IDentifier"
   }, {
     "name" : "name",
     "type" : "string",
-    "doc" : ""
+    "doc" : "First name"
   }, {
     "name" : "surname",
     "type" : "string",
-    "doc" : ""
+    "doc" : "Last name"
+  }, {
+    "name" : "id",
+    "type" : "string",
+    "doc" : "unique id"
   }, {
     "name" : "location",
     "type" : "string",
-    "doc" : ""
+    "doc" : "State"
   } ]
 }

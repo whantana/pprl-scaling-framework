@@ -19,7 +19,6 @@ import org.springframework.data.hadoop.mapreduce.ToolRunner;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.security.SecureRandom;
 import java.util.Properties;
 import java.util.SortedSet;
 
@@ -44,7 +43,7 @@ public class DatasetsService implements InitializingBean {
                     .getPermission().equals(ONLY_OWNER_PERMISSION);
             LOG.info(String.format("Dataset service initialized [" +
                             " nn=%s, " +
-                            " basePath = %s (ONLY_OWNER_PERMISION = %s)," +
+                            " statsBasePath = %s (ONLY_OWNER_PERMISION = %s)," +
                             " Tool#1 = %s, Tool#2 = %s]",
                     hdfs.getUri(),
                     basePath,onlyOwnerPermissionbaseDir,
@@ -287,6 +286,20 @@ public class DatasetsService implements InitializingBean {
     }
 
     /**
+     * Load schema.
+     *
+     * @param name a name.
+     * @param basePath base path.
+     * @return a <code>Schema</code> instance.
+     * @throws IOException
+     * @throws DatasetException
+     */
+    public Schema loadSchema(final String name , final Path basePath)
+            throws IOException, DatasetException {
+        return loadSchema(new Path(basePath,String.format("%s.avsc",name)));
+    }
+
+    /**
      * Load a dataset schema from a path.
      *
      * @param schemaPath a schema path.
@@ -391,20 +404,20 @@ public class DatasetsService implements InitializingBean {
      *
      * @param inputPath input datasets data HDFS path.
      * @param inputSchemaPath input datasets schema HDFS path.
-     * @param basePath base output path.
+     * @param statsBasePath base output path.
      * @param statsFileName stats output file.
      * @param fieldNames field names.
      * @return HDFS path containing the stats.
      * @throws Exception
      */
     public Path countAvgQgrams(final Path inputPath, final Path inputSchemaPath,
-                               final Path basePath,
+                               final Path statsBasePath,
                                final String statsFileName,
                                final String[] fieldNames)
             throws Exception {
         try {
-            if(!hdfs.exists(basePath)) hdfs.mkdirs(basePath,ONLY_OWNER_PERMISSION);
-            final Path statsPath = new Path(basePath,
+            if(!hdfs.exists(statsBasePath)) hdfs.mkdirs(statsBasePath,ONLY_OWNER_PERMISSION);
+            final Path statsPath = new Path(statsBasePath,
                     String.format("%s.properties",statsFileName));
             runQGramCountingTool(inputPath, inputSchemaPath, statsPath,fieldNames);
             hdfs.setPermission(statsPath, ONLY_OWNER_PERMISSION);

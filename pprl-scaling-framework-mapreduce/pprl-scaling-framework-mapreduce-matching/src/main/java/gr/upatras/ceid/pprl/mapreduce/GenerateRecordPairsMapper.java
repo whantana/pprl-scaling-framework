@@ -39,6 +39,7 @@ public class GenerateRecordPairsMapper extends Mapper<AvroKey<GenericRecord>, Nu
         int keyInt = Integer.parseInt(String.valueOf(record.get(uidFieldName)));
 
         Iterator<Long> iterator = CombinatoricsUtil.ranksOfElementIterator(keyInt, recordCount);
+
         while(iterator.hasNext()) {
             long rank = iterator.next();
             context.write(new LongWritable(rank),avroValue);

@@ -57,7 +57,7 @@ public class ExhaustiveRecordPairSimilarityMRTest {
 
         mapDriver = MapDriver.newMapDriver(new GenerateRecordPairsMapper());
         mapDriver.getContext().getConfiguration().setInt("record.count", records.length);
-        mapDriver.getContext().getConfiguration().set("uid.field.name", "id");
+        mapDriver.getContext().getConfiguration().set("uid.field.name", "uiid");
         AvroSerialization.setKeyWriterSchema(mapDriver.getConfiguration(), schema);
         AvroSerialization.setKeyReaderSchema(mapDriver.getConfiguration(), schema);
         mapDriver.setOutputSerializationConfiguration(mapDriver.getConfiguration());
@@ -71,9 +71,10 @@ public class ExhaustiveRecordPairSimilarityMRTest {
                 new RecordPairSimilarityReducer(),
                 new RecordPairSimilarityCombiner()
         );
-        mapReduceDriver.getConfiguration().setInt("record.count", records.length);
-        mapReduceDriver.getConfiguration().set("uid.field.name", "id");
-        mapReduceDriver.getConfiguration().setStrings("field.names",fieldNames);
+        mapReduceDriver.getConfiguration().setInt(GenerateRecordPairsMapper.RECORD_COUNT_KEY, records.length);
+        mapReduceDriver.getConfiguration().set(GenerateRecordPairsMapper.UID_FIELD_NAME_KEY, "uiid");
+        mapReduceDriver.getConfiguration().setStrings(RecordPairSimilarityReducer.FIELD_NAMES_KEY,fieldNames);
+        mapReduceDriver.getConfiguration().set(RecordPairSimilarityReducer.SCHEMA_KEY,schema.toString());
         AvroSerialization.setKeyWriterSchema(mapReduceDriver.getConfiguration(), schema);
         AvroSerialization.setKeyReaderSchema(mapReduceDriver.getConfiguration(), schema);
         mapReduceDriver.setOutputSerializationConfiguration(mapReduceDriver.getConfiguration());

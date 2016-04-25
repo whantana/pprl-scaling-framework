@@ -13,12 +13,20 @@
     <hdp:tool-runner id="dblpXmlToAvroToolRunner"
                      jar="file://${build.test.dir}/pprl-scaling-framework-mapreduce-datasets-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.DblpXmlToAvroTool"
-                     close-fs="false" libs="file://${build.test.dir}/avro-mapred-${avro.version}-hadoop2.jar"/>
+                     close-fs="false"
+                     libs="file://${build.test.dir}/avro-mapred-${avro.version}-hadoop2.jar"/>
 
     <hdp:tool-runner id="qGramCountingToolRunner"
                      jar="file://${build.test.dir}/pprl-scaling-framework-mapreduce-datasets-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.QGramCountingTool"
-                     close-fs="false" libs="file://${build.test.dir}/avro-mapred-${avro.version}-hadoop2.jar"/>
+                     close-fs="false"
+                     libs="file://${build.test.dir}/avro-mapred-${avro.version}-hadoop2.jar"/>
+
+    <hdp:tool-runner id="sortAvroToolRunner"
+                     jar="file://${build.test.dir}/pprl-scaling-framework-mapreduce-datasets-${build.version}.jar"
+                     tool-class="gr.upatras.ceid.pprl.mapreduce.SortAvroTool"
+                     close-fs="false"
+                     libs="file://${build.test.dir}/avro-mapred-${avro.version}-hadoop2.jar"/>
 
     <hdp:tool-runner id="encodeDatasetToolRunner"
                      jar="file://${build.test.dir}/pprl-scaling-framework-mapreduce-encoding-${build.version}.jar"

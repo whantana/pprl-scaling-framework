@@ -25,7 +25,7 @@ public class CreateHashesBenchmarkTest {
     private static final int K = 30;
     private static final int Q = 2;
     private static final int ITERATIONS = 5;
-    private static final long BYTES_LIMIT = 10*1024; // 100K limit for each iteration for each K
+    private static final long BYTES_LIMIT = 10*1024; // 10K limit for each iteration for each K
 
     private static final char[] CHARSET_AZ_09_ = "_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".toCharArray();
     private static final Random random = new SecureRandom();
@@ -35,10 +35,8 @@ public class CreateHashesBenchmarkTest {
     private static final String SECRET_KEY = "MYZIKRETQI";
     private static DescriptiveStatistics stats =  new DescriptiveStatistics();
 
-    // TODO MOOAR BENCHMARKS
-    // TODO ADD KARAPIPERIS DATASET
-    // TODO rewrite benchmark to load from existing data
-    // TODO benchmarking accuracy/
+    // TODO Add Karapiperis DATASET
+    // TODO Benchmarking accuracy between versions
     static {
         Mac tmp;
         Mac tmp1;

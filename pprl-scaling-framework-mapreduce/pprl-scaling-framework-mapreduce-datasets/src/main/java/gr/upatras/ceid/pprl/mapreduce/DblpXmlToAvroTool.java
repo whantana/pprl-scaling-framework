@@ -6,6 +6,7 @@ import org.apache.avro.mapreduce.AvroJob;
 import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.GenericOptionsParser;
@@ -59,7 +60,7 @@ public class DblpXmlToAvroTool extends Configured implements Tool {
                 JOB_DESCRIPTION,
                 shortenUrl(input.toString()), shortenUrl(output.toString())
         );
-        LOG.info("Running :" + description);
+        LOG.info("Running : " + description);
 
         // setup map only job
         Job job = Job.getInstance(conf);
@@ -80,7 +81,10 @@ public class DblpXmlToAvroTool extends Configured implements Tool {
         job.setOutputFormatClass(AvroKeyOutputFormat.class);
 
         // run job
-        return (job.waitForCompletion(true) ? 0 : 1);
+        boolean success = job.waitForCompletion(true);
+        if(success) removeSuccessFile(FileSystem.get(conf),output);
+
+        return (success ? 0 : 1);
     }
 
     /**
@@ -111,5 +115,17 @@ public class DblpXmlToAvroTool extends Configured implements Tool {
             if(m.matches()) return m.group(1);
             else return url;
         }
+    }
+
+    /**
+     * Remove _SUCCESS file from path.
+     *
+     * @param path a path.
+     * @throws IOException
+     */
+    public static void removeSuccessFile(final FileSystem fs,
+                                         final Path path) throws IOException {
+        final Path p = new Path(path,"_SUCCESS");
+        if (fs.exists(p)) fs.delete(p, false);
     }
 }

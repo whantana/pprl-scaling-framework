@@ -42,7 +42,6 @@ import java.util.TreeSet;
  * Datasets utility class.
  */
 public class DatasetsUtil {
-    // TODO more DEBUG LOGGING HERE
     private static final Logger LOG = LoggerFactory.getLogger(DatasetsUtil.class);
 
     /**
@@ -82,10 +81,16 @@ public class DatasetsUtil {
         final Path paths[] = new Path[3];
         paths[0] = path;
         checkIfExists(fs,paths[0]);
+        LOG.debug(String.format("Path exists [FileSystem=%s,Path=%s].",
+                fsIsLocal(fs) ? "local" : fs.getUri(), paths[0]));
         paths[1] = new Path(paths[0],"avro");
         checkIfExists(fs,paths[1]);
+        LOG.debug(String.format("Path exists [FileSystem=%s,Path=%s].",
+                fsIsLocal(fs) ? "local" : fs.getUri(), paths[1]));
         paths[2] = new Path(paths[0],"schema");
         checkIfExists(fs,paths[2]);
+        LOG.debug(String.format("Path exists [FileSystem=%s,Path=%s].",
+                fsIsLocal(fs) ? "local" : fs.getUri(), paths[2]));
         return paths;
     }
 
@@ -116,7 +121,12 @@ public class DatasetsUtil {
         for(String name : selectedNames) {
             boolean nameFound = false;
             for(Schema.Field field : schema.getFields())
-                if(field.name().equals(name)) { nameFound = true ; break; }
+                if(field.name().equals(name)) {
+                    nameFound = true ;
+                    break;
+                }
+            LOG.debug("Fieldname \"{}\" {} in schema.",name,
+                    (nameFound ? "found" : "not found"));
             if(!nameFound) return false;
         }
         return true;
@@ -149,15 +159,15 @@ public class DatasetsUtil {
     public static Path[] createDatasetDirectories(final FileSystem fs, final String name, final Path basePath,
                                                   final FsPermission permission)
             throws IOException {
-        LOG.debug(String.format("Creating dataset directories [FileSystem=%s,Path=%s]",
+        LOG.debug(String.format("Creating dataset directories [FileSystem=%s,Path=%s].",
                 fsIsLocal(fs) ? "local" : fs.getUri(), name));
         final Path datasetPath = new Path(basePath,name);
         if (fs.exists(datasetPath)) {
             LOG.debug(String.format("Directory it already exists " +
-                            "[FileSystem=%s,basePath=%s]",
+                            "[FileSystem=%s,basePath=%s].",
                     fsIsLocal(fs) ? "local" : fs.getUri(), name));
         } else {
-            LOG.debug(String.format("Making base directory [FileSystem=%s,basePath=%s]",
+            LOG.debug(String.format("Making base directory [FileSystem=%s,basePath=%s].",
                     fsIsLocal(fs) ? "local" : fs.getUri(), datasetPath));
             if(permission == null ) fs.mkdirs(datasetPath);
             else fs.mkdirs(datasetPath, permission);
@@ -166,12 +176,12 @@ public class DatasetsUtil {
         final Path datasetAvroPath = new Path(datasetPath,"avro");
         if (fs.exists(datasetAvroPath)) {
             LOG.debug(String.format("Deleting avro directory because it exists " +
-                            "[FileSystem=%s,datasetAvroPath=%s]",
+                            "[FileSystem=%s,datasetAvroPath=%s].",
                     fsIsLocal(fs) ? "local" : fs.getUri(), datasetAvroPath));
             fs.delete(datasetAvroPath, true);
 
         }
-        LOG.debug(String.format("Making avro directory [FileSystem=%s,datasetAvroPath=%s]",
+        LOG.debug(String.format("Making avro directory [FileSystem=%s,datasetAvroPath=%s].",
                 fsIsLocal(fs) ? "local" : fs.getUri(), datasetAvroPath));
         if(permission == null ) fs.mkdirs(datasetPath);
         else fs.mkdirs(datasetPath, permission);
@@ -180,11 +190,11 @@ public class DatasetsUtil {
         final Path datasetSchemaPath = new Path(datasetPath,"schema");
         if (fs.exists(datasetSchemaPath)) {
             LOG.debug(String.format("Deleting avro directory because it exists " +
-                            "[FileSystem=%s,datasetAvroPath=%s]",
+                            "[FileSystem=%s,datasetAvroPath=%s].",
                     fsIsLocal(fs) ? "local" : fs.getUri(), datasetSchemaPath));
             fs.delete(datasetSchemaPath,true);
         }
-        LOG.debug(String.format("Making schema directory [FileSystem=%s,datasetSchemaPath=%s]",
+        LOG.debug(String.format("Making schema directory [FileSystem=%s,datasetSchemaPath=%s].",
                 fsIsLocal(fs) ? "local" : fs.getUri(), datasetSchemaPath));
         if(permission == null ) fs.mkdirs(datasetPath);
         else fs.mkdirs(datasetPath, permission);
@@ -204,7 +214,8 @@ public class DatasetsUtil {
     public static GenericRecord[] loadAvroRecordsFromFSPaths(final FileSystem fs,
                                                              final Schema schema,
                                                              final Path... paths) throws IOException {
-        LOG.debug("Loading records");
+        LOG.debug(String.format("Loading records from [FileSystem=%s,paths=%s].",
+                fsIsLocal(fs) ? "local" : fs.getUri(), Arrays.toString(paths)));
         final List<GenericRecord> recordList = new ArrayList<GenericRecord>();
         final DatasetsUtil.DatasetRecordReader reader =
                 new DatasetsUtil.DatasetRecordReader(fs, schema, paths);
@@ -212,9 +223,10 @@ public class DatasetsUtil {
         while (reader.hasNext()) {
             recordList.add(i, reader.next());
             i++;
-            LOG.debug("Loading Record #{}", i);
         }
-        LOG.debug("Loaded {} records.",recordList.size());
+        LOG.debug(String.format("%d records loaded from [FileSystem=%s,paths=%s].",
+                recordList.size(), fsIsLocal(fs) ? "local" : fs.getUri(),
+                Arrays.toString(paths)));
         return recordList.toArray(new GenericRecord[recordList.size()]);
     }
 
@@ -235,7 +247,9 @@ public class DatasetsUtil {
                                                final Path basePath,
                                                final String name,
                                                final int partitions) throws IOException {
-        LOG.debug("Writing records {} records.",records.length);
+        LOG.debug(String.format("Saving %d records into  [FileSystem=%s,paths=%s].",
+                records.length,
+                fsIsLocal(fs) ? "local" : fs.getUri(), basePath));
         final DatasetsUtil.DatasetRecordWriter writer =
                 new DatasetsUtil.DatasetRecordWriter(fs,name,schema,basePath,partitions);
         writer.writeRecords(records);
@@ -253,7 +267,7 @@ public class DatasetsUtil {
      */
     public static Schema loadSchemaFromFSPath(final FileSystem fs, final Path schemaPath)
             throws DatasetException, IOException {
-        LOG.debug(String.format("Loading path [FileSystem=%s,Path=%s]",
+        LOG.debug(String.format("Loading schema [FileSystem=%s,Path=%s].",
                 fsIsLocal(fs) ? "local" : fs.getUri(), schemaPath));
         FileStatus fss = fs.getFileStatus(schemaPath);
         if (fss.isFile() && fss.getPath().getName().endsWith(".avsc"))
@@ -272,7 +286,7 @@ public class DatasetsUtil {
      */
     public static void saveSchemaToFSPath(final FileSystem fs, final Schema schema, final Path schemaPath)
             throws DatasetException, IOException {
-        LOG.debug(String.format("Saving path [FileSystem=%s,Path=%s]",
+        LOG.debug(String.format("Saving schema [FileSystem=%s,Path=%s].",
                 fsIsLocal(fs) ? "local" : fs.getUri(), schemaPath));
         final FSDataOutputStream fsdos = fs.create(schemaPath, true);
         fsdos.write(schema.toString(true).getBytes());
@@ -300,6 +314,7 @@ public class DatasetsUtil {
         for (int i = 0; i < fieldNames.length; i++)
             fields.add(new Schema.Field(fieldNames[i], Schema.create(fieldTypes[i]),docs[i],null));
         schema.setFields(fields);
+        LOG.debug("New Avro Schema : {}",schema.toString(true));
         return schema;
     }
 
@@ -382,6 +397,88 @@ public class DatasetsUtil {
                 }
                 writer.writeRecord(record);
             }
+            writer.close();
+            reader.close();
+            return paths[0];
+        } finally {
+            writer.close();
+            reader.close();
+        }
+    }
+
+    /**
+     * CSV to Avro. It creates a dataset directory set.
+     *
+     * @param fs a <code>FileSystem</code> reference.
+     * @param schema an avro schema.
+     * @param name name of the dataset.
+     * @param basePath a base path.
+     * @param csvPath a csv path.
+     * @param partitions number of partitions.
+     * @return created dataset base path.
+     * @throws DatasetException
+     * @throws IOException
+     */
+    public static Path csv2avro(final FileSystem fs, final Schema schema ,
+                                final String name,
+                                final Path basePath,
+                                final Path csvPath,
+                                final int partitions)
+            throws DatasetException, IOException {
+        final Path[] paths = createDatasetDirectories(fs,name,basePath);
+        final Path avroBasePath = paths[1];
+        final Path schemaBasePath = paths[2];
+
+        saveSchemaToFSPath(fs, schema, new Path(schemaBasePath,name+".avsc"));
+        DatasetRecordWriter writer =
+                new DatasetRecordWriter(fs,name,schema,avroBasePath,partitions);
+        BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(csvPath)));
+        try {
+
+            final String[] fieldNames = new String[schema.getFields().size()];
+            int j = 0;
+            for (Schema.Field field : schema.getFields()) {
+                fieldNames[j] = field.name();
+                j++;
+            }
+            String line;
+            List<GenericRecord> recordList = new ArrayList<GenericRecord>();
+            while ((line = reader.readLine()) != null) {
+                final String[] parts = line.split(",",fieldNames.length);
+                final GenericRecord record = new GenericData.Record(schema);
+                for (int i = 0; i < parts.length; i++) {
+                    final String part = parts[i];
+                    final Schema.Type type = schema.getField(fieldNames[i]).schema().getType();
+                    Object obj;
+                    switch (type) {
+                        case BOOLEAN:
+                            obj = Boolean.parseBoolean((part == null || part.isEmpty()) ? null : part);
+                            break;
+                        case STRING:
+                            obj = (part == null || part.isEmpty()) ? "-NA-" : part;
+                            break;
+                        case INT:
+                            obj = (part == null || part.isEmpty()) ? 0 : Integer.parseInt(part);
+                            break;
+                        case LONG:
+                            obj = (part == null || part.isEmpty()) ? 0 : Long.parseLong(part);
+                            break;
+                        case DOUBLE:
+                            obj = (part == null || part.isEmpty()) ? Double.NaN : Double.parseDouble(part);
+                            break;
+                        case FLOAT:
+                            obj = (part == null || part.isEmpty()) ? Float.NaN : Float.parseFloat(part);
+                            break;
+                        default:
+                            obj = null;
+                    }
+                    record.put(fieldNames[i], obj);
+                }
+                recordList.add(record);
+            }
+            GenericRecord[] records = new GenericRecord[recordList.size()];
+            records = recordList.toArray(records);
+            writer.writeRecords(records);
             writer.close();
             reader.close();
             return paths[0];
@@ -522,17 +619,13 @@ public class DatasetsUtil {
             for (int i = 0; i < partitions; i++) {
                 DataFileWriter<GenericRecord> fw =
                         new DataFileWriter<GenericRecord>(new GenericDatumWriter<GenericRecord>(schema));
-                final Path filePath;
-                if(partitions == 1) filePath = new Path(parentPath,name + ".avro");
-                else {
-                    final Path partitionPath = new Path(parentPath,String.valueOf(i));
-                    fs.mkdirs(partitionPath);
-                    filePath = new Path(partitionPath,name + ".avro");
-                }
+                final Path filePath = new Path(parentPath,
+                        (partitions == 1) ? String.format("%s.avro",name) :
+                                String.format("%s.%5d.avro",name,i).replace(' ','0'));
                 try {
                     fw.create(schema,fs.create(filePath,true));
                     fileWriters.add(i,fw);
-                    LOG.debug("Adding writer {}",i);
+                    LOG.debug("Adding writer({}) path : {}",i,filePath);
                 } catch (IOException e) {
                     LOG.error(e.getMessage());
                     fw.close();
@@ -567,7 +660,7 @@ public class DatasetsUtil {
             for (int i = 0; i < partitions; i++) {
                 int start = recordIndexOfPartition[i];
                 int end = (i < partitions - 1) ? recordIndexOfPartition[i+1] : recordCount ;
-                LOG.debug("Writer {} writes records in range {}",i,String.format("[%d,%d)",start,end));
+                LOG.debug("Writer({}) writes records in range {}",i,String.format("[%d,%d)",start,end));
                 for(int j = start ; j < end ; j++) writeRecord(records[j],i);
                 fileWriters.get(i).close();
             }
@@ -575,11 +668,12 @@ public class DatasetsUtil {
 
         /**
          * Write record in the i-th writer.
+         *
          * @param record avro record.
          * @param i i-th writer
          * @throws IOException
          */
-        private void writeRecord(final GenericRecord record , final int i) throws IOException {
+        public void writeRecord(final GenericRecord record , final int i) throws IOException {
             try {
                 fileWriters.get(i).append(record);
             } catch (IOException e) {
@@ -772,8 +866,25 @@ public class DatasetsUtil {
          * @return next record.
          */
         public GenericRecord next() {
-            LOG.debug("Current reader : {}", current);
             return fileReaders.get(current).next();
+        }
+
+        /**
+         * Returns current reader id.
+         *
+         * @return current reader id.
+         */
+        public int getCurrent() {
+            return current;
+        }
+
+        /**
+         * Returns reader count.
+         *
+         * @return reader count.
+         */
+        public int getReaderCount() {
+            return fileReaders.size();
         }
 
         public void remove() {
@@ -849,21 +960,31 @@ public class DatasetsUtil {
      */
     public static GenericRecord[] updateRecordsWithUID(final GenericRecord[] records, final Schema schema,
                                                        final String fieldName, final int start) {
-        int ulid = start;
         final Schema updatedSchema = DatasetsUtil.updateSchemaWithUID(schema,fieldName);
         final GenericRecord[] updatedRecords = new GenericRecord[records.length];
-        for (int i = 0 ; i < records.length ; i++) {
-            updatedRecords[i] = new GenericData.Record(updatedSchema);
-            updatedRecords[i].put(fieldName, ulid);
-            if(i==0) LOG.debug("updatedRecords[0].put(\"{}\",{})",fieldName,ulid);
-            for (String f : fieldNames(updatedSchema)) {
-                if(f.equals(fieldName)) continue;
-                updatedRecords[i].put(f, records[i].get(f));
-                if(i==0) LOG.debug("updatedRecords[0].put(\"{}\",{})",f,String.valueOf(records[i].get(f)));
-            }
-            ulid++;
-        }
+        for (int i = 0,uid = start ; i < records.length ; i++,uid++)
+            updatedRecords[i] = updateRecordWithUID(records[i],updatedSchema,fieldName,uid);
         return updatedRecords;
+    }
+
+    /**
+     * Update record with a Unique Long IDentifier.
+     *
+     * @param record an avro record.
+     * @param updatedSchema an updated schema.
+     * @param fieldName a uid field name.
+     * @param value fields value.
+     * @return an updated record.
+     */
+    public static GenericRecord updateRecordWithUID(final GenericRecord record, final Schema updatedSchema,
+                                                    final String fieldName, final int value) {
+        final GenericRecord updatedRecord = new GenericData.Record(updatedSchema);
+        updatedRecord.put(fieldName, value);
+        for (String f : fieldNames(updatedSchema)) {
+            if(f.equals(fieldName)) continue;
+            updatedRecord.put(f, record.get(f));
+        }
+        return updatedRecord;
     }
 
     /**
@@ -936,14 +1057,12 @@ public class DatasetsUtil {
         }
 
         final Set<AvroKey<GenericRecord>> avroKeys = new TreeSet<AvroKey<GenericRecord>>(comparator);
-        for (int i = 0 ; i < records.length ; i++) {
-            GenericRecord updatedRecord = new GenericData.Record(updatedSchema);
-            for (String f : fieldNames(updatedSchema)) {
-                updatedRecord.put(f, records[i].get(f));
-                if(i==0) LOG.debug("updatedRecords[0].put(\"{}\",{})",f,String.valueOf(records[i].get(f)));
-            }
-            avroKeys.add(new AvroKey<GenericRecord>(updatedRecord));
 
+        for (GenericRecord record : records) {
+            GenericRecord updatedRecord = new GenericData.Record(updatedSchema);
+            for (String f : fieldNames(updatedSchema))
+                updatedRecord.put(f, record.get(f));
+            avroKeys.add(new AvroKey<GenericRecord>(updatedRecord));
         }
         assert avroKeys.size() == records.length;
         final GenericRecord[] updatedRecords = new GenericRecord[records.length];

@@ -65,7 +65,7 @@ public class QGramCountingTool extends Configured implements Tool {
                 JOB_DESCRIPTION,
                 shortenUrl(input.toString()),shortenUrl(inputSchemaPath.toString()),
                 shortenUrl(outputPath.toString()),Arrays.toString(fieldNames));
-        LOG.info("Running :" + description);
+        LOG.info("Running : " + description);
 
         // setup map only job
         Job job = Job.getInstance(conf);
@@ -86,10 +86,11 @@ public class QGramCountingTool extends Configured implements Tool {
 
         // run job
         boolean success  = job.waitForCompletion(true);
-        if(success) {
-            counters2Properties(FileSystem.get(conf), outputPath, job.getCounters(),fieldNames);
-            return 0;
-        } else throw new IllegalStateException("Job not successfull.");
+
+        // if job is succesfull write counters to properties file
+        if(success) counters2Properties(FileSystem.get(conf), outputPath, job.getCounters(),fieldNames);
+
+        return success ? 0 : 1;
     }
 
     /**

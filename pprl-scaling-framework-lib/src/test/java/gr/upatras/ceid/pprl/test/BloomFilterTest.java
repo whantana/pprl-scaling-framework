@@ -1,7 +1,7 @@
 package gr.upatras.ceid.pprl.test;
 
-import gr.upatras.ceid.pprl.qgram.QGramUtil;
 import gr.upatras.ceid.pprl.encoding.BloomFilter;
+import gr.upatras.ceid.pprl.qgram.QGramUtil;
 import org.apache.avro.Schema;
 import org.junit.Test;
 import org.slf4j.Logger;

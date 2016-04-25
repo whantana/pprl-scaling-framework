@@ -2,10 +2,10 @@ package gr.upatras.ceid.pprl.shell.command;
 
 import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
 import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
-import gr.upatras.ceid.pprl.service.datasets.DatasetsService;
-import gr.upatras.ceid.pprl.service.datasets.LocalDatasetsService;
 import gr.upatras.ceid.pprl.matching.ExpectationMaximization;
 import gr.upatras.ceid.pprl.matching.SimilarityVectorFrequencies;
+import gr.upatras.ceid.pprl.service.datasets.DatasetsService;
+import gr.upatras.ceid.pprl.service.datasets.LocalDatasetsService;
 import gr.upatras.ceid.pprl.service.matching.LocalMatchingService;
 import gr.upatras.ceid.pprl.service.matching.MatchingService;
 import org.apache.avro.Schema;
@@ -50,19 +50,21 @@ public class DatasetsCommands implements CommandMarker {
     public boolean availability0() {
         return lds != null;
     }
-    @CliAvailabilityIndicator(value = {"local_data_stats"})
+    @CliAvailabilityIndicator(value = {
+            "local_data_stats"})
     public boolean availability1() { return lds != null && lms != null;}
-    @CliAvailabilityIndicator(value = {"local_data_upload","data_download","import_dblp","data_describe"})
+    @CliAvailabilityIndicator(value = {
+            "local_data_upload","data_download",
+            "import_dblp","data_describe",
+            "data_sample","data_sort"})
     public boolean availability2() { return ds != null;}
-    @CliAvailabilityIndicator(value = {"data_stats"})
+    @CliAvailabilityIndicator(value = {
+            "data_stats"})
     public boolean availability3() { return ds != null && ms != null;}
 
-
-    // TODO commands
-    //      -HDFS-
-    //      Sample (Might do it sequencially, might work with spark on this)
-    //      Add Ulid (Might do it sequencially, any other ideas?)
-    //      Sort by field (Mapreduce)
+    /**
+     *  LOCAL DATASET COMMANDS
+     */
 
     @CliCommand(value = "local_data_sample", help = "View a sample of local data.")
     public String command0(
@@ -95,7 +97,7 @@ public class DatasetsCommands implements CommandMarker {
             LOG.info("\n");
 
             final Schema schema = lds.loadSchema(schemaPath);
-            final GenericRecord[] sample = lds.sampleDataset(avroPaths, schemaPath, size);
+            final GenericRecord[] sample = lds.sampleDataset(avroPaths, schema, size);
 
             LOG.info(DatasetsUtil.prettyRecords(sample, schema));
             LOG.info("\n");
@@ -175,12 +177,13 @@ public class DatasetsCommands implements CommandMarker {
             LOG.info("\n");
 
             final Schema schema = lds.loadSchema(schemaPath);
+            final GenericRecord[] records = lds.loadDatasetRecords(avroPaths, schema);
+
             if(fields.length == 0 ) fields = DatasetsUtil.fieldNames(schema);
             else if(!DatasetsUtil.fieldNamesBelongsToSchema(schema,fields))
                 throw new IllegalArgumentException(String.format("fields %s not found in schema",
                         Arrays.toString(fields)));
 
-            final GenericRecord[] records = lds.loadDatasetRecords(avroPaths, schema);
             final DatasetStatistics statistics = new DatasetStatistics();
 
             statistics.setRecordCount(records.length);
@@ -225,6 +228,7 @@ public class DatasetsCommands implements CommandMarker {
         try{
             final Path schemaPath = CommandUtil.retrievePath(schemaStr);
             final Path[] avroPaths = CommandUtil.retrievePaths(avroStr);
+
             LOG.info("Uploading local data to hdfs :");
             LOG.info("\tSelected data files : {}", Arrays.toString(avroPaths));
             LOG.info("\tSelected schema file : {}", schemaPath);
@@ -267,7 +271,6 @@ public class DatasetsCommands implements CommandMarker {
             final String fieldName = CommandUtil.retrieveString(fieldStr,null);
             final String name = CommandUtil.retrieveString(nameStr, null);
             final boolean save = (name != null);
-            final boolean sort = true;
             final boolean addUlid = (fieldName != null);
 
             LOG.info("Sort by selected fields:");
@@ -282,12 +285,12 @@ public class DatasetsCommands implements CommandMarker {
             final Schema schema = lds.loadSchema(schemaPath);
             final GenericRecord[] records = lds.loadDatasetRecords(avroPaths,schema);
 
-            final Schema updatedSchema = lds.updateDatasetSchema(schema,
-                    sort,addUlid,
-                    fieldName,fieldNames);
-            final GenericRecord[] updatedRecords = lds.updateDatasetRecords(records,schema,
-                    sort,addUlid,
-                    fieldName,fieldNames);
+            final Schema updatedSchema = lds.sortDatasetSchema(
+                    schema, addUlid,
+                    fieldName, fieldNames);
+            final GenericRecord[] updatedRecords = lds.sortDatasetRecords(
+                    records, schema,
+                    addUlid, fieldName, fieldNames);
 
             LOG.info(DatasetsUtil.prettyRecords(updatedRecords, updatedSchema));
             LOG.info("\n");
@@ -310,18 +313,22 @@ public class DatasetsCommands implements CommandMarker {
         }
     }
 
+    /**
+     *  HDFS DATASET COMMANDS
+     */
+
     @CliCommand(value = "data_download", help = "Download remote dataset to local machine.")
     public String command5(
-            @CliOption(key = {"uploaded"}, mandatory = true, help = "Uploaded dataset name.")
-            final String uplodadedName,
-            @CliOption(key = {"name"}, mandatory = true, help = "Name to save to local disk.")
-            final String name
+            @CliOption(key = {"name"}, mandatory = true, help = "HDFS dataset name.")
+            final String name,
+            @CliOption(key = {"download_name"}, mandatory = true, help = "Name to save to local disk.")
+            final String downloadName
     ) {
         try {
             LOG.info("Downloading remote files:");
-            LOG.info("\tDataset name : {}",uplodadedName);
-            LOG.info("\tDownload name : {}",name);
-            final Path path = ds.downloadFiles(uplodadedName,name);
+            LOG.info("\tDataset name : {}",name);
+            LOG.info("\tDownload name : {}",downloadName);
+            final Path path = ds.downloadFiles(name,downloadName);
             LOG.info("\tFiles downloaded at : {}",path);
             LOG.info("\n");
 
@@ -356,14 +363,14 @@ public class DatasetsCommands implements CommandMarker {
 
     @CliCommand(value = "data_stats", help = "Calculate usefull field statistics from hdfs data.")
     public String command8(
-            @CliOption(key = {"uploaded"}, mandatory = true, help = "Uploaded dataset name.")
-            final String uplodadedName,
+            @CliOption(key = {"name"}, mandatory = true, help = "HDFS Dataset name.")
+            final String name,
             @CliOption(key = {"uid"}, mandatory = true, help = "Unique field name.")
             final String uidFieldName,
             @CliOption(key = {"fields"}, mandatory = true, help = "Filter fields to collect statistics from.")
             final String fieldsStr,
-            @CliOption(key = {"name"}, mandatory = true, help = "Name to save statistics report to HDFS as properties file.")
-            final String name,
+            @CliOption(key = {"stats_name"}, mandatory = true, help = "Name to save statistics report to HDFS as properties file.")
+            final String propertiesName,
             @CliOption(key = {"m"}, mandatory = false, help = "(Optional) Initial m values . 0.9 for all fields is default.")
             final String mStr,
             @CliOption(key = {"u"}, mandatory = false, help = "(Optional) Initial u values . 0.01 for all fields is default.")
@@ -383,7 +390,7 @@ public class DatasetsCommands implements CommandMarker {
             final double p0 = CommandUtil.retrieveProbability(pStr, 0.1);
 
             LOG.info("Calculating statistics on HDFS data:");
-            LOG.info("\tDataset name : {}",uplodadedName);
+            LOG.info("\tDataset name : {}",name);
             LOG.info("\tSelected fields : {}", Arrays.toString(fields));
 
             final Path[] paths = ds.retrieveDirectories(name);
@@ -408,7 +415,6 @@ public class DatasetsCommands implements CommandMarker {
             final SimilarityVectorFrequencies matrix = ms.vectorFrequencies(avroPath, schemaPath, uidFieldName,
                     recordCount, reducersCount, statsPath, "similarity_matrix", fields);
 
-
             final ExpectationMaximization estimator = ms.newEMInstance(fields,m0,u0,p0);
             estimator.runAlgorithm(matrix);
 
@@ -419,7 +425,7 @@ public class DatasetsCommands implements CommandMarker {
                     statistics,fields,
                     estimator.getM(),estimator.getU());
 
-            final Path propertiesPath = ds.saveStats(name,statsPath,statistics);
+            final Path propertiesPath = ds.saveStats(propertiesName,statsPath,statistics);
             LOG.info("Stats saved at : {}",propertiesPath);
             LOG.info("\n");
 
@@ -431,24 +437,97 @@ public class DatasetsCommands implements CommandMarker {
         }
     }
 
-
     @CliCommand(value = "data_describe", help = "View schema description of HDFS data.")
     public String command9(
-            @CliOption(key = {"uploaded"}, mandatory = true, help = "Uploaded dataset name.")
-            final String uplodadedName
+            @CliOption(key = {"name"}, mandatory = true, help = "HDFS dataset name.")
+            final String name
     ) {
         try{
             LOG.info("Describing HDFS data :");
-            LOG.info("\tDataset name : {}",uplodadedName);
+            LOG.info("\tDataset name : {}",name);
             LOG.info("\n");
 
-            final Path[] paths = ds.retrieveDirectories(uplodadedName);
-            final Path schemaPath = paths[2];
+            final Path[] paths = ds.retrieveDirectories(name);
+            final Path schemaPath = ds.retrieveSchemaPath(paths[2]);
             final Schema schema = ds.loadSchema(schemaPath);
 
             LOG.info(DatasetsUtil.prettySchemaDescription(schema));
             return "DONE";
         } catch (Exception e) {
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
+        }
+    }
+
+
+    @CliCommand(value = "data_sample", help = "View a sample of HDFS data.")
+    public String command10(
+            @CliOption(key = {"name"}, mandatory = true, help = "HDFS dataset name.")
+            final String name,
+            @CliOption(key = {"sample_name"}, mandatory = true, help = "Name to save sample to HDFS.")
+            final String sampleName,
+            @CliOption(key = {"size"}, mandatory = false, help = "(Optional) Sample size. Default is 100.")
+            final String sizeStr
+    ) {
+        try {
+
+            final int size = CommandUtil.retrieveInt(sizeStr, 100);
+
+            if (size < 1) throw new IllegalArgumentException("Sample size must be greater than zero.");
+            if(name.equals(sampleName)) throw new IllegalArgumentException("names must not match.");
+
+            LOG.info("Sampling from HDFS data :");
+            LOG.info("\tDataset name : {}",name);
+            LOG.info("\tSample Dataset name : {}",sampleName);
+            LOG.info("\tSample size : {}", size);
+            LOG.info("\n");
+
+            final Path sampleBasePath = ds.sampleDataset(name,sampleName,size);
+
+            LOG.info("Sample saved to path : {}", sampleBasePath);
+            LOG.info("\n");
+
+            return "DONE";
+        } catch(Exception e) {
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
+        }
+    }
+
+    @CliCommand(value = "data_sort", help = "Sort HDFS data records by a selected field name.")
+    public String command11(
+            @CliOption(key = {"name"}, mandatory = true, help = "HDFS dataset name.")
+            final String name,
+            @CliOption(key = {"sort_by"}, mandatory = true, help = "Fields to be used in sorting. Order matters. Sort by first field then second and so on.")
+            final String fieldsStr,
+            @CliOption(key = {"sorted_name"}, mandatory = true, help = "Sorted dataset name records.")
+            final String sortedName,
+            @CliOption(key = {"ulid_field"}, mandatory = false, help = "(Optional) Name of the ULID field. If none provided no extra field will be added")
+            final String fieldStr,
+            @CliOption(key = {"partitions"}, mandatory = false, help = "(Optional) Partitions of the output. Default is 1 (No partitioning).")
+            final String partitionsStr
+    ) {
+        try {
+
+            final String[] fieldNames = CommandUtil.retrieveFields(fieldsStr);
+            final int partitions = CommandUtil.retrieveInt(partitionsStr,1);
+            final String fieldName = CommandUtil.retrieveString(fieldStr,null);
+            final boolean addUlid = (fieldName != null);
+
+            LOG.info("Sort by selected fields:");
+            LOG.info("\tDataset name : {}",name);
+            LOG.info("\tSorted Dataset name : {}",sortedName);
+            LOG.info("\tSort-By field names : {}", Arrays.toString(fieldNames));
+            if(addUlid)LOG.info("\tAdding ULID field name : {}",fieldName);
+            LOG.info("\tPartitions : {} ",(partitions==1)?"No partitioning":partitions);
+            LOG.info("\n");
+
+            final Path sortedBasePath = ds.sortDataset(name, sortedName, partitions, fieldNames);
+
+            if(addUlid) ds.addUIDToDataset(sortedName, fieldName);
+
+            LOG.info("Sorted dataset saved to path : {}", sortedBasePath);
+            LOG.info("\n");
+            return "DONE";
+        } catch(Exception e) {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         }
     }

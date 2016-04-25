@@ -16,7 +16,6 @@ import java.io.IOException;
 public class Csv2AvroTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(UpdateSchemaTest.class);
-    // TODO CSV 2 AVRO MIGHT PARTITION IT. CHANGE THE ID IN CSV FILES.
 
     private static final String[] SMALL_HEADER = {"id","name","surname","location"};
     private static final String[] MED_HEADER  =  {"id","name","surname","age"};
@@ -54,6 +53,9 @@ public class Csv2AvroTest {
         final Path p = DatasetsUtil.csv2avro(fs,schema,"new_person_small",new Path(fs.getWorkingDirectory(),"data"),
                 new Path(fs.getWorkingDirectory(), "data/person_small/csv/person_small.csv"));
         LOG.info("Saved at path {} ", p);
+        final Path p1 = DatasetsUtil.csv2avro(fs,schema,"new_person_small_4",new Path(fs.getWorkingDirectory(),"data"),
+                new Path(fs.getWorkingDirectory(), "data/person_small/csv/person_small.csv"),4);
+        LOG.info("Saved at path {} ", p1);
     }
 
     @Test
@@ -63,6 +65,9 @@ public class Csv2AvroTest {
         final Path p = DatasetsUtil.csv2avro(fs,schema,"new_person_medium",new Path(fs.getWorkingDirectory(),"data"),
                 new Path(fs.getWorkingDirectory(), "data/person_medium/csv/person_medium.csv"));
         LOG.info("Saved at path {} ", p);
+        final Path p1 = DatasetsUtil.csv2avro(fs,schema,"new_person_medium_4",new Path(fs.getWorkingDirectory(),"data"),
+                new Path(fs.getWorkingDirectory(), "data/person_medium/csv/person_medium.csv"),4);
+        LOG.info("Saved at path {} ", p1);
     }
 
     @Test
@@ -72,5 +77,8 @@ public class Csv2AvroTest {
         final Path p = DatasetsUtil.csv2avro(fs,schema,"new_person_big",new Path(fs.getWorkingDirectory(),"data"),
                 new Path(fs.getWorkingDirectory(), "data/person_big/csv/person_big.csv"));
         LOG.info("Saved at path {} ", p);
+        final Path p1 = DatasetsUtil.csv2avro(fs,schema,"new_person_big_4",new Path(fs.getWorkingDirectory(),"data"),
+                new Path(fs.getWorkingDirectory(), "data/person_big/csv/person_big.csv"),4);
+        LOG.info("Saved at path {} ", p1);
     }
 }

@@ -1,5 +1,7 @@
 package gr.upatras.ceid.pprl.mapreduce;
 
+import gr.upatras.ceid.pprl.datasets.DatasetException;
+import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
 import org.apache.avro.Schema;
 import org.apache.avro.mapreduce.AvroJob;
@@ -41,7 +43,7 @@ public class EncodingTool extends Configured implements Tool {
      * @throws BloomFilterEncodingException
      */
     public int run(String[] args) throws InterruptedException, IOException, ClassNotFoundException,
-            BloomFilterEncodingException {
+            BloomFilterEncodingException, DatasetException {
 
         // get args
         final Configuration conf = getConf();
@@ -59,9 +61,10 @@ public class EncodingTool extends Configured implements Tool {
             FileSystem.get(conf).delete(outputDataPath,true);
             LOG.info("Deleting path {}",outputDataPath);
         }
-        final Schema inputSchema = loadAvroSchemaFromHdfs(FileSystem.get(conf), inputSchemaPath);
+        final FileSystem fs = FileSystem.get(conf);
+        final Schema inputSchema = DatasetsUtil.loadSchemaFromFSPath(fs,inputSchemaPath);
         conf.set(BloomFilterEncodingMapper.INPUT_SCHEMA_KEY,inputSchema.toString());
-        final Schema outputSchema = loadAvroSchemaFromHdfs(FileSystem.get(conf), outputSchemaPath);
+        final Schema outputSchema = DatasetsUtil.loadSchemaFromFSPath(fs,outputSchemaPath);
         conf.set(BloomFilterEncodingMapper.OUTPUT_SCHEMA_KEY,outputSchema.toString());
 
         // set description
@@ -72,7 +75,7 @@ public class EncodingTool extends Configured implements Tool {
                 shortenUrl(inputDataPath.toString()),shortenUrl(inputSchemaPath.toString()),
                 shortenUrl(outputDataPath.toString()),shortenUrl(outputDataPath.toString())
         );
-        LOG.info("Running :" + description);
+        LOG.info("Running : " + description);
 
         // setup map only job
         final Job job = Job.getInstance(conf);
@@ -94,7 +97,12 @@ public class EncodingTool extends Configured implements Tool {
         job.setOutputFormatClass(AvroKeyOutputFormat.class);
 
         // run job
-        return (job.waitForCompletion(true) ? 0 : 1);
+        final boolean success = job.waitForCompletion(true);
+
+        // if run was successful remove sucess file
+        if(success) removeSuccessFile(fs,outputDataPath);
+
+        return success ? 0 : 1;
     }
 
     /**
@@ -128,18 +136,14 @@ public class EncodingTool extends Configured implements Tool {
     }
 
     /**
-     * Load avro schema from the filesystem.
+     * Remove _SUCCESS file from path.
      *
-     * @param fs a <code>FileSystem</code> reference.
-     * @param schemaPath a path to schema file.
-     * @return a <code>Schema</code> instance.
+     * @param path a path.
      * @throws IOException
      */
-    private static Schema loadAvroSchemaFromHdfs(final FileSystem fs,final Path schemaPath)
-            throws IOException {
-        FSDataInputStream fsdis = fs.open(schemaPath);
-        Schema schema = (new Schema.Parser()).parse(fsdis);
-        fsdis.close();
-        return schema;
+    public static void removeSuccessFile(final FileSystem fs,
+                                         final Path path) throws IOException {
+        final Path p = new Path(path,"_SUCCESS");
+        if (fs.exists(p)) fs.delete(p, false);
     }
 }

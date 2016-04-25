@@ -164,14 +164,41 @@ public class BloomFilter {
     }
 
     /**
+     * Create and return K hash values an an array of integers. Utilizes the
+     * Kirsch, Mitzenmacher "Less Hashing, Same Performance" for getting K
+     * hash keys.
+     *
+     * @param data data byte array.
+     * @param N length of bloom fitler.
+     * @param K number of hash values needed for each element to be added.
+     * @param HMAC_MD5 the MD5 Mac.
+     * @param HMAC_SHA1 the SHA1 Mac.
+     * @return an array of K integers all in range of [0,...,N).
+     */
+    public static int[] createHashesV3(final byte[] data, final int N, final int K,
+                                       final Mac HMAC_MD5, final Mac HMAC_SHA1) {
+        byte[] sha1Digest = HMAC_SHA1.doFinal(data);
+        byte[] md5Digest = HMAC_MD5.doFinal(data);
+        final int sha1 = (new BigInteger(sha1Digest)).intValue();
+        final int md5 = (new BigInteger(md5Digest)).intValue();
+        final int[] hashes = new int[K];
+        for (int i = 0; i < K; i++)
+            hashes[i] = Math.abs(((sha1 + (i+1)*md5) % N));
+        return hashes;
+    }
+
+    /**
      * Add data to the bloom filter.
      *
      * @param data data byte array.
      * @return an array of K integers all in range of [0,...,N).
      */
     public int[] addData(final byte[] data) {
+        // TODO add Map<data,positions> for faster encoding
+        // TODO test stuff with createHashesV3
         final int[] positions = createHashesV1(data,N,K,getHmacMD5(),getHmacSHA1());
-        //final int[] positions = createHashesV2(data,N,K,getHmacMD5()); //
+        // final int[] positions = createHashesV2(data,N,K,getHmacMD5()); //
+        // final int[] positions = createHashesV3(data,N,K,getHmacMD5(),getHmacSHA1());
         setPositions(positions);
         return positions;
     }

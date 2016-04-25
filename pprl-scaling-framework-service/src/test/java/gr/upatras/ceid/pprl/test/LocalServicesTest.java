@@ -6,17 +6,14 @@ import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingUtil;
-import gr.upatras.ceid.pprl.encoding.CLKEncoding;
 import gr.upatras.ceid.pprl.matching.ExpectationMaximization;
 import gr.upatras.ceid.pprl.matching.SimilarityVectorFrequencies;
 import gr.upatras.ceid.pprl.service.datasets.LocalDatasetsService;
-
 import gr.upatras.ceid.pprl.service.encoding.LocalEncodingService;
 import gr.upatras.ceid.pprl.service.matching.LocalMatchingService;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.fs.Path;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -180,9 +177,9 @@ public class LocalServicesTest {
 
         // sort by location,name, save as person_small_1
         final Schema updatedSchema1 =
-                ds.updateDatasetSchema(schema,true,false,null,"location","name");
+                ds.sortDatasetSchema(schema, false, null, "location", "name");
         final GenericRecord[] updatedRecords1 =
-                ds.updateDatasetRecords(records,schema,true,false,null,"location","name");
+                ds.sortDatasetRecords(records, schema, false, null, "location", "name");
         Path[] paths = ds.createDirectories("person_small_1",dataRepo);
         ds.saveSchema("person_small_1",paths[2],updatedSchema1);
         ds.saveDatasetRecords("person_small_1",updatedRecords1,updatedSchema1,paths[1]);
@@ -190,18 +187,18 @@ public class LocalServicesTest {
 
         // sort by surname add uiid and save as person_small_2
         final Schema updatedSchema2 =
-                ds.updateDatasetSchema(schema,true,true,"uid","surname");
+                ds.sortDatasetSchema(schema, true, "uid", "surname");
         final GenericRecord[] updatedRecords2 =
-                ds.updateDatasetRecords(records,schema,true,true,"uid","surname");
+                ds.sortDatasetRecords(records, schema, true, "uid", "surname");
         paths = ds.createDirectories("person_small_2",dataRepo);
         ds.saveSchema("person_small_2",paths[2],updatedSchema2);
         ds.saveDatasetRecords("person_small_2",updatedRecords2,updatedSchema2,paths[1]);
 
         // sort by name,surname,location, add uiid and save as person_small
         final Schema updatedSchema3 =
-                ds.updateDatasetSchema(schema,true,true,"uid","name","surname","location");
+                ds.sortDatasetSchema(schema, true, "uid", "name", "surname", "location");
         final GenericRecord[] updatedRecords3 =
-                ds.updateDatasetRecords(records,schema,true,true,"uid","name","surname","location");
+                ds.sortDatasetRecords(records, schema, true, "uid", "name", "surname", "location");
         paths = ds.createDirectories("person_small_3",dataRepo);
         ds.saveSchema("person_small_3",paths[2],updatedSchema3);
         ds.saveDatasetRecords("person_small_3",updatedRecords3,updatedSchema3,paths[1]);
@@ -260,8 +257,8 @@ public class LocalServicesTest {
         LOG.info(DatasetsUtil.prettyRecords(records,schema));
 
         // selected fields for encoding and rest fields to include
-        final String[] selectedFieldNames = new String[]{"surname","location"};
-        final String[] includedFieldNames = new String[]{"uid","name","id"};
+        final String[] selected = new String[]{"surname","location"};
+        final String[] included = new String[]{"uid","name","id"};
 
         // statistics
         // setup stats
@@ -269,17 +266,17 @@ public class LocalServicesTest {
 
         // record count and field names
         statistics.setRecordCount(records.length);
-        statistics.setFieldNames(selectedFieldNames);
+        statistics.setFieldNames(selected);
 
         // calculate average q-grams field names
-        DatasetStatistics.calculateQgramStatistics(records, schema, statistics, selectedFieldNames);
+        DatasetStatistics.calculateQgramStatistics(records, schema, statistics, selected);
 
         // estimate m u
-        SimilarityVectorFrequencies frequencies = ms.vectorFrequencies(records,selectedFieldNames);
+        SimilarityVectorFrequencies frequencies = ms.vectorFrequencies(records,selected);
         final double m0 = 0.9;
         final double u0 = 0.1;
         final double p0 = 0.2;
-        ExpectationMaximization estimator = ms.newEMInstance(selectedFieldNames,m0,u0,p0);
+        ExpectationMaximization estimator = ms.newEMInstance(selected,m0,u0,p0);
         estimator.runAlgorithm(frequencies);
 
         // using m,u,p estimates complete the statistics of the dataset
@@ -287,25 +284,25 @@ public class LocalServicesTest {
         statistics.setEmAlgorithmIterations(estimator.getIteration());
         statistics.setP(estimator.getP());
         DatasetStatistics.calculateStatsUsingEstimates(
-                statistics,selectedFieldNames,
+                statistics,selected,
                 estimator.getM(),estimator.getU());
 
         // Encoding for various schemes
         final int K = 10;
         final int Q = 2;
         final double[] avgQGrams = new double[]{
-                statistics.getFieldStatistics().get(selectedFieldNames[0]).getQgramCount(Q),
-                statistics.getFieldStatistics().get(selectedFieldNames[1]).getQgramCount(Q)
+                statistics.getFieldStatistics().get(selected[0]).getQgramCount(Q),
+                statistics.getFieldStatistics().get(selected[1]).getQgramCount(Q)
         };
         final double[] weights = new double[] {
-                statistics.getFieldStatistics().get(selectedFieldNames[0]).getNormalizedRange(),
-                statistics.getFieldStatistics().get(selectedFieldNames[1]).getNormalizedRange()
+                statistics.getFieldStatistics().get(selected[0]).getNormalizedRange(),
+                statistics.getFieldStatistics().get(selected[1]).getNormalizedRange()
         };
 
         LOG.info("Encoding CLK : ");
         {
             final String scheme = "CLK";
-            final int fieldCount = selectedFieldNames.length;
+            final int fieldCount = selected.length;
             final int N = 1024;
             final int fbfN = 0;
             final double[] AQC = null;
@@ -314,14 +311,14 @@ public class LocalServicesTest {
             final BloomFilterEncoding encoding =
                     BloomFilterEncodingUtil.instanceFactory(
                             scheme, fieldCount, N, fbfN, K, Q, AQC, W);
-            encoding.makeFromSchema(schema, selectedFieldNames, includedFieldNames);
+            encoding.makeFromSchema(schema, selected, included);
             LOG.info(DatasetsUtil.prettyRecords(
                     es.encodeRecords(records, encoding), encoding.getEncodingSchema()));
         }
         LOG.info("---\nEncoding Static FBF :");
         {
             final String scheme = "FBF";
-            final int fieldCount = selectedFieldNames.length;
+            final int fieldCount = selected.length;
             final int N = 0;
             final int fbfN = 512;
             final double[] AQC = null;
@@ -330,7 +327,7 @@ public class LocalServicesTest {
             final BloomFilterEncoding encoding =
                     BloomFilterEncodingUtil.instanceFactory(
                             scheme, fieldCount, N, fbfN, K, Q, AQC, W);
-            encoding.makeFromSchema(schema, selectedFieldNames, includedFieldNames);
+            encoding.makeFromSchema(schema, selected, included);
             LOG.info(DatasetsUtil.prettyRecords(
                     es.encodeRecords(records, encoding), encoding.getEncodingSchema()));
         }
@@ -338,7 +335,7 @@ public class LocalServicesTest {
         LOG.info("---\nEncoding Dynamic FBF :");
         {
             final String scheme = "FBF";
-            final int fieldCount = selectedFieldNames.length;
+            final int fieldCount = selected.length;
             final int N = 0;
             final int fbfN = 0;
             final double[] AQC = avgQGrams;
@@ -347,7 +344,7 @@ public class LocalServicesTest {
             final BloomFilterEncoding encoding =
                     BloomFilterEncodingUtil.instanceFactory(
                             scheme, fieldCount, N, fbfN, K, Q, AQC, W);
-            encoding.makeFromSchema(schema, selectedFieldNames, includedFieldNames);
+            encoding.makeFromSchema(schema, selected, included);
             LOG.info(DatasetsUtil.prettyRecords(
                     es.encodeRecords(records, encoding), encoding.getEncodingSchema()));
         }
@@ -355,7 +352,7 @@ public class LocalServicesTest {
         LOG.info("---\nEncoding RBF/Uniform/FBF/Static :");
         {
             final String scheme = "RBF";
-            final int fieldCount = selectedFieldNames.length;
+            final int fieldCount = selected.length;
             final int N = 1024;
             final int fbfN = 512;
             final double[] AQC = null;
@@ -364,7 +361,7 @@ public class LocalServicesTest {
             final BloomFilterEncoding encoding =
                     BloomFilterEncodingUtil.instanceFactory(
                             scheme, fieldCount, N, fbfN, K, Q, AQC, W);
-            encoding.makeFromSchema(schema, selectedFieldNames, includedFieldNames);
+            encoding.makeFromSchema(schema, selected, included);
             LOG.info(DatasetsUtil.prettyRecords(
                     es.encodeRecords(records, encoding), encoding.getEncodingSchema()));
         }
@@ -372,7 +369,7 @@ public class LocalServicesTest {
         LOG.info("---\nEncoding RBF/Uniform/FBF/Dynamic :");
         {
             final String scheme = "RBF";
-            final int fieldCount = selectedFieldNames.length;
+            final int fieldCount = selected.length;
             final int N = 1024;
             final int fbfN = 0;
             final double[] AQC = avgQGrams;
@@ -381,7 +378,7 @@ public class LocalServicesTest {
             final BloomFilterEncoding encoding =
                     BloomFilterEncodingUtil.instanceFactory(
                             scheme, fieldCount, N, fbfN, K, Q, AQC, W);
-            encoding.makeFromSchema(schema, selectedFieldNames, includedFieldNames);
+            encoding.makeFromSchema(schema, selected, included);
             LOG.info(DatasetsUtil.prettyRecords(
                     es.encodeRecords(records, encoding), encoding.getEncodingSchema()));
         }
@@ -390,7 +387,7 @@ public class LocalServicesTest {
         LOG.info("---\nEncoding RBF/Weighted/FBF/Static :");
         {
             final String scheme = "RBF";
-            final int fieldCount = selectedFieldNames.length;
+            final int fieldCount = selected.length;
             final int N = 0;
             final int fbfN = 512;
             final double[] AQC = null;
@@ -399,7 +396,7 @@ public class LocalServicesTest {
             final BloomFilterEncoding encoding =
                     BloomFilterEncodingUtil.instanceFactory(
                             scheme, fieldCount, N, fbfN, K, Q, AQC, W);
-            encoding.makeFromSchema(schema, selectedFieldNames, includedFieldNames);
+            encoding.makeFromSchema(schema, selected, included);
             LOG.info(DatasetsUtil.prettyRecords(
                     es.encodeRecords(records, encoding), encoding.getEncodingSchema()));
         }
@@ -407,7 +404,7 @@ public class LocalServicesTest {
         LOG.info("---\nEncoding RBF/Weighted/FBF/Dynamic :");
         {
             final String scheme = "RBF";
-            final int fieldCount = selectedFieldNames.length;
+            final int fieldCount = selected.length;
             final int N = 0;
             final int fbfN = 0;
             final double[] AQC = avgQGrams;
@@ -416,11 +413,10 @@ public class LocalServicesTest {
             final BloomFilterEncoding encoding =
                     BloomFilterEncodingUtil.instanceFactory(
                             scheme, fieldCount, N, fbfN, K, Q, AQC, W);
-            encoding.makeFromSchema(schema, selectedFieldNames, includedFieldNames);
+            encoding.makeFromSchema(schema, selected, included);
             LOG.info(DatasetsUtil.prettyRecords(
                     es.encodeRecords(records, encoding), encoding.getEncodingSchema()));
         }
 
     }
-
 }

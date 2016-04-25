@@ -107,19 +107,14 @@ public class ExhaustiveRecordPairSimilarityTool extends Configured implements To
 
         // run job
         boolean success  = job.waitForCompletion(true);
+
+        // if job is succesfull write counters to properties file
         if(success) {
-            final Counters counters = job.getCounters();
-            long pairsDoneInCombine =
-                    counters.findCounter(
-                            RecordPairSimilarityReducer.PAIRS_DONE_KEY, "combine").getValue();
-            long pairsDoneInReduce =
-                    counters.findCounter(
-                            RecordPairSimilarityReducer.PAIRS_DONE_KEY, "reduce").getValue();
-            LOG.info("Pairs Done during COMBINE={}\tPairs Done during REDUCE={}",
-                    pairsDoneInCombine,pairsDoneInReduce);
-            counters2Properties(FileSystem.get(conf),outputPath,job.getCounters(),fieldNames);
-            return 0;
-        } else throw new IllegalStateException("Job not successfull.");
+            logPairComparisonDuringMRPhases(job.getCounters());
+            counters2Properties(FileSystem.get(conf), outputPath, job.getCounters(), fieldNames);
+        }
+
+        return success ? 0 : 1;
     }
 
     /**
@@ -159,6 +154,22 @@ public class ExhaustiveRecordPairSimilarityTool extends Configured implements To
             matrix.getVectorFrequencies()[i] = value;
         }
         return matrix.toProperties();
+    }
+
+    /**
+     * Log how many pair comparison took place in combine or reduce phase.
+     *
+     * @param counters MapReduce counters.
+     */
+    public static void logPairComparisonDuringMRPhases(final Counters counters) {
+        long pairsDoneInCombine =
+                counters.findCounter(
+                        RecordPairSimilarityReducer.PAIRS_DONE_KEY, "combine").getValue();
+        long pairsDoneInReduce =
+                counters.findCounter(
+                        RecordPairSimilarityReducer.PAIRS_DONE_KEY, "reduce").getValue();
+        LOG.info("Pairs Done during COMBINE={}\tPairs Done during REDUCE={}",
+                pairsDoneInCombine, pairsDoneInReduce);
     }
 
     /**

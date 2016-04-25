@@ -28,7 +28,6 @@ import java.util.Properties;
 public class LocalDatasetsService implements InitializingBean {
 
     private static final Logger LOG = LoggerFactory.getLogger(LocalDatasetsService.class);
-    // TODO add more logging here
 
     public void afterPropertiesSet() {
         LOG.info("Local Dataset service initialized.");
@@ -453,44 +452,38 @@ public class LocalDatasetsService implements InitializingBean {
     }
 
     /**
-     * Update dataset records.
+     * Sort dataset records.
      *
      * @param records records.
      * @param schema schema.
-     * @param sort if true sort dataset records.
      * @param addUid if true add ULID field.
      * @param uidFieldName uid field name.
      * @return updated dataset records.
      * @throws DatasetException
      * @throws IOException
      */
-    public GenericRecord[] updateDatasetRecords(final GenericRecord[] records,
-                                                final Schema schema,
-                                                final boolean sort, final boolean addUid,
-                                                final String uidFieldName,
-                                                final String... orderByFieldNames)
+    public GenericRecord[] sortDatasetRecords(final GenericRecord[] records,
+                                              final Schema schema,
+                                              final boolean addUid,
+                                              final String uidFieldName,
+                                              final String... orderByFieldNames)
             throws DatasetException, IOException {
-        if(!(sort || addUid)) throw new IllegalArgumentException("Neighter sort or addUid is set.");
         if(addUid && uidFieldName == null) throw new IllegalAccessError("Requires a new uid field name.");
-        GenericRecord[] updatedRecords = null;
-        Schema sortedSchema = null;
-        if(sort) {
-            updatedRecords = DatasetsUtil.updateRecordsWithOrderByFields(
-                    records,schema,orderByFieldNames);
-            sortedSchema = DatasetsUtil.updateSchemaWithOrderByFields(schema,orderByFieldNames);
-        }
-        if(addUid) updatedRecords = DatasetsUtil.updateRecordsWithUID(
-                (updatedRecords != null) ? updatedRecords : records,
-                (sortedSchema != null) ? sortedSchema :schema,
-                uidFieldName);
-        return updatedRecords;
+
+        GenericRecord[] sortedRecords =
+                DatasetsUtil.updateRecordsWithOrderByFields(records,schema,orderByFieldNames);
+        Schema sortedSchema  =
+                DatasetsUtil.updateSchemaWithOrderByFields(schema,orderByFieldNames);
+
+        if(addUid) sortedRecords =
+                DatasetsUtil.updateRecordsWithUID(sortedRecords,sortedSchema,uidFieldName);
+        return sortedRecords;
     }
 
     /**
-     * Update dataset schema.
+     * Update field order in a dataset schema.
      *
      * @param schema schema
-     * @param sort if true sort dataset records.
      * @param addUid if true add ULID field.
      * @param uidFieldName uidFieldName.
      * @param orderByFieldNames fields to order by (order of fields matters).
@@ -498,19 +491,17 @@ public class LocalDatasetsService implements InitializingBean {
      * @throws DatasetException
      * @throws IOException
      */
-    public Schema updateDatasetSchema(final Schema schema,
-                                      final boolean sort, final boolean addUid,
-                                      final String uidFieldName,
-                                      final String... orderByFieldNames)
+    public Schema sortDatasetSchema(final Schema schema,
+                                    final boolean addUid,
+                                    final String uidFieldName,
+                                    final String... orderByFieldNames)
             throws DatasetException, IOException {
-        if(!(sort || addUid)) throw new IllegalArgumentException("Neighter sort or addUid is set.");
         if(addUid && uidFieldName == null) throw new IllegalAccessError("Requires a new uid field name.");
-        Schema updatedSchema = null;
-        if(sort) updatedSchema = DatasetsUtil.updateSchemaWithOrderByFields(
-                schema,orderByFieldNames);
-        if(addUid) updatedSchema = DatasetsUtil.updateSchemaWithUID(
-                (updatedSchema == null) ? schema : updatedSchema,
-                uidFieldName);
-        return updatedSchema;
+
+        Schema sortedSchema = DatasetsUtil.updateSchemaWithOrderByFields(schema,orderByFieldNames);
+
+        if(addUid) sortedSchema = DatasetsUtil.updateSchemaWithUID(sortedSchema,uidFieldName);
+
+        return sortedSchema;
     }
 }

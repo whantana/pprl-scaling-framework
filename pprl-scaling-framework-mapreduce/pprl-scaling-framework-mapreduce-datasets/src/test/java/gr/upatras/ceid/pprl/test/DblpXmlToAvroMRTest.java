@@ -1,8 +1,8 @@
 package gr.upatras.ceid.pprl.test;
 
 import gr.upatras.ceid.pprl.avro.dblp.DblpPublication;
-import gr.upatras.ceid.pprl.mapreduce.input.MultiTagXmlInputFormat;
 import gr.upatras.ceid.pprl.mapreduce.DblpXmlToAvroMapper;
+import gr.upatras.ceid.pprl.mapreduce.input.MultiTagXmlInputFormat;
 import org.apache.avro.hadoop.io.AvroSerialization;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.hadoop.conf.Configuration;

@@ -8,13 +8,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.hadoop.mapreduce.ToolRunner;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 @Service
-public class EncodingService implements InitializingBean{
+public class EncodingService implements InitializingBean {
 
     private static final Logger LOG = LoggerFactory.getLogger(EncodingService.class);
 
@@ -29,9 +28,9 @@ public class EncodingService implements InitializingBean{
     /**
      * Run encode dataset tool runner tool.
      *
-     * @param input input path
-     * @param inputSchema input schema path.
-     * @param output output path.
+     * @param input        input path
+     * @param inputSchema  input schema path.
+     * @param output       output path.
      * @param outputSchema output schema path.
      * @throws Exception
      */
@@ -40,9 +39,11 @@ public class EncodingService implements InitializingBean{
             throws Exception {
         try {
             final List<String> argsList = new ArrayList<String>();
-            argsList.add(input.toString()); argsList.add(inputSchema.toString());
+            argsList.add(input.toString());
+            argsList.add(inputSchema.toString());
             LOG.info("input={} , inputSchema={}", input, inputSchema);
-            argsList.add(output.toString()); argsList.add(outputSchema.toString());
+            argsList.add(output.toString());
+            argsList.add(outputSchema.toString());
             LOG.info("output={} , outputSchema={}", output, outputSchema);
             String[] args = new String[argsList.size()];
             args = argsList.toArray(args);

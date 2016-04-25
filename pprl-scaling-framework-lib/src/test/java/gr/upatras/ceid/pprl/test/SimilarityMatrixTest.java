@@ -2,9 +2,9 @@ package gr.upatras.ceid.pprl.test;
 
 import gr.upatras.ceid.pprl.datasets.DatasetException;
 import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
+import gr.upatras.ceid.pprl.matching.SimilarityMatrix;
 import gr.upatras.ceid.pprl.matching.SimilarityUtil;
 import gr.upatras.ceid.pprl.matching.SimilarityVectorFrequencies;
-import gr.upatras.ceid.pprl.matching.SimilarityMatrix;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;

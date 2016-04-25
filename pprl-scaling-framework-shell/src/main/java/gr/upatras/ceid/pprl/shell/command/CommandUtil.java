@@ -1,20 +1,8 @@
 package gr.upatras.ceid.pprl.shell.command;
 
-import gr.upatras.ceid.pprl.datasets.DatasetFieldStatistics;
-import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
-import gr.upatras.ceid.pprl.encoding.FieldBloomFilterEncoding;
-import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericData;
-import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.fs.Path;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 public class CommandUtil {
 
@@ -127,5 +115,4 @@ public class CommandUtil {
         for (double mm : ds) if(mm < 0 || mm > 1) throw new IllegalArgumentException("Probability value is not between 0 and 1.");
         return ds;
     }
-
 }

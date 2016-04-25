@@ -1,11 +1,11 @@
 package gr.upatras.ceid.pprl.test;
 
 import gr.upatras.ceid.pprl.combinatorics.CombinatoricsUtil;
-import gr.upatras.ceid.pprl.matching.SimilarityUtil;
 import gr.upatras.ceid.pprl.mapreduce.ExhaustiveRecordPairSimilarityTool;
 import gr.upatras.ceid.pprl.mapreduce.GenerateRecordPairsMapper;
 import gr.upatras.ceid.pprl.mapreduce.RecordPairSimilarityCombiner;
 import gr.upatras.ceid.pprl.mapreduce.RecordPairSimilarityReducer;
+import gr.upatras.ceid.pprl.matching.SimilarityUtil;
 import org.apache.avro.Schema;
 import org.apache.avro.file.DataFileReader;
 import org.apache.avro.generic.GenericDatumReader;

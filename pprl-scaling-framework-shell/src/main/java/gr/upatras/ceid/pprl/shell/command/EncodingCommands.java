@@ -2,13 +2,13 @@ package gr.upatras.ceid.pprl.shell.command;
 
 import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
 import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
-import gr.upatras.ceid.pprl.service.datasets.DatasetsService;
-import gr.upatras.ceid.pprl.service.datasets.LocalDatasetsService;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingUtil;
 import gr.upatras.ceid.pprl.encoding.FieldBloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.RowBloomFilterEncoding;
+import gr.upatras.ceid.pprl.service.datasets.DatasetsService;
+import gr.upatras.ceid.pprl.service.datasets.LocalDatasetsService;
 import gr.upatras.ceid.pprl.service.encoding.EncodingService;
 import gr.upatras.ceid.pprl.service.encoding.LocalEncodingService;
 import org.apache.avro.Schema;
@@ -60,6 +60,10 @@ public class EncodingCommands implements CommandMarker {
     public boolean availability2() { return lds != null; }
     @CliAvailabilityIndicator(value = {"encode_data","encode_data_by_schema"})
     public boolean availability3() { return ds != null && es != null; }
+
+    /**
+     *  COMMON ENCODING COMMANDS
+     */
 
 
     @CliCommand(value = "encode_supported_schemes", help = "List system's supported Bloom-filter encoding schemes.")
@@ -114,6 +118,12 @@ public class EncodingCommands implements CommandMarker {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
         }
     }
+
+
+    /**
+     *  LOCAL ENCODING COMMANDS
+     */
+
 
     @CliCommand(value = "encode_local_data", help = "Encode local data.")
     public String command2(
@@ -252,8 +262,7 @@ public class EncodingCommands implements CommandMarker {
             @CliOption(key = {"partitions"}, mandatory = false, help = "(Optional) Partitions of the output. Default is 1 (No partitioning).")
             final String partitionsStr
     ) {
-        try { // TODO Test this command. Need to have at least two datasets here
-            // TODO Explanatory Comments
+        try {
 
             final Path schemaPath = CommandUtil.retrievePath(schemaStr);
             final Path[] avroPaths = CommandUtil.retrievePaths(avroStr);
@@ -321,12 +330,16 @@ public class EncodingCommands implements CommandMarker {
         }
     }
 
+    /**
+     *  HDFS ENCODING COMMANDS
+     */
+
     @CliCommand(value = "encode_data", help = "Encode HDFS data.")
     public String command4(
-            @CliOption(key = {"uploaded"}, mandatory = true, help = "Uploaded dataset name.")
-            final String uplodadedName,
-            @CliOption(key = {"name"}, mandatory = true, help = "Name of encoding.")
+            @CliOption(key = {"name"}, mandatory = true, help = "Uploaded dataset name.")
             final String name,
+            @CliOption(key = {"encoding_name"}, mandatory = true, help = "Name of encoding.")
+            final String encodingName,
             @CliOption(key = {"fields"}, mandatory = true, help = "Selected fields to be encoded")
             final String fieldsStr,
             @CliOption(key= {"scheme"}, mandatory = true, help = "One of the following encoding schemes : {FBF,RBF,CLK}.")
@@ -373,8 +386,8 @@ public class EncodingCommands implements CommandMarker {
             }
 
             LOG.info("Encoding HDFS data :");
-            LOG.info("\tEncoding name : {}", name);
-            LOG.info("\tDataset name : {}",uplodadedName);
+            LOG.info("\tDataset name : {}",name);
+            LOG.info("\tEncoding name : {}", encodingName);
             LOG.info("\tSelected fields to be encoded : {}", Arrays.toString(fields));
             if(included.length !=0)
                 LOG.info("\tSelected fields to included   : {}", Arrays.toString(included));
@@ -399,30 +412,29 @@ public class EncodingCommands implements CommandMarker {
             LOG.info("\n");
 
             final Path[] datasetPaths = ds.retrieveDirectories(name);
-            final Path basePath = datasetPaths[0];
-            final Path avroPath = datasetPaths[1];
-            final Path schemaPath = datasetPaths[2];
+            final Path inputBasePath = datasetPaths[0];
+            final Path inputAvroPath = datasetPaths[1];
+            final Path inputSchemaPath = ds.retrieveSchemaPath(datasetPaths[2]);
 
             final BloomFilterEncoding encoding = BloomFilterEncodingUtil.instanceFactory(
                     scheme, fields.length, N, fbfN, K, Q, avgQgrams, weights);
-            final Schema schema = ds.loadSchema(schemaPath);
+            final Schema schema = ds.loadSchema(inputSchemaPath);
             encoding.makeFromSchema(schema,fields,included);
             if(!encoding.isEncodingOfSchema(schema))
                 throw new BloomFilterEncodingException("Encoding does not validate with source dataset.");
             final Schema encodingSchema = encoding.getEncodingSchema();
 
-            final Path[] encodingPaths = ds.createDirectories(name,basePath,DatasetsService.OTHERS_CAN_READ_PERMISSION);
-            final Path baseEncodingPath = encodingPaths[0];
-            final Path avroEncodingPath = encodingPaths[1];
-            final Path schemaEncodingPath = encodingPaths[2];
-            final Path schemaFilePath =
-                    new Path(schemaEncodingPath,String.format("%s.avsc",name));
-            ds.saveSchema(schemaFilePath,encodingSchema);
+            final Path[] encodingPaths = ds.createDirectories(encodingName,inputBasePath,DatasetsService.OTHERS_CAN_READ_PERMISSION);
+            final Path encodingBasePath = encodingPaths[0];
+            final Path encodingAvroPath = encodingPaths[1];
+            final Path encodingSchemaPath =
+                    new Path(encodingPaths[2],String.format("%s.avsc",encodingName));
+            ds.saveSchema(encodingSchemaPath,encodingSchema);
 
-            final Path inputSchemaPath = ds.retrieveSchemaPath(schemaPath);
-            es.runEncodeDatasetTool(avroPath,inputSchemaPath,avroEncodingPath,schemaFilePath);
+            es.runEncodeDatasetTool(inputAvroPath,inputSchemaPath,encodingAvroPath,encodingSchemaPath);
+            ds.setOthersCanReadPermission(encodingAvroPath);
 
-            LOG.info("\tEncoded data path : {}",baseEncodingPath);
+            LOG.info("\tEncoded data path : {}",encodingBasePath);
             LOG.info("\n");
             return "DONE";
         } catch(Exception e) {
@@ -432,10 +444,10 @@ public class EncodingCommands implements CommandMarker {
 
     @CliCommand(value = "encode_data_by_schema", help = "Encode HDFS data by existing schema.")
     public String command5(
-            @CliOption(key = {"uploaded"}, mandatory = true, help = "Uploaded dataset name.")
-            final String uplodadedName,
-            @CliOption(key = {"name"}, mandatory = true, help = "Name of encoding.")
+            @CliOption(key = {"name"}, mandatory = true, help = "Uploaded dataset name.")
             final String name,
+            @CliOption(key = {"encoding_name"}, mandatory = true, help = "Name of encoding.")
+            final String encodingName,
             @CliOption(key = {"fields"}, mandatory = true, help = "Selected fields to be encoded")
             final String fieldsStr,
             @CliOption(key = {"encoding_schema"}, mandatory = true, help = "HDFS schema avro file.")
@@ -448,31 +460,31 @@ public class EncodingCommands implements CommandMarker {
         try {
             final String[] fields = CommandUtil.retrieveFields(fieldsStr);
             final String[] included = CommandUtil.retrieveFields(includeStr);
-            final Path encodingSchemaPath = CommandUtil.retrievePath(encodingSchemaStr);
+            final Path existingEncodingSchemaPath = CommandUtil.retrievePath(encodingSchemaStr);
             final String[] mappings = CommandUtil.retrieveFields(mappingStr);
 
             if(fields.length != mappings.length)
                 throw new IllegalArgumentException("Not the same length of fields");
 
             LOG.info("Encoding HDFS data by existing schema:");
-            LOG.info("\tEncoding name : {}", name);
-            LOG.info("\tDataset name : {}",uplodadedName);
+            LOG.info("\tEncoding name : {}", encodingName);
+            LOG.info("\tDataset name : {}", name);
             LOG.info("\tSelected fields to be encoded : {}", Arrays.toString(fields));
             if(included.length !=0)
                 LOG.info("\tSelected fields to included   : {}", Arrays.toString(included));
-            LOG.info("\tBase Encoding schema stored in file : {}",encodingSchemaPath);
+            LOG.info("\tBase Encoding schema stored in file : {}",existingEncodingSchemaPath);
             final Map<String,String> field2fieldMap = new HashMap<String,String>();
             for (int i = 0; i < fields.length; i++)
                 field2fieldMap.put(fields[i],mappings[i]);
             LOG.info("\tField Mappings are : {}",field2fieldMap);
 
             final Path[] datasetPaths = ds.retrieveDirectories(name);
-            final Path basePath = datasetPaths[0];
-            final Path avroPath = datasetPaths[1];
-            final Path schemaPath = datasetPaths[2];
+            final Path inputBasePath = datasetPaths[0];
+            final Path inputAvroPath = datasetPaths[1];
+            final Path inputSchemaPath = ds.retrieveSchemaPath(datasetPaths[2]);
 
-            final Schema existingEncodingSchema = lds.loadSchema(encodingSchemaPath);
-            final Schema schema = ds.loadSchema(schemaPath);
+            final Schema schema = ds.loadSchema(inputSchemaPath);
+            final Schema existingEncodingSchema = lds.loadSchema(existingEncodingSchemaPath);
             final String schemeName = BloomFilterEncodingUtil.retrieveSchemeName(existingEncodingSchema);
             final BloomFilterEncoding encoding =
                     BloomFilterEncodingUtil.newInstance(schemeName);
@@ -485,18 +497,18 @@ public class EncodingCommands implements CommandMarker {
                 throw new BloomFilterEncodingException("Encoding does not validate with source dataset.");
             final Schema encodingSchema = encoding.getEncodingSchema();
 
-            final Path[] encodingPaths = ds.createDirectories(name,basePath,DatasetsService.OTHERS_CAN_READ_PERMISSION);
-            final Path baseEncodingPath = encodingPaths[0];
-            final Path avroEncodingPath = encodingPaths[1];
-            final Path schemaEncodingPath = encodingPaths[2];
-            final Path schemaFilePath =
-                    new Path(schemaEncodingPath,String.format("%s.avsc",name));
-            ds.saveSchema(schemaFilePath,encodingSchema);
+            final Path[] encodingPaths = ds.createDirectories(encodingName,inputBasePath,DatasetsService.OTHERS_CAN_READ_PERMISSION);
+            final Path encodingBasePath = encodingPaths[0];
+            final Path encodingAvroPath = encodingPaths[1];
+            final Path encodingSchemaPath =
+                    new Path(encodingPaths[2],String.format("%s.avsc",encodingName));
+            ds.saveSchema(encodingSchemaPath,encodingSchema);
 
-            final Path inputSchemaPath = ds.retrieveSchemaPath(schemaPath);
-            es.runEncodeDatasetTool(avroPath,inputSchemaPath,avroEncodingPath,schemaFilePath);
 
-            LOG.info("Encoded data path : {}",baseEncodingPath);
+            es.runEncodeDatasetTool(inputAvroPath,inputSchemaPath,encodingAvroPath,encodingSchemaPath);
+            ds.setOthersCanReadPermission(encodingAvroPath);
+
+            LOG.info("Encoded data path : {}",encodingBasePath);
             LOG.info("\n");
 
             return "DONE";

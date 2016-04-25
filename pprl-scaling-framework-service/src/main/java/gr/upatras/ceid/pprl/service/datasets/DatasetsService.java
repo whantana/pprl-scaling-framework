@@ -1,10 +1,11 @@
 package gr.upatras.ceid.pprl.service.datasets;
 
+import gr.upatras.ceid.pprl.avro.dblp.DblpPublication;
 import gr.upatras.ceid.pprl.datasets.DatasetException;
 import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
 import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
-import gr.upatras.ceid.pprl.avro.dblp.DblpPublication;
 import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -19,6 +20,7 @@ import org.springframework.data.hadoop.mapreduce.ToolRunner;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.security.SecureRandom;
 import java.util.Properties;
 import java.util.SortedSet;
 
@@ -27,9 +29,8 @@ import java.util.SortedSet;
  */
 @Service
 public class DatasetsService implements InitializingBean {
-
+    // TODO logging
     protected static final Logger LOG = LoggerFactory.getLogger(DatasetsService.class);
-    // TODO add more logging here
 
     public void afterPropertiesSet() {
         try {
@@ -44,11 +45,12 @@ public class DatasetsService implements InitializingBean {
             LOG.info(String.format("Dataset service initialized [" +
                             " nn=%s, " +
                             " statsBasePath = %s (ONLY_OWNER_PERMISION = %s)," +
-                            " Tool#1 = %s, Tool#2 = %s]",
+                            " Tool#1 = %s, Tool#2 = %s, Tool#3 = %s]",
                     hdfs.getUri(),
                     basePath,onlyOwnerPermissionbaseDir,
                     (dblpXmlToAvroToolRunner != null),
-                    (qGramCountingToolRunner != null)));
+                    (qGramCountingToolRunner != null),
+                    (sortAvroToolRunner != null)));
         } catch (IOException e) {
             LOG.error(e.getMessage());
         }
@@ -75,7 +77,44 @@ public class DatasetsService implements InitializingBean {
     @Autowired
     private ToolRunner qGramCountingToolRunner;       // Q-Gram Counting Tool
 
+    @Autowired
+    private ToolRunner sortAvroToolRunner;
+
     private Path basePath;                            // PPRL Base Path on the HDFS (pprl-site).
+
+    /**
+     * Set only-owner permission on path.
+     *
+     * @param path hdfs path
+     * @throws IOException
+     */
+    public void setOnlyOwnerPermission(final Path path) throws IOException {
+        try {
+            if (!hdfs.exists(path))
+                throw new IllegalArgumentException("Path \"" + path + "\" does not exist.");
+            hdfs.setPermission(path,ONLY_OWNER_PERMISSION);
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Set others-can-read permission on path.
+     *
+     * @param path hdfs path
+     * @throws IOException
+     */
+    public void setOthersCanReadPermission(final Path path) throws IOException {
+        try {
+            if (!hdfs.exists(path))
+                throw new IllegalArgumentException("Path \"" + path + "\" does not exist.");
+            hdfs.setPermission(path,OTHERS_CAN_READ_PERMISSION);
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        }
+    }
 
     /**
      * Create Datasets Directories on the HDFS pprl-site.
@@ -388,8 +427,6 @@ public class DatasetsService implements InitializingBean {
             LOG.info("Runing tool");
             runDblpXmlToAvroTool(inputPath,outputPath);
 
-            removeSuccessFile(outputPath);
-
             hdfs.setPermission(outputPath, permission);
 
             return datasetPath;
@@ -435,7 +472,7 @@ public class DatasetsService implements InitializingBean {
      * @param outputPath output path.
      * @throws Exception
      */
-    public void runDblpXmlToAvroTool(final Path inputPath, final Path outputPath)
+    private void runDblpXmlToAvroTool(final Path inputPath, final Path outputPath)
             throws Exception {
         if(dblpXmlToAvroToolRunner == null) throw new IllegalStateException("tool-runner not set");
         LOG.info("input={}", inputPath);
@@ -453,7 +490,7 @@ public class DatasetsService implements InitializingBean {
      * @param fieldNames field names.
      * @throws Exception
      */
-    public void runQGramCountingTool(final Path inputPath, final Path inputSchemaPath,
+    private void runQGramCountingTool(final Path inputPath, final Path inputSchemaPath,
                                       final Path propertiesOutputPath,
                                       final String[] fieldNames)
             throws Exception {
@@ -474,18 +511,7 @@ public class DatasetsService implements InitializingBean {
         qGramCountingToolRunner.call();
     }
 
-    /**
-     * Remove _SUCCESS file from path.
-     *
-     * @param path a path.
-     * @throws IOException
-     */
-    private void removeSuccessFile(final Path path) throws IOException {
-        final Path p = new Path(path + "/_SUCCESS");
-        if (hdfs.exists(p)) {
-            hdfs.delete(p, false);
-        }
-    }
+
 
     /**
      * Save statistics instance to a HDFS path.
@@ -544,9 +570,177 @@ public class DatasetsService implements InitializingBean {
         }
     }
 
-    // TODO sample files (need spark here?)
 
-    // TODO Add a an int UID field for a sample
+    /**
+     * Sample a dataset.
+     *
+     * @param datasetName a dataset name.
+     * @param sampleName a sample dataset name.
+     * @param size size of sample
+     * @return base path of the sample dataset
+     * @throws IOException
+     * @throws DatasetException
+     */
+    public Path sampleDataset(final String datasetName,
+                              final String sampleName,
+                              int size)
+            throws IOException, DatasetException {
+        try {
 
-    // TODO Add an updated call.
+            final Path[] datasetDirectories = retrieveDirectories(datasetName);
+            final Path datasetAvroPath = datasetDirectories[1];
+            final Path datasetSchemaPath = retrieveSchemaPath(datasetDirectories[2]);
+            final Schema schema = loadSchema(datasetSchemaPath);
+
+            final Path[] sampleDirectories = createDirectories(sampleName, DatasetsService.ONLY_OWNER_PERMISSION);
+            final Path sampleBasePath = sampleDirectories[0];
+            final Path sampleAvroPath = sampleDirectories[1];
+            final Path sampleSchemaPath = new Path(sampleDirectories[2],String.format("%s.avsc",sampleName));
+            saveSchema(sampleSchemaPath, schema);
+
+            final DatasetsUtil.DatasetRecordReader reader =
+                    new DatasetsUtil.DatasetRecordReader(hdfs, schema, datasetAvroPath);
+            final DatasetsUtil.DatasetRecordWriter writer =
+                    new DatasetsUtil.DatasetRecordWriter(hdfs, sampleName, schema, sampleAvroPath);
+            int sampled = 0;
+            final SecureRandom RANDOM = new SecureRandom();
+
+            while (reader.hasNext() && sampled < size) {
+                final GenericRecord record = reader.next();
+                if(RANDOM.nextBoolean()) {
+                    writer.writeRecord(record);
+                    sampled++;
+                }
+            }
+            reader.close();
+            writer.close();
+
+            return sampleBasePath;
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        } catch (DatasetException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Sort a dataset.
+     *
+     * @param name dataset name.
+     * @param sortedName sorted dataset name.
+     * @param partitions number of partitions.
+     * @param fieldNames fields to sort-by.
+     * @return the base path of the sorted dataset.
+     */
+    public Path sortDataset(final String name, final String sortedName,
+                            final int partitions, final String... fieldNames)
+            throws Exception {
+
+        try {
+            final Path[] inputDirectories = retrieveDirectories(name);
+            final Path inputAvroPath = inputDirectories[1];
+            final Path inputSchemaPath = retrieveSchemaPath(inputDirectories[2]);
+
+            final Path[] sortedDirectories = createDirectories(sortedName, DatasetsService.ONLY_OWNER_PERMISSION);
+            final Path sortedBasePath = sortedDirectories[0];
+            final Path sortedAvroPath = sortedDirectories[1];
+            final Path sortedSchemaPath = new Path(sortedDirectories[2],String.format("%s.avsc",name));
+
+            runSortAvroTool(inputAvroPath, inputSchemaPath,
+                    sortedAvroPath, sortedSchemaPath, partitions, fieldNames);
+
+            return sortedBasePath;
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            LOG.error(e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Run sort avro tool.
+     *
+     * @param inputAvroPath input avro path.
+     * @param inputSchemaPath input schema path.
+     * @param sortedAvroPath sorted avro path.
+     * @param sortedSchemaPath sorted schema path.
+     * @param reducersCount number of reducers
+     * @param fieldNames field names.
+     * @throws Exception
+     */
+    private void runSortAvroTool(final Path inputAvroPath, final Path inputSchemaPath,
+                                 final Path sortedAvroPath, final Path sortedSchemaPath,
+                                 final int reducersCount, final  String[] fieldNames)
+            throws Exception {
+        if(sortAvroToolRunner == null) throw new IllegalStateException("tool-runner not set");
+        LOG.info("input={}", inputAvroPath);
+        LOG.info("inputSchemaPath={}", inputSchemaPath);
+        LOG.info("sortedAvroPath={}",sortedAvroPath);
+        LOG.info("sortedSchemaPath={}",sortedSchemaPath);
+        LOG.info("Number of Reducers={}", reducersCount);
+        final StringBuilder fsb = new StringBuilder(fieldNames[0]);
+        if(fieldNames.length > 1)
+            for (int i = 1; i <fieldNames.length; i++)
+                fsb.append(",").append(fieldNames[i]);
+        LOG.info("Sort-By fieldnames={}", fsb.toString());
+        sortAvroToolRunner.setArguments(
+                inputAvroPath.toString(),inputSchemaPath.toString(),
+                sortedAvroPath.toString(),sortedSchemaPath.toString(),
+                String.valueOf(reducersCount),fsb.toString()
+        );
+        sortAvroToolRunner.call();
+    }
+
+    /**
+     * Add UID to dataset.
+     *
+     * @param name name of dataset.
+     * @param fieldName field name of the UID.
+     */
+    public void addUIDToDataset(final String name, final String fieldName)
+            throws IOException, DatasetException {
+        try {
+            final Path[] inputDirectories = retrieveDirectories(name);
+            final Path inputAvroPath = inputDirectories[1];
+            final Path inputSchemaPath = retrieveSchemaPath(inputDirectories[2]);
+            final Schema schema = DatasetsUtil.loadSchemaFromFSPath(hdfs,inputSchemaPath);
+            final Schema updatedSchema = DatasetsUtil.updateSchemaWithUID(schema,fieldName);
+
+            final Path tmp = new Path(inputDirectories[0],"tmp");
+            hdfs.mkdirs(tmp,ONLY_OWNER_PERMISSION);
+
+            final DatasetsUtil.DatasetRecordReader reader = new DatasetsUtil.DatasetRecordReader(
+                    hdfs,schema,inputAvroPath);
+            int partitions = reader.getReaderCount();
+            final DatasetsUtil.DatasetRecordWriter writer =
+                    new DatasetsUtil.DatasetRecordWriter(hdfs,name,updatedSchema,tmp,partitions);
+
+            int uid = 0;
+            while (reader.hasNext()) {
+                GenericRecord record = reader.next();
+                GenericRecord updatedRecord =
+                        DatasetsUtil.updateRecordWithUID(record,updatedSchema,fieldName,uid);
+                uid++;
+                writer.writeRecord(updatedRecord,reader.getCurrent());
+            }
+            reader.close();
+            writer.close();
+
+            hdfs.delete(inputSchemaPath,true);
+            DatasetsUtil.saveSchemaToFSPath(hdfs,updatedSchema,inputSchemaPath);
+
+            hdfs.delete(inputAvroPath,true);
+            hdfs.rename(tmp,inputAvroPath);
+        }  catch (IOException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        } catch (DatasetException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        }
+    }
 }

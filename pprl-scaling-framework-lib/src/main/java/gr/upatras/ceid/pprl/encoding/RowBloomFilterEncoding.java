@@ -3,8 +3,6 @@ package gr.upatras.ceid.pprl.encoding;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -21,8 +19,6 @@ import java.util.Set;
  * Row Bloom Filter (RBF) Encoding class.
  */
 public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
-
-    private static final Logger LOG = LoggerFactory.getLogger(RowBloomFilterEncoding.class);
 
     private static final SecureRandom SECURE_RANDOM_GENERATOR = new SecureRandom(); // random generator
 
@@ -190,13 +186,9 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
                 int seed = rbfCompositionSeeds[i];
                 int maxBit = getN(i);
                 selectedBits[i] = RowBloomFilterEncoding.randomBitSelection(bitCount,maxBit,seed);
-                LOG.debug("Generating selected bits for field {} from FBF with {} bits.",
-                        String.format("%s(%d)",name,i),maxBit);
             }
-            LOG.debug("Generating a random bit permutation of {} bits",getRBFN());
             bitPermutation  = randomBitPermutation(getRBFN(), rbfBitPermutationSeed);
             rbf = new BloomFilter(getRBFN(),getK());
-            LOG.debug("Initialized for RBF Encoding.");
         } catch (NoSuchAlgorithmException e) {
             throw new BloomFilterEncodingException(e.getMessage());
         } catch (InvalidKeyException e) {

@@ -6,6 +6,7 @@ import java.util.Arrays;
  * Expectation Maximization class.
  */
 public class ExpectationMaximization {
+
     public static final int MAX_ITERATIONS = 1000;  // Maximum iterations
     private long pairCount;                         // Count of pairs
     private int fieldCount;                         // Count of fields

@@ -4,7 +4,7 @@
 
     <groupId>gr.upatras.ceid</groupId>
     <artifactId>pprl-scaling-framework</artifactId>
-    <version>0.2-SNAPSHOT</version>
+    <version>0.3-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>PPRL Scaling Framework</name>

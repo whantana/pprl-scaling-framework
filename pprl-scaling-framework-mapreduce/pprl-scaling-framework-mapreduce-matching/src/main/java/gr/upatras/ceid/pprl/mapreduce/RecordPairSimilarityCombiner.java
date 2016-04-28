@@ -1,6 +1,7 @@
 package gr.upatras.ceid.pprl.mapreduce;
 
 
+import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import gr.upatras.ceid.pprl.matching.SimilarityUtil;
 import gr.upatras.ceid.pprl.matching.SimilarityVectorFrequencies;
 import org.apache.avro.Schema;
@@ -35,7 +36,7 @@ public class RecordPairSimilarityCombiner extends Reducer<LongWritable, AvroValu
         final List<GenericRecord> list = new ArrayList<GenericRecord>();
         for(AvroValue<GenericRecord> value : values) {
             GenericRecord record = new GenericData.Record(schema);
-            for (String fieldName : fieldNames)
+            for (String fieldName : DatasetsUtil.fieldNames(schema))
                 record.put(fieldName,value.datum().get(fieldName));
             list.add(record);
         }

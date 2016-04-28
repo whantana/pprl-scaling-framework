@@ -323,8 +323,6 @@ public class QGramUtil {
 
     /**
      *  Q Gram iterator of string based on the substring.
-     *
-     *  TODO benchmark it versus list of strings
      */
     public static class QGramIterator implements Iterator<String> {
         private final String string;

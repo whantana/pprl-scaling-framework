@@ -4,8 +4,6 @@ import gr.upatras.ceid.pprl.qgram.QGramUtil;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
@@ -19,8 +17,6 @@ import java.util.Set;
  * Cryptographically Long Key (CLK) Encoding class.
  */
 public class CLKEncoding extends BloomFilterEncoding {
-
-    private static final Logger LOG = LoggerFactory.getLogger(CLKEncoding.class);
 
     private String encodingFieldName; // encoding field names (only 1 encoding field name for all sources).
     private BloomFilter bf; // bloom filter (only need 1 bloom filter)
@@ -71,7 +67,6 @@ public class CLKEncoding extends BloomFilterEncoding {
                 }
             }
             bf = new BloomFilter(getCLKN(), K);
-            LOG.debug("Initialized for CLK Encoding.");
         } catch (NoSuchAlgorithmException e) {
             throw new BloomFilterEncodingException(e.getMessage());
         } catch (InvalidKeyException e) {

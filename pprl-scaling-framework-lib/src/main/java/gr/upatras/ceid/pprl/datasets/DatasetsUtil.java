@@ -694,32 +694,14 @@ public class DatasetsUtil {
      * Returns all avro data files paths.
      *
      * @param fs a <code>FileSystem</code> reference.
-     * @param parentPath a parent path.
-     * @return avro data files paths.
-     * @throws IOException
-     */
-    public static SortedSet<Path> getPathsRecurcively(final FileSystem fs, final Path parentPath) throws IOException {
-        final SortedSet<Path> paths = new TreeSet<Path>();
-        final RemoteIterator<LocatedFileStatus> iterator = fs.listFiles(parentPath, true);
-        while(iterator.hasNext()) {
-            final LocatedFileStatus lfs = iterator.next();
-            if (lfs.isFile() && lfs.getPath().toString().endsWith(".avro"))
-                paths.add(lfs.getPath());
-        }
-        LOG.debug("getPathsRecurcively returns {}", paths);
-        return paths;
-    }
-
-    /**
-     * Returns all avro data files paths.
-     *
-     * @param fs a <code>FileSystem</code> reference.
      * @param pathArray parent paths array.
      * @return avro data files paths.
      * @throws IOException
      */
     public static SortedSet<Path> getAllAvroPaths(final FileSystem fs, final Path... pathArray) throws IOException {
         final SortedSet<Path> paths = new TreeSet<Path>();
+        LOG.debug(String.format("Retrieve all Avro Paths [FileSystem=%s,Paths=%s].",
+                fsIsLocal(fs) ? "local" : fs.getUri(), Arrays.toString(pathArray)));
         for(Path p : pathArray) {
             if (fs.isDirectory(p)) {
                 final RemoteIterator<LocatedFileStatus> iterator = fs.listFiles(p, true);
@@ -734,7 +716,9 @@ public class DatasetsUtil {
                     paths.add(p);
             }
         }
-        LOG.debug("getAllAvroPaths returns {}", paths);
+        LOG.debug(String.format("Retrieve all Avro Paths [FileSystem=%s,Paths=%s," +
+                        "Returned=%s].", fsIsLocal(fs) ? "local" : fs.getUri(),
+                Arrays.toString(pathArray),paths));
         return paths;
     }
 
@@ -747,11 +731,15 @@ public class DatasetsUtil {
      * @throws IOException
      */
     public static Path getSchemaPath(final FileSystem fs, final Path parentPath) throws IOException{
+        LOG.debug(String.format("Retrieve schema path [FileSystem=%s,parentPath=%s].",
+                        fsIsLocal(fs) ? "local" : fs.getUri(), parentPath));
         final RemoteIterator<LocatedFileStatus> iterator = fs.listFiles(parentPath, true);
         while (iterator.hasNext()) {
             final LocatedFileStatus lfs = iterator.next();
             if (lfs.isFile() && lfs.getPath().toString().endsWith(".avsc")) {
-                LOG.debug("getSchemaPath returns {}", lfs.getPath());
+                LOG.debug(String.format("Retrieve schema path [FileSystem=%s,parentPath=%s," +
+                                "Path=%s].", fsIsLocal(fs) ? "local" : fs.getUri(),
+                        parentPath,lfs.getPath()));
                 return lfs.getPath();
             }
         }
@@ -766,7 +754,10 @@ public class DatasetsUtil {
      * @return  all properties paths.
      * @throws IOException
      */
-    public static SortedSet<Path> getAllPropertiesPaths(final FileSystem fs, final Path[] pathArray) throws IOException {
+    public static SortedSet<Path> getAllPropertiesPaths(final FileSystem fs, final Path... pathArray) throws IOException {
+        LOG.debug(String.format("Retrieve schema path [FileSystem=%s,parentPaths=%s].",
+                fsIsLocal(fs) ? "local" : fs.getUri(),
+                Arrays.toString(pathArray)));
         final SortedSet<Path> paths = new TreeSet<Path>();
         for(Path p : pathArray) {
             if (fs.isDirectory(p)) {
@@ -782,7 +773,9 @@ public class DatasetsUtil {
                     paths.add(p);
             }
         }
-        LOG.debug("getAllPropertiesPaths returns {}", paths);
+        LOG.debug(String.format("Retrieve schema path [FileSystem=%s,parentPaths=%s,path=%s].",
+                fsIsLocal(fs) ? "local" : fs.getUri(),
+                Arrays.toString(pathArray),paths));
         return paths;
     }
 
@@ -797,7 +790,7 @@ public class DatasetsUtil {
         public DatasetRecordReader(final FileSystem fs, final Schema schema, final Path parentPath)
                 throws IOException {
             final SortedSet<Path> paths =
-                    fs.isDirectory(parentPath) ? getPathsRecurcively(fs,parentPath) :
+                    fs.isDirectory(parentPath) ? getAllAvroPaths(fs, parentPath) :
                             new TreeSet<Path>(Arrays.asList(new Path[]{fs.makeQualified(parentPath)}));
             int count = paths.size();
             LOG.debug(String.format("Found %d files to read [FileSystem=%s,Path=%s]",
@@ -817,7 +810,7 @@ public class DatasetsUtil {
             final SortedSet<Path> paths = new TreeSet<Path>();
             for (Path avroPath : avroPaths) {
                 if(fs.isDirectory(avroPath))
-                    paths.addAll(getPathsRecurcively(fs,avroPath));
+                    paths.addAll(getAllAvroPaths(fs, avroPath));
                 else
                     paths.add(fs.makeQualified(avroPath));
             }

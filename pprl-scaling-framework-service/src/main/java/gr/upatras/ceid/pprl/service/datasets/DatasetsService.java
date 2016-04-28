@@ -29,7 +29,6 @@ import java.util.SortedSet;
  */
 @Service
 public class DatasetsService implements InitializingBean {
-    // TODO logging
     protected static final Logger LOG = LoggerFactory.getLogger(DatasetsService.class);
 
     public void afterPropertiesSet() {
@@ -90,6 +89,7 @@ public class DatasetsService implements InitializingBean {
      */
     public void setOnlyOwnerPermission(final Path path) throws IOException {
         try {
+            LOG.info("Set ONLY_OWNER permission on path {}.",path);
             if (!hdfs.exists(path))
                 throw new IllegalArgumentException("Path \"" + path + "\" does not exist.");
             hdfs.setPermission(path,ONLY_OWNER_PERMISSION);
@@ -107,6 +107,7 @@ public class DatasetsService implements InitializingBean {
      */
     public void setOthersCanReadPermission(final Path path) throws IOException {
         try {
+            LOG.info("Set OTHERS_CAN_READ permission on path {}.",path);
             if (!hdfs.exists(path))
                 throw new IllegalArgumentException("Path \"" + path + "\" does not exist.");
             hdfs.setPermission(path,OTHERS_CAN_READ_PERMISSION);
@@ -140,6 +141,7 @@ public class DatasetsService implements InitializingBean {
      */
     public Path[] createDirectories(final String name,final Path basePath, final FsPermission permission)
             throws IOException {
+        LOG.info("Creating directory for {} at {}.",name,basePath);
         return DatasetsUtil.createDatasetDirectories(hdfs, name, basePath, permission);
     }
 
@@ -165,6 +167,7 @@ public class DatasetsService implements InitializingBean {
     public Path[] retrieveDirectories(final String name,final Path basePath)
             throws IOException {
         try {
+            LOG.info("Retrieving directories for {} at {}.",name,basePath);
             return DatasetsUtil.retrieveDatasetDirectories(hdfs,name,basePath);
         } catch (IOException e) {
             LOG.error(e.getMessage());
@@ -182,6 +185,7 @@ public class DatasetsService implements InitializingBean {
     public Path retrieveSchemaPath(final Path basePath)
             throws IOException {
         try {
+            LOG.info("Retrieving schema from {}.",basePath);
             return DatasetsUtil.getSchemaPath(hdfs,basePath);
         } catch (IOException e) {
             LOG.error(e.getMessage());
@@ -226,7 +230,7 @@ public class DatasetsService implements InitializingBean {
             LOG.info("Uploading avro {} files.", paths.size());
             for (Path src : paths) {
                 final Path dest = new Path(destAvroPath, src.getName());
-                LOG.info("\tUploading {} to {}", src, dest);
+                LOG.info("\tUploading {} to {}.", src, dest);
                 hdfs.copyFromLocalFile(src, dest);
                 hdfs.setPermission(dest, permission);
             }
@@ -234,7 +238,7 @@ public class DatasetsService implements InitializingBean {
             final Path src = schemaPath;
             final Path dest = new Path(destSchemaPath,schemaPath.getName());
             LOG.info("Uploading {} avro schema file.");
-            LOG.info("\tUploading {} to {}", src, dest);
+            LOG.info("\tUploading {} to {}.", src, dest);
             hdfs.copyFromLocalFile(src, dest);
             return destBasePath;
         } catch (IOException e) {
@@ -299,7 +303,7 @@ public class DatasetsService implements InitializingBean {
             final Path destSchemaPath = dataset[2];
             for(Path src: DatasetsUtil.getAllAvroPaths(hdfs,new Path[]{srcAvroPath})) {
                 final Path dest = new Path(destAvroPath, src.getName());
-                LOG.info("\tDownloading {} to {}", src, dest);
+                LOG.info("\tDownloading {} to {}.", src, dest);
                 hdfs.copyToLocalFile(src, dest);
             }
 
@@ -307,13 +311,13 @@ public class DatasetsService implements InitializingBean {
                 final Path src = DatasetsUtil.getSchemaPath(hdfs, srcSchemaPath);
                 final Path dest = new Path(destSchemaPath, src.getName());
                 LOG.info("Downloading avro schema file.");
-                LOG.info("\tDownloading {} to {}", src, dest);
+                LOG.info("\tDownloading {} to {}.", src, dest);
                 hdfs.copyToLocalFile(src, dest);
             }
 
             for(Path src : DatasetsUtil.getAllPropertiesPaths(hdfs,new Path[]{baseAvroPath})) {
                 final Path dest = new Path(destBasePath, src.getName());
-                LOG.info("\tDownloading {} to {}", src, dest);
+                LOG.info("\tDownloading {} to {}.", src, dest);
                 hdfs.copyToLocalFile(src, dest);
             }
 
@@ -349,6 +353,7 @@ public class DatasetsService implements InitializingBean {
     public Schema loadSchema(final Path schemaPath)
             throws IOException, DatasetException {
         try {
+            LOG.info("Load schema from {}.",schemaPath);
             return DatasetsUtil.loadSchemaFromFSPath(hdfs,schemaPath);
         } catch (DatasetException e) {
             LOG.error(e.getMessage());
@@ -370,6 +375,7 @@ public class DatasetsService implements InitializingBean {
     public void saveSchema(final Path schemaPath, final Schema schema)
             throws IOException, DatasetException {
         try {
+            LOG.info("Saving schema to {}.",schemaPath);
             DatasetsUtil.saveSchemaToFSPath(hdfs, schema, schemaPath);
         } catch (DatasetException e) {
             LOG.error(e.getMessage());
@@ -424,7 +430,7 @@ public class DatasetsService implements InitializingBean {
             hdfs.copyFromLocalFile(xmlPath, inputPath);
 
             final Path outputPath = datasetAvroPath;
-            LOG.info("Runing tool");
+            LOG.info("Runing tool:");
             runDblpXmlToAvroTool(inputPath,outputPath);
 
             hdfs.setPermission(outputPath, permission);
@@ -456,6 +462,7 @@ public class DatasetsService implements InitializingBean {
             if(!hdfs.exists(statsBasePath)) hdfs.mkdirs(statsBasePath,ONLY_OWNER_PERMISSION);
             final Path statsPath = new Path(statsBasePath,
                     String.format("%s.properties",statsFileName));
+            LOG.info("Runing tool:");
             runQGramCountingTool(inputPath, inputSchemaPath, statsPath,fieldNames);
             hdfs.setPermission(statsPath, ONLY_OWNER_PERMISSION);
             return statsPath;
@@ -528,7 +535,7 @@ public class DatasetsService implements InitializingBean {
             final Properties properties = statistics.toProperties();
             final Path propertiesPath = new Path(basePath,String.format("%s.properties",name));
             final FSDataOutputStream fsdos = hdfs.create(propertiesPath);
-            LOG.info("Saving stats stats from [path={}]", propertiesPath);
+            LOG.info("Saving stats stats from {}.", propertiesPath);
             properties.store(fsdos,"Statistics");
             fsdos.close();
             return propertiesPath;
@@ -553,7 +560,7 @@ public class DatasetsService implements InitializingBean {
             for (Path propertiesPath : propertiesPaths) {
                 if (!hdfs.exists(propertiesPath))
                     throw new DatasetException(String.format("Cannot find file \"%s\"", propertiesPath));
-                LOG.info("Loading stats from [path={}]", propertiesPath);
+                LOG.info("Loading stats from {}.", propertiesPath);
                 FSDataInputStream fsdis = hdfs.open(propertiesPath);
                 properties.load(fsdis);
                 fsdis.close();
@@ -586,7 +593,8 @@ public class DatasetsService implements InitializingBean {
                               int size)
             throws IOException, DatasetException {
         try {
-
+            LOG.info("Sample dataset with name {} to {}",datasetName,sampleName);
+            LOG.info("Sample size : {}",size);
             final Path[] datasetDirectories = retrieveDirectories(datasetName);
             final Path datasetAvroPath = datasetDirectories[1];
             final Path datasetSchemaPath = retrieveSchemaPath(datasetDirectories[2]);
@@ -647,7 +655,7 @@ public class DatasetsService implements InitializingBean {
             final Path sortedBasePath = sortedDirectories[0];
             final Path sortedAvroPath = sortedDirectories[1];
             final Path sortedSchemaPath = new Path(sortedDirectories[2],String.format("%s.avsc",name));
-
+            LOG.info("Runing tool:");
             runSortAvroTool(inputAvroPath, inputSchemaPath,
                     sortedAvroPath, sortedSchemaPath, partitions, fieldNames);
 
@@ -704,6 +712,7 @@ public class DatasetsService implements InitializingBean {
     public void addUIDToDataset(final String name, final String fieldName)
             throws IOException, DatasetException {
         try {
+            LOG.info("Adding UID[fieldName={}] to {}.",fieldName,name);
             final Path[] inputDirectories = retrieveDirectories(name);
             final Path inputAvroPath = inputDirectories[1];
             final Path inputSchemaPath = retrieveSchemaPath(inputDirectories[2]);

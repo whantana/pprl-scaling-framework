@@ -15,8 +15,6 @@ import java.util.Map;
  */
 public abstract class BloomFilterEncoding {
 
-    private static final Logger LOG = LoggerFactory.getLogger(BloomFilterEncoding.class);
-
     protected Schema encodingSchema;                                // avro schema for encoding dataset
     protected Map<String,String> name2nameMap = new HashMap<String,String>();   // Mapping between source field name to encoding field name
     protected int[] N;                                              // Array of bloom filter lengths for the encoding
@@ -118,7 +116,6 @@ public abstract class BloomFilterEncoding {
      * @param mappedName mappedName.
      */
     protected void addMappedName(final String name, final String mappedName) {
-        LOG.debug("Mapping name {} -to-> {}",name,mappedName);
         name2nameMap.put(name, mappedName);
     }
 
@@ -217,8 +214,6 @@ public abstract class BloomFilterEncoding {
         final List<Schema.Field> encodingFields = setupSelectedForEncodingFields(selectedFieldNames);
         restFields.addAll(encodingFields);
         encodingSchema.setFields(restFields);
-        LOG.debug("Encoding Schema ready :\n-----------------------\n" +
-                encodingSchema.toString(true) + "-----------------------\n");
         setEncodingSchema(encodingSchema);
     }
 
@@ -247,7 +242,6 @@ public abstract class BloomFilterEncoding {
                 if(encodingField.name().contains(field.name())) { isFieldSelected = true ; break; }
             areFieldsValid = isFieldSelected;
         }
-        LOG.debug("isSchemaValid={} && areFieldsValid={}",isSchemaValid,areFieldsValid);
         return isSchemaValid && areFieldsValid;
     }
 }

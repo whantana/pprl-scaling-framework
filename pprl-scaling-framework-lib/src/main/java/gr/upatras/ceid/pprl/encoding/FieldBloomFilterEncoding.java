@@ -4,8 +4,6 @@ import gr.upatras.ceid.pprl.qgram.QGramUtil;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
@@ -19,8 +17,6 @@ import java.util.Map;
  * Field Bloom Filter (FBF) encoding class.
  */
 public class FieldBloomFilterEncoding extends BloomFilterEncoding {
-
-    private static final Logger LOG = LoggerFactory.getLogger(FieldBloomFilterEncoding.class);
 
     protected Map<String,BloomFilter> name2FBFMap = new HashMap<String,BloomFilter>(); // fieldName to bloom filter map.
     protected Map<String,Integer> name2indexMap = new HashMap<String,Integer>();   // fieldName to index map.
@@ -74,7 +70,6 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
     @Override
     public void initialize() throws BloomFilterEncodingException {
         for(String name : name2indexMap.keySet()) addFBF(name);
-        LOG.debug("Initialized for FBF Encoding.");
     }
 
     @Override
@@ -100,13 +95,10 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
         assert sParts.length == 3;
         setK(Integer.valueOf(sParts[1]));
         setQ(Integer.valueOf(sParts[2]));
-        LOG.debug("setupFromSchema K found : {}",getK());
-        LOG.debug("setupFromSchema Q found : {}",getQ());
         int Nlength = 0;
         for(Schema.Field field : encodingSchema.getFields())
             if(field.name().startsWith("encoding_field_")) Nlength++;
         setN(new int[Nlength]);
-        LOG.debug("setupFromSchema fields found : {}",getN().length);
         int i = 0;
         for(Schema.Field field : encodingSchema.getFields()) {
             final String name = field.name();
@@ -217,7 +209,6 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
             final int index = getIndex(fieldName);
             final int fbfN = getN(index);
             final int K = getK();
-            LOG.debug("fieldName {} -to-> fbfN,K={}", fieldName,String.format("%d,%d",fbfN,K));
             name2FBFMap.put(fieldName, new BloomFilter(fbfN, K));
         } catch (NoSuchAlgorithmException e) {
             throw new BloomFilterEncodingException(e.getMessage());
@@ -245,7 +236,6 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
      * @param index index an integer.
      */
     protected void addIndex(final String fieldName, final int index) {
-        LOG.debug("fieldName {} -to-> index {}",fieldName,index);
         name2indexMap.put(fieldName, index);
     }
 

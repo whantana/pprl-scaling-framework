@@ -1,6 +1,5 @@
 package gr.upatras.ceid.pprl.test;
 
-import gr.upatras.ceid.pprl.datasets.DatasetException;
 import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
 import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
@@ -66,18 +65,16 @@ public class ServicesTest extends AbstractMapReduceTests {
         LOG.info("Uploaded paths : {}", Arrays.toString(ds.retrieveDirectories("person_small")));
         LOG.info("Uploaded Schema : {} ", uploadedSchema.toString(true));
 
+        LOG.info("Sorting and adding UID.");
         ds.sortDataset("person_small", "sorted_person_small", 4, "name", "location");
         ds.addUIDToDataset("sorted_person_small","uid");
-    }
 
-    @Test
-    public void test2() throws IOException, DatasetException {
         final Path downloadedPath = ds.downloadFiles("sorted_person_small","person_small_downloaded",new Path("data"));
         LOG.info("Downloaded to path : {} ",downloadedPath);
     }
 
     @Test
-    public void test3() throws Exception {
+    public void test2() throws Exception {
         final Path xmlPath = new Path("data/dblp/xml/dblp.xml");
         final Path uploadedPath = ds.importDblpXmlDataset(xmlPath,"dblp");
         final FileSystem hdfs = getFileSystem();
@@ -90,118 +87,14 @@ public class ServicesTest extends AbstractMapReduceTests {
         );
         LOG.info("Uploaded paths : {}", Arrays.toString(ds.retrieveDirectories("dblp")));
         LOG.info("Uploaded Schema : {} ",uploadedSchema.toString(true));
+
+        final Path downloadedPath = ds.downloadFiles("dblp","dblp_downloaded",new Path("data"));
+        LOG.info("Downloaded to path : {} ",downloadedPath);
     }
 
     @Test
-    public void test4() throws Exception {
+    public void test3() throws Exception {
         // Encoding for various schemes
-        final Path[] paths = ds.retrieveDirectories("sorted_person_small");
-        final Path inputPath = paths[1];
-        final Path schemaPath = ds.retrieveSchemaPath(paths[2]);
-        final Schema schema = ds.loadSchema(schemaPath);
-        final String[] selected = new String[]{"surname", "location"};
-        final String[] included = new String[]{"uid", "name", "id"};
-
-        final int K = 10;
-        final int Q = 2;
-        {
-            final String scheme = "CLK";
-            final int fieldCount = selected.length;
-            final int N = 1024;
-            final int fbfN = 0;
-            final double[] AQC = null;
-            final double[] W = null;
-
-            final BloomFilterEncoding encoding =
-                    BloomFilterEncodingUtil.instanceFactory(
-                            scheme, fieldCount, N, fbfN, K, Q, AQC, W);
-            encoding.makeFromSchema(schema, selected, included);
-
-            final Path[] encodedPaths = ds.createDirectories(
-                    "clk_person_small", DatasetsService.OTHERS_CAN_READ_PERMISSION);
-            final Path eBasePath = encodedPaths[0];
-            final Path eSchemaBasePath = encodedPaths[2];
-            final Path outputPath = encodedPaths[1];
-            final Path outputSchemaPath = new Path(eSchemaBasePath, "clk_person_small.avsc");
-
-            ds.saveSchema(outputSchemaPath, encoding.getEncodingSchema());
-
-            LOG.info("Encoding CLK : ");
-            es.runEncodeDatasetTool(inputPath, schemaPath, outputPath, outputSchemaPath);
-            LOG.info("Encoding CLK : DONE at : {}", eBasePath);
-            LOG.info(DatasetsUtil.prettyRecords(
-                    DatasetsUtil.loadAvroRecordsFromFSPaths(
-                            getFileSystem(),
-                            encoding.getEncodingSchema(),
-                            outputPath), encoding.getEncodingSchema()));
-        }
-        {
-            final String scheme = "FBF";
-            final int fieldCount = selected.length;
-            final int N = 0;
-            final int fbfN = 512;
-            final double[] AQC = null;
-            final double[] W = null;
-
-            final BloomFilterEncoding encoding =
-                    BloomFilterEncodingUtil.instanceFactory(
-                            scheme, fieldCount, N, fbfN, K, Q, AQC, W);
-            encoding.makeFromSchema(schema, selected, included);
-
-            final Path[] encodedPaths = ds.createDirectories(
-                    "fbf_static_person_small", DatasetsService.OTHERS_CAN_READ_PERMISSION);
-            final Path eBasePath = encodedPaths[0];
-            final Path eSchemaBasePath = encodedPaths[2];
-            final Path outputPath = encodedPaths[1];
-            final Path outputSchemaPath = new Path(eSchemaBasePath, "fbf_static_person_small.avsc");
-
-            ds.saveSchema(outputSchemaPath, encoding.getEncodingSchema());
-
-            LOG.info("Encoding FBF/Static : ");
-            es.runEncodeDatasetTool(inputPath, schemaPath, outputPath, outputSchemaPath);
-            LOG.info("Encoding FBF/Static : DONE at : {}", eBasePath);
-            LOG.info(DatasetsUtil.prettyRecords(
-                    DatasetsUtil.loadAvroRecordsFromFSPaths(
-                            getFileSystem(),
-                            encoding.getEncodingSchema(),
-                            outputPath), encoding.getEncodingSchema()));
-        }
-
-        {
-            final String scheme = "RBF";
-            final int fieldCount = selected.length;
-            final int N = 1024;
-            final int fbfN = 512;
-            final double[] AQC = null;
-            final double[] W = null;
-
-            final BloomFilterEncoding encoding =
-                    BloomFilterEncodingUtil.instanceFactory(
-                            scheme, fieldCount, N, fbfN, K, Q, AQC, W);
-            encoding.makeFromSchema(schema, selected, included);
-
-            final Path[] encodedPaths = ds.createDirectories(
-                    "rbf_u_fbf_static_person_small", DatasetsService.OTHERS_CAN_READ_PERMISSION);
-            final Path eBasePath = encodedPaths[0];
-            final Path eSchemaBasePath = encodedPaths[2];
-            final Path outputPath = encodedPaths[1];
-            final Path outputSchemaPath = new Path(eSchemaBasePath, "rbf_u_fbf_static_person_small.avsc");
-
-            ds.saveSchema(outputSchemaPath, encoding.getEncodingSchema());
-
-            LOG.info("Encoding RBF/Uniform/FBF/Static : ");
-            es.runEncodeDatasetTool(inputPath, schemaPath, outputPath, outputSchemaPath);
-            LOG.info("Encoding RBF/Uniform/FBF/Static : DONE at : {}", eBasePath);
-            LOG.info(DatasetsUtil.prettyRecords(
-                    DatasetsUtil.loadAvroRecordsFromFSPaths(
-                            getFileSystem(),
-                            encoding.getEncodingSchema(),
-                            outputPath), encoding.getEncodingSchema()));
-        }
-    }
-
-    @Test
-    public void test5() throws Exception {
         final Path[] paths = ds.retrieveDirectories("sorted_person_small");
         final Path inputPath = paths[1];
         final Path schemaPath = ds.retrieveSchemaPath(paths[2]);
@@ -209,6 +102,7 @@ public class ServicesTest extends AbstractMapReduceTests {
         final Path statsBasePath = new Path(paths[0], "stats");
         final String[] selected = new String[]{"surname", "location"};
         final String[] included = new String[]{"uid", "name", "id"};
+
         int recordCount = 120;
         int reducerCount = 2;
 
@@ -242,6 +136,107 @@ public class ServicesTest extends AbstractMapReduceTests {
 
         final int K = 10;
         final int Q = 2;
+        {
+            final String scheme = "CLK";
+            final int fieldCount = selected.length;
+            final int N = 1024;
+            final int fbfN = 0;
+            final double[] AQC = null;
+            final double[] W = null;
+
+            final BloomFilterEncoding encoding =
+                    BloomFilterEncodingUtil.instanceFactory(
+                            scheme, fieldCount, N, fbfN, K, Q, AQC, W);
+            encoding.makeFromSchema(schema, selected, included);
+
+            final Path[] encodedPaths = ds.createDirectories(
+                    "clk_person_small", DatasetsService.OTHERS_CAN_READ_PERMISSION);
+            final Path eBasePath = encodedPaths[0];
+            final Path eSchemaBasePath = encodedPaths[2];
+            final Path outputPath = encodedPaths[1];
+            final Path outputSchemaPath = new Path(eSchemaBasePath, "clk_person_small.avsc");
+
+            ds.saveSchema(outputSchemaPath, encoding.getEncodingSchema());
+
+            LOG.info("Encoding CLK : ");
+            es.runEncodeDatasetTool(inputPath, schemaPath, outputPath, outputSchemaPath);
+            LOG.info("Encoding CLK : DONE at : {}", eBasePath);
+            LOG.info(DatasetsUtil.prettyRecords(
+                    DatasetsUtil.loadAvroRecordsFromFSPaths(
+                            getFileSystem(),
+                            encoding.getEncodingSchema(),
+                            outputPath), encoding.getEncodingSchema()));
+            final Path downloadedPath = ds.downloadFiles("clk_person_small","clk_person_small",new Path("data"));
+            LOG.info("Downloaded to path : {} ",downloadedPath);
+        }
+        {
+            final String scheme = "FBF";
+            final int fieldCount = selected.length;
+            final int N = 0;
+            final int fbfN = 512;
+            final double[] AQC = null;
+            final double[] W = null;
+
+            final BloomFilterEncoding encoding =
+                    BloomFilterEncodingUtil.instanceFactory(
+                            scheme, fieldCount, N, fbfN, K, Q, AQC, W);
+            encoding.makeFromSchema(schema, selected, included);
+
+            final Path[] encodedPaths = ds.createDirectories(
+                    "fbf_static_person_small", DatasetsService.OTHERS_CAN_READ_PERMISSION);
+            final Path eBasePath = encodedPaths[0];
+            final Path eSchemaBasePath = encodedPaths[2];
+            final Path outputPath = encodedPaths[1];
+            final Path outputSchemaPath = new Path(eSchemaBasePath, "fbf_static_person_small.avsc");
+
+            ds.saveSchema(outputSchemaPath, encoding.getEncodingSchema());
+
+            LOG.info("Encoding FBF/Static : ");
+            es.runEncodeDatasetTool(inputPath, schemaPath, outputPath, outputSchemaPath);
+            LOG.info("Encoding FBF/Static : DONE at : {}", eBasePath);
+            LOG.info(DatasetsUtil.prettyRecords(
+                    DatasetsUtil.loadAvroRecordsFromFSPaths(
+                            getFileSystem(),
+                            encoding.getEncodingSchema(),
+                            outputPath), encoding.getEncodingSchema()));
+            final Path downloadedPath = ds.downloadFiles("fbf_static_person_small","fbf_static_person_small",new Path("data"));
+            LOG.info("Downloaded to path : {} ",downloadedPath);
+        }
+
+        {
+            final String scheme = "RBF";
+            final int fieldCount = selected.length;
+            final int N = 1024;
+            final int fbfN = 512;
+            final double[] AQC = null;
+            final double[] W = null;
+
+            final BloomFilterEncoding encoding =
+                    BloomFilterEncodingUtil.instanceFactory(
+                            scheme, fieldCount, N, fbfN, K, Q, AQC, W);
+            encoding.makeFromSchema(schema, selected, included);
+
+            final Path[] encodedPaths = ds.createDirectories(
+                    "rbf_u_fbf_static_person_small", DatasetsService.OTHERS_CAN_READ_PERMISSION);
+            final Path eBasePath = encodedPaths[0];
+            final Path eSchemaBasePath = encodedPaths[2];
+            final Path outputPath = encodedPaths[1];
+            final Path outputSchemaPath = new Path(eSchemaBasePath, "rbf_u_fbf_static_person_small.avsc");
+
+            ds.saveSchema(outputSchemaPath, encoding.getEncodingSchema());
+
+            LOG.info("Encoding RBF/Uniform/FBF/Static : ");
+            es.runEncodeDatasetTool(inputPath, schemaPath, outputPath, outputSchemaPath);
+            LOG.info("Encoding RBF/Uniform/FBF/Static : DONE at : {}", eBasePath);
+            LOG.info(DatasetsUtil.prettyRecords(
+                    DatasetsUtil.loadAvroRecordsFromFSPaths(
+                            getFileSystem(),
+                            encoding.getEncodingSchema(),
+                            outputPath), encoding.getEncodingSchema()));
+            final Path downloadedPath = ds.downloadFiles("rbf_u_fbf_static_person_small","rbf_u_fbf_static_person_small",new Path("data"));
+            LOG.info("Downloaded to path : {} ",downloadedPath);
+        }
+
         final double[] avgQGrams = new double[]{
                 statistics.getFieldStatistics().get(selected[0]).getQgramCount(Q),
                 statistics.getFieldStatistics().get(selected[1]).getQgramCount(Q)
@@ -250,6 +245,7 @@ public class ServicesTest extends AbstractMapReduceTests {
                 statistics.getFieldStatistics().get(selected[0]).getNormalizedRange(),
                 statistics.getFieldStatistics().get(selected[1]).getNormalizedRange()
         };
+
         {
             final String scheme = "FBF";
             final int fieldCount = selected.length;
@@ -280,6 +276,8 @@ public class ServicesTest extends AbstractMapReduceTests {
                             getFileSystem(),
                             encoding.getEncodingSchema(),
                             outputPath), encoding.getEncodingSchema()));
+            final Path downloadedPath = ds.downloadFiles("fbf_dynamic_person_small","fbf_dynamic_person_small",new Path("data"));
+            LOG.info("Downloaded to path : {} ",downloadedPath);
         }
 
         {
@@ -312,6 +310,8 @@ public class ServicesTest extends AbstractMapReduceTests {
                             getFileSystem(),
                             encoding.getEncodingSchema(),
                             outputPath), encoding.getEncodingSchema()));
+            final Path downloadedPath = ds.downloadFiles("rbf_u_fbf_dynamic_person_small","rbf_u_fbf_dynamic_person_small",new Path("data"));
+            LOG.info("Downloaded to path : {} ",downloadedPath);
         }
 
         {
@@ -376,6 +376,8 @@ public class ServicesTest extends AbstractMapReduceTests {
                             getFileSystem(),
                             encoding.getEncodingSchema(),
                             outputPath), encoding.getEncodingSchema()));
+            final Path downloadedPath = ds.downloadFiles("rbf_w_fbf_dynamic_person_small","rbf_w_fbf_dynamic_person_small",new Path("data"));
+            LOG.info("Downloaded to path : {} ",downloadedPath);
         }
     }
 }

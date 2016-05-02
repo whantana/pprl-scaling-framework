@@ -215,9 +215,9 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
         setQ(Integer.valueOf(sParts[2]));
 
         for(Schema.Field field : encodingSchema.getFields()) {
-            if (field.name().startsWith("encoding_field_")) {
-                String restName = field.name().substring("encoding_field_".length());
-                String[] parts = restName.split("_src_");
+            if (field.name().startsWith(ENCODING_FIELD_PREFIX)) {
+                String restName = field.name().substring(ENCODING_FIELD_PREFIX.length());
+                String[] parts = restName.split(FIELD_DELIMITER);
                 int rbfN = Integer.parseInt(parts[0].split("_")[0]);
                 for (int j = 1; j < parts.length; j++)
                     addMappedName(parts[j], field.name());
@@ -254,13 +254,13 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
     public List<Schema.Field> setupSelectedForEncodingFields(final String[] selectedFieldNames) throws BloomFilterEncodingException {
         assert N != null && (N.length == selectedFieldNames.length + 1) && getK() > 0 && getQ() > 0;
 
-        StringBuilder sb = new StringBuilder(String.format("encoding_field_%d_%d_%d", getRBFN(), getK(), getQ()));
+        StringBuilder sb = new StringBuilder(String.format("s%d_%d_%d",ENCODING_FIELD_PREFIX, getRBFN(), getK(), getQ()));
         StringBuilder docSb = new StringBuilder();
         for (int i = 0; i < selectedFieldNames.length; i++) {
             docSb.append(String.valueOf(getN(i))).append(",")
                     .append(rbfCompositionCount[i]).append(",")
                     .append(rbfCompositionSeeds[i]).append("_");
-            sb.append("_src_").append(selectedFieldNames[i]);
+            sb.append(FIELD_DELIMITER).append(selectedFieldNames[i]);
         }
         docSb.append(rbfBitPermutationSeed);
         String encodingFieldName = sb.toString();

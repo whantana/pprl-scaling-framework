@@ -2,11 +2,10 @@ package gr.upatras.ceid.pprl.encoding;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -14,6 +13,9 @@ import java.util.Map;
  * An abstract class for a PPRL Bloom-Filter Encoding scheme.
  */
 public abstract class BloomFilterEncoding {
+
+    public static final String ENCODING_FIELD_PREFIX = "encoding_field_";
+    public static final String FIELD_DELIMITER = "_src_";
 
     protected Schema encodingSchema;                                // avro schema for encoding dataset
     protected Map<String,String> name2nameMap = new HashMap<String,String>();   // Mapping between source field name to encoding field name
@@ -129,6 +131,26 @@ public abstract class BloomFilterEncoding {
         if(!name2nameMap.containsKey(name))
             throw new IllegalArgumentException("Cannot find mapped name for name " + name);
         return name2nameMap.get(name);
+    }
+
+    /**
+     * Returns the name to name map.
+     *
+     * @return the name to name map.
+     */
+    public Map<String,String> getMap() { return name2nameMap; }
+
+    /**
+     * Returns the encoding field names.
+     *
+     * @return the encoding field names.
+     */
+    public String[] getEncodingFieldNames() {
+        final HashSet<String> distinct = new HashSet<String>();
+        for(String name : name2nameMap.values())
+            if(name.startsWith(ENCODING_FIELD_PREFIX))
+                distinct.add(name);
+        return distinct.toArray(new String[distinct.size()]);
     }
 
     @Override

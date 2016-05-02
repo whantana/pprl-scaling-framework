@@ -97,14 +97,14 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
         setQ(Integer.valueOf(sParts[2]));
         int Nlength = 0;
         for(Schema.Field field : encodingSchema.getFields())
-            if(field.name().startsWith("encoding_field_")) Nlength++;
+            if(field.name().startsWith(ENCODING_FIELD_PREFIX)) Nlength++;
         setN(new int[Nlength]);
         int i = 0;
         for(Schema.Field field : encodingSchema.getFields()) {
             final String name = field.name();
-            if(name.startsWith("encoding_field_")) {
-                String restName = name.substring("encoding_field_".length());
-                String[] partss = restName.split("_src_");
+            if(name.startsWith(ENCODING_FIELD_PREFIX)) {
+                String restName = name.substring(ENCODING_FIELD_PREFIX.length());
+                String[] partss = restName.split(FIELD_DELIMITER);
                 assert partss.length == 2;
                 String[] parts = partss[0].split("_");
                 assert parts.length == 3;
@@ -131,7 +131,7 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
         Schema.Field[] encodingFields = new Schema.Field[selectedFieldNames.length];
         int i = 0;
         for(String fieldName : selectedFieldNames) {
-            String encodingFieldName = String.format("encoding_field_%d_%d_%d_src_%s", getN(i), getK(), getQ(), fieldName);
+            String encodingFieldName = String.format("%s%d_%d_%d%s%s",ENCODING_FIELD_PREFIX, getN(i), getK(), getQ(),FIELD_DELIMITER, fieldName);
             encodingFields[i] =new Schema.Field(
                     encodingFieldName, Schema.createFixed(
                     encodingFieldName, null, null,

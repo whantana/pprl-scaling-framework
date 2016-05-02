@@ -320,8 +320,8 @@ public class BloomFilterEncodingUtil {
             if(existingField.name().startsWith("encoding.field")) {
                 String encodingFieldName = existingField.name();
                 for (int i = 0; i < existingFieldNames.length; i++) {
-                    final String toReplace = "_src_" + existingFieldNames[i];
-                    final String replacement = "_src_" + selectedFieldNames[i];
+                    final String toReplace = BloomFilterEncoding.FIELD_DELIMITER + existingFieldNames[i];
+                    final String replacement = BloomFilterEncoding.FIELD_DELIMITER + selectedFieldNames[i];
                     encodingFieldName = encodingFieldName.replace(toReplace,replacement);
                 }
                 encodingFields.add(new Schema.Field(encodingFieldName,
@@ -334,5 +334,14 @@ public class BloomFilterEncodingUtil {
         LOG.debug("Encoding Schema ready :\n-----------------------\n" +
                 encodingSchema.toString(true) + "-----------------------\n");
         return encodingSchema;
+    }
+
+    public static int extractNFromEncodingField(final String encodingFieldName) {
+        if(!encodingFieldName.startsWith(BloomFilterEncoding.ENCODING_FIELD_PREFIX))
+            throw new IllegalArgumentException("Does not start with prefix=" + BloomFilterEncoding.ENCODING_FIELD_PREFIX);
+        String restName = encodingFieldName.substring(BloomFilterEncoding.ENCODING_FIELD_PREFIX.length());
+        String[] partss = restName.split(BloomFilterEncoding.FIELD_DELIMITER);
+        assert partss.length == 2;
+        return Integer.valueOf(partss[0]);
     }
 }

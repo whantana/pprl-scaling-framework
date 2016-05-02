@@ -61,7 +61,7 @@ public class CLKEncoding extends BloomFilterEncoding {
             final Set<String> names = name2nameMap.keySet();
             for(String name : names) {
                 final String mappedName = name2nameMap.get(name);
-                if (mappedName.startsWith("encoding_field")) {
+                if (mappedName.startsWith(ENCODING_FIELD_PREFIX)) {
                     if (encodingFieldName == null) encodingFieldName = getMappedFieldName(name);
                     else assert encodingFieldName.equals(getMappedFieldName(name));
                 }
@@ -93,8 +93,8 @@ public class CLKEncoding extends BloomFilterEncoding {
     @Override
     public List<Schema.Field> setupSelectedForEncodingFields(String[] selectedFieldNames) throws BloomFilterEncodingException {
         assert N != null && (N.length == 1) && getK() > 0 && getQ() > 0;
-        StringBuilder sb = new StringBuilder(String.format("encoding_field_%d_%d_%d", getCLKN(), getK(), getQ()));
-        for (String selectedFieldName : selectedFieldNames) sb.append("_src_").append(selectedFieldName);
+        StringBuilder sb = new StringBuilder(String.format("%s%d_%d_%d",ENCODING_FIELD_PREFIX, getCLKN(), getK(), getQ()));
+        for (String selectedFieldName : selectedFieldNames) sb.append(BloomFilterEncoding.FIELD_DELIMITER).append(selectedFieldName);
         String encodingFieldName = sb.toString();
 
         for(String fieldName : selectedFieldNames)
@@ -179,9 +179,9 @@ public class CLKEncoding extends BloomFilterEncoding {
         setQ(Integer.valueOf(sParts[2]));
 
         for(Schema.Field field : encodingSchema.getFields()) {
-            if (field.name().startsWith("encoding_field_")) {
-                String restName = field.name().substring("encoding_field_".length());
-                String[] parts = restName.split("_src_");
+            if (field.name().startsWith(ENCODING_FIELD_PREFIX)) {
+                String restName = field.name().substring(ENCODING_FIELD_PREFIX.length());
+                String[] parts = restName.split(BloomFilterEncoding.FIELD_DELIMITER);
                 int clkN = Integer.parseInt(parts[0].split("_")[0]);
                 for (int j = 1; j < parts.length; j++)
                     addMappedName(parts[j], field.name());

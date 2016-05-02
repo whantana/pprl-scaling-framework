@@ -74,8 +74,6 @@ public class BloomFilterEncodingTest {
         encoding.makeFromSchema(schema, SELECTED_FIELDS, REST_FIELDS);
         assertTrue(encoding.isEncodingOfSchema(schema));
         encodeLocalFile(fs,"data/dynamic_fbf",avroFiles,schema,encoding);
-        DatasetsUtil.saveSchemaToFSPath(fs,encoding.getEncodingSchema(),
-                new Path("data/dynamic_fbf.avsc"));
     }
 
     @Test
@@ -97,8 +95,6 @@ public class BloomFilterEncodingTest {
         encoding.makeFromSchema(schema, SELECTED_FIELDS, REST_FIELDS);
         assertTrue(encoding.isEncodingOfSchema(schema));
         encodeLocalFile(fs,"data/static_fbf", avroFiles, schema, encoding);
-        DatasetsUtil.saveSchemaToFSPath(fs,encoding.getEncodingSchema(),
-                new Path("data/static_fbf.avsc"));
     }
 
     @Test
@@ -120,8 +116,6 @@ public class BloomFilterEncodingTest {
         encoding.makeFromSchema(schema, SELECTED_FIELDS, REST_FIELDS);
         assertTrue(encoding.isEncodingOfSchema(schema));
         encodeLocalFile(fs,"data/weighted_rbf", avroFiles, schema, encoding);
-        DatasetsUtil.saveSchemaToFSPath(fs,encoding.getEncodingSchema(),
-                new Path("data/weighted_rbf.avsc"));
     }
 
     @Test
@@ -143,8 +137,6 @@ public class BloomFilterEncodingTest {
         encoding.makeFromSchema(schema, SELECTED_FIELDS, REST_FIELDS);
         assertTrue(encoding.isEncodingOfSchema(schema));
         encodeLocalFile(fs,"data/uniform_rbf", avroFiles, schema, encoding);
-        DatasetsUtil.saveSchemaToFSPath(fs, encoding.getEncodingSchema(),
-                        new Path("data/uniform_rbf.avsc"));
     }
 
     @Test
@@ -165,8 +157,6 @@ public class BloomFilterEncodingTest {
         encoding.makeFromSchema(schema, SELECTED_FIELDS, REST_FIELDS);
         assertTrue(encoding.isEncodingOfSchema(schema));
         encodeLocalFile(fs,"data/clk", avroFiles, schema, encoding);
-        DatasetsUtil.saveSchemaToFSPath(fs, encoding.getEncodingSchema(),
-                        new Path("data/clk.avsc"));
     }
 
     @Test

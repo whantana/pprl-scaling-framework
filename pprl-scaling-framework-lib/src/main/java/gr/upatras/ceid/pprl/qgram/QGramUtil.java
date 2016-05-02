@@ -21,8 +21,7 @@ public class QGramUtil {
      * @return "proper" string.
      */
     private static String properString(final String string) {
-        String proper = string.toUpperCase()
-                .replaceAll("\\s+", PADDING_STRING);
+        String proper = string.replaceAll("\\s+", PADDING_STRING);
 
         proper = (proper.startsWith(PADDING_STRING)) ? proper : PADDING_STRING + proper;
         proper = (proper.endsWith(PADDING_STRING)) ? proper : proper + PADDING_STRING;

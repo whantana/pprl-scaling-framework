@@ -254,7 +254,7 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
     public List<Schema.Field> setupSelectedForEncodingFields(final String[] selectedFieldNames) throws BloomFilterEncodingException {
         assert N != null && (N.length == selectedFieldNames.length + 1) && getK() > 0 && getQ() > 0;
 
-        StringBuilder sb = new StringBuilder(String.format("s%d_%d_%d",ENCODING_FIELD_PREFIX, getRBFN(), getK(), getQ()));
+        StringBuilder sb = new StringBuilder(String.format("%s%d_%d_%d",ENCODING_FIELD_PREFIX, getRBFN(), getK(), getQ()));
         StringBuilder docSb = new StringBuilder();
         for (int i = 0; i < selectedFieldNames.length; i++) {
             docSb.append(String.valueOf(getN(i))).append(",")

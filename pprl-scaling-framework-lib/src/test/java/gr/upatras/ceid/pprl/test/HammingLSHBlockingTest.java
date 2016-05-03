@@ -3,6 +3,7 @@ package gr.upatras.ceid.pprl.test;
 
 import gr.upatras.ceid.pprl.blocking.BlockingException;
 import gr.upatras.ceid.pprl.blocking.HammingLSHBlocking;
+import gr.upatras.ceid.pprl.blocking.RecordIdPair;
 import gr.upatras.ceid.pprl.datasets.DatasetException;
 import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
@@ -27,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.Assert.assertTrue;
@@ -95,6 +97,16 @@ public class HammingLSHBlockingTest {
 
         HammingLSHBlocking blocking = new HammingLSHBlocking(10,20,encodingA,encodingB);
         blocking.initializeBlockingBuckets();
+        blocking.blockRecords(
+                DatasetsUtil.loadAvroRecordsFromFSPaths(fs,encodingA.getEncodingSchema(),
+                    new Path("data/voters_a/clk.avro")),
+                DatasetsUtil.loadAvroRecordsFromFSPaths(fs,encodingB.getEncodingSchema(),
+                    new Path("data/voters_b/clk.avro"))
+        );
+        blocking.countPairColisions();
+        final List<RecordIdPair> recordIdPairs = blocking.retainOnlyCColitionPairs(5);
+        for (RecordIdPair pair : recordIdPairs)
+            LOG.debug("Record pair : {}",pair);
     }
 
     private static String[] encodeLocalFile(final FileSystem fs ,

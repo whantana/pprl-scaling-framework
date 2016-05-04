@@ -16,8 +16,8 @@ public class BloomFilter {
 
     private static final String SECRET_KEY = "ZIKRETQI";
 
-    private final Mac HMAC_MD5;     // MD5 Mac
-    private final Mac HMAC_SHA1;    // SHA1 Mac
+    private Mac HMAC_MD5;     // MD5 Mac
+    private Mac HMAC_SHA1;    // SHA1 Mac
     private int N;                  // Length of bloom filter (#bits)
     private int K;                  // Number of hash functions
     private int addedElementsCount; // added elements
@@ -78,22 +78,12 @@ public class BloomFilter {
      *
      * @param N length of bloom filter
      * @param byteArray the bloom filter byte array.
-     * @throws NoSuchAlgorithmException
-     * @throws InvalidKeyException
      */
-    public BloomFilter(final int N,final byte[] byteArray)
-            throws NoSuchAlgorithmException, InvalidKeyException {
+    public BloomFilter(final int N,final byte[] byteArray) {
         assert Math.ceil(N/(double)8) == byteArray.length;
         this.N = N;
         this.byteArray = new byte[(int) Math.ceil(N/(double)8)];
         System.arraycopy(byteArray,0,this.byteArray,0,byteArray.length);
-        onesCount = countOnes();
-        zeroesCount = countZeroes();
-        HMAC_MD5 = Mac.getInstance("HmacMD5");
-        HMAC_MD5.init(new SecretKeySpec(SECRET_KEY.getBytes(), "HmacMD5"));
-        HMAC_SHA1 = Mac.getInstance("HmacSHA1");
-        HMAC_SHA1.init(new SecretKeySpec(SECRET_KEY.getBytes(), "HmacSHA1"));
-
     }
 
     /**

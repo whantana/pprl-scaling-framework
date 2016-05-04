@@ -13,7 +13,7 @@ import java.util.Iterator;
  */
 public class SimilarityUtil {
 
-    public static final String[] SIMILARITY_METHOD_NAMES = { // Available Stirng similarity methods.
+    public static final String[] SIMILARITY_METHOD_NAMES = { // Available String similarity methods.
             "jaro_winkler",
             "jaccard_bigrams","jaccard_trigrams",
             "cosine_bigrams","cosine_trigrams",

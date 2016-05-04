@@ -1,16 +1,23 @@
 package gr.upatras.ceid.pprl.blocking;
 
 /**
- * Record id pair
+ * Record ID pair class.
  */
 public class RecordIdPair {
-    private int aliceId;
-    private int bobId;
+    public int aliceId; // ids are essentially indexes of GenericRecord arrays
+    public int bobId;
 
+    /**
+     * Constructor.
+     *
+     * @param aliceId alice record id.
+     * @param bobId bob record id.
+     */
     public RecordIdPair(int aliceId, int bobId) {
         this.aliceId = aliceId;
         this.bobId = bobId;
     }
+
 
     @Override
     public boolean equals(Object o) {

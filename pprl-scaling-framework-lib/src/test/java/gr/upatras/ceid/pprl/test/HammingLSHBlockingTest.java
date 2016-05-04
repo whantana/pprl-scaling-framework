@@ -95,18 +95,35 @@ public class HammingLSHBlockingTest {
         encodingB.setupFromSchema(
                 DatasetsUtil.loadSchemaFromFSPath(fs, new Path("data/voters_b/clk.avsc")));
 
-        HammingLSHBlocking blocking = new HammingLSHBlocking(10,20,encodingA,encodingB);
+        final GenericRecord[] recordsA = DatasetsUtil.loadAvroRecordsFromFSPaths(fs, encodingA.getEncodingSchema(),
+                new Path("data/voters_a/clk.avro"));
+        final GenericRecord[] recordsB = DatasetsUtil.loadAvroRecordsFromFSPaths(fs,encodingB.getEncodingSchema(),
+                new Path("data/voters_b/clk.avro"));
+
+        final int LC = 26;
+        final int K = 10;
+        final int hammingThreshold = 40;
+        final int C = 2;
+        HammingLSHBlocking blocking = new HammingLSHBlocking(LC,K,encodingA,encodingB);
         blocking.initializeBlockingBuckets();
-        blocking.blockRecords(
-                DatasetsUtil.loadAvroRecordsFromFSPaths(fs,encodingA.getEncodingSchema(),
-                    new Path("data/voters_a/clk.avro")),
-                DatasetsUtil.loadAvroRecordsFromFSPaths(fs,encodingB.getEncodingSchema(),
-                    new Path("data/voters_b/clk.avro"))
-        );
+        LOG.info("Blocking Records...");
+        blocking.blockRecords(recordsA, recordsB);
+        LOG.info("Blocking Records...DONE");
+        LOG.info("Count colisions...");
         blocking.countPairColisions();
-        final List<RecordIdPair> recordIdPairs = blocking.retainOnlyCColitionPairs(5);
-        for (RecordIdPair pair : recordIdPairs)
-            LOG.debug("Record pair : {}",pair);
+        LOG.info("Count colisions...DONE");
+        LOG.info("Finding frequent record pairs...");
+        final List<RecordIdPair> frequentPairs = blocking.retrieveFrequentPairs(C);
+        LOG.info("Frequent pairs list size : {}", frequentPairs.size());
+        LOG.info("Do matching in frequent pairs");
+        final List<RecordIdPair> matchedPairs = blocking.matchFrequentPairs(
+            recordsA,recordsB,frequentPairs,hammingThreshold
+        );
+        LOG.info("Matched pairs list size : {}", matchedPairs.size());
+        int i = 0;
+        for(RecordIdPair pair : matchedPairs)
+            LOG.debug("{}. {}",++i,pair);
+
     }
 
     private static String[] encodeLocalFile(final FileSystem fs ,

@@ -106,23 +106,12 @@ public class HammingLSHBlockingTest {
         final int C = 2;
         final HammingLSHBlocking blocking = new HammingLSHBlocking(LC,K,encodingA,encodingB);
 
-//        blocking.initializeBlockingBuckets();
-//        LOG.info("Blocking Records...");
-//        blocking.blockRecords(recordsA, recordsB);
-//        LOG.info("Blocking Records...DONE");
-//        LOG.info("Count colisions...");
-//        blocking.countPairColisions();
-//        LOG.info("Count colisions...DONE");
-//        LOG.info("Finding frequent record pairs...");
-//        final List<RecordIdPair> frequentPairs = blocking.retrieveFrequentPairs(C);
-//        LOG.info("Frequent pairs list size : {}", frequentPairs.size());
-
         blocking.initialize();
-        final List<RecordIdPair> matchedPairs =
+        final HammingLSHBlocking.HammingLSHBlockingResult result =
                 blocking.runFPS(recordsA,recordsB,C,hammingThreshold);
-        LOG.info("Matched pairs list size : {}", matchedPairs.size());
+        LOG.info("Matched pairs list size : {}", result.getMatchedPairsCount());
         int i = 0;
-        for(RecordIdPair pair : matchedPairs)
+        for(RecordIdPair pair : result.getMatchedPairs())
             LOG.debug("{}. {}",++i,pair);
 
     }

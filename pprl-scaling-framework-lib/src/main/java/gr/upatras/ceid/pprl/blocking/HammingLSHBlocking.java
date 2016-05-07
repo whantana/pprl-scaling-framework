@@ -357,7 +357,7 @@ public class HammingLSHBlocking {
         }
     }
 
-    public static class HammingLSHBlockingResult {
+    public class HammingLSHBlockingResult {
         private final List<RecordIdPair> matchedPairs;
         private final int matchedPairsCount;
         private final int frequentPairsCount;
@@ -409,7 +409,7 @@ public class HammingLSHBlocking {
     /**
      * Hamming LSH Blocking Group class.
      */
-    private static class HammingLSHBlockingGroup {
+    private class HammingLSHBlockingGroup {
         private String id;
         private Integer[] bits;
 

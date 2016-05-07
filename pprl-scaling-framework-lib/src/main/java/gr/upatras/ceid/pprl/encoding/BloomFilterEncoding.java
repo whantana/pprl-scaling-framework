@@ -4,8 +4,8 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -17,11 +17,11 @@ public abstract class BloomFilterEncoding {
     public static final String ENCODING_FIELD_PREFIX = "encoding_field_";
     public static final String FIELD_DELIMITER = "_src_";
 
-    protected Schema encodingSchema;                                // avro schema for encoding dataset
-    protected Map<String,String> name2nameMap = new HashMap<String,String>();   // Mapping between source field name to encoding field name
-    protected int[] N;                                              // Array of bloom filter lengths for the encoding
-    protected int K;                                                // Number of hash value for each data put in a bloom filter
-    protected int Q;                                                // Q as in Q-grams.
+    protected Schema encodingSchema;                                                  // avro schema for encoding dataset
+    protected Map<String,String> name2nameMap = new LinkedHashMap<String,String>();   // Mapping between source field name to encoding field name
+    protected int[] N;                                                                // Array of bloom filter lengths for the encoding
+    protected int K;                                                                  // Number of hash value for each data put in a bloom filter
+    protected int Q;                                                                  // Q as in Q-grams.
 
     /**
      * Constructor

@@ -76,4 +76,6 @@ public class PrivateSimilarityTest {
         LOG.info("Jaccard : {} ",PrivateSimilarityUtil.jaccard(bf1, bf2));
         LOG.info("Dice : {} ",PrivateSimilarityUtil.dice(bf1,bf2));
     }
+
+    // TODO do some similarity check on the voters dataset to refine parameters blocking test.
 }

@@ -9,6 +9,7 @@ import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -92,45 +93,7 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
             throw new BloomFilterEncodingException(e.getMessage());
         }
     }
-//    /**
-//     * Setup an encoding based on existing encoding schema.
-//     *
-//     * @param encodingSchema encoding schema.
-//     * @throws BloomFilterEncodingException
-//     */
-//    @Override
-//    public void setupFromSchema(Schema encodingSchema) throws BloomFilterEncodingException {
-//        assert N == null && getEncodingSchema() == null && encodingSchema != null;
-//
-//        String ns = encodingSchema.getNamespace();
-//        String s = ns.substring("encoding.schema.".length());
-//        String[] sParts = s.split("\\.");
-//        assert sParts.length == 3;
-//        setK(Integer.valueOf(sParts[1]));
-//        setQ(Integer.valueOf(sParts[2]));
-//        int Nlength = 0;
-//        for(Schema.Field field : encodingSchema.getFields())
-//            if(field.name().startsWith(ENCODING_FIELD_PREFIX)) Nlength++;
-//        setN(new int[Nlength]);
-//        int i = 0;
-//        for(Schema.Field field : encodingSchema.getFields()) {
-//            final String name = field.name();
-//            if(name.startsWith(ENCODING_FIELD_PREFIX)) {
-//                String restName = name.substring(ENCODING_FIELD_PREFIX.length());
-//                String[] partss = restName.split(FIELD_DELIMITER);
-//                assert partss.length == 2;
-//                String[] parts = partss[0].split("_");
-//                assert parts.length == 3;
-//                setN(Integer.parseInt(parts[0]),i);
-//                assert getK() == Integer.parseInt(parts[1]);
-//                assert getQ() == Integer.parseInt(parts[2]);
-//                addIndex(partss[1], i);
-//                addMappedName(partss[1], name);
-//                i++;
-//            } else addMappedName(name, name);
-//        }
-//        setEncodingSchema(encodingSchema);
-//    }
+
     /**
      * Setup an encoding based on existing encoding schema.
      *
@@ -172,31 +135,6 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
         setEncodingSchema(encodingSchema);
     }
 
-
-//    /**
-//     * Setup source field (selected field names) to return encoding fields.
-//     *
-//     * @param selectedFieldNames selected field names
-//     * @return encoding fields.
-//     * @throws BloomFilterEncodingException
-//     */
-//    public List<Schema.Field> setupSelectedForEncodingFields(final String[] selectedFieldNames) throws BloomFilterEncodingException {
-//        assert N != null && N.length == selectedFieldNames.length && getK() > 0 && getQ() > 0;
-//        Schema.Field[] encodingFields = new Schema.Field[selectedFieldNames.length];
-//        int i = 0;
-//        for(String fieldName : selectedFieldNames) {
-//            String encodingFieldName = String.format("%s%d_%d_%d%s%s",ENCODING_FIELD_PREFIX, getN(i), getK(), getQ(),FIELD_DELIMITER, fieldName);
-//            encodingFields[i] =new Schema.Field(
-//                    encodingFieldName,
-//                    Schema.createFixed(encodingFieldName, null, null, (int) Math.ceil(getN(i)/(double)8)),
-//                    String.format("Encoding(%s) of field %s", schemeName(), fieldName),
-//                    null);
-//            addIndex(fieldName, i);
-//            addMappedName(fieldName, encodingFieldName);
-//            i++;
-//        }
-//        return Arrays.asList(encodingFields);
-//    }
     /**
      * Setup source field (selected field names) to return encoding fields.
      *
@@ -227,43 +165,11 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
                 Schema.createFixed(encodingFieldName, null, null, (int) Math.ceil(bfN/(double)8)),
                 encodingDoc,null);
 
-        for(int i = 0; i < selectedFieldNames.length ; i++)
-            addMappedName(selectedFieldNames[i], encodingFieldName);
+        for (String selectedFieldName : selectedFieldNames)
+            addMappedName(selectedFieldName, encodingFieldName);
 
-        return Arrays.asList(encodingField);
+        return Collections.singletonList(encodingField);
     }
-
-//    /**
-//     * Returns encoded record based on the encoding scheme and input record.
-//     *
-//     * @param record input generic record.
-//     * @return encoded records (generic record).
-//     * @throws BloomFilterEncodingException
-//     */
-//    @Override
-//    public GenericRecord encodeRecord(GenericRecord record)
-//            throws BloomFilterEncodingException {
-//        final GenericRecord encodingRecord = new GenericData.Record(getEncodingSchema());
-//        for (Map.Entry<String,String> entry : name2nameMap.entrySet()) {
-//            final String name = entry.getKey();
-//            final String mappedName = entry.getValue();
-//            if(name.equals(mappedName))
-//                encodingRecord.put(mappedName,record.get(name));
-//            else {
-//                final Object obj = record.get(name);
-//                final Schema.Type type = record.getSchema().getField(name).schema().getType();
-//                encodeObject(obj, type, getQ(), getFBF(name));
-//                final Schema schema = encodingRecord.getSchema().getField(mappedName).schema();
-//                final GenericData.Fixed fixed = new GenericData.Fixed(schema,
-//                        Arrays.copyOf(
-//                                getFBF(name).getByteArray(),
-//                                getFBF(name).getByteArray().length)
-//                );
-//                encodingRecord.put(mappedName,fixed);
-//            }
-//        }
-//        return encodingRecord;
-//    }
 
     /**
      * Returns encoded record based on the encoding scheme and input record.
@@ -383,6 +289,15 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
         if(!name2indexMap.containsKey(fieldName))
             throw new IllegalArgumentException("Cannot find index fieldName for fieldName " + fieldName);
         return name2indexMap.get(fieldName);
+    }
+
+    /**
+     * Returns the total bit count of this encoding.
+     *
+     * @return the total bit count of this encoding.
+     */
+    public int getFBFN() {
+        return bfN;
     }
 
     /**

@@ -28,57 +28,24 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
-
-import static org.junit.Assert.assertTrue;
 
 public class HammingLSHBlockingTest {
     private static Logger LOG = LoggerFactory.getLogger(HammingLSHBlockingTest.class);
 
-    private static final String[] VOTER_HEADER = {"id","surname","name","address","city"};
-
-    private static Schema.Type[] VOTER_TYPES = {
-            Schema.Type.STRING,Schema.Type.STRING,
-            Schema.Type.STRING,Schema.Type.STRING,
-            Schema.Type.STRING
-    };
-
-    private static String[] VOTER_DOCS = {
-            "Voter ID","Surname","Name","Address","City"
-    };
-
-    private Schema schemaVotersA = DatasetsUtil.avroSchema(
-                    "voters_a", "Voters Registration", "pprl.datasets",
-                    VOTER_HEADER,VOTER_TYPES,VOTER_DOCS);
-
-    private Schema schemaVotersB = DatasetsUtil.avroSchema(
-                    "voters_b", "Voters Registration", "pprl.datasets",
-                    VOTER_HEADER,VOTER_TYPES,VOTER_DOCS);
-
-
     @Test
-    public void test1() throws IOException, DatasetException {
-        final FileSystem fs = FileSystem.getLocal(new Configuration());
-        final Path pA = DatasetsUtil.csv2avro(fs,schemaVotersA,"voters_a",
-                new Path(fs.getWorkingDirectory(),"data"),
-                new Path(fs.getWorkingDirectory(), "data/voters_a/csv/voters_a.csv"));
-        LOG.info("Saved at path {} ", pA);
-        final Path pB = DatasetsUtil.csv2avro(fs,schemaVotersB,"voters_b",
-                new Path(fs.getWorkingDirectory(),"data"),
-                new Path(fs.getWorkingDirectory(), "data/voters_b/csv/voters_b.csv"));
-        LOG.info("Saved at path {} ", pB);
-    }
-
-    @Test
-    public void test2() throws BloomFilterEncodingException, IOException {
+    public void test2() throws BloomFilterEncodingException, IOException, DatasetException {
         final FileSystem fs = FileSystem.getLocal(new Configuration());
         final String[] SELECTED_FIELDS = {"surname","name","address","city"};
         final String[] REST_FIELDS = {"id"};
+        final Schema schemaVotersA =
+                DatasetsUtil.loadSchemaFromFSPath(fs,new Path("data/voters_a/schema/voters_a.avsc"));
         CLKEncoding encodingA = new CLKEncoding(1024,10,2);
         encodingA.makeFromSchema(schemaVotersA, SELECTED_FIELDS, REST_FIELDS);
         encodeLocalFile(fs,"data/voters_a/clk", Collections.singleton(new Path("data/voters_a/avro/voters_a.avro")),
                 schemaVotersA, encodingA);
+        final Schema schemaVotersB =
+                DatasetsUtil.loadSchemaFromFSPath(fs,new Path("data/voters_b/schema/voters_b.avsc"));
         CLKEncoding encodingB = new CLKEncoding(1024,10,2);
         encodingB.makeFromSchema(schemaVotersB, SELECTED_FIELDS, REST_FIELDS);
         encodeLocalFile(fs,"data/voters_b/clk", Collections.singleton(new Path("data/voters_b/avro/voters_b.avro")),

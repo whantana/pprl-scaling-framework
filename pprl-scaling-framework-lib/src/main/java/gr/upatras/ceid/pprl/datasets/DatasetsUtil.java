@@ -535,31 +535,76 @@ public class DatasetsUtil {
         final String header = hsb.toString();
         sb.append(header).append("\n");
         sb.append(new String(new char[header.length()]).replace("\0", "-")).append("\n");
-        for (GenericRecord record : records) {
-            final StringBuilder rsb = new StringBuilder();
-            for (int i = 0; i < fields.size(); i++) {
-                final String fieldName = fieldNames.get(i);
-                final Schema.Type type = types.get(i);
-                if (type.equals(Schema.Type.FIXED)) {
-                    GenericData.Fixed fixed = (GenericData.Fixed) record.get(i);
-                    String val = prettyBinary(fixed.bytes());
-                    if(fixed.bytes().length * 8 < 100)
-                        rsb.append(String.format("%100s|", val));
-                    else
-                        rsb.append(String.format("%100s|",
-                                val.substring(0,48) + "..." + val.substring(val.length()-48,val.length())));
-                } else {
-                    String val = String.valueOf(record.get(fieldName));
-                    if (val.length() > 25) {
-                        val = val.substring(0, 10) + "..." + val.substring(val.length() - 10);
-                    }
-                    rsb.append(String.format("%25s|", val));
-                }
-            }
-            sb.append(rsb.toString()).append("\n");
-        }
-
+        for (GenericRecord record : records)
+            sb.append(prettyRecord(record,fields,fieldNames,types)).append("\n");
         return sb.toString();
+    }
+
+    /**
+     * Pretty record.
+     *
+     * @param record record
+     * @param schema schema
+     * @return a pretty record.
+     */
+    public static String prettyRecord(final GenericRecord record, final Schema schema) {
+        final StringBuilder rsb = new StringBuilder();
+        for (int i = 0; i < schema.getFields().size(); i++) {
+            final String fieldName = schema.getFields().get(i).name();
+            final Schema.Type type = schema.getFields().get(i).schema().getType();
+            if (type.equals(Schema.Type.FIXED)) {
+                GenericData.Fixed fixed = (GenericData.Fixed) record.get(i);
+                String val = prettyBinary(fixed.bytes());
+                if(fixed.bytes().length * 8 < 100)
+                    rsb.append(String.format("%100s|", val));
+                else
+                    rsb.append(String.format("%100s|",
+                            val.substring(0,48) + "..." + val.substring(val.length()-48,val.length())));
+            } else {
+                String val = String.valueOf(record.get(fieldName));
+                if (val.length() > 25) {
+                    val = val.substring(0, 10) + "..." + val.substring(val.length() - 10);
+                }
+                rsb.append(String.format("%25s|", val));
+            }
+        }
+        return rsb.toString();
+    }
+
+    /**
+     * Pretty record.
+     *
+     * @param record record
+     * @param fields fields
+     * @param fieldNames fieldnames
+     * @param types types.
+     * @return a pretty record.
+     */
+    public static String prettyRecord(final GenericRecord record,
+                                      final List<Schema.Field> fields,
+                                      final List<String> fieldNames,
+                                      final List<Schema.Type> types) {
+        final StringBuilder rsb = new StringBuilder();
+        for (int i = 0; i < fields.size(); i++) {
+            final String fieldName = fieldNames.get(i);
+            final Schema.Type type = types.get(i);
+            if (type.equals(Schema.Type.FIXED)) {
+                GenericData.Fixed fixed = (GenericData.Fixed) record.get(i);
+                String val = prettyBinary(fixed.bytes());
+                if(fixed.bytes().length * 8 < 100)
+                    rsb.append(String.format("%100s|", val));
+                else
+                    rsb.append(String.format("%100s|",
+                            val.substring(0,48) + "..." + val.substring(val.length()-48,val.length())));
+            } else {
+                String val = String.valueOf(record.get(fieldName));
+                if (val.length() > 25) {
+                    val = val.substring(0, 10) + "..." + val.substring(val.length() - 10);
+                }
+                rsb.append(String.format("%25s|", val));
+            }
+        }
+        return rsb.toString();
     }
 
     /**
@@ -731,7 +776,7 @@ public class DatasetsUtil {
      */
     public static Path getSchemaPath(final FileSystem fs, final Path parentPath) throws IOException{
         LOG.debug(String.format("Retrieve schema path [FileSystem=%s,parentPath=%s].",
-                        fsIsLocal(fs) ? "local" : fs.getUri(), parentPath));
+                fsIsLocal(fs) ? "local" : fs.getUri(), parentPath));
         final RemoteIterator<LocatedFileStatus> iterator = fs.listFiles(parentPath, true);
         while (iterator.hasNext()) {
             final LocatedFileStatus lfs = iterator.next();

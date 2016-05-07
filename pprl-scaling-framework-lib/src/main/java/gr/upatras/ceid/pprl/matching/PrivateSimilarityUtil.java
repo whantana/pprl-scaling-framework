@@ -16,12 +16,12 @@ public class PrivateSimilarityUtil {
     public static final String DEFAULT_SIMILARITY_METHOD_NAME = SIMILARITY_METHOD_NAMES[0]; // Default method.
 
     /**
-     * Returns true if the similarity threshold.
+     * Returns true if the similarity satisfies threshold.
      *
      * @param bf1 bloom filter 1.
      * @param bf2 bloom filter 2.
      * @param threshold threshold (depends on the similarity method).
-     * @return true if surpess or respects threshold.
+     * @return true if bloomfilters are similar, false other wise.
      */
     public static boolean similarity(final BloomFilter bf1, final BloomFilter bf2,
                                      final double threshold) {

@@ -195,7 +195,10 @@ public class BloomFilterEncodingTest {
             final DataFileReader<GenericRecord> reader =
                     new DataFileReader<GenericRecord>(new AvroFSInput(fs.open(p),len),
                             new GenericDatumReader<GenericRecord>(schema));
-            for (GenericRecord record : reader) writer.append(encoding.encodeRecord(record));
+            for (GenericRecord record : reader) {
+                final GenericRecord encodingRecord = encoding.encodeRecord(record);
+                writer.append(encodingRecord);
+            }
             reader.close();
         }
         writer.close();

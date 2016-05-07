@@ -1,0 +1,27 @@
+{
+  "type" : "record",
+  "name" : "voters_b",
+  "namespace" : "pprl.datasets",
+  "doc" : "Voters Registration",
+  "fields" : [ {
+    "name" : "id",
+    "type" : "string",
+    "doc" : "Voter ID"
+  }, {
+    "name" : "surname",
+    "type" : "string",
+    "doc" : "Surname"
+  }, {
+    "name" : "name",
+    "type" : "string",
+    "doc" : "Name"
+  }, {
+    "name" : "address",
+    "type" : "string",
+    "doc" : "Address"
+  }, {
+    "name" : "city",
+    "type" : "string",
+    "doc" : "City"
+  } ]
+}

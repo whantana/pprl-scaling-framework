@@ -35,7 +35,6 @@ public class CreateHashesBenchmarkTest {
     private static final String SECRET_KEY = "MYZIKRETQI";
     private static DescriptiveStatistics stats =  new DescriptiveStatistics();
 
-    // TODO Add Karapiperis DATASET
     // TODO Benchmarking accuracy between versions
     static {
         Mac tmp;

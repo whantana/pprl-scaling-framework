@@ -2,11 +2,12 @@ package gr.upatras.ceid.pprl.blocking;
 
 import gr.upatras.ceid.pprl.encoding.BloomFilter;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
+import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingUtil;
 import gr.upatras.ceid.pprl.encoding.CLKEncoding;
+import gr.upatras.ceid.pprl.encoding.FieldBloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.RowBloomFilterEncoding;
 import gr.upatras.ceid.pprl.matching.PrivateSimilarityUtil;
-import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 
 import java.security.SecureRandom;
@@ -31,10 +32,8 @@ public class HammingLSHBlocking {
     private String aliceEncodingName;
     private String bobEncodingName;
 
-    private boolean singleBfBlocking; // true if encoding carries a single bloom filter field, false for more than 1.
-
-    private String[] aliceEncodingFieldNames; //encoding field names for A and B
-    private String[] bobEncodingFieldNames;
+    private String aliceEncodingFieldName; //encoding field names for A and B
+    private String bobEncodingFieldName;
 
     private int N; // bloom filter length
 
@@ -51,7 +50,7 @@ public class HammingLSHBlocking {
                               final BloomFilterEncoding aliceEncoding,
                               final BloomFilterEncoding bobEncoding)
             throws BlockingException {
-        N = setup(aliceEncoding, bobEncoding);
+        setup(aliceEncoding, bobEncoding);
         blockingGroups = new HammingLSHBlockingGroup[L];
         for (int i = 0; i < L; i++)
             blockingGroups[i] = new HammingLSHBlockingGroup(String.format("Block#%d", i), K, N);
@@ -68,7 +67,7 @@ public class HammingLSHBlocking {
     public HammingLSHBlocking(final String[] blockingKeys,
                               final BloomFilterEncoding aliceEncoding,
                               final BloomFilterEncoding bobEncoding) throws BlockingException {
-        N = setup(aliceEncoding, bobEncoding);
+        setup(aliceEncoding, bobEncoding);
         blockingGroups = new HammingLSHBlockingGroup[blockingKeys.length];
         for (int i = 0; i < blockingKeys.length; i++) {
             String[] parts = blockingKeys[i].split(" ");
@@ -135,7 +134,11 @@ public class HammingLSHBlocking {
                     collisions[bid]++;
                     if(collisions[bid] >= C) {
                         frequentPairsCount++;
-                        if(matchRecords(aliceRecords[aid],bobRecords[bid],threshold)) {
+                        final BloomFilter bf1 = BloomFilterEncodingUtil.retrieveBloomFilter(aliceRecords[aid],
+                                aliceEncodingFieldName, N);
+                        final BloomFilter bf2 = BloomFilterEncodingUtil.retrieveBloomFilter(bobRecords[bid],
+                                bobEncodingFieldName, N);
+                        if(PrivateSimilarityUtil.similarity("hamming",bf1,bf2, threshold)) {
                             mathcedPairs.add(new RecordIdPair(aid, bid));
                             matchedPairsCount++;
                         }
@@ -205,7 +208,7 @@ public class HammingLSHBlocking {
      * @return keys from hashing.
      */
     public BitSet[] hashAliceRecord(final GenericRecord record) {
-        return hashRecord(record,aliceEncodingFieldNames);
+        return hashRecord(record,aliceEncodingFieldName);
     }
 
     /**
@@ -215,7 +218,7 @@ public class HammingLSHBlocking {
      * @return keys from hashing.
      */
     public BitSet[] hashBobRecord(final GenericRecord record) {
-        return hashRecord(record,bobEncodingFieldNames);
+        return hashRecord(record,bobEncodingFieldName);
     }
 
 
@@ -223,30 +226,16 @@ public class HammingLSHBlocking {
      * Hash a record.
      *
      * @param record a generic record.
-     * @param encodingFieldNames encoding field names.
+     * @param encodingFieldName encoding field name.
      * @return keys from hashing.
      */
     public BitSet[] hashRecord(final GenericRecord record,
-                               final String[] encodingFieldNames)  {
-        final BloomFilter bf = (singleBfBlocking) ?
-                singleBloomFilter(record,encodingFieldNames,N) :
-                multipleBloomFilters(record,encodingFieldNames,N);
+                               final String encodingFieldName)  {
+        final BloomFilter bf = BloomFilterEncodingUtil.retrieveBloomFilter(record, encodingFieldName, N);
         final BitSet[] keys = new BitSet[blockingGroups.length];
         for (int l = 0; l < blockingGroups.length; l++)
             keys[l] = blockingGroups[l].hash(bf);
         return keys;
-    }
-
-    public boolean matchRecords(final GenericRecord aliceRecord,
-                                final GenericRecord bobRecord,
-                                final int threshold) {
-        final BloomFilter bf1 = (singleBfBlocking) ?
-                singleBloomFilter(aliceRecord,aliceEncodingFieldNames,N) :
-                multipleBloomFilters(aliceRecord,aliceEncodingFieldNames,N);
-        final BloomFilter bf2 = (singleBfBlocking) ?
-                singleBloomFilter(bobRecord,bobEncodingFieldNames,N) :
-                multipleBloomFilters(bobRecord,bobEncodingFieldNames,N);
-        return PrivateSimilarityUtil.similarity("hamming",bf1,bf2,threshold);
     }
 
     /**
@@ -264,97 +253,48 @@ public class HammingLSHBlocking {
         bucket.get(key).add(index);
     }
 
-    /**
-     * Compose a bloom filter from multiple byte arrays.
-     *
-     * @param record generic record.
-     * @param encodingFieldNames encoding field names containing bfs.
-     * @param N total size of bloom filter.
-     * @return a <code>BloomFilter</code> instance
-     */
-    private static BloomFilter multipleBloomFilters(final GenericRecord record,
-                                                    final String[] encodingFieldNames,
-                                                    int N) {
-        byte[][] allBytes = new byte[encodingFieldNames.length][];
-        int totalLen = 0;
-        for(int i = 0 ; i < encodingFieldNames.length; i++) {
-            allBytes[i] = ((GenericData.Fixed) record.get(encodingFieldNames[i])).bytes();
-            totalLen += allBytes[i].length;
-        }
-        byte[] array = new byte[totalLen];
-        int p = 0;
-        for(int i = 0; i < encodingFieldNames.length; i++) {
-            System.arraycopy(allBytes[i],0,array,p,allBytes[i].length);
-            p += allBytes[i].length;
-        }
-        return new BloomFilter(N, array);
-    }
-
-    /**
-     * Retrieve bloom filter from the encoding field name.
-     *
-     * @param record generic record.
-     * @param encodingFieldNames only one encoding field name.
-     * @param N total size of bloom filter.
-     * @return a <code>BloomFilter</code> instance
-     */
-    private static BloomFilter singleBloomFilter(final GenericRecord record,
-                                                 final String[] encodingFieldNames,
-                                                 int N) {
-        final String encodingFieldName = encodingFieldNames[0];
-        GenericData.Fixed fixed = (GenericData.Fixed) record.get(encodingFieldName);
-        return new BloomFilter(N,fixed.bytes());
-    }
-
 
     /**
      * Setup blocking.
      *
      * @param aliceEncoding A-lice encoding.
      * @param bobEncoding B-ob encoding.
-     * @return length of bloom filter to block.
      * @throws BlockingException
      */
-    private int setup(final BloomFilterEncoding aliceEncoding,
-                      final BloomFilterEncoding bobEncoding) throws BlockingException {
+    private void setup(final BloomFilterEncoding aliceEncoding,
+                      final BloomFilterEncoding bobEncoding)
+            throws BlockingException {
         final String schemeName = aliceEncoding.schemeName();
         if(!schemeName.equals(bobEncoding.schemeName()))
             throw new BlockingException("Encoding scheme names do not match.");
+        try {
+            BloomFilterEncodingUtil.schemeNameSupported(schemeName);
+        } catch (BloomFilterEncodingException e) {throw new BlockingException(e.getMessage());}
 
         aliceEncodingName = aliceEncoding.getEncodingSchema().getName();
         bobEncodingName = bobEncoding.getEncodingSchema().getName();
         if(aliceEncodingName.equals(bobEncodingName))
             throw new BlockingException("Encodings share the same schema name. Must differ.");
 
-        aliceEncodingFieldNames = aliceEncoding.getEncodingFieldNames();
-        bobEncodingFieldNames = bobEncoding.getEncodingFieldNames();
-        assert aliceEncodingFieldNames.length == bobEncodingFieldNames.length;
+        assert aliceEncoding.getEncodingFieldNames().length == 1;
+        aliceEncodingFieldName = aliceEncoding.getEncodingFieldNames()[0];
+        assert bobEncoding.getEncodingFieldNames().length == 1;
+        bobEncodingFieldName = bobEncoding.getEncodingFieldNames()[0];
 
-        final int fieldNameCount = aliceEncodingFieldNames.length;
-        if(fieldNameCount == 1) {
-            if(!(schemeName.equals("CLK") || schemeName.equals("RBF")))
-                throw new BlockingException("Unsupported encoding scheme.");
-            int aliceN = (schemeName.equals("CLK")) ? ((CLKEncoding)aliceEncoding).getCLKN() :
-                    ((RowBloomFilterEncoding)aliceEncoding).getRBFN();
-            int bobN = (schemeName.equals("CLK")) ? ((CLKEncoding)bobEncoding).getCLKN() :
-                    ((RowBloomFilterEncoding)bobEncoding).getRBFN();
-            if(aliceN != bobN) throw new BlockingException("Encoding length does not match.");
-            singleBfBlocking = true;
-            return aliceN;
+        int aliceN,bobN;
+        if(schemeName.equals("CLK")) {
+            aliceN = ((CLKEncoding)aliceEncoding).getCLKN();
+            bobN = ((CLKEncoding)bobEncoding).getCLKN();
+        } else if(schemeName.equals("RBF")) {
+            aliceN = ((RowBloomFilterEncoding) aliceEncoding).getRBFN();
+            bobN = ((RowBloomFilterEncoding)bobEncoding).getRBFN();
         } else {
-            if (!schemeName.equals("FBF")) throw new BlockingException("Unsupported encoding scheme name.");
-
-            int aliceN = 0;
-            for (String fieldName : aliceEncodingFieldNames)
-                aliceN += BloomFilterEncodingUtil.extractNFromEncodingField(fieldName);
-
-            int bobN = 0;
-            for (String fieldName : bobEncodingFieldNames)
-                bobN += BloomFilterEncodingUtil.extractNFromEncodingField(fieldName);
-            if(aliceN != bobN) throw new BlockingException("Encoding length does not match.");
-            singleBfBlocking = false;
-            return aliceN;
+            aliceN = ((FieldBloomFilterEncoding) aliceEncoding).getFBFN();
+            bobN = ((FieldBloomFilterEncoding)bobEncoding).getFBFN();
         }
+        if(aliceN != bobN) throw new BlockingException("Encodings total bloom filter length is different.");
+
+        N = aliceN;
     }
 
     public class HammingLSHBlockingResult {

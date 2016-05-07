@@ -1,6 +1,8 @@
 package gr.upatras.ceid.pprl.encoding;
 
 import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -339,17 +341,17 @@ public class BloomFilterEncodingUtil {
     }
 
     /**
-     * Retrieve N from encoding field name.
+     * Retrieve bloom filter from the encoding field name.
      *
+     * @param record generic record.
      * @param encodingFieldName encoding field name.
-     * @return N extracted from encoding field name.
+     * @param N total size of bloom filter.
+     * @return a <code>BloomFilter</code> instance
      */
-    public static int extractNFromEncodingField(final String encodingFieldName) {
-        if(!encodingFieldName.startsWith(BloomFilterEncoding.ENCODING_FIELD_PREFIX))
-            throw new IllegalArgumentException("Does not start with prefix=" + BloomFilterEncoding.ENCODING_FIELD_PREFIX);
-        String restName = encodingFieldName.substring(BloomFilterEncoding.ENCODING_FIELD_PREFIX.length());
-        String[] partss = restName.split(BloomFilterEncoding.FIELD_DELIMITER);
-        assert partss.length == 2;
-        return Integer.valueOf(partss[0]);
+    public static BloomFilter retrieveBloomFilter(final GenericRecord record,
+                                                   final String encodingFieldName,
+                                                   int N) {
+        GenericData.Fixed fixed = (GenericData.Fixed) record.get(encodingFieldName);
+        return new BloomFilter(N,fixed.bytes());
     }
 }

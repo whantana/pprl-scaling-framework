@@ -74,9 +74,11 @@ public class BloomFilterEncodingUtil {
      * @return instance of the encoding
      * @throws BloomFilterEncodingException
      */
-    public static BloomFilterEncoding newInstance(final Schema schema)
+    public static BloomFilterEncoding setupNewInstance(final Schema schema)
             throws BloomFilterEncodingException {
-        return newInstance(retrieveSchemeName(schema));
+        BloomFilterEncoding encoding = newInstance(retrieveSchemeName(schema));
+        encoding.setupFromSchema(schema);
+        return encoding;
     }
 
     /**
@@ -336,6 +338,12 @@ public class BloomFilterEncodingUtil {
         return encodingSchema;
     }
 
+    /**
+     * Retrieve N from encoding field name.
+     *
+     * @param encodingFieldName encoding field name.
+     * @return N extracted from encoding field name.
+     */
     public static int extractNFromEncodingField(final String encodingFieldName) {
         if(!encodingFieldName.startsWith(BloomFilterEncoding.ENCODING_FIELD_PREFIX))
             throw new IllegalArgumentException("Does not start with prefix=" + BloomFilterEncoding.ENCODING_FIELD_PREFIX);

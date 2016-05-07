@@ -314,7 +314,6 @@ public class DatasetsUtil {
         for (int i = 0; i < fieldNames.length; i++)
             fields.add(new Schema.Field(fieldNames[i], Schema.create(fieldTypes[i]),docs[i],null));
         schema.setFields(fields);
-        LOG.debug("New Avro Schema : {}",schema.toString(true));
         return schema;
     }
 

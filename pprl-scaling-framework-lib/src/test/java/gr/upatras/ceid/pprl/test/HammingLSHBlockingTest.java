@@ -48,17 +48,23 @@ public class HammingLSHBlockingTest {
             "Voter ID","Surname","Name","Address","City"
     };
 
+    private Schema schemaVotersA = DatasetsUtil.avroSchema(
+                    "voters_a", "Voters Registration", "pprl.datasets",
+                    VOTER_HEADER,VOTER_TYPES,VOTER_DOCS);
+
+    private Schema schemaVotersB = DatasetsUtil.avroSchema(
+                    "voters_b", "Voters Registration", "pprl.datasets",
+                    VOTER_HEADER,VOTER_TYPES,VOTER_DOCS);
+
+
     @Test
     public void test1() throws IOException, DatasetException {
-        Schema schemaVoters = DatasetsUtil.avroSchema(
-                "voters", "Voters Registration", "pprl.datasets",
-                VOTER_HEADER,VOTER_TYPES,VOTER_DOCS);
         final FileSystem fs = FileSystem.getLocal(new Configuration());
-        final Path pA = DatasetsUtil.csv2avro(fs,schemaVoters,"voters_a",
+        final Path pA = DatasetsUtil.csv2avro(fs,schemaVotersA,"voters_a",
                 new Path(fs.getWorkingDirectory(),"data"),
                 new Path(fs.getWorkingDirectory(), "data/voters_a/csv/voters_a.csv"));
         LOG.info("Saved at path {} ", pA);
-        final Path pB = DatasetsUtil.csv2avro(fs,schemaVoters,"voters_b",
+        final Path pB = DatasetsUtil.csv2avro(fs,schemaVotersB,"voters_b",
                 new Path(fs.getWorkingDirectory(),"data"),
                 new Path(fs.getWorkingDirectory(), "data/voters_b/csv/voters_b.csv"));
         LOG.info("Saved at path {} ", pB);
@@ -67,18 +73,16 @@ public class HammingLSHBlockingTest {
     @Test
     public void test2() throws BloomFilterEncodingException, IOException {
         final FileSystem fs = FileSystem.getLocal(new Configuration());
-        Schema schemaVoters = DatasetsUtil.avroSchema(
-                "voters", "Voters Registration", "pprl.datasets",
-                VOTER_HEADER,VOTER_TYPES,VOTER_DOCS);
         final String[] SELECTED_FIELDS = {"surname","name","address","city"};
         final String[] REST_FIELDS = {"id"};
-        CLKEncoding encoding = new CLKEncoding(1024,10,2);
-        encoding.makeFromSchema(schemaVoters, SELECTED_FIELDS, REST_FIELDS);
-        assertTrue(encoding.isEncodingOfSchema(schemaVoters));
+        CLKEncoding encodingA = new CLKEncoding(1024,10,2);
+        encodingA.makeFromSchema(schemaVotersA, SELECTED_FIELDS, REST_FIELDS);
         encodeLocalFile(fs,"data/voters_a/clk", Collections.singleton(new Path("data/voters_a/avro/voters_a.avro")),
-                schemaVoters, encoding);
+                schemaVotersA, encodingA);
+        CLKEncoding encodingB = new CLKEncoding(1024,10,2);
+        encodingB.makeFromSchema(schemaVotersB, SELECTED_FIELDS, REST_FIELDS);
         encodeLocalFile(fs,"data/voters_b/clk", Collections.singleton(new Path("data/voters_b/avro/voters_b.avro")),
-                schemaVoters, encoding);
+                schemaVotersB, encodingB);
     }
 
     @Test
@@ -86,13 +90,9 @@ public class HammingLSHBlockingTest {
             throws IOException, DatasetException,
             BloomFilterEncodingException, BlockingException {
         final FileSystem fs = FileSystem.getLocal(new Configuration());
-        BloomFilterEncoding encodingA = BloomFilterEncodingUtil.newInstance("CLK");
-        BloomFilterEncoding encodingB = BloomFilterEncodingUtil.newInstance("CLK");
-
-
-        encodingA.setupFromSchema(
+        BloomFilterEncoding encodingA = BloomFilterEncodingUtil.setupNewInstance(
                 DatasetsUtil.loadSchemaFromFSPath(fs, new Path("data/voters_a/clk.avsc")));
-        encodingB.setupFromSchema(
+        BloomFilterEncoding encodingB = BloomFilterEncodingUtil.setupNewInstance(
                 DatasetsUtil.loadSchemaFromFSPath(fs, new Path("data/voters_b/clk.avsc")));
 
         final GenericRecord[] recordsA = DatasetsUtil.loadAvroRecordsFromFSPaths(fs, encodingA.getEncodingSchema(),
@@ -100,25 +100,26 @@ public class HammingLSHBlockingTest {
         final GenericRecord[] recordsB = DatasetsUtil.loadAvroRecordsFromFSPaths(fs,encodingB.getEncodingSchema(),
                 new Path("data/voters_b/clk.avro"));
 
-        final int LC = 26;
-        final int K = 10;
+        final int LC = 36;
+        final int K = 5;
         final int hammingThreshold = 40;
         final int C = 2;
-        HammingLSHBlocking blocking = new HammingLSHBlocking(LC,K,encodingA,encodingB);
-        blocking.initializeBlockingBuckets();
-        LOG.info("Blocking Records...");
-        blocking.blockRecords(recordsA, recordsB);
-        LOG.info("Blocking Records...DONE");
-        LOG.info("Count colisions...");
-        blocking.countPairColisions();
-        LOG.info("Count colisions...DONE");
-        LOG.info("Finding frequent record pairs...");
-        final List<RecordIdPair> frequentPairs = blocking.retrieveFrequentPairs(C);
-        LOG.info("Frequent pairs list size : {}", frequentPairs.size());
-        LOG.info("Do matching in frequent pairs");
-        final List<RecordIdPair> matchedPairs = blocking.matchFrequentPairs(
-            recordsA,recordsB,frequentPairs,hammingThreshold
-        );
+        final HammingLSHBlocking blocking = new HammingLSHBlocking(LC,K,encodingA,encodingB);
+
+//        blocking.initializeBlockingBuckets();
+//        LOG.info("Blocking Records...");
+//        blocking.blockRecords(recordsA, recordsB);
+//        LOG.info("Blocking Records...DONE");
+//        LOG.info("Count colisions...");
+//        blocking.countPairColisions();
+//        LOG.info("Count colisions...DONE");
+//        LOG.info("Finding frequent record pairs...");
+//        final List<RecordIdPair> frequentPairs = blocking.retrieveFrequentPairs(C);
+//        LOG.info("Frequent pairs list size : {}", frequentPairs.size());
+
+        blocking.initialize();
+        final List<RecordIdPair> matchedPairs =
+                blocking.runFPS(recordsA,recordsB,C,hammingThreshold);
         LOG.info("Matched pairs list size : {}", matchedPairs.size());
         int i = 0;
         for(RecordIdPair pair : matchedPairs)
@@ -136,7 +137,7 @@ public class HammingLSHBlockingTest {
         final File encodedSchemaFile = new File(name + ".avsc");
         encodedSchemaFile.createNewFile();
         final PrintWriter schemaWriter = new PrintWriter(encodedSchemaFile);
-        schemaWriter.print(encodingSchema .toString(true));
+        schemaWriter.print(encodingSchema.toString(true));
         schemaWriter.close();
 
         final File encodedFile = new File(name + ".avro");

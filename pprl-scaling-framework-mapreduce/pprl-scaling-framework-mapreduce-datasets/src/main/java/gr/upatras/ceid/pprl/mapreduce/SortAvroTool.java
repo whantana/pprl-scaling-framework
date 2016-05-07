@@ -34,7 +34,6 @@ public class SortAvroTool extends Configured implements Tool {
     private static final Logger LOG = LoggerFactory.getLogger(SortAvroTool.class);
 
     public int run(String[] args) throws Exception {
-
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
         if (args.length != 6) {
@@ -46,7 +45,6 @@ public class SortAvroTool extends Configured implements Tool {
             throw new IllegalArgumentException("Invalid number of arguments.");
         }
 
-        LOG.info("Input-path : {}", args[0]);
         final Path inputPath = new Path(args[0]);
         final Path inputSchemaPath = new Path(args[1]);
         final Path outputPath = new Path(args[2]);

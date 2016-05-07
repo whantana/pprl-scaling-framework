@@ -58,6 +58,7 @@
         <module>pprl-scaling-framework-mapreduce-datasets</module>
         <module>pprl-scaling-framework-mapreduce-encoding</module>
         <module>pprl-scaling-framework-mapreduce-matching</module>
+        <module>pprl-scaling-framework-mapreduce-blocking</module>
     </modules>
 
 </project>

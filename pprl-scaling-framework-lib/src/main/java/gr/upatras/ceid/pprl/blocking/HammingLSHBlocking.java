@@ -37,6 +37,9 @@ public class HammingLSHBlocking {
 
     private int N; // bloom filter length
 
+    private int K; // number of keys
+    private int L; // number of groups;
+
     /**
      * Constructor.
      *
@@ -51,6 +54,8 @@ public class HammingLSHBlocking {
                               final BloomFilterEncoding bobEncoding)
             throws BlockingException {
         setup(aliceEncoding, bobEncoding);
+        this.L = L;
+        this.K = K;
         blockingGroups = new HammingLSHBlockingGroup[L];
         for (int i = 0; i < L; i++)
             blockingGroups[i] = new HammingLSHBlockingGroup(String.format("Block#%d", i), K, N);
@@ -68,12 +73,15 @@ public class HammingLSHBlocking {
                               final BloomFilterEncoding aliceEncoding,
                               final BloomFilterEncoding bobEncoding) throws BlockingException {
         setup(aliceEncoding, bobEncoding);
+        L = blockingKeys.length;
         blockingGroups = new HammingLSHBlockingGroup[blockingKeys.length];
         for (int i = 0; i < blockingKeys.length; i++) {
             String[] parts = blockingKeys[i].split(" ");
+            if(K == 0) K = parts.length - 1;
+            else assert K ==parts.length - 1;
             Integer[] bits = new Integer[parts.length - 1];
-            for (int j = 0; j < bits.length; j++)
-                bits[i] = Integer.valueOf(parts[i+1]);
+            for (int j = 0; j < (parts.length - 1); j++)
+                bits[j] = Integer.valueOf(parts[j+1]);
             final String id = parts[0];
             blockingGroups[i] = new HammingLSHBlockingGroup(id,bits);
         }
@@ -83,7 +91,7 @@ public class HammingLSHBlocking {
      * Initialization method.
      */
     public void initialize() {
-        int L = blockingGroups.length;
+        assert L == blockingGroups.length;
         bobBuckets = new HashMap[L];
         for (int i = 0; i < L; i++) {
             bobBuckets[i] = new HashMap<BitSet,List<Integer>>();
@@ -253,6 +261,23 @@ public class HammingLSHBlocking {
         bucket.get(key).add(index);
     }
 
+    /**
+     * Returns K.
+     *
+     * @return K (number of keys).
+     */
+    public int getK() {
+        return K;
+    }
+
+    /**
+     * Returns L.
+     *
+     * @return L (number of keys).
+     */
+    public int getL() {
+        return L;
+    }
 
     /**
      * Setup blocking.
@@ -276,10 +301,8 @@ public class HammingLSHBlocking {
         if(aliceEncodingName.equals(bobEncodingName))
             throw new BlockingException("Encodings share the same schema name. Must differ.");
 
-        assert aliceEncoding.getEncodingFieldNames().length == 1;
-        aliceEncodingFieldName = aliceEncoding.getEncodingFieldNames()[0];
-        assert bobEncoding.getEncodingFieldNames().length == 1;
-        bobEncodingFieldName = bobEncoding.getEncodingFieldNames()[0];
+        aliceEncodingFieldName = aliceEncoding.getEncodingFieldName();
+        bobEncodingFieldName = bobEncoding.getEncodingFieldName();
 
         int aliceN,bobN;
         if(schemeName.equals("CLK")) {

@@ -27,8 +27,6 @@ import static org.junit.Assert.assertTrue;
 
 public class MultiTagXmlInputFormatTest {
 
-    private static final Logger LOG = LoggerFactory.getLogger(QGramCountingMRTest.class);
-
     private Configuration conf;
     private FileSplit split;
     private FileSplit split1;

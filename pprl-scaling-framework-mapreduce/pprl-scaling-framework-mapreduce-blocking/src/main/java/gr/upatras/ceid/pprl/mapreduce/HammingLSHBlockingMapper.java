@@ -12,6 +12,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.BitSet;
 
 public class HammingLSHBlockingMapper extends Mapper<AvroKey<GenericRecord>,NullWritable,Text,Text> {
@@ -63,12 +64,18 @@ public class HammingLSHBlockingMapper extends Mapper<AvroKey<GenericRecord>,Null
                 String.valueOf(record.get(bobUidfieldName));
 
         for (int i = 0; i < keys.length; i++) {
-            final Text blockingKey = new Text(String.format(
-                    "%05d" + "_%s_"+ (isAliceRecord ? "A" : "B"),
-                    i, DatasetsUtil.prettyBinary(keys[i].toByteArray())
-            ));
+            final Text blockingKey = new Text(
+                    String.format("%05d" + "_%s_"+ (isAliceRecord ? "A" : "B"), i, keyToString(keys[i],blocking.getK())
+                    ));
             final Text val = new Text(uid);
             context.write(blockingKey,val);
         }
+    }
+
+    private static String keyToString(final BitSet bitSet,int K) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = K; i >= 0; i--)
+            sb.append(bitSet.get(i)?"1":"0");
+        return sb.toString();
     }
 }

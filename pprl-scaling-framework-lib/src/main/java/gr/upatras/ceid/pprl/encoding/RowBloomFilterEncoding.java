@@ -29,7 +29,6 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
     private int[][] selectedBits;      // selected bits from each FBF.
     private BloomFilter rbf;           // the Bloom filter for the rbf
     private int[] bitPermutation;      // the random bit permutation
-    private String encodingFieldName;  // the encoding field name (contains the RBF)
 
     /**
      * Constructor
@@ -238,6 +237,7 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
                     rbfCompositionSeeds[i] = Integer.parseInt(partss[2]);
                 }
                 rbfBitPermutationSeed = Integer.parseInt(docParts[fbfCount]);
+                encodingFieldName = field.name();
             } else name2nameMap.put(field.name(),field.name());
         }
         setEncodingSchema(encodingSchema);
@@ -323,6 +323,17 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
         encodingRecord.put(encodingFieldName,fixed);
 
         return encodingRecord;
+    }
+
+    /**
+     * Retrieve bloom filter from the record.
+     *
+     * @param record generic record.
+     * @return a <code>BloomFilter</code> instance
+     */
+    public BloomFilter retrieveBloomFilter(final GenericRecord record) {
+        GenericData.Fixed fixed = (GenericData.Fixed) record.get(encodingFieldName);
+        return new BloomFilter(getRBFN(),fixed.bytes());
     }
 
     @Override

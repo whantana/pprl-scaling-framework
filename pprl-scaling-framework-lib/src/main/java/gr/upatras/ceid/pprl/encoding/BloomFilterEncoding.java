@@ -22,6 +22,7 @@ public abstract class BloomFilterEncoding {
     protected int[] N;                                                                // Array of bloom filter lengths for the encoding
     protected int K;                                                                  // Number of hash value for each data put in a bloom filter
     protected int Q;                                                                  // Q as in Q-grams.
+    protected String encodingFieldName;
 
     /**
      * Constructor
@@ -140,19 +141,6 @@ public abstract class BloomFilterEncoding {
      */
     public Map<String,String> getMap() { return name2nameMap; }
 
-    /**
-     * Returns the encoding field names.
-     *
-     * @return the encoding field names.
-     */
-    public String[] getEncodingFieldNames() {
-        final HashSet<String> distinct = new HashSet<String>();
-        for(String name : name2nameMap.values())
-            if(name.startsWith(ENCODING_FIELD_PREFIX))
-                distinct.add(name);
-        return distinct.toArray(new String[distinct.size()]);
-    }
-
     @Override
     public String toString() {
         return schemeName() + "{" +
@@ -160,6 +148,15 @@ public abstract class BloomFilterEncoding {
                 ", N=" + Arrays.toString(N) +
                 ", K=" + K +
                 ", Q=" + Q;
+    }
+
+    /**
+     * Returns the encoding field name.
+     *
+     * @return the encoding field name.
+     */
+    public String getEncodingFieldName() {
+        return encodingFieldName;
     }
 
     /**
@@ -203,6 +200,14 @@ public abstract class BloomFilterEncoding {
      * @throws BloomFilterEncodingException
      */
     public abstract void setupFromSchema(final Schema encodingSchema) throws BloomFilterEncodingException;
+
+    /**
+     * Retrieve bloom filter from the record.
+     *
+     * @param record generic record.
+     * @return a <code>BloomFilter</code> instance
+     */
+    public abstract BloomFilter retrieveBloomFilter(final GenericRecord record);
 
     /**
      * Setup an encoding based on an input schema, selected fields and included fields.

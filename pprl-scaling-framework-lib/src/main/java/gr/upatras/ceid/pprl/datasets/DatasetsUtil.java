@@ -224,6 +224,39 @@ public class DatasetsUtil {
             recordList.add(i, reader.next());
             i++;
         }
+        reader.close();
+        LOG.debug(String.format("%d records loaded from [FileSystem=%s,paths=%s].",
+                recordList.size(), fsIsLocal(fs) ? "local" : fs.getUri(),
+                Arrays.toString(paths)));
+        return recordList.toArray(new GenericRecord[recordList.size()]);
+    }
+
+    /**
+     * Load Avro Records.
+     *
+     * @param fs a <code>FileSystem</code> reference.
+     * @param limit number of records to be loaded.
+     * @param schema schema.
+     * @param paths a <code>Path</code> array.
+     * @return an array of avro generic records.
+     * @throws IOException
+     */
+    public static GenericRecord[] loadAvroRecordsFromFSPaths(final FileSystem fs,
+                                                             final int limit,
+                                                             final Schema schema,
+                                                             final Path... paths)
+            throws IOException {
+        LOG.debug(String.format("Loading records from [FileSystem=%s,paths=%s].",
+                fsIsLocal(fs) ? "local" : fs.getUri(), Arrays.toString(paths)));
+        final List<GenericRecord> recordList = new ArrayList<GenericRecord>();
+        final DatasetsUtil.DatasetRecordReader reader =
+                new DatasetsUtil.DatasetRecordReader(fs, schema, paths);
+        int i = 0;
+        while (reader.hasNext() && i < limit) {
+            recordList.add(i, reader.next());
+            i++;
+        }
+        reader.close();
         LOG.debug(String.format("%d records loaded from [FileSystem=%s,paths=%s].",
                 recordList.size(), fsIsLocal(fs) ? "local" : fs.getUri(),
                 Arrays.toString(paths)));

@@ -21,7 +21,6 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
 
     protected Map<String,BloomFilter> name2FBFMap = new LinkedHashMap<String, BloomFilter>(); // fieldName to bloom filter map.
     protected Map<String,Integer> name2indexMap = new LinkedHashMap<String,Integer>();        // fieldName to index map.
-    private String encodingFieldName;                                                         // encoding field name
     private BloomFilter bf;                                                                   // composite bloom filter.
     private int bfN;                                                                          // composite bloom filter N.
 
@@ -130,6 +129,7 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
                     addIndex(partss[i],i-1);
                     addMappedName(partss[i],name);
                 }
+                encodingFieldName = field.name();
             } else addMappedName(field.name(), field.name());
         }
         setEncodingSchema(encodingSchema);
@@ -215,6 +215,16 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
         return encodingRecord;
     }
 
+    /**
+     * Retrieve bloom filter from the record.
+     *
+     * @param record generic record.
+     * @return a <code>BloomFilter</code> instance
+     */
+    public BloomFilter retrieveBloomFilter(final GenericRecord record) {
+        GenericData.Fixed fixed = (GenericData.Fixed) record.get(encodingFieldName);
+        return new BloomFilter(getFBFN(),fixed.bytes());
+    }
 
     /**
      * Encodes object by adding it's q-grams to its bloom filter.

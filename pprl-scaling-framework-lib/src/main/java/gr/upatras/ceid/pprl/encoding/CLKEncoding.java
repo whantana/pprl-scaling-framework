@@ -18,7 +18,6 @@ import java.util.Set;
  */
 public class CLKEncoding extends BloomFilterEncoding {
 
-    private String encodingFieldName; // encoding field names (only 1 encoding field name for all sources).
     private BloomFilter bf; // bloom filter (only need 1 bloom filter)
 
     /**
@@ -142,6 +141,17 @@ public class CLKEncoding extends BloomFilterEncoding {
     }
 
     /**
+     * Retrieve bloom filter from the record.
+     *
+     * @param record generic record.
+     * @return a <code>BloomFilter</code> instance
+     */
+    public BloomFilter retrieveBloomFilter(final GenericRecord record) {
+        GenericData.Fixed fixed = (GenericData.Fixed) record.get(encodingFieldName);
+        return new BloomFilter(getCLKN(),fixed.bytes());
+    }
+
+    /**
      * Encodes object by adding it's q-grams to its bloom filter.
      *
      * @param obj object
@@ -189,6 +199,7 @@ public class CLKEncoding extends BloomFilterEncoding {
                 assert fbfCount > 0;
                 setN(new int[1]);
                 setN(clkN,0);
+                encodingFieldName = field.name();
             } else name2nameMap.put(field.name(),field.name());
         }
         setEncodingSchema(encodingSchema);

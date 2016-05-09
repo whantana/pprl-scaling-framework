@@ -1,18 +1,21 @@
 package gr.upatras.ceid.pprl.test;
 
 import gr.upatras.ceid.pprl.combinatorics.CombinatoricsUtil;
+import gr.upatras.ceid.pprl.datasets.DatasetException;
+import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import gr.upatras.ceid.pprl.mapreduce.ExhaustiveRecordPairSimilarityTool;
 import gr.upatras.ceid.pprl.mapreduce.GenerateRecordPairsMapper;
 import gr.upatras.ceid.pprl.mapreduce.RecordPairSimilarityCombiner;
 import gr.upatras.ceid.pprl.mapreduce.RecordPairSimilarityReducer;
 import gr.upatras.ceid.pprl.matching.SimilarityUtil;
 import org.apache.avro.Schema;
-import org.apache.avro.file.DataFileReader;
-import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.hadoop.io.AvroSerialization;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.avro.mapred.AvroValue;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapDriver;
@@ -49,11 +52,12 @@ public class ExhaustiveRecordPairSimilarityMRTest {
     private final String[] fieldNames = {"name","surname","location"};
 
     @Before
-    public void setup() throws IOException {
-        schema = loadAvroSchemaFromFile(
-                new File("data/person_small/schema/person_small.avsc"));
-        records = loadAvroRecordsFromFiles(schema, new File[]{
-                new File("data/person_small/avro/person_small.avro")});
+    public void setup() throws IOException, DatasetException {
+        FileSystem fs = FileSystem.get(new Configuration());
+        schema = DatasetsUtil.loadSchemaFromFSPath(fs,new Path("data/person_small/schema/person_small.avsc"));
+
+        records = DatasetsUtil.loadAvroRecordsFromFSPaths(
+                fs,schema, new Path("data/person_small/avro/person_small.avro"));
 
         mapDriver = MapDriver.newMapDriver(new GenerateRecordPairsMapper());
         mapDriver.getContext().getConfiguration().setInt("record.count", records.length);
@@ -160,27 +164,6 @@ public class ExhaustiveRecordPairSimilarityMRTest {
         LOG.info("matrix = " + properties);
         LOG.info("expectedMatrix = " + expectedProperties);
         assertEquals(properties,expectedProperties);
-    }
-
-
-    private static Schema loadAvroSchemaFromFile(final File schemaFile) throws IOException {
-        FileInputStream fis = new FileInputStream(schemaFile);
-        Schema schema = (new Schema.Parser()).parse(fis);
-        fis.close();
-        return schema;
-    }
-
-    private static GenericRecord[] loadAvroRecordsFromFiles(final Schema schema,final File[] avroFiles) throws IOException {
-        final List<GenericRecord> recordList =  new ArrayList<GenericRecord>();
-        int i = 0;
-        for (File avroFile : avroFiles) {
-            final DataFileReader<GenericRecord> reader =
-                    new DataFileReader<GenericRecord>(avroFile,
-                            new GenericDatumReader<GenericRecord>(schema));
-            for (GenericRecord record : reader) recordList.add(i++,record);
-            reader.close();
-        }
-        return recordList.toArray(new GenericRecord[recordList.size()]);
     }
 }
 

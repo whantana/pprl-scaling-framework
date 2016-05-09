@@ -1,0 +1,20 @@
+{
+  "type" : "record",
+  "name" : "PPRL_Encoding_CLK_10_2_voters_b",
+  "namespace" : "encoding.schema.clk.10.2",
+  "doc" : "PPRL Encoding of voters_b",
+  "fields" : [ {
+    "name" : "id",
+    "type" : "string",
+    "doc" : "Voter ID"
+  }, {
+    "name" : "encoding_field_1024_10_2_src_surname_src_name_src_address_src_city",
+    "type" : {
+      "type" : "fixed",
+      "name" : "encoding_field_1024_10_2_src_surname_src_name_src_address_src_city",
+      "namespace" : "",
+      "size" : 128
+    },
+    "doc" : "CLK Encoding"
+  } ]
+}

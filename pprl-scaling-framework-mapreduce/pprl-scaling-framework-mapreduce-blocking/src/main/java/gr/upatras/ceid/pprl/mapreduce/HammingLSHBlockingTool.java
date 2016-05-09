@@ -20,6 +20,7 @@ import org.apache.hadoop.util.ToolRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,7 +35,7 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
     public int run(String[] args) throws Exception {
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
-        if (args.length != 12) {
+        if (args.length != 13) {
             LOG.error("args.length= {}",args.length);
             for (int i = 0; i < args.length; i++) {
                 LOG.error("args[{}] = {}",i,args[i]);
@@ -43,7 +44,8 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
                     "<alice-avro-path> <alice-schema-path> <alice-uid-fieldname> " +
                     "<bob-avro-path> <bob-schema-path> <bob-uid-fieldname> " +
                     "<bucket-path> <pair-count-path> <frequent-pair-path>" +
-                    "<number-of-blocks> <number-of-hashes> <frequent-pair-colisions>");
+                    "<number-of-blocks> <number-of-hashes> <frequent-pair-colisions> " +
+                    "<number-of-reducers>");
             throw new IllegalArgumentException("Invalid number of arguments.");
         }
 
@@ -59,6 +61,11 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         final int L = Integer.valueOf(args[9]);
         final int K = Integer.valueOf(args[10]);
         final int C = Integer.valueOf(args[11]);
+        final int R = Integer.valueOf(args[12]);
+
+        if(L < R)
+            throw new IllegalArgumentException("Number of reducers cannot be greater" +
+                    " than number of blocking groups.");
 
         final String description1 = String.format("%s(" +
                         "alice-path : %s, alice-schema-path : %s," +
@@ -74,6 +81,7 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         final Schema aliceEncodingSchema = DatasetsUtil.loadSchemaFromFSPath(fs, aliceSchemaPath);
         final BloomFilterEncoding aliceEncoding = BloomFilterEncodingUtil.setupNewInstance(aliceEncodingSchema);
         final Schema bobEncodingSchema = DatasetsUtil.loadSchemaFromFSPath(fs, bobSchemaPath);
+        final Schema unionSchema = Schema.createUnion(Lists.newArrayList(aliceEncodingSchema, bobEncodingSchema));
         final BloomFilterEncoding bobEncoding = BloomFilterEncodingUtil.setupNewInstance(bobEncodingSchema);
         final HammingLSHBlocking blocking = new HammingLSHBlocking(L,K,aliceEncoding,bobEncoding);
 
@@ -81,27 +89,27 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         conf.set(HammingLSHBlockingMapper.ALICE_UID_KEY,aliceUidFieldName);
         conf.set(HammingLSHBlockingMapper.BOB_SCHEMA_KEY,bobEncodingSchema.toString());
         conf.set(HammingLSHBlockingMapper.BOB_UID_KEY,bobUidFieldName);
+        LOG.info("{}", Arrays.toString(blocking.groupsAsStrings()));
         conf.setStrings(HammingLSHBlockingMapper.BLOCKING_KEYS_KEY,blocking.groupsAsStrings());
-
 
         // setup job
         final Job job1 = Job.getInstance(conf);
         job1.setJarByClass(HammingLSHBlockingTool.class);
         job1.setJobName(description1);
-        job1.setNumReduceTasks(L);
-
+        job1.setNumReduceTasks(R);
 
         // setup input & Mappers
         AvroKeyInputFormat.setInputPaths(job1, alicePath,bobPath);
-        AvroJob.setInputKeySchema(job1,
-                Schema.createUnion(
-                        Lists.newArrayList(aliceEncodingSchema,bobEncodingSchema)));
+        AvroJob.setInputKeySchema(job1, unionSchema);
         job1.setInputFormatClass(AvroKeyInputFormat.class);
         job1.setMapperClass(HammingLSHBlockingMapper.class);
         job1.setMapOutputKeyClass(Text.class);
         job1.setMapOutputValueClass(Text.class);
 
+        // partitioner
+        job1.setPartitionerClass(HammingLSHBlockingPartitioner.class);
 
+        // reducers & setup output
         // todo reducer must concetrate blocks
 
 

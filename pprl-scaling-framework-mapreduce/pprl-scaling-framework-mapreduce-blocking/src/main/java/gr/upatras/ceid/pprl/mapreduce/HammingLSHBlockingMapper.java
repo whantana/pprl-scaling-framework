@@ -1,7 +1,6 @@
 package gr.upatras.ceid.pprl.mapreduce;
 
 import gr.upatras.ceid.pprl.blocking.HammingLSHBlocking;
-import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingUtil;
 import org.apache.avro.Schema;
@@ -12,9 +11,11 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.BitSet;
 
+/**
+ * Hamming LSH Blocking Mapper class.
+ */
 public class HammingLSHBlockingMapper extends Mapper<AvroKey<GenericRecord>,NullWritable,Text,Text> {
 
     private HammingLSHBlocking blocking;

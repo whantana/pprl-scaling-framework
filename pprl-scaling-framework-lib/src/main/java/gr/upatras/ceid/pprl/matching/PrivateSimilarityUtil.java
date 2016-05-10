@@ -74,6 +74,8 @@ public class PrivateSimilarityUtil {
         return (double) m[3]/((double)(m[1] + m[2] + m[3]));
     }
 
+    // TODO Rework jaccard distance to use the  byte array
+
     /**
      * Calculate the Hamming distance.
      *

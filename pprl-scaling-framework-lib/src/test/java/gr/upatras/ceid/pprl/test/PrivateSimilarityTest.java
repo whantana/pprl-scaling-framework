@@ -4,7 +4,6 @@ import gr.upatras.ceid.pprl.datasets.DatasetException;
 import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import gr.upatras.ceid.pprl.encoding.BloomFilter;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
-import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingUtil;
 import gr.upatras.ceid.pprl.encoding.CLKEncoding;
 import gr.upatras.ceid.pprl.matching.PrivateSimilarityUtil;
 import org.apache.avro.Schema;

@@ -3,32 +3,20 @@ package gr.upatras.ceid.pprl.test;
 
 import gr.upatras.ceid.pprl.blocking.BlockingException;
 import gr.upatras.ceid.pprl.blocking.HammingLSHBlocking;
-import gr.upatras.ceid.pprl.blocking.RecordIdPair;
 import gr.upatras.ceid.pprl.datasets.DatasetException;
 import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingUtil;
-import gr.upatras.ceid.pprl.encoding.CLKEncoding;
-import org.apache.avro.Schema;
-import org.apache.avro.file.DataFileReader;
-import org.apache.avro.file.DataFileWriter;
-import org.apache.avro.generic.GenericDatumReader;
-import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.AvroFSInput;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.Collections;
-import java.util.Set;
 
 public class HammingLSHBlockingTest {
     private static Logger LOG = LoggerFactory.getLogger(HammingLSHBlockingTest.class);

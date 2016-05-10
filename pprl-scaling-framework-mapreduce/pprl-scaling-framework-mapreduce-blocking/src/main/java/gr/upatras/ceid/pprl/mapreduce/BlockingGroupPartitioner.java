@@ -9,9 +9,9 @@ import org.apache.hadoop.mapreduce.Partitioner;
 import java.io.IOException;
 
 /**
- * Hamming LSH Blocking Partitioner class.
+ * Blocking Partitioner class.
  */
-public class HammingLSHBlockingPartitioner extends Partitioner<Text, Text> implements Configurable{
+public class BlockingGroupPartitioner extends Partitioner<Text, Text> implements Configurable{
 
     public static String BLOCKING_GROUP_COUNT_KEY = "blocking.groups.count";
 

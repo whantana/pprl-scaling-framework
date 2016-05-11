@@ -95,7 +95,6 @@ public class BloomFilterEncodingUtil {
             throws BloomFilterEncodingException {
         schemeNameSupported(scheme);
         try {
-            LOG.debug("New Encoding instance is {} .",scheme);
             return (BloomFilterEncoding) (SCHEMES.get(scheme).newInstance());
         } catch (InstantiationException e) {
             throw new BloomFilterEncodingException(e.getMessage());

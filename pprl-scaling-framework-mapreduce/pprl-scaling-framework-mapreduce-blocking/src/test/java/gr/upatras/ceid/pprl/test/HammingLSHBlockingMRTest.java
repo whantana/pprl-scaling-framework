@@ -24,7 +24,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.mrunit.mapreduce.MapDriver;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import org.apache.hadoop.mrunit.mapreduce.ReduceDriver;
@@ -45,15 +44,18 @@ public class HammingLSHBlockingMRTest {
     private static final Logger LOG = LoggerFactory.getLogger(HammingLSHBlockingMRTest.class);
 
 
-    private MapDriver<AvroKey<GenericRecord>, NullWritable, Text, Text> mapDriver;
+    private MapDriver<AvroKey<GenericRecord>, NullWritable, Text, Text> aliceBlockingMapperDriver;
+    private MapDriver<AvroKey<GenericRecord>, NullWritable, Text, Text> bobBlockingMapperDriver;
+
+
     private BlockingGroupPartitioner partitioner;
     private Map<Text,List<Text>>[] partitionedMapperResults;
-    private ReduceDriver<Text, Text, Text, Text>[] reduceDrivers;
 
-    private BloomFilterEncoding aliceEncoding;
+    private ReduceDriver<Text, Text, Text, Text>[] generatePairReducerDriver;
+
+    private MapReduceDriver<Text,Text,Text,IntWritable,Text,Text> findFrequentPairsMapReduceDriver;
+
     private GenericRecord[] aliceEncodedRecords;
-
-    private BloomFilterEncoding bobEncoding;
     private GenericRecord[] bobEncodedRecords;
 
     int L = 10;
@@ -63,63 +65,98 @@ public class HammingLSHBlockingMRTest {
 
     @Before
     public void setup()
-            throws IOException, DatasetException,
-            BloomFilterEncodingException, BlockingException {
-        FileSystem fs = FileSystem.get(new Configuration());
+            throws IOException, DatasetException, BloomFilterEncodingException, BlockingException {
+        final Configuration conf = new Configuration();
+        final FileSystem fs = FileSystem.get(conf);
 
-        Schema aliceEncodingSchema = DatasetsUtil.loadSchemaFromFSPath(
-                fs, new Path("data/clk_voters_a/schema/clk_voters_a.avsc"));
-        aliceEncoding = BloomFilterEncodingUtil.setupNewInstance(aliceEncodingSchema);
-        aliceEncodedRecords = DatasetsUtil.loadAvroRecordsFromFSPaths(
-                fs,20,aliceEncodingSchema, new Path("data/clk_voters_a/avro/clk_voters_a.avro"));
+        // alice encoding
+        final Schema aliceEncodingSchema = DatasetsUtil.loadSchemaFromFSPath(fs,
+                new Path("data/clk_voters_a/schema/clk_voters_a.avsc"));
+        final BloomFilterEncoding aliceEncoding =
+                BloomFilterEncodingUtil.setupNewInstance(aliceEncodingSchema);
+        aliceEncodedRecords = DatasetsUtil.loadAvroRecordsFromFSPaths(fs,20,aliceEncodingSchema,
+                new Path("data/clk_voters_a/avro/clk_voters_a.avro"));
 
-
+        // bob encoding
         Schema bobEncodingSchema = DatasetsUtil.loadSchemaFromFSPath(
                 fs, new Path("data/clk_voters_b/schema/clk_voters_b.avsc"));
-        bobEncoding = BloomFilterEncodingUtil.setupNewInstance(bobEncodingSchema);
-        bobEncodedRecords = DatasetsUtil.loadAvroRecordsFromFSPaths(
-                fs,2,bobEncodingSchema , new Path("data/clk_voters_b/avro/clk_voters_b.avro"));
+        final BloomFilterEncoding bobEncoding =
+                BloomFilterEncodingUtil.setupNewInstance(bobEncodingSchema);
+        bobEncodedRecords = DatasetsUtil.loadAvroRecordsFromFSPaths(fs,20,bobEncodingSchema,
+                new Path("data/clk_voters_b/avro/clk_voters_b.avro"));
 
-        final HammingLSHBlocking blocking = new HammingLSHBlocking(L,K,aliceEncoding,bobEncoding);
-        Schema unionSchema = Schema.createUnion(
+        // blocking instance
+        final HammingLSHBlocking blocking =
+                new HammingLSHBlocking(L,K,aliceEncoding,bobEncoding);
+
+        // union schema setup
+        final Schema unionSchema = Schema.createUnion(
                 Lists.newArrayList(aliceEncodingSchema, bobEncodingSchema));
 
+        // common conf setup
+        conf.set(HammingLSHBlockingMapper.ALICE_SCHEMA_KEY, aliceEncodingSchema.toString());
+        conf.set(HammingLSHBlockingMapper.ALICE_UID_KEY, "id");
+        conf.set(HammingLSHBlockingMapper.BOB_SCHEMA_KEY, bobEncodingSchema.toString());
+        conf.set(HammingLSHBlockingMapper.BOB_UID_KEY, "id");
+        conf.setStrings(HammingLSHBlockingMapper.BLOCKING_KEYS_KEY, blocking.groupsAsStrings());
+        conf.setInt(BlockingGroupPartitioner.BLOCKING_GROUP_COUNT_KEY,L);
+        conf.setInt("mapreduce.job.reduces",R);
+        conf.setInt(FindFrequentIdPairsReducer.FREQUENT_PAIR_LIMIT_KEY, C);
 
-        mapDriver = MapDriver.newMapDriver(new HammingLSHBlockingMapper());
-        final Configuration configuration = mapDriver.getContext().getConfiguration();
-        configuration.set(HammingLSHBlockingMapper.ALICE_SCHEMA_KEY, aliceEncodingSchema.toString());
-        configuration.set(HammingLSHBlockingMapper.ALICE_UID_KEY, "id");
-        configuration.set(HammingLSHBlockingMapper.BOB_SCHEMA_KEY, bobEncodingSchema.toString());
-        configuration.set(HammingLSHBlockingMapper.BOB_UID_KEY, "id");
-        configuration.setStrings(HammingLSHBlockingMapper.BLOCKING_KEYS_KEY,blocking.groupsAsStrings());
-        AvroSerialization.setKeyWriterSchema(configuration, unionSchema);
-        AvroSerialization.setKeyReaderSchema(configuration, unionSchema);
-        mapDriver.setOutputSerializationConfiguration(configuration);
-        AvroSerialization.addToConfiguration(configuration);
-        LOG.info("MapDriver ready.");
+        // avro conf setup
+        AvroSerialization.setKeyWriterSchema(conf, unionSchema);
+        AvroSerialization.setKeyReaderSchema(conf, unionSchema);
+        AvroSerialization.addToConfiguration(conf);
 
-        configuration.setInt(BlockingGroupPartitioner.BLOCKING_GROUP_COUNT_KEY,L);
-        configuration.setInt("mapreduce.job.reduces",R);
+        // setup alice mapper
+        aliceBlockingMapperDriver = MapDriver.newMapDriver(new HammingLSHBlockingMapper());
+        aliceBlockingMapperDriver.getConfiguration().addResource(conf);
+        aliceBlockingMapperDriver.setOutputSerializationConfiguration(conf);
+        LOG.info("MapDriver for Alice is ready.");
+
+        // setup bob mapper
+        bobBlockingMapperDriver = MapDriver.newMapDriver(new HammingLSHBlockingMapper());
+        bobBlockingMapperDriver.getConfiguration().addResource(conf);
+        bobBlockingMapperDriver.setOutputSerializationConfiguration(conf);
+        LOG.info("MapDriver for Bob is ready.");
+
+        // partitioner setup
         partitioner = new BlockingGroupPartitioner();
-        partitioner.setConf(configuration);
+        partitioner.setConf(conf);
+        LOG.info("Partioner ready.");
+
+        // reducers setup
         partitionedMapperResults = new Map[R];
-        reduceDrivers = new ReduceDriver[R];
+        generatePairReducerDriver = new ReduceDriver[R];
         for(int i = 0; i < R ; i++ ) {
-            reduceDrivers[i] = ReduceDriver.newReduceDriver(new GenerateIdPairsReducer());
-            partitionedMapperResults[i] = new TreeMap<Text,List<Text>>(
-                    WritableComparator.get(Text.class));
+            partitionedMapperResults[i] = new TreeMap<Text,List<Text>>(new Text.Comparator());
+            generatePairReducerDriver[i] = ReduceDriver.newReduceDriver(new GenerateIdPairsReducer());
+            LOG.info("GeneratePairReducerDriver " + i +" ready.");
         }
+
+        // MapReduce driver for finding frequent pairs
+        findFrequentPairsMapReduceDriver = MapReduceDriver.newMapReduceDriver(
+                new CountIdPairsMapper(),
+                new FindFrequentIdPairsReducer(),
+                new FindFrequentIdPairsCombiner());
+        findFrequentPairsMapReduceDriver.getConfiguration().addResource(conf);
+
     }
 
     @Test
     public void test1() throws IOException {
-        mapDriver.withInput(new AvroKey<GenericRecord>(bobEncodedRecords[0]), NullWritable.get());
-        mapDriver.addInput(new AvroKey<GenericRecord>(bobEncodedRecords[1]), NullWritable.get());
-        mapDriver.addInput(new AvroKey<GenericRecord>(aliceEncodedRecords[0]), NullWritable.get());
-        mapDriver.addInput(new AvroKey<GenericRecord>(aliceEncodedRecords[1]), NullWritable.get());
-        mapDriver.addInput(new AvroKey<GenericRecord>(aliceEncodedRecords[2]), NullWritable.get());
-        mapDriver.addInput(new AvroKey<GenericRecord>(aliceEncodedRecords[3]), NullWritable.get());
-        for(Pair<Text,Text> pair : mapDriver.run()) {
+        final List<Pair<Text,Text>> blockingResults = new ArrayList<Pair<Text,Text>>();
+        aliceBlockingMapperDriver.addInput(new AvroKey<GenericRecord>(bobEncodedRecords[0]), NullWritable.get());
+        aliceBlockingMapperDriver.addInput(new AvroKey<GenericRecord>(bobEncodedRecords[1]), NullWritable.get());
+        blockingResults.addAll(aliceBlockingMapperDriver.run());
+
+        bobBlockingMapperDriver.addInput(new AvroKey<GenericRecord>(aliceEncodedRecords[0]), NullWritable.get());
+        bobBlockingMapperDriver.addInput(new AvroKey<GenericRecord>(aliceEncodedRecords[1]), NullWritable.get());
+        bobBlockingMapperDriver.addInput(new AvroKey<GenericRecord>(aliceEncodedRecords[2]), NullWritable.get());
+        bobBlockingMapperDriver.addInput(new AvroKey<GenericRecord>(aliceEncodedRecords[3]), NullWritable.get());
+        blockingResults.addAll(bobBlockingMapperDriver.run());
+
+        for(Pair<Text,Text> pair : blockingResults) {
             final Text key = pair.getFirst();
             final Text value = pair.getSecond();
             final int partition = partitioner.getPartition(key,value,R);
@@ -134,9 +171,9 @@ public class HammingLSHBlockingMRTest {
             Map<Text,List<Text>> map = partitionedMapperResults[i];
             for(Map.Entry<Text,List<Text>> entry : map.entrySet()) {
                 LOG.info("\t {} : {}",entry.getKey(),entry.getValue().toString());
-                reduceDrivers[i].addInput(entry.getKey(),entry.getValue());
+                generatePairReducerDriver[i].addInput(entry.getKey(), entry.getValue());
             }
-            reducersResults[i] = reduceDrivers[i].run();
+            reducersResults[i] = generatePairReducerDriver[i].run();
         }
 
         List<Pair<Text,Text>> allPairs = new ArrayList<Pair<Text, Text>>();
@@ -150,15 +187,10 @@ public class HammingLSHBlockingMRTest {
         LOG.info("All pairs size : " + allPairs.size());
 
 
-        final MapReduceDriver<Text,Text,Text,IntWritable,Text,Text> mapReduceDriver =
-                MapReduceDriver.newMapReduceDriver(
-                        new CountIdPairsMapper(),
-                        new FindFrequentIdPairsReducer(),
-                        new FindFrequentIdPairsCombiner());
-        mapReduceDriver.getConfiguration().setInt(FindFrequentIdPairsReducer.FREQUENT_PAIR_LIMIT_KEY,C);
+
         for (Pair<Text,Text> in : allPairs)
-            mapReduceDriver.addInput(in);
-        List<Pair<Text,Text>> frequentPairs = mapReduceDriver.run();
+            findFrequentPairsMapReduceDriver.addInput(in);
+        List<Pair<Text,Text>> frequentPairs = findFrequentPairsMapReduceDriver.run();
         LOG.info("Frequent pairs : ");
         for(Pair<Text, Text> keyValue : frequentPairs) {
             LOG.info("pair = {}", keyValue.toString());

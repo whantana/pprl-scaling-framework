@@ -280,6 +280,42 @@ public class HammingLSHBlocking {
     }
 
     /**
+     * Return alice encoding name.
+     *
+     * @return alice encoding name.
+     */
+    public String getAliceEncodingName() {
+        return aliceEncodingName;
+    }
+
+    /**
+     * Return bob encoding name.
+     *
+     * @return bob encoding name.
+     */
+    public String getBobEncodingName() {
+        return bobEncodingName;
+    }
+
+    /**
+     * Return alice encoding field name
+     *
+     * @return alice encoding field name
+     */
+    public String getAliceEncodingFieldName() {
+        return aliceEncodingFieldName;
+    }
+
+    /**
+     * Return bob encoding field name
+     *
+     * @return bob encoding field name
+     */
+    public String getBobEncodingFieldName() {
+        return bobEncodingFieldName;
+    }
+
+    /**
      * Setup blocking.
      *
      * @param aliceEncoding A-lice encoding.

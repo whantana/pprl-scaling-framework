@@ -1,6 +1,5 @@
 package gr.upatras.ceid.pprl.test;
 
-import avro.shaded.com.google.common.collect.Lists;
 import gr.upatras.ceid.pprl.datasets.DatasetException;
 import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import org.apache.avro.Schema;

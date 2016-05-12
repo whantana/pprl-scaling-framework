@@ -49,7 +49,7 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
                     "<bob-avro-path> <bob-schema-path> <bob-uid-fieldname> " +
                     "<all-pairs-path> <frequent-pair-path> <matched-pairs-path>" +
                     "<number-of-blocks> <number-of-hashes> <frequent-pair-collision-limit> " +
-                    "<number-of-reducers>");
+                    "<number-of-reducers>");                                                 // TODO pass threshold and method name
             throw new IllegalArgumentException("Invalid number of arguments.");
         }
 
@@ -84,11 +84,11 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         final BloomFilterEncoding bobEncoding = BloomFilterEncodingUtil.setupNewInstance(bobEncodingSchema);
         final HammingLSHBlocking blocking = new HammingLSHBlocking(L,K,aliceEncoding,bobEncoding);
 
-        conf.set(HammingLSHBlockingMapper.ALICE_SCHEMA_KEY,aliceEncodingSchema.toString());
-        conf.set(HammingLSHBlockingMapper.ALICE_UID_KEY,aliceUidFieldName);
-        conf.set(HammingLSHBlockingMapper.BOB_SCHEMA_KEY,bobEncodingSchema.toString());
-        conf.set(HammingLSHBlockingMapper.BOB_UID_KEY,bobUidFieldName);
-        conf.setStrings(HammingLSHBlockingMapper.BLOCKING_KEYS_KEY,blocking.groupsAsStrings());
+        conf.set(CommonKeys.ALICE_SCHEMA_KEY,aliceEncodingSchema.toString());
+        conf.set(CommonKeys.ALICE_UID_KEY,aliceUidFieldName);
+        conf.set(CommonKeys.BOB_SCHEMA_KEY,bobEncodingSchema.toString());
+        conf.set(CommonKeys.BOB_UID_KEY,bobUidFieldName);
+        conf.setStrings(CommonKeys.BLOCKING_KEYS_KEY,blocking.groupsAsStrings());
 
         // setup job1
         final String description1 = String.format("%s(" +
@@ -131,31 +131,36 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         // run job 1
         final boolean job1Success = job1.waitForCompletion(true);
         if(!job1Success) {
-            LOG.error("First job not successful");
+            LOG.error("Job \"{}\"not successful",JOB_1_DESCRIPTION);
             return 1;
         }
-        for(Counter c : job1.getCounters().getGroup(GenerateIdPairsReducer.COUNTER_GROUP_NAME))
-            LOG.info("{} : {}",c.getDisplayName(),c.getValue());
+        LOG.info("Counters : ");
+        for(Counter c : job1.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME))
+            LOG.info("\t{} : {}",c.getDisplayName(),c.getValue());
 
         // setup job2
-        conf.setInt(FindFrequentIdPairsReducer.FREQUENT_PAIR_LIMIT_KEY, C);
+        conf.setInt(CommonKeys.FREQUENT_PAIR_LIMIT_KEY, C);
         final String description2 = String.format("%s(" +
-                        "all-pairs-path : %s, C: %d, R : %d)",
+                        "all-pairs-path : %s, frequent-pairs-path : %s," +
+                        " C: %d, R : %d)",
                 JOB_2_DESCRIPTION,
-                shortenUrl(allPairsPath.toString()), C, R);
+                shortenUrl(allPairsPath.toString()),
+                shortenUrl(frequentPairsPath.toString()),
+                C, R);
         LOG.info("Running.2 : {}",description2);
         final Job job2 = Job.getInstance(conf);
         job2.setJarByClass(HammingLSHBlockingTool.class);
         job2.setJobName(description2);
         job2.setNumReduceTasks(R);
 
-        // setup input & Mappers
+        // setup input & mappers
         SequenceFileInputFormat.setInputPaths(job2, allPairsPath);
         job2.setInputFormatClass(SequenceFileInputFormat.class);
-
         job2.setMapperClass(CountIdPairsMapper.class);
         job2.setMapOutputKeyClass(Text.class);
         job2.setMapOutputValueClass(IntWritable.class);
+
+        // setup combiner
         job2.setCombinerClass(FindFrequentIdPairsCombiner.class);
 
         // reducers & setup output
@@ -171,13 +176,61 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         // run job 2
         final boolean job2Success = job2.waitForCompletion(true);
         if(!job2Success) {
-            LOG.error("Second job not successful");
+            LOG.error("Job \"{}\"not successful",JOB_2_DESCRIPTION);
             return 1;
         }
+//        LOG.info("Counters : ");
+//        for(Counter c : job2.getCounters().getGroup(FindFrequentIdPairsReducer.COUNTER_GROUP_NAME))
+//            LOG.info("\t{} : {}",c.getDisplayName(),c.getValue()); // TODO How many frequent pairs
 
-        // todo job3
+        // setup job3
+        final String description3 = String.format("%s(" +
+                        "alice-path : %s, alice-schema-path : %s," +
+                        "bob-path : %s, bob-schema-path : %s," +
+                        "frequent-pairs-path: %s, matched-pairs-path : %s," +
+                        " R : %d)",
+                JOB_3_DESCRIPTION,
+                shortenUrl(alicePath.toString()), shortenUrl(aliceSchemaPath.toString()),
+                shortenUrl(bobPath.toString()), shortenUrl(bobSchemaPath.toString()),
+                shortenUrl(frequentPairsPath.toString()), shortenUrl(matchedPairsPath.toString()),R);
+        LOG.info("Running.3 : {}",description3);
+        final Job job3 = Job.getInstance(conf);
+        job3.setJarByClass(HammingLSHBlockingTool.class);
+        job3.setJobName(description3);
+        job3.setNumReduceTasks(R);
+
+        // setup  cache
+        FormRecordPairsMapper.addFrequentPairsToCache(job3, fs, frequentPairsPath);
+
+        // setup input & mappers
+        AvroKeyInputFormat.setInputPaths(job3, alicePath,bobPath);
+        AvroJob.setInputKeySchema(job3, unionSchema);
+        job3.setInputFormatClass(AvroKeyInputFormat.class);
+        job3.setMapperClass(FormRecordPairsMapper.class);
+        job3.setMapOutputKeyClass(Text.class);
+        AvroJob.setMapOutputValueSchema(job3,unionSchema);
+
+        // reducers & setup output
+        job3.setReducerClass(PrivateSimilarityReducer.class);
+        job3.setOutputFormatClass(SequenceFileOutputFormat.class);
+        job3.setOutputKeyClass(Text.class);
+        job3.setOutputValueClass(Text.class);
+        SequenceFileOutputFormat.setCompressOutput(job3,true);
+        SequenceFileOutputFormat.setOutputCompressionType(job3,
+                SequenceFile.CompressionType.NONE);
+        SequenceFileOutputFormat.setOutputPath(job3,allPairsPath);
 
 
+        final boolean job3Success = job2.waitForCompletion(true);
+        if(!job3Success) {
+            LOG.error("Job \"{}\"not successful",JOB_2_DESCRIPTION);
+            return 1;
+        }
+//        LOG.info("Counters : ");
+//        for(Counter c : job3.getCounters().getGroup(FindFrequentIdPairsReducer.COUNTER_GROUP_NAME))
+//            LOG.info("\t{} : {}",c.getDisplayName(),c.getValue()); // TODO How many matched pairs
+
+        LOG.info("All jobs are succesfull. See \"{}\" for the matched pairs list.", matchedPairsPath);
         return 0;
     }
 

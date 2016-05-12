@@ -82,6 +82,9 @@ public class CLKEncoding extends BloomFilterEncoding {
         return N[0];
     }
 
+    @Override
+    public int getBFN() { return getCLKN();}
+
     /**
      * Setup source field (selected field names) to return encoding fields.
      *

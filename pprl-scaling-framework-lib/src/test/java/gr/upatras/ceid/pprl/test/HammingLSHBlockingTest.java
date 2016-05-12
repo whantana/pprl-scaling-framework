@@ -44,7 +44,7 @@ public class HammingLSHBlockingTest {
 
         blocking.initialize();
         final HammingLSHBlocking.HammingLSHBlockingResult result =
-                blocking.runFPS(recordsA,recordsB,C,hammingThreshold);
+                blocking.runFPS(recordsA,recordsB,C,"hamming",hammingThreshold);
         LOG.info("Matched pairs list size : {}", result.getMatchedPairsCount());
         LOG.info("Frequent pairs list size : {}", result.getFrequentPairsCount());
     }

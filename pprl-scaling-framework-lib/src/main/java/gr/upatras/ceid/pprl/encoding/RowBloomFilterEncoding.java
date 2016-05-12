@@ -164,6 +164,9 @@ public class RowBloomFilterEncoding extends FieldBloomFilterEncoding {
         return N[N.length - 1];
     }
 
+    @Override
+    public int getBFN() { return getRBFN();}
+
     /**
      * Initializes encoding (makes it ready to encode records).
      *

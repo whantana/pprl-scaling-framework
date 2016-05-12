@@ -159,6 +159,13 @@ public abstract class BloomFilterEncoding {
     }
 
     /**
+     * Returns size of the encoding field bloom filter.
+     *
+     * @return size of the encoding field bloom filter.
+     */
+    public abstract int getBFN();
+
+    /**
      * Returns scheme name.
      *
      * @return scheme name.

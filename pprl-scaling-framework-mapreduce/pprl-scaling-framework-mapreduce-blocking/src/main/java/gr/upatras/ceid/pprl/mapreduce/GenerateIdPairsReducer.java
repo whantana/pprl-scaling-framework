@@ -15,10 +15,6 @@ import java.util.Queue;
  */
 public class GenerateIdPairsReducer extends Reducer<Text,Text,Text,Text> {
 
-    public static final String COUNTER_GROUP_NAME = "HammingLSHBlocking Counters";
-    public static final String TOTAL_PAIR_COUNTER_KEY = "total.pairs";
-    public static final String PAIR_PER_BLOCKING_GROUP_COUNTER_KEY = "group.pairs";
-
     private final Queue<Text> keyQ = new LinkedList<Text>();
     private final Queue<List<Text>> valQ = new LinkedList<List<Text>>();
 
@@ -74,10 +70,10 @@ public class GenerateIdPairsReducer extends Reducer<Text,Text,Text,Text> {
 
     private static void increacePerBlockingGroupCounter(final Text t, final Context context, long value) {
         final String s = t.toString().substring(0,t.toString().indexOf('_'));
-        context.getCounter(COUNTER_GROUP_NAME,s + "." + PAIR_PER_BLOCKING_GROUP_COUNTER_KEY).increment(value);
+        context.getCounter(CommonKeys.COUNTER_GROUP_NAME,s + "." + CommonKeys.PAIR_PER_BLOCKING_GROUP_COUNTER_KEY).increment(value);
     }
 
     private static void increaseTotalPairCounter(final Context context, long value) {
-        context.getCounter(COUNTER_GROUP_NAME,TOTAL_PAIR_COUNTER_KEY).increment(value);
+        context.getCounter(CommonKeys.COUNTER_GROUP_NAME, CommonKeys.TOTAL_PAIR_COUNTER_KEY).increment(value);
     }
 }

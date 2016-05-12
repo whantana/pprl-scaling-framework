@@ -34,7 +34,8 @@ public class GenerateRecordPairsMapper extends Mapper<AvroKey<GenericRecord>, Nu
     @Override
     protected void map(AvroKey<GenericRecord> key, NullWritable value, Context context) throws IOException, InterruptedException {
         GenericRecord record = key.datum();
-        AvroValue<GenericRecord> avroValue = new AvroValue<GenericRecord>(record); // TODO Cut down to necessary values
+        AvroValue<GenericRecord> avroValue = new AvroValue<GenericRecord>(record); // TODO Cut down to necessary values (and writables)
+        // TODO A non counter implementation with 1 reducer and .properties format
 
         int keyInt = Integer.parseInt(String.valueOf(record.get(uidFieldName)));
 

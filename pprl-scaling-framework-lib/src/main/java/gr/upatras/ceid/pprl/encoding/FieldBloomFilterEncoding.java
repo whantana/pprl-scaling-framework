@@ -310,6 +310,9 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
         return bfN;
     }
 
+    @Override
+    public int getBFN() { return getFBFN(); }
+
     /**
      * Returns an integer array filled with N (single static size for all fbfs).
      *

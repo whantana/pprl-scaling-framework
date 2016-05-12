@@ -98,8 +98,10 @@ public class ExhaustiveRecordPairSimilarityTool extends Configured implements To
         job.setMapOutputKeyClass(LongWritable.class);
         AvroJob.setMapOutputValueSchema(job,inputSchema);
 
-        // setup combiners and reducers
+        // setup combiners
         job.setCombinerClass(RecordPairSimilarityCombiner.class);
+
+        // setup reducers
         job.setReducerClass(RecordPairSimilarityReducer.class);
 
         // set ouput

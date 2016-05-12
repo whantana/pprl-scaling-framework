@@ -4,9 +4,6 @@ import gr.upatras.ceid.pprl.encoding.BloomFilter;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingUtil;
-import gr.upatras.ceid.pprl.encoding.CLKEncoding;
-import gr.upatras.ceid.pprl.encoding.FieldBloomFilterEncoding;
-import gr.upatras.ceid.pprl.encoding.RowBloomFilterEncoding;
 import gr.upatras.ceid.pprl.matching.PrivateSimilarityUtil;
 import org.apache.avro.generic.GenericRecord;
 
@@ -44,7 +41,7 @@ public class HammingLSHBlocking {
      * Constructor.
      *
      * @param L number of blocking groups.
-     * @param K number of K
+     * @param K number of hash functions.
      * @param aliceEncoding alice encoding.
      * @param bobEncoding bob encoding.
      * @throws BlockingException
@@ -54,6 +51,37 @@ public class HammingLSHBlocking {
                               final BloomFilterEncoding bobEncoding)
             throws BlockingException {
         setup(aliceEncoding, bobEncoding);
+        this.L = L;
+        this.K = K;
+        blockingGroups = new HammingLSHBlockingGroup[L];
+        for (int i = 0; i < L; i++)
+            blockingGroups[i] = new HammingLSHBlockingGroup(String.format("Block#%d", i), K, N);
+    }
+
+    /**
+     * Constructor
+     *
+     * @param L number of blocking groups.
+     * @param K number of hash functions.
+     * @param N number of bits in bloom filter encoding.
+     * @param aliceEncodingName  alice encoding schema name.
+     * @param aliceEncodingFieldName alice encoding field name.
+     * @param bobEncodingName bob encoding schema name.
+     * @param bobEncodingFieldName bob encoding field name.
+     * @throws BlockingException
+     */
+    public HammingLSHBlocking(final int L, final int K,
+                              final int N,
+                              final String aliceEncodingName,
+                              final String aliceEncodingFieldName,
+                              final String bobEncodingName,
+                              final String bobEncodingFieldName)
+            throws BlockingException {
+        this.aliceEncodingName = aliceEncodingName;
+        this.bobEncodingName = bobEncodingName;
+        this.aliceEncodingFieldName = aliceEncodingFieldName;
+        this.bobEncodingFieldName = bobEncodingFieldName;
+        this.N = N;
         this.L = L;
         this.K = K;
         blockingGroups = new HammingLSHBlockingGroup[L];
@@ -88,6 +116,43 @@ public class HammingLSHBlocking {
     }
 
     /**
+     * Constructor.
+     *
+     * @param blockingKeys string representation of blocking keys.
+     * @param N number of bits in bloom filter encoding.
+     * @param aliceEncodingName  alice encoding schema name.
+     * @param aliceEncodingFieldName alice encoding field name.
+     * @param bobEncodingName bob encoding schema name.
+     * @param bobEncodingFieldName bob encoding field name.
+     * @throws BlockingException
+     */
+    public HammingLSHBlocking(final String[] blockingKeys,
+                              final int N,
+                              final String aliceEncodingName,
+                              final String aliceEncodingFieldName,
+                              final String bobEncodingName,
+                              final String bobEncodingFieldName)
+            throws BlockingException {
+        this.N = N;
+        this.aliceEncodingName = aliceEncodingName;
+        this.bobEncodingName = bobEncodingName;
+        this.aliceEncodingFieldName = aliceEncodingFieldName;
+        this.bobEncodingFieldName = bobEncodingFieldName;
+        L = blockingKeys.length;
+        blockingGroups = new HammingLSHBlockingGroup[blockingKeys.length];
+        for (int i = 0; i < blockingKeys.length; i++) {
+            String[] parts = blockingKeys[i].split(" ");
+            if(K == 0) K = parts.length - 1;
+            else assert K ==parts.length - 1;
+            Integer[] bits = new Integer[parts.length - 1];
+            for (int j = 0; j < (parts.length - 1); j++)
+                bits[j] = Integer.valueOf(parts[j+1]);
+            final String id = parts[0];
+            blockingGroups[i] = new HammingLSHBlockingGroup(id,bits);
+        }
+    }
+
+    /**
      * Initialization method.
      */
     public void initialize() {
@@ -104,6 +169,7 @@ public class HammingLSHBlocking {
      * @param aliceRecords alice records.
      * @param bobRecords bob records.
      * @param C collision limit ( if >= C a pair is frequent).
+     * @param similarityMethodName private similarity method name (supported hamming,jaccard,dice).
      * @param threshold hamming threshold for matching.
      * @return Matched record pair list.
      * @throws BlockingException
@@ -111,6 +177,7 @@ public class HammingLSHBlocking {
     public HammingLSHBlockingResult runFPS(final GenericRecord[] aliceRecords,
                                            final GenericRecord[] bobRecords,
                                            final int C,
+                                           final String similarityMethodName,
                                            final int threshold) throws BlockingException {
         if(bobBuckets == null) throw new BlockingException("FPS : Blocking buckets not initialized");
         // hash bob records into the buckets.
@@ -146,7 +213,7 @@ public class HammingLSHBlocking {
                                 aliceEncodingFieldName, N);
                         final BloomFilter bf2 = BloomFilterEncodingUtil.retrieveBloomFilter(bobRecords[bid],
                                 bobEncodingFieldName, N);
-                        if(PrivateSimilarityUtil.similarity("hamming",bf1,bf2, threshold)) {
+                        if(PrivateSimilarityUtil.similarity(similarityMethodName,bf1,bf2, threshold)) {
                             mathcedPairs.add(new RecordIdPair(aid, bid));
                             matchedPairsCount++;
                         }
@@ -340,17 +407,9 @@ public class HammingLSHBlocking {
         aliceEncodingFieldName = aliceEncoding.getEncodingFieldName();
         bobEncodingFieldName = bobEncoding.getEncodingFieldName();
 
-        int aliceN,bobN;
-        if(schemeName.equals("CLK")) {
-            aliceN = ((CLKEncoding)aliceEncoding).getCLKN();
-            bobN = ((CLKEncoding)bobEncoding).getCLKN();
-        } else if(schemeName.equals("RBF")) {
-            aliceN = ((RowBloomFilterEncoding) aliceEncoding).getRBFN();
-            bobN = ((RowBloomFilterEncoding)bobEncoding).getRBFN();
-        } else {
-            aliceN = ((FieldBloomFilterEncoding) aliceEncoding).getFBFN();
-            bobN = ((FieldBloomFilterEncoding)bobEncoding).getFBFN();
-        }
+        int aliceN = aliceEncoding.getBFN();
+        int bobN = bobEncoding.getBFN();
+
         if(aliceN != bobN) throw new BlockingException("Encodings total bloom filter length is different.");
 
         N = aliceN;

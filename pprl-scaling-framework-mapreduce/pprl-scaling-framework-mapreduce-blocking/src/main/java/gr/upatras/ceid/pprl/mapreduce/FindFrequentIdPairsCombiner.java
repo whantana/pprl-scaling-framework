@@ -14,7 +14,7 @@ public class FindFrequentIdPairsCombiner extends Reducer<Text,IntWritable,Text,I
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
-        C = context.getConfiguration().getInt(FindFrequentIdPairsReducer.FREQUENT_PAIR_LIMIT_KEY, -1);
+        C = context.getConfiguration().getInt(CommonKeys.FREQUENT_PAIR_LIMIT_KEY, -1);
         if(C < 0) throw new InterruptedException("C is not set.");
     }
 

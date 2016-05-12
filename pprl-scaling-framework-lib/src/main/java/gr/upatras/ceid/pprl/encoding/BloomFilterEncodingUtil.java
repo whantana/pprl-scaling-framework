@@ -348,8 +348,8 @@ public class BloomFilterEncodingUtil {
      * @return a <code>BloomFilter</code> instance
      */
     public static BloomFilter retrieveBloomFilter(final GenericRecord record,
-                                                   final String encodingFieldName,
-                                                   int N) {
+                                                  final String encodingFieldName,
+                                                  int N) {
         GenericData.Fixed fixed = (GenericData.Fixed) record.get(encodingFieldName);
         return new BloomFilter(N,fixed.bytes());
     }

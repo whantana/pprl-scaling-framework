@@ -13,15 +13,13 @@ import java.io.IOException;
  */
 public class BlockingGroupPartitioner extends Partitioner<Text, Text> implements Configurable{
 
-    public static String BLOCKING_GROUP_COUNT_KEY = "blocking.groups.count";
-
     private Configuration configuration;
     private int L;
     private int R;
 
     public void setConf(Configuration configuration) {
         this.configuration = configuration;
-        L = configuration.getInt(BLOCKING_GROUP_COUNT_KEY,-1);
+        L = configuration.getInt(CommonKeys.BLOCKING_GROUP_COUNT_KEY,-1);
         try {
             Job job = new Job(this.configuration);
             R = job.getNumReduceTasks();

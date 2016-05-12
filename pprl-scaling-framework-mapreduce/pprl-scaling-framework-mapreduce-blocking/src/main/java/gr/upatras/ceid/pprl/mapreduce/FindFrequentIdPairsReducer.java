@@ -11,12 +11,11 @@ import java.io.IOException;
  * Find frequent id pair reducer class.
  */
 public class FindFrequentIdPairsReducer extends Reducer<Text,IntWritable,Text,Text> {
-    public static final String FREQUENT_PAIR_LIMIT_KEY = "frequent.pair.limit";
     private int C;
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
-        C = context.getConfiguration().getInt(FREQUENT_PAIR_LIMIT_KEY, -1);
+        C = context.getConfiguration().getInt(CommonKeys.FREQUENT_PAIR_LIMIT_KEY, -1);
         if(C < 0) throw new InterruptedException("C is not set.");
     }
 
@@ -27,7 +26,7 @@ public class FindFrequentIdPairsReducer extends Reducer<Text,IntWritable,Text,Te
             sum += v.get();
             System.out.println(key + " " + sum);
             if(v.get() >= C || sum >= C) {
-                String[] splitKeys = key.toString().split(CountIdPairsMapper.KEYS_DELIMITER);
+                String[] splitKeys = key.toString().split(CommonKeys.RECORD_PAIR_DELIMITER);
                 context.write(new Text(splitKeys[0]),new Text(splitKeys[1]));
                 return;
             }

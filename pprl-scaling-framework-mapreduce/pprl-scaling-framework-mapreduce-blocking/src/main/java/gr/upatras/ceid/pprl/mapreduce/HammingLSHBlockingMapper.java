@@ -23,12 +23,6 @@ public class HammingLSHBlockingMapper extends Mapper<AvroKey<GenericRecord>,Null
     private String encodingFieldName;
     private String keyFormat;
 
-    public static String ALICE_SCHEMA_KEY = "alice.encoding.schema";
-    public static String BOB_SCHEMA_KEY = "bob.encoding.schema";
-    public static String BLOCKING_KEYS_KEY = "blocking.keys";
-    public static String ALICE_UID_KEY = "alice.uid.field.name";
-    public static String BOB_UID_KEY = "bob.uid.field.name";
-
     @Override
     protected void map(AvroKey<GenericRecord> key, NullWritable value, Context context)
             throws IOException, InterruptedException {
@@ -42,6 +36,21 @@ public class HammingLSHBlockingMapper extends Mapper<AvroKey<GenericRecord>,Null
         }
     }
 
+    @Override
+    public void run(Context context) throws IOException, InterruptedException {
+        setupBlocking(context);
+        context.nextKeyValue();
+        final Schema s = context.getCurrentKey().datum().getSchema();
+        setupMapper(s,context);
+        try {
+            do {
+                map(context.getCurrentKey(), context.getCurrentValue(), context);
+            } while (context.nextKeyValue());
+        } finally {
+            cleanup(context);
+        }
+    }
+
     /**
      * Setup blocking instance.
      *
@@ -50,11 +59,11 @@ public class HammingLSHBlockingMapper extends Mapper<AvroKey<GenericRecord>,Null
      */
     private void setupBlocking(final Context context) throws InterruptedException {
         try {
-            final String aliceSchemaString = context.getConfiguration().get(ALICE_SCHEMA_KEY);
+            final String aliceSchemaString = context.getConfiguration().get(CommonKeys.ALICE_SCHEMA_KEY);
             if (aliceSchemaString == null) throw new IllegalStateException("Alice schema not set.");
-            final String bobSchemaString = context.getConfiguration().get(BOB_SCHEMA_KEY);
+            final String bobSchemaString = context.getConfiguration().get(CommonKeys.BOB_SCHEMA_KEY);
             if (bobSchemaString == null) throw new IllegalStateException("Bob schema not set.");
-            final String[] blockingKeys = context.getConfiguration().getStrings(BLOCKING_KEYS_KEY, null);
+            final String[] blockingKeys = context.getConfiguration().getStrings(CommonKeys.BLOCKING_KEYS_KEY, null);
             if (blockingKeys == null) throw new IllegalStateException("Blocking keys not set.");
             BloomFilterEncoding aliceEncoding = BloomFilterEncodingUtil.setupNewInstance(
                     ((new Schema.Parser()).parse(aliceSchemaString)));
@@ -73,32 +82,22 @@ public class HammingLSHBlockingMapper extends Mapper<AvroKey<GenericRecord>,Null
     private void setupMapper(final Schema schema,final Context context) {
         if(schema.getName().equals(blocking.getAliceEncodingName())){
             encodingFieldName = blocking.getAliceEncodingFieldName();
-            uidFieldName = context.getConfiguration().get(ALICE_UID_KEY);
+            uidFieldName = context.getConfiguration().get(CommonKeys.ALICE_UID_KEY);
             keyFormat = "%05d_%s_A";
         } else if(schema.getName().equals(blocking.getBobEncodingName())){
-            encodingFieldName = blocking.getAliceEncodingFieldName();
-            uidFieldName = context.getConfiguration().get(BOB_UID_KEY);
+            encodingFieldName = blocking.getBobEncodingFieldName();
+            uidFieldName = context.getConfiguration().get(CommonKeys.BOB_UID_KEY);
             keyFormat = "%05d_%s_B";
         } else throw new IllegalStateException("Unknown schema name : " + schema.getName());
         if(uidFieldName == null) throw new IllegalStateException("UID field name not set.");
-
     }
 
-    @Override
-    public void run(Context context) throws IOException, InterruptedException {
-        setupBlocking(context);
-        context.nextKeyValue();
-        final Schema s = context.getCurrentKey().datum().getSchema();
-        setupMapper(s,context);
-        try {
-            do {
-                map(context.getCurrentKey(), context.getCurrentValue(), context);
-            } while (context.nextKeyValue());
-        } finally {
-            cleanup(context);
-        }
-    }
-
+    /**
+     * Turns a bucket key (bitset) to a string.
+     * @param bitSet bitset key.
+     * @param K number of bits.
+     * @return string representation of a key
+     */
     private static String keyToString(final BitSet bitSet,int K) {
         StringBuilder sb = new StringBuilder();
         for (int i = K; i >= 0; i--)

@@ -6,6 +6,7 @@ import info.debatty.java.stringsimilarity.Jaccard;
 import info.debatty.java.stringsimilarity.JaroWinkler;
 import org.apache.avro.generic.GenericRecord;
 
+import java.util.Arrays;
 import java.util.Iterator;
 
 /**
@@ -20,6 +21,16 @@ public class SimilarityUtil {
             "exact"
     };
     public static final String DEFAULT_SIMILARITY_METHOD_NAME = SIMILARITY_METHOD_NAMES[0]; // Default method.
+
+    /**
+     * Does nothing if method name is supported, throws exception othewise.
+     *
+     * @param name method name.
+     */
+    public static void methodNameSupported(final String name) {
+        if(!Arrays.asList(SIMILARITY_METHOD_NAMES).contains(name))
+            throw new UnsupportedOperationException("Method name \"" + name +"\" does not belong in available methods.");
+    }
 
     /**
      * Returns true if calculated string similarity between two strings s1,s2 is above a certain

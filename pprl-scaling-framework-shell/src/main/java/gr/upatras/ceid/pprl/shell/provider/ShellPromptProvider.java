@@ -21,7 +21,7 @@ public class ShellPromptProvider extends DefaultPromptProvider {
 
     @Override
     public String getPrompt() {
-        return String.format("%s.%s $ ",
+        return String.format("%s.%s ## ",
                 username,
                 userDirectory.substring(userDirectory.lastIndexOf(File.separatorChar)));
     }

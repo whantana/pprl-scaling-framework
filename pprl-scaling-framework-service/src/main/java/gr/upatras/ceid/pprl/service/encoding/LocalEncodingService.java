@@ -36,10 +36,10 @@ public class LocalEncodingService implements InitializingBean {
             LOG.info("Encoding scheme \"{}\" ready to encode.",encoding);
             LOG.info("Record count : {}",records.length);
             final GenericRecord[] encodedRecords = new GenericRecord[records.length];
-            for (int i = 0; i < records.length; i++) {
-                LOG.info("Encoding Records ({}/{})",i+1,records.length);
+
+            for (int i = 0; i < records.length; i++)
                 encodedRecords[i] = encoding.encodeRecord(records[i]);
-            }
+
             return encodedRecords;
         } catch (BloomFilterEncodingException e) {
             LOG.error(e.getMessage());

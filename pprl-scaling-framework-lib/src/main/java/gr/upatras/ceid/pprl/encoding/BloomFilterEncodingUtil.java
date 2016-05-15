@@ -42,12 +42,10 @@ public class BloomFilterEncodingUtil {
      * Does nothing if scheme name is supported, throws exception othewise.
      *
      * @param scheme encoding scheme name.
-     * @throws BloomFilterEncodingException
      */
-    public static void schemeNameSupported(final String scheme)
-            throws BloomFilterEncodingException {
+    public static void schemeNameSupported(final String scheme) {
         if(!SCHEME_NAMES.contains(scheme))
-            throw new BloomFilterEncodingException("String \"" + scheme +"\" does not belong in available schemes.");
+            throw new UnsupportedOperationException("Scheme name \"" + scheme +"\" does not belong in available schemes.");
     }
 
     /**
@@ -320,7 +318,7 @@ public class BloomFilterEncodingUtil {
         final List<Schema.Field> encodingFields = new ArrayList<Schema.Field>();
 
         for (Schema.Field existingField : existingSchema.getFields()) {
-            if(existingField.name().startsWith("encoding.field")) {
+            if(existingField.name().startsWith(BloomFilterEncoding.ENCODING_FIELD_PREFIX)) {
                 String encodingFieldName = existingField.name();
                 for (int i = 0; i < existingFieldNames.length; i++) {
                     final String toReplace = BloomFilterEncoding.FIELD_DELIMITER + existingFieldNames[i];

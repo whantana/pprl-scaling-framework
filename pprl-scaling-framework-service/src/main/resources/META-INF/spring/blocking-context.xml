@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:hdp="http://www.springframework.org/schema/hadoop"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/hadoop http://www.springframework.org/schema/hadoop/spring-hadoop.xsd">
+
+    <context:property-placeholder location="build.properties"/>
+
+    <hdp:tool-runner id="hammingLshBlockingToolRunner"
+                     configuration-ref="hadoopConfiguration"
+                     jar="file://${app.repo}/pprl-scaling-framework-mapreduce-blocking-${build.version}.jar"
+                     tool-class="gr.upatras.ceid.pprl.mapreduce.EncodingTool"
+                     close-fs="false"
+                     libs="file://${app.repo}/avro-${avro.version}.jar,
+						   file://${app.repo}/avro-mapred-${avro.version}-hadoop2.jar,
+                           file://${app.repo}/pprl-scaling-framework-lib-${build.version}.jar"/>
+
+    <!-- component scan on service package-->
+    <context:component-scan base-package="gr.upatras.ceid.pprl.service.blocking.config" />
+
+</beans>

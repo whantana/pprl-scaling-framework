@@ -11,5 +11,5 @@
     <bean id="localDatasetsService" class="gr.upatras.ceid.pprl.service.datasets.LocalDatasetsService"/>
     <bean id="localEncodingService" class="gr.upatras.ceid.pprl.service.encoding.LocalEncodingService"/>
     <bean id="localMatchingService" class="gr.upatras.ceid.pprl.service.matching.LocalMatchingService"/>
-
+    <bean id="localBlockingService" class="gr.upatras.ceid.pprl.service.blocking.LocalBlockingService"/>
 </beans>

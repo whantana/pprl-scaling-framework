@@ -340,6 +340,29 @@ public class LocalDatasetsService implements InitializingBean {
     /**
      * Save dataset statistics
      *
+     * @param statsPath statistics report file path.
+     * @param statistics a <code>DatasetStatistics</code> instance.
+     * @throws IOException
+     * @throws DatasetException
+     */
+    public void saveStats(final Path statsPath,
+                          final DatasetStatistics statistics)
+        throws IOException, DatasetException{
+        try {
+
+            LOG.info("Saving stats to {}.", statsPath);
+            FSDataOutputStream fsdos = localFs.create(statsPath, true);
+            statistics.toProperties().store(fsdos, "Statistics");
+            fsdos.close();
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Save dataset statistics
+     *
      * @param name a name.
      * @param statistics a <code>DatasetStatistics</code> instance.
      * @param basePath a base path.
@@ -355,10 +378,7 @@ public class LocalDatasetsService implements InitializingBean {
             if(!localFs.exists(basePath) && !localFs.mkdirs(basePath,ONLY_OWNER_PERMISSION))
                 throw new DatasetException(String.format("Cannot create dir \"%s\"", basePath));
             final Path path = new Path(basePath,name + ".properties");
-            LOG.info("Saving stats to {}.",path);
-            FSDataOutputStream fsdos = localFs.create(path);
-            statistics.toProperties().store(fsdos, "Statistics");
-            fsdos.close();
+            saveStats(path,statistics);
             return path;
         } catch (IOException e) {
             LOG.error(e.getMessage());

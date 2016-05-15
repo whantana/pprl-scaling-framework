@@ -105,9 +105,9 @@ public class LocalMatchingService implements InitializingBean {
                 }
                 matrix.set(row);
                 pairsDone++;
-                LOG.info("Pairs done : {}.",pairsDone );
             }
         }
+        LOG.info("Pairs done : {}.",pairsDone );
         LOG.info("{}",matrix);
         return matrix;
     }

@@ -4,8 +4,9 @@ package gr.upatras.ceid.pprl.blocking;
  * Record ID pair class.
  */
 public class RecordIdPair {
-    public int aliceId; // ids are essentially indexes of GenericRecord arrays
-    public int bobId;
+    public String aliceId; // ids are essentially indexes of GenericRecord arrays
+    public String bobId;
+
 
     /**
      * Constructor.
@@ -13,11 +14,23 @@ public class RecordIdPair {
      * @param aliceId alice record id.
      * @param bobId bob record id.
      */
-    public RecordIdPair(int aliceId, int bobId) {
+    public RecordIdPair(final String aliceId, final String bobId) {
         this.aliceId = aliceId;
         this.bobId = bobId;
     }
 
+    /**
+     * Constructor.
+     *
+     * @param aliceId alice record id.
+     * @param bobId bob record id.
+     */
+    public RecordIdPair(final String aliceId, final String bobId,
+                        final double h, final double j, final double d
+                        ) {
+        this.aliceId = aliceId;
+        this.bobId = bobId;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -26,15 +39,16 @@ public class RecordIdPair {
 
         RecordIdPair idPair = (RecordIdPair) o;
 
-        if (aliceId != idPair.aliceId) return false;
-        return bobId == idPair.bobId;
+
+        return aliceId.equals(idPair.aliceId) &&
+               bobId.equals(idPair.bobId);
 
     }
 
     @Override
     public int hashCode() {
-        int result = aliceId;
-        result = 31 * result + bobId;
+        int result = aliceId.hashCode();
+        result = 31 * result + bobId.hashCode();
         return result;
     }
 

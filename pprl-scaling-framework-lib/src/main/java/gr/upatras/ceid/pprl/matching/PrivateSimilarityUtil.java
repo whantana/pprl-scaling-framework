@@ -2,6 +2,8 @@ package gr.upatras.ceid.pprl.matching;
 
 import gr.upatras.ceid.pprl.encoding.BloomFilter;
 
+import java.util.Arrays;
+
 /**
  * Private similarity utility class.
  */
@@ -26,6 +28,16 @@ public class PrivateSimilarityUtil {
     public static boolean similarity(final BloomFilter bf1, final BloomFilter bf2,
                                      final double threshold) {
         return similarity(DEFAULT_SIMILARITY_METHOD_NAME,bf1,bf2,threshold);
+    }
+
+    /**
+     * Does nothing if method name is supported, throws exception othewise.
+     *
+     * @param name method name.
+     */
+    public static void methodNameSupported(final String name) {
+        if(!Arrays.asList(SIMILARITY_METHOD_NAMES).contains(name))
+            throw new UnsupportedOperationException("Method name \"" + name +"\" does not belong in available methods.");
     }
 
     /**

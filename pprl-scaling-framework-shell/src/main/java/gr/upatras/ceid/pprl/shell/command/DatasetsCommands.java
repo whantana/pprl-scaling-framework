@@ -45,28 +45,28 @@ public class DatasetsCommands implements CommandMarker {
     private LocalMatchingService lms;
 
     @CliAvailabilityIndicator(value = {
-            "local_data_sample", "local_data_describe",
-            "local_data_sort"})
+            "sample_local_data", "describe_local_data",
+            "sort_local_data"})
     public boolean availability0() {
         return lds != null;
     }
     @CliAvailabilityIndicator(value = {
-            "local_data_stats"})
+            "calc_local_data_stats"})
     public boolean availability1() { return lds != null && lms != null;}
     @CliAvailabilityIndicator(value = {
-            "local_data_upload","data_download",
-            "import_dblp","data_describe",
-            "data_sample","data_sort"})
+            "upload_local_data","download_data",
+            "import_dblp","describe_data",
+            "sample_data","sort_data"})
     public boolean availability2() { return ds != null;}
     @CliAvailabilityIndicator(value = {
-            "data_stats"})
+            "calc_data_stats"})
     public boolean availability3() { return ds != null && ms != null;}
 
     /**
      *  LOCAL DATASET COMMANDS
      */
 
-    @CliCommand(value = "local_data_sample", help = "View a sample of local data.")
+    @CliCommand(value = "sample_local_data", help = "View a sample of local data.")
     public String command0(
             @CliOption(key = {"avro"}, mandatory = true, help = "Local data avro files (comma separated) or including directory.")
             final String avroStr,
@@ -119,7 +119,7 @@ public class DatasetsCommands implements CommandMarker {
         }
     }
 
-    @CliCommand(value = "local_data_describe", help = "View a schema desription of local data.")
+    @CliCommand(value = "describe_local_data", help = "View a schema desription of local data.")
     public String command1(
             @CliOption(key = {"schema"}, mandatory = true, help = "Local schema avro file.")
             final String schemaStr) {
@@ -142,7 +142,7 @@ public class DatasetsCommands implements CommandMarker {
     }
 
 
-    @CliCommand(value = "local_data_stats", help = "Calculate usefull field statistics from local data.")
+    @CliCommand(value = "calc_local_data_stats", help = "Calculate usefull field statistics from local data.")
     public String command2(
             @CliOption(key = {"avro"}, mandatory = true, help = "Local data avro files (comma separated) or including directory.")
             final String avroStr,
@@ -216,7 +216,7 @@ public class DatasetsCommands implements CommandMarker {
         }
     }
 
-    @CliCommand(value = "local_data_upload", help = "Upload local data to the PPRL-site hdfs cluster.")
+    @CliCommand(value = "upload_local_data", help = "Upload local data to the PPRL-site hdfs cluster.")
     public String command3(
             @CliOption(key = {"avro"}, mandatory = true, help = "Local data avro files (comma separated) or including directory.")
             final String avroStr,
@@ -247,7 +247,7 @@ public class DatasetsCommands implements CommandMarker {
     }
 
 
-    @CliCommand(value = "local_data_sort", help = "Sort local data records by a selected field name.")
+    @CliCommand(value = "sort_local_data", help = "Sort local data records by a selected field name.")
     public String command7(
             @CliOption(key = {"avro"}, mandatory = true, help = "Local data avro files (comma separated) or including directory.")
             final String avroStr,
@@ -317,7 +317,7 @@ public class DatasetsCommands implements CommandMarker {
      *  HDFS DATASET COMMANDS
      */
 
-    @CliCommand(value = "data_download", help = "Download remote dataset to local machine.")
+    @CliCommand(value = "download_data", help = "Download remote dataset to local machine.")
     public String command5(
             @CliOption(key = {"name"}, mandatory = true, help = "HDFS dataset name.")
             final String name,
@@ -361,7 +361,7 @@ public class DatasetsCommands implements CommandMarker {
         }
     }
 
-    @CliCommand(value = "data_stats", help = "Calculate usefull field statistics from hdfs data.")
+    @CliCommand(value = "calc_data_stats", help = "Calculate usefull field statistics from hdfs data.")
     public String command8(
             @CliOption(key = {"name"}, mandatory = true, help = "HDFS Dataset name.")
             final String name,
@@ -437,7 +437,7 @@ public class DatasetsCommands implements CommandMarker {
         }
     }
 
-    @CliCommand(value = "data_describe", help = "View schema description of HDFS data.")
+    @CliCommand(value = "describe_data", help = "View schema description of HDFS data.")
     public String command9(
             @CliOption(key = {"name"}, mandatory = true, help = "HDFS dataset name.")
             final String name
@@ -459,7 +459,7 @@ public class DatasetsCommands implements CommandMarker {
     }
 
 
-    @CliCommand(value = "data_sample", help = "View a sample of HDFS data.")
+    @CliCommand(value = "sample_data", help = "View a sample of HDFS data.")
     public String command10(
             @CliOption(key = {"name"}, mandatory = true, help = "HDFS dataset name.")
             final String name,
@@ -492,7 +492,7 @@ public class DatasetsCommands implements CommandMarker {
         }
     }
 
-    @CliCommand(value = "data_sort", help = "Sort HDFS data records by a selected field name.")
+    @CliCommand(value = "sort_data", help = "Sort HDFS data records by a selected field name.")
     public String command11(
             @CliOption(key = {"name"}, mandatory = true, help = "HDFS dataset name.")
             final String name,

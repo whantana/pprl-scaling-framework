@@ -18,6 +18,6 @@ public class MatchingConfig {
 
     @Bean
     public LocalMatchingService localMatchingService() {
-        return new LocalMatchingService ();
+        return new LocalMatchingService();
     }
 }

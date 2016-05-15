@@ -108,11 +108,11 @@ public class A_Csv2AvroTest {
         final FileSystem fs = FileSystem.getLocal(new Configuration());
         final Path pA = DatasetsUtil.csv2avro(fs,schemaVotersA,"voters_a",
                 new Path(fs.getWorkingDirectory(),"data"),
-                new Path(fs.getWorkingDirectory(), "data/voters_a/csv/voters_a.csv"));
+                new Path(fs.getWorkingDirectory(), "data/voters_a/csv/voters_a.csv"),4);
         LOG.info("Saved at path {} ", pA);
         final Path pB = DatasetsUtil.csv2avro(fs,schemaVotersB,"voters_b",
                 new Path(fs.getWorkingDirectory(),"data"),
-                new Path(fs.getWorkingDirectory(), "data/voters_b/csv/voters_b.csv"));
+                new Path(fs.getWorkingDirectory(), "data/voters_b/csv/voters_b.csv"),4);
         LOG.info("Saved at path {} ", pB);
     }
 }

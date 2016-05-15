@@ -39,7 +39,7 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
     public int run(String[] args) throws Exception {
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
-        if (args.length != 13) {
+        if (args.length != 18) {
             LOG.error("args.length= {}",args.length);
             for (int i = 0; i < args.length; i++) {
                 LOG.error("args[{}] = {}",i,args[i]);
@@ -49,7 +49,8 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
                     "<bob-avro-path> <bob-schema-path> <bob-uid-fieldname> " +
                     "<all-pairs-path> <frequent-pair-path> <matched-pairs-path>" +
                     "<number-of-blocks> <number-of-hashes> <frequent-pair-collision-limit> " +
-                    "<number-of-reducers>");                                                 // TODO pass threshold and method name
+                    "<number-of-reducers-job1> <number-of-reducers-job2> <number-of-reducers-job3> " +
+                    "<similarity-method-name> <similarity-threshold>");
             throw new IllegalArgumentException("Invalid number of arguments.");
         }
 
@@ -64,15 +65,19 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         final Path matchedPairsPath = new Path(args[8]);
         final int L = Integer.valueOf(args[9]);
         final int K = Integer.valueOf(args[10]);
-        final int C = Integer.valueOf(args[11]);
-        final int R = Integer.valueOf(args[12]);
+        final short C = Short.valueOf(args[11]);
+        final int R1 = Integer.valueOf(args[12]);
+        final int R2 = Integer.valueOf(args[13]);
+        final int R3 = Integer.valueOf(args[14]);
+        final String similarityMethodName = args[15];
+        final double similarityThreshold = Double.valueOf(args[16]);
 
         if(K < 1)
             throw new IllegalArgumentException("Number of hashes K cannot be smaller than 1.");
         if(C > L)
             throw new IllegalArgumentException("Frequent pair collision limit C cannot be greater " +
                     "than then number of blocking groups L.");
-        if(L < R)
+        if(L < R1)
             throw new IllegalArgumentException("Number of reducers R cannot be greater" +
                     " than number of blocking groups L.");
 
@@ -89,6 +94,10 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         conf.set(CommonKeys.BOB_SCHEMA_KEY,bobEncodingSchema.toString());
         conf.set(CommonKeys.BOB_UID_KEY,bobUidFieldName);
         conf.setStrings(CommonKeys.BLOCKING_KEYS_KEY,blocking.groupsAsStrings());
+        conf.set(CommonKeys.SIMILARITY_METHOD_NAME_KEY,similarityMethodName);
+        conf.setDouble(CommonKeys.SIMILARITY_THRESHOLD_KEY,similarityThreshold);
+        conf.setInt(CommonKeys.FREQUENT_PAIR_LIMIT_KEY, C);
+
 
         // setup job1
         final String description1 = String.format("%s(" +
@@ -100,12 +109,12 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
                 shortenUrl(alicePath.toString()), shortenUrl(aliceSchemaPath.toString()),
                 shortenUrl(bobPath.toString()), shortenUrl(bobSchemaPath.toString()),
                 shortenUrl(allPairsPath.toString()),
-                L, K, R);
+                L, K, R1);
         LOG.info("Running.1 : {}",description1);
         final Job job1 = Job.getInstance(conf);
         job1.setJarByClass(HammingLSHBlockingTool.class);
         job1.setJobName(description1);
-        job1.setNumReduceTasks(R);
+        job1.setNumReduceTasks(R1);
 
         // setup input & Mappers
         AvroKeyInputFormat.setInputPaths(job1, alicePath,bobPath);
@@ -139,19 +148,18 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
             LOG.info("\t{} : {}",c.getDisplayName(),c.getValue());
 
         // setup job2
-        conf.setInt(CommonKeys.FREQUENT_PAIR_LIMIT_KEY, C);
         final String description2 = String.format("%s(" +
                         "all-pairs-path : %s, frequent-pairs-path : %s," +
                         " C: %d, R : %d)",
                 JOB_2_DESCRIPTION,
                 shortenUrl(allPairsPath.toString()),
                 shortenUrl(frequentPairsPath.toString()),
-                C, R);
+                C, R2);
         LOG.info("Running.2 : {}",description2);
         final Job job2 = Job.getInstance(conf);
         job2.setJarByClass(HammingLSHBlockingTool.class);
         job2.setJobName(description2);
-        job2.setNumReduceTasks(R);
+        job2.setNumReduceTasks(R2);
 
         // setup input & mappers
         SequenceFileInputFormat.setInputPaths(job2, allPairsPath);
@@ -179,6 +187,7 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
             LOG.error("Job \"{}\"not successful",JOB_2_DESCRIPTION);
             return 1;
         }
+        fs.delete(allPairsPath,true);
 //        LOG.info("Counters : ");
 //        for(Counter c : job2.getCounters().getGroup(FindFrequentIdPairsReducer.COUNTER_GROUP_NAME))
 //            LOG.info("\t{} : {}",c.getDisplayName(),c.getValue()); // TODO How many frequent pairs
@@ -192,12 +201,12 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
                 JOB_3_DESCRIPTION,
                 shortenUrl(alicePath.toString()), shortenUrl(aliceSchemaPath.toString()),
                 shortenUrl(bobPath.toString()), shortenUrl(bobSchemaPath.toString()),
-                shortenUrl(frequentPairsPath.toString()), shortenUrl(matchedPairsPath.toString()),R);
+                shortenUrl(frequentPairsPath.toString()), shortenUrl(matchedPairsPath.toString()),R3);
         LOG.info("Running.3 : {}",description3);
         final Job job3 = Job.getInstance(conf);
         job3.setJarByClass(HammingLSHBlockingTool.class);
         job3.setJobName(description3);
-        job3.setNumReduceTasks(R);
+        job3.setNumReduceTasks(R3);
 
         // setup  cache
         FormRecordPairsMapper.addFrequentPairsToCache(job3, fs, frequentPairsPath);
@@ -226,6 +235,7 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
             LOG.error("Job \"{}\"not successful",JOB_2_DESCRIPTION);
             return 1;
         }
+        fs.delete(frequentPairsPath,true);
 //        LOG.info("Counters : ");
 //        for(Counter c : job3.getCounters().getGroup(FindFrequentIdPairsReducer.COUNTER_GROUP_NAME))
 //            LOG.info("\t{} : {}",c.getDisplayName(),c.getValue()); // TODO How many matched pairs

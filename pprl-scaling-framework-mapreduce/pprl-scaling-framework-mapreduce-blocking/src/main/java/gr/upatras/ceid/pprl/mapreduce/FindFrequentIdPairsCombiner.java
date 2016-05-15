@@ -10,11 +10,11 @@ import java.io.IOException;
  * Find Frequent Id Pairs Combiner class.
  */
 public class FindFrequentIdPairsCombiner extends Reducer<Text,IntWritable,Text,IntWritable> {
-    private int C;
+    private short C;
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
-        C = context.getConfiguration().getInt(CommonKeys.FREQUENT_PAIR_LIMIT_KEY, -1);
+        C = (short) context.getConfiguration().getInt(CommonKeys.FREQUENT_PAIR_LIMIT_KEY, -1);
         if(C < 0) throw new InterruptedException("C is not set.");
     }
 

@@ -24,7 +24,7 @@ public class HammingLSHBlocking {
 
     private HammingLSHBlockingGroup[] blockingGroups;
 
-    private Map<BitSet,List<Integer>>[] bobBuckets; // blocking buckets for bob records.
+    private Map<BitSet,List<Integer>>[] buckets; // blocking buckets for bob records.
 
     private String aliceEncodingName;
     private String bobEncodingName;
@@ -157,9 +157,9 @@ public class HammingLSHBlocking {
      */
     public void initialize() {
         assert L == blockingGroups.length;
-        bobBuckets = new HashMap[L];
+        buckets = new HashMap[L];
         for (int i = 0; i < L; i++) {
-            bobBuckets[i] = new HashMap<BitSet,List<Integer>>();
+            buckets[i] = new HashMap<BitSet,List<Integer>>();
         }
     }
 
@@ -170,21 +170,23 @@ public class HammingLSHBlocking {
      * @param bobRecords bob records.
      * @param C collision limit ( if >= C a pair is frequent).
      * @param similarityMethodName private similarity method name (supported hamming,jaccard,dice).
-     * @param threshold hamming threshold for matching.
+     * @param similarityThreshold hamming threshold for matching.
      * @return Matched record pair list.
      * @throws BlockingException
      */
     public HammingLSHBlockingResult runFPS(final GenericRecord[] aliceRecords,
+                                           final String aliceUidFieldName,
                                            final GenericRecord[] bobRecords,
-                                           final int C,
+                                           final String bobUidFieldName,
+                                           final short C,
                                            final String similarityMethodName,
-                                           final int threshold) throws BlockingException {
-        if(bobBuckets == null) throw new BlockingException("FPS : Blocking buckets not initialized");
+                                           final double similarityThreshold) throws BlockingException {
+        if(buckets == null) throw new BlockingException("FPS : Blocking buckets not initialized");
         // hash bob records into the buckets.
         for(int r=0; r < bobRecords.length; r++) {
-            BitSet[] keys = hashBobRecord(bobRecords[r]);
+            BitSet[] keys = hashRecord(bobRecords[r], bobEncodingFieldName);
             for(int l = 0 ; l < keys.length ; l++)
-                addToBucket(keys[l],r,bobBuckets[l]);
+                addToBucket(keys[l],r, buckets[l]);
         }
         System.out.println("\rBlocking bob records...DONE");
 
@@ -192,17 +194,17 @@ public class HammingLSHBlocking {
         List<RecordIdPair> mathcedPairs = new LinkedList<RecordIdPair>();
         int matchedPairsCount = 0;
         int frequentPairsCount = 0;
-        final byte[] collisions = new byte[aliceRecords.length];
+        final short[] collisions = new short[bobRecords.length];
         System.out.print("Counting colission with alice records (0/" + aliceRecords.length + ").");
         for(int aid=0; aid < aliceRecords.length; aid++) {
             System.out.print("\rCounting collisions with alice records (" + (aid+1)
                     + "/" + aliceRecords.length + ")." +
                     " Frequent pairs so far :" + frequentPairsCount + "." +
                     " Matched pairs so far : " + matchedPairsCount + ".");
-            final BitSet[] keys = hashAliceRecord(aliceRecords[aid]);
-            Arrays.fill(collisions, (byte) 0);
+            final BitSet[] keys = hashRecord(aliceRecords[aid], aliceEncodingFieldName);
+            Arrays.fill(collisions, (short) 0);
             for (int l = 0; l < blockingGroups.length; l++) {
-                final List<Integer> bobIds = bobBuckets[l].get(keys[l]);
+                final List<Integer> bobIds = buckets[l].get(keys[l]);
                 if(bobIds == null) continue;
                 for (int bid : bobIds) {
                     if(collisions[bid] < 0) continue;
@@ -213,8 +215,13 @@ public class HammingLSHBlocking {
                                 aliceEncodingFieldName, N);
                         final BloomFilter bf2 = BloomFilterEncodingUtil.retrieveBloomFilter(bobRecords[bid],
                                 bobEncodingFieldName, N);
-                        if(PrivateSimilarityUtil.similarity(similarityMethodName,bf1,bf2, threshold)) {
-                            mathcedPairs.add(new RecordIdPair(aid, bid));
+                        if(PrivateSimilarityUtil.similarity(similarityMethodName,bf1,bf2, similarityThreshold)) {
+                            mathcedPairs.add(
+                                    new RecordIdPair(
+                                            String.valueOf(aliceRecords[aid].get(aliceUidFieldName)),
+                                            String.valueOf(bobRecords[bid].get(bobUidFieldName))
+                                    )
+                            );
                             matchedPairsCount++;
                         }
                         collisions[bid] = -1;
@@ -395,9 +402,7 @@ public class HammingLSHBlocking {
         final String schemeName = aliceEncoding.schemeName();
         if(!schemeName.equals(bobEncoding.schemeName()))
             throw new BlockingException("Encoding scheme names do not match.");
-        try {
-            BloomFilterEncodingUtil.schemeNameSupported(schemeName);
-        } catch (BloomFilterEncodingException e) {throw new BlockingException(e.getMessage());}
+        BloomFilterEncodingUtil.schemeNameSupported(schemeName);
 
         aliceEncodingName = aliceEncoding.getEncodingSchema().getName();
         bobEncodingName = bobEncoding.getEncodingSchema().getName();

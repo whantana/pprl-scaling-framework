@@ -107,25 +107,30 @@ public class BloomFilterEncodingTest {
             throws DatasetException, BloomFilterEncodingException, IOException {
         final String[] SELECTED_FIELDS = {"surname","name","address","city"};
         final String[] REST_FIELDS = {"id"};
-        final String[] datasets = {
-                "voters_a","voters_b"
-        };
 
-        for(String dName : datasets) {
-            final String dataset = "data/" + dName;
-            final Path avroPath = new Path(dataset, "avro/" + dName + ".avro");
-            final Path schemaPath = new Path(dataset, "schema/" + dName + ".avsc");
-            LOG.info("Encoding dataset : {} ({})",dataset,String.format("%s,%s",avroPath,schemaPath));
+        final Set<Path> aliceAvroPaths = DatasetsUtil.getAllAvroPaths(fs,new Path("data/voters_a/avro"));
+        final Path aliceSchemaPath = new Path("data/voters_a/schema/voters_a.avsc");
+        final Set<Path> bobAvroPaths = DatasetsUtil.getAllAvroPaths(fs,new Path("data/voters_b/avro"));
+        final Path bobSchemaPath = new Path("data/voters_b/schema/voters_b.avsc");
 
-            encodeOriginal(new CLKEncoding(N,K,Q),dataset + "/clk",
-                    fs,Collections.singleton(avroPath),schemaPath,SELECTED_FIELDS,REST_FIELDS);
-            encodeOriginal(new FieldBloomFilterEncoding(N,SELECTED_FIELDS.length,K,Q),dataset + "/static_fbf",
-                    fs,Collections.singleton(avroPath),schemaPath,SELECTED_FIELDS,REST_FIELDS);
-            int Narray[] = new int [SELECTED_FIELDS.length];
-            Arrays.fill(Narray,N);
-            encodeOriginal(new RowBloomFilterEncoding(Narray, N, K, Q), dataset + "/uniform_rbf",
-                    fs, Collections.singleton(avroPath), schemaPath, SELECTED_FIELDS, REST_FIELDS);
-        }
+        encodeOriginal(new CLKEncoding(N,K,Q),"data/voters_a/clk",
+                fs,aliceAvroPaths,aliceSchemaPath,SELECTED_FIELDS,REST_FIELDS);
+
+        encodeOriginal(new FieldBloomFilterEncoding(N,SELECTED_FIELDS.length,K,Q),"data/voters_a/static_fbf",
+                fs,aliceAvroPaths,aliceSchemaPath,SELECTED_FIELDS,REST_FIELDS);
+        int Narray[] = new int [SELECTED_FIELDS.length];
+        Arrays.fill(Narray,N);
+        encodeOriginal(new RowBloomFilterEncoding(Narray, N, K, Q),"data/voters_a/uniform_rbf",
+                fs,aliceAvroPaths,aliceSchemaPath, SELECTED_FIELDS, REST_FIELDS);
+
+
+        encodeByExistingSchema("data/voters_b/clk",fs,bobAvroPaths,bobSchemaPath,new Path("data/voters_a/clk.avsc"),
+                SELECTED_FIELDS,REST_FIELDS,SELECTED_FIELDS);
+        encodeByExistingSchema("data/voters_b/static_fbf",fs,bobAvroPaths,bobSchemaPath,new Path("data/voters_a/static_fbf.avsc"),
+                SELECTED_FIELDS,REST_FIELDS,SELECTED_FIELDS);
+        encodeByExistingSchema("data/voters_b/uniform_rbf",fs,bobAvroPaths,bobSchemaPath,new Path("data/voters_a/uniform_rbf.avsc"),
+                SELECTED_FIELDS,REST_FIELDS,SELECTED_FIELDS);
+
     }
 
     private static void encodeOriginal(final BloomFilterEncoding encoding,
@@ -151,6 +156,24 @@ public class BloomFilterEncodingTest {
         Schema schema = DatasetsUtil.loadSchemaFromFSPath(fs,schemaPath);
         Schema encodingSchema = DatasetsUtil.loadSchemaFromFSPath(fs,encodingSchemaPath);
         BloomFilterEncoding encoding = BloomFilterEncodingUtil.setupNewInstance(encodingSchema);
+        assertTrue(encoding.isEncodingOfSchema(schema));
+        encodeLocalFile(fs,name,avroPaths,schema,encoding);
+    }
+
+    private static void encodeByExistingSchema(final String name,
+                                               final FileSystem fs,
+                                               final Set<Path> avroPaths,
+                                               final Path schemaPath,
+                                               final Path existingEncodingSchemaPath,
+                                               final String[] selected,
+                                               final String[] included,
+                                               final String[] existingFieldNames)
+            throws BloomFilterEncodingException, DatasetException, IOException {
+
+        Schema schema = DatasetsUtil.loadSchemaFromFSPath(fs,schemaPath);
+        Schema existingEncodingSchema = DatasetsUtil.loadSchemaFromFSPath(fs,existingEncodingSchemaPath);
+        BloomFilterEncoding encoding = BloomFilterEncodingUtil.setupNewInstance(
+                BloomFilterEncodingUtil.basedOnExistingSchema(schema,selected,included,existingEncodingSchema,existingFieldNames));
         assertTrue(encoding.isEncodingOfSchema(schema));
         encodeLocalFile(fs,name,avroPaths,schema,encoding);
     }

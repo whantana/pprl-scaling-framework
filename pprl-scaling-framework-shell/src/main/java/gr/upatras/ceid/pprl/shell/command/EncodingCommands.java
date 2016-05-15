@@ -52,7 +52,7 @@ public class EncodingCommands implements CommandMarker {
 
     private List<String> ENCODING_SCHEMES = BloomFilterEncodingUtil.SCHEME_NAMES;
 
-    @CliAvailabilityIndicator(value = {"encode_supported_schemes"})
+    @CliAvailabilityIndicator(value = {"list_supported_encoding_schemes"})
     public boolean availability0() { return true; }
     @CliAvailabilityIndicator(value = {"encode_local_data","encode_local_data_by_schema"})
     public boolean availability1() { return les != null && lds != null; }
@@ -66,7 +66,7 @@ public class EncodingCommands implements CommandMarker {
      */
 
 
-    @CliCommand(value = "encode_supported_schemes", help = "List system's supported Bloom-filter encoding schemes.")
+    @CliCommand(value = "list_supported_encoding_schemes", help = "List system's supported Bloom-filter encoding schemes.")
     public String command0() {
         LOG.info("Supported bloom filter encoding schemes : ");
         int i = 1;

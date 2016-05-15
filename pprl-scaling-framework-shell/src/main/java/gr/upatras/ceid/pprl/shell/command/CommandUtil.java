@@ -27,7 +27,9 @@ public class CommandUtil {
             return booleans;
         } else return new boolean[]{Boolean.parseBoolean(str)};
     }
-
+    public static short retrieveShort(final String str, short defaultShort) {
+        return (str == null) ? defaultShort : Short.valueOf(str);
+    }
     public static int retrieveInt(final String str, int defaultInt) {
         return (str == null) ? defaultInt : Integer.valueOf(str);
     }

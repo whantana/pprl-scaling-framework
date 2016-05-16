@@ -1,12 +1,7 @@
 package gr.upatras.ceid.pprl.mapreduce;
 
-import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import gr.upatras.ceid.pprl.matching.SimilarityUtil;
 import gr.upatras.ceid.pprl.matching.SimilarityVectorFrequencies;
-import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericData;
-import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.mapred.AvroValue;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Reducer;

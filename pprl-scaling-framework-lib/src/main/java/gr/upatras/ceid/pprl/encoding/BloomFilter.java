@@ -1,12 +1,17 @@
 package gr.upatras.ceid.pprl.encoding;
 
+import gr.upatras.ceid.pprl.combinatorics.CombinatoricsUtil;
+
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -20,11 +25,10 @@ public class BloomFilter {
     private Mac HMAC_SHA1;    // SHA1 Mac
     private int N;                  // Length of bloom filter (#bits)
     private int K;                  // Number of hash functions
-    private int addedElementsCount; // added elements
     private int onesCount;          // one counts
     private int zeroesCount;        // zeroes counts
     private byte[] byteArray;       // the buffer (byte array)
-
+    private Map<String,int[]> dictionary; // Q-Grams dictionary in order to avoid recalculating hashes
     /**
      * Constructor.
      *
@@ -40,7 +44,6 @@ public class BloomFilter {
         byteArray = new byte[(int) Math.ceil(N/(double)8)];
         onesCount = 0;
         zeroesCount = N;
-        addedElementsCount = 0;
         HMAC_MD5 = Mac.getInstance("HmacMD5");
         HMAC_MD5.init(new SecretKeySpec(SECRET_KEY.getBytes(), "HmacMD5"));
         HMAC_SHA1 = Mac.getInstance("HmacSHA1");
@@ -65,7 +68,6 @@ public class BloomFilter {
         System.arraycopy(byteArray,0,this.byteArray,0,byteArray.length);
         onesCount = countOnes();
         zeroesCount = countZeroes();
-        addedElementsCount = (int) Math.ceil(onesCount/(double)K); // an estimate
         HMAC_MD5 = Mac.getInstance("HmacMD5");
         HMAC_MD5.init(new SecretKeySpec(SECRET_KEY.getBytes(), "HmacMD5"));
         HMAC_SHA1 = Mac.getInstance("HmacSHA1");
@@ -84,16 +86,6 @@ public class BloomFilter {
         this.N = N;
         this.byteArray = new byte[(int) Math.ceil(N/(double)8)];
         System.arraycopy(byteArray,0,this.byteArray,0,byteArray.length);
-    }
-
-    /**
-     * Calculates and returns False-Positive probability (BF claims that contains the element
-     * , while it hasnt been added).
-     *
-     * @return False-Positive probability.
-     */
-    public double calcFPP(){
-        return Math.pow((1 - Math.exp(-K * (double) addedElementsCount / (double) N)), K);
     }
 
     /**
@@ -204,17 +196,49 @@ public class BloomFilter {
     /**
      * Add data to the bloom filter.
      *
-     * @param data data byte array.
+     * @param data data string.
      * @return an array of K integers all in range of [0,...,N).
      */
-    public int[] addData(final byte[] data) {
-        // TODO add Map<data,positions> for faster encoding
-        // TODO test stuff with createHashesV3
-        final int[] positions = createHashesV1(data,N,K,getHmacMD5(),getHmacSHA1());
-        // final int[] positions = createHashesV2(data,N,K,getHmacMD5()); //
-        // final int[] positions = createHashesV3(data,N,K,getHmacMD5(),getHmacSHA1());
+    public int[] addData(final String data) {
+        if(dictionary == null)
+            dictionary = createDictionary(data.length());
+
+        final int[] positions;
+        if(!dictionary.containsKey(data)) {
+            positions= createHashesV1(
+                    data.getBytes(StandardCharsets.UTF_8),
+                    N,K, getHmacMD5(),getHmacSHA1()
+            );
+//            positions = createHashesV2(
+//                    data.getBytes(StandardCharsets.UTF_8),
+//                    N,K, getHmacMD5()
+//            );
+//            positions = createHashesV3(
+//                    data.getBytes(StandardCharsets.UTF_8),
+//                    N,K, getHmacMD5(),getHmacSHA1()
+//            );
+
+            dictionary.put(data,positions);
+        } else {
+            positions = dictionary.get(data);
+        }
         setPositions(positions);
         return positions;
+
+    }
+
+    /**
+     * Creates a dictionary (HashMap) capable of holding without rehashing.
+     * allmost all Q-combinations of printalble asccii
+     * @param Q number of characters in Q-gram.
+     * @return a dictionary (HashMap) capable of holding without rehashing.
+     */
+    private static Map<String,int[]> createDictionary(final int Q) {
+        if(Q > 4 || Q < 2) throw new IllegalStateException("Preferable q values in [2,3,4]");
+        long charCount = 94; // the 94 printable ASCII characters
+        long possibleCombCount =  // possible combination of Q
+                CombinatoricsUtil.combinationsCount(charCount, Q);
+        return  new HashMap<String,int[]>((int)possibleCombCount,0.99f);
     }
 
     /**
@@ -229,7 +253,6 @@ public class BloomFilter {
                 setBit(position);
             }
         }
-        addedElementsCount++;
     }
 
     /**
@@ -248,15 +271,6 @@ public class BloomFilter {
      */
     public int getK() {
         return K;
-    }
-
-    /**
-     * Returns the added elemenet count (good estimate).
-     *
-     * @return the added elemenet count.
-     */
-    public int getAddedElementsCount() {
-        return addedElementsCount;
     }
 
     /**
@@ -286,15 +300,6 @@ public class BloomFilter {
         return byteArray;
     }
 
-    /**
-     * Calculate and return bits per element (good estimate).
-     *
-     * @return bits per element.
-     */
-    public double calcBitsPerElement() {
-        return this.N / (double)addedElementsCount;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -304,7 +309,6 @@ public class BloomFilter {
 
         if (N != that.N) return false;
         if (K != that.K) return false;
-        if (addedElementsCount != that.addedElementsCount) return false;
         if (onesCount != that.onesCount) return false;
         if (zeroesCount != that.zeroesCount) return false;
         return Arrays.equals(byteArray, that.byteArray);
@@ -316,7 +320,6 @@ public class BloomFilter {
         int result = byteArray.hashCode();
         result = 31 * result + N;
         result = 31 * result + K;
-        result = 31 * result + addedElementsCount;
         result = 31 * result + onesCount;
         result = 31 * result + zeroesCount;
         return result;
@@ -449,7 +452,6 @@ public class BloomFilter {
      */
     public void clear() {
         for(int i = 0 ; i < byteArray.length ; i++) byteArray[i] = 0;
-        addedElementsCount = 0;
         onesCount = 0;
         zeroesCount = N;
     }

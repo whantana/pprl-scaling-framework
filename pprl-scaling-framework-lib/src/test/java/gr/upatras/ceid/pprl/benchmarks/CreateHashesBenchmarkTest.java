@@ -35,7 +35,6 @@ public class CreateHashesBenchmarkTest {
     private static final String SECRET_KEY = "MYZIKRETQI";
     private static DescriptiveStatistics stats =  new DescriptiveStatistics();
 
-    // TODO Benchmarking accuracy between versions
     static {
         Mac tmp;
         Mac tmp1;
@@ -60,11 +59,13 @@ public class CreateHashesBenchmarkTest {
         LOG.info(String.format("Running benchmarks (ITERATIONS=%d,N=%d,K={1:%d},Q=%d)\n", ITERATIONS, N, K, Q));
         long[][] millisV1 = benchmarkCreateHashesV1();
         long[][] millisV2 = benchmarkCreateHashesV2();
+        long[][] millisV3 = benchmarkCreateHashesV3();
         long[][] millisV1backed = benchmarkCreateHashesV1MapBacked();
         long[][] millisV2backed = benchmarkCreateHashesV2MapBacked();
+        long[][] millisV3backed = benchmarkCreateHashesV3MapBacked();
 
         LOG.info("\nSaving benchmarks to CSV files.");
-        final String header = "k,createHashesV1,createHashesV2,MBcreateHashesV1,MBcreateHashesV2";
+        final String header = "k,createHashesV1,createHashesV2,MBcreateHashesV1,MBcreateHashesV2,MBcreateHashesV3";
         for (int i = 10,j=0; j<3; i=i/2,j++) {
             final String fileName = String.format("benchmark_scale_%d.csv",j+1);
             final File file = new File(fileName);
@@ -73,9 +74,11 @@ public class CreateHashesBenchmarkTest {
             writer.append(header).append("\n");
             for (int k=0; k<K; k++)
                 writer.append(
-                        String.format("%d,%d,%d,%d,%d",
-                                k+1, millisV1[j][k], millisV2[j][k], millisV1backed[j][k], millisV2backed[j][k]))
-                        .append("\n");
+                        String.format("%d,%d,%d,%d,%d,%d,%d\n",
+                                k + 1,
+                                millisV1[j][k], millisV2[j][k], millisV3[j][k],
+                                millisV1backed[j][k], millisV2backed[j][k], millisV3backed[j][k]));
+            writer.append("\n");
             LOG.info("Iteration input size : " + BYTES_LIMIT/i + " bytes." +
                     "Benchmark timings saved at " + file.getAbsolutePath());
             writer.close();
@@ -84,8 +87,8 @@ public class CreateHashesBenchmarkTest {
 
     @Test
     public void test1() throws IOException {
-        LOG.info("Running 1MB benchmark:");
-        onembBenchmark();
+        LOG.info("Running 500KB benchmark:");
+        fiveHundredKBenchmark();
     }
 
 
@@ -124,7 +127,7 @@ public class CreateHashesBenchmarkTest {
         long end = System.currentTimeMillis();
         long totalTime = (end-start)/1000;
         LOG.info("Benchmarking : BloomFilter.createHashesV1() 100%.");
-        LOG.info("Total bytes Read = " + totalBytesRead + " Total time " + totalTime + " seconds.");
+        LOG.info(String.format("Read %d bytes +, Time %d seconds.",totalBytesRead,totalTime));
         return millis;
     }
 
@@ -154,7 +157,37 @@ public class CreateHashesBenchmarkTest {
         long end = System.currentTimeMillis();
         long totalTime = (end-start)/1000;
         LOG.info("Benchmarking : BloomFilter.createHashesV2() 100%.");
-        LOG.info(String.format("Read %d bytes , Time %d seconds\n",totalBytesRead,totalTime));
+        LOG.info(String.format("Read %d bytes , Time %d seconds.",totalBytesRead,totalTime));
+        return millis;
+    }
+
+    private static long[][] benchmarkCreateHashesV3() throws UnsupportedEncodingException {
+        long totalBytesRead = 0;
+        long millis[][] = new long[3][K];
+        long start = System.currentTimeMillis();
+        for (int i = 10,j=0; j < 3; i=i/2,j++) {
+            long maxSize = BYTES_LIMIT/i;
+            for(int k = 0 ; k < K; k++) {
+                stats.clear();
+                for (int l = 0; l < ITERATIONS; l++) {
+                    long bytesRead = 0;
+                    long before = System.currentTimeMillis();
+                    while (bytesRead < maxSize) {
+                        BloomFilter.createHashesV3(randomQgram().getBytes("UTF-8"), N, k, HMAC_MD5,HMAC_SHA1);
+                        bytesRead += Q;
+                    }
+                    long after = System.currentTimeMillis();
+                    long diff = after - before;
+                    stats.addValue(diff);
+                    totalBytesRead += bytesRead;
+                }
+                millis[j][k] = retrieveAverage(stats);
+            }
+        }
+        long end = System.currentTimeMillis();
+        long totalTime = (end-start)/1000;
+        LOG.info("Benchmarking : BloomFilter.createHashesV3() 100%.");
+        LOG.info(String.format("Read %d bytes , Time %d seconds.",totalBytesRead,totalTime));
         return millis;
     }
 
@@ -235,9 +268,47 @@ public class CreateHashesBenchmarkTest {
         return millis;
     }
 
-    private static void onembBenchmark() throws UnsupportedEncodingException {
+    private static long[][] benchmarkCreateHashesV3MapBacked() throws UnsupportedEncodingException {
+        final Map<String,int[]> map = new TreeMap<String,int[]>();
+        long totalBytesRead = 0;
+        long totalBytesHashed = 0;
+        long millis[][] = new long[3][K];
+        long start = System.currentTimeMillis();
+        for (int i = 10,j=0; j < 3; i=i/2,j++) {
+            long maxSize = BYTES_LIMIT/i;
+            for(int k = 0 ; k < K; k++) {
+                stats.clear();
+                long[] ms = new long[ITERATIONS];
+                for (int l = 0; l < ITERATIONS; l++) {
+                    long bytesRead = 0;
+                    long before = System.currentTimeMillis();
+                    while (bytesRead < maxSize) {
+                        final String qgram = randomQgram();
+                        if(!map.containsKey(qgram)) {
+                            map.put(qgram,BloomFilter.createHashesV3(qgram.getBytes("UTF-8"), N, k, HMAC_MD5, HMAC_SHA1));
+                            totalBytesHashed += Q;
+                        }
+                        bytesRead += Q;
+                    }
+                    long after = System.currentTimeMillis();
+                    long diff = after - before;
+                    stats.addValue(diff);
+                    totalBytesRead += bytesRead;
+                }
+                millis[j][k] = retrieveAverage(stats);
+            }
+        }
+        long end = System.currentTimeMillis();
+        long totalTime = (end-start)/1000;
+        LOG.info("Benchmarking : BloomFilter.createHashesV3() backed by dictionary 100%.");
+        LOG.info(String.format("Read %d bytes, Hashed %d bytes, Time %d seconds\n", totalBytesRead, totalBytesHashed, totalTime));
+        LOG.info("Final dictionary keys size : " + map.keySet().size());
+        return millis;
+    }
 
-        long maxBytes = 5*1024; //5 KB
+    private static void fiveHundredKBenchmark() throws UnsupportedEncodingException {
+
+        long maxBytes = 500*1024; //500 KB
 
         {
             long bytesRead = 0;
@@ -261,6 +332,18 @@ public class CreateHashesBenchmarkTest {
             long end = System.currentTimeMillis();
             long millis = end - start;
             LOG.info("createHashesV2 : ");
+            LOG.info("Time took " + millis / 1000 + " seconds. Read " + bytesRead + " bytes.");
+        }
+        {
+            long bytesRead = 0;
+            long start = System.currentTimeMillis();
+            while (bytesRead < maxBytes) {
+                BloomFilter.createHashesV3(randomQgram().getBytes("UTF-8"), N, K, HMAC_MD5, HMAC_SHA1);
+                bytesRead += Q;
+            }
+            long end = System.currentTimeMillis();
+            long millis = end - start;
+            LOG.info("createHashesV3 : ");
             LOG.info("Time took " + millis / 1000 + " seconds. Read " + bytesRead + " bytes.");
         }
         {
@@ -301,6 +384,26 @@ public class CreateHashesBenchmarkTest {
             LOG.info("Time took " + millis / 1000 + " seconds. Read " + bytesRead + " bytes." +
                     " Hashed " + bytesHashed + " bytes");
         }
+        {
+            long bytesRead = 0;
+            long bytesHashed = 0;
+            Map<String, int[]> map = new TreeMap<String,int[]>();
+            long start = System.currentTimeMillis();
+            while (bytesRead < maxBytes) {
+                String qGram = randomQgram();
+                if(!map.containsKey(qGram)) {
+                    map.put(qGram,BloomFilter.createHashesV3(qGram.getBytes("UTF-8"), N, K, HMAC_MD5, HMAC_SHA1));
+                    bytesHashed += Q;
+                }
+                bytesRead += Q;
+            }
+            LOG.info("Map backed createHashesV3 : ");
+            long end = System.currentTimeMillis();
+            long millis = end - start;
+            LOG.info("Time took " + millis / 1000 + " seconds. Read " + bytesRead + " bytes." +
+                    " Hashed " + bytesHashed + " bytes");
+        }
+
     }
 
     private static long retrieveAverage(DescriptiveStatistics stats) {

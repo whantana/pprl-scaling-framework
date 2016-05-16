@@ -51,6 +51,21 @@ public class CombinatoricsUtil {
     }
 
     /**
+     * Returns the count of pairs (2-combinations) in the range [0...n]
+     *
+     * @param n long number.
+     * @return the count calculated count.
+     */
+    public static long combinationsCount(long n,int k) {
+        assert n >= 2;
+        BigInteger nFactorial = factorial(n);
+        BigInteger nmkFactorial = factorial(n-k);
+        BigInteger kFactorial =  factorial(k);
+        BigInteger nck = nFactorial.divide(nmkFactorial.multiply(kFactorial));
+        return nck.longValue();
+    }
+
+    /**
      * Returns the rank of a 2-combination.
      *
      * @param c  int pair, where c[0] < c[1].

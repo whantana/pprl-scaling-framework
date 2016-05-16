@@ -7,7 +7,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.Charset;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -39,43 +38,30 @@ public class BloomFilterTest {
     @Test
     public void test1() throws InvalidKeyException, NoSuchAlgorithmException {
         final BloomFilter bloomFilter = new BloomFilter(N,K);
-        LOG.info("before FPP={}", bloomFilter.calcFPP());
         Set<String> distinctBigrams = new TreeSet<String>();
         String[] bigrams = QGramUtil.generateQGrams(LOREM_IPSUM, Schema.Type.STRING, 2);
         if(bigrams == null) { LOG.error("bigrams is null"); return; }
         for(String bigram : bigrams) {
-            bloomFilter.addData(bigram.getBytes(Charset.forName("UTF-8")));
+            bloomFilter.addData(bigram);
             distinctBigrams.add(bigram);
         }
         LOG.info("Bytes length : {}",bloomFilter.getByteArray().length);
         LOG.info("Distinct bigrams : {}", distinctBigrams.size());
-        LOG.info("Added elements : {}",bloomFilter.getAddedElementsCount());
         LOG.info("#1 : {}",bloomFilter.getOnesCount());
         LOG.info("#0 : {}",bloomFilter.getZeroesCount());
         assertEquals(bloomFilter.getOnesCount(),bloomFilter.countOnes());
         assertEquals(bloomFilter.getZeroesCount(),bloomFilter.countZeroes());
         LOG.info("#bitstring : {}",bloomFilter.toString());
         LOG.info("#hexstring : {}",bloomFilter.toHexString());
-        LOG.info("after inserts FPP={}", bloomFilter.calcFPP());
-        LOG.info("bits per element = {}",bloomFilter.calcBitsPerElement());
-//        LOG.info("clearing bloom filter");
-//        bloomFilter.clear();
-//        LOG.info("#1 : {}",bloomFilter.getOnesCount());
-//        LOG.info("#0 : {}",bloomFilter.getZeroesCount());
-//        assertEquals(bloomFilter.getOnesCount(),bloomFilter.countOnes());
-//        assertEquals(bloomFilter.getZeroesCount(),bloomFilter.countZeroes());
         LOG.info("--New Copy--");
         final BloomFilter bloomFilter1 = new BloomFilter(N,K,bloomFilter.getByteArray());
         LOG.info("Bytes length : {}",bloomFilter1.getByteArray().length);
-        LOG.info("Added elements : {}",bloomFilter1.getAddedElementsCount());
         LOG.info("#1 : {}",bloomFilter1.getOnesCount());
         LOG.info("#0 : {}",bloomFilter1.getZeroesCount());
         assertEquals(bloomFilter1.getOnesCount(),bloomFilter1.countOnes());
         assertEquals(bloomFilter1.getZeroesCount(),bloomFilter1.countZeroes());
         LOG.info("#bitstring : {}",bloomFilter1.toString());
         LOG.info("#hexstring : {}",bloomFilter1.toHexString());
-        LOG.info("after inserts FPP={}", bloomFilter1.calcFPP());
-        LOG.info("bits per element = {}",bloomFilter1.calcBitsPerElement());
         LOG.info("clearing bloom filter");
         bloomFilter.clear();
         LOG.info("#1 : {}",bloomFilter1.getOnesCount());

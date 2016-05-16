@@ -5,7 +5,6 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 
-import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -208,7 +207,7 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
 
         final Schema schema = encodingRecord.getSchema().getField(encodingFieldName).schema();
         final GenericData.Fixed fixed = new GenericData.Fixed(schema,
-            Arrays.copyOf(bf.getByteArray(), bf.getByteArray().length)
+                Arrays.copyOf(bf.getByteArray(), bf.getByteArray().length)
         );
         encodingRecord.put(encodingFieldName,fixed);
 
@@ -238,13 +237,9 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
     protected void encodeObject(final Object obj, final Schema.Type type, final int Q,
                                 final BloomFilter bloomFilter)
             throws BloomFilterEncodingException {
-        try{
-            final String[] qGrams = QGramUtil.generateQGrams(obj,type,Q);
-            bloomFilter.clear();
-            for(String qGram : qGrams) bloomFilter.addData(qGram.getBytes("UTF-8"));
-        } catch (UnsupportedEncodingException e) {
-            throw new BloomFilterEncodingException(e.getMessage());
-        }
+        final String[] qGrams = QGramUtil.generateQGrams(obj,type,Q);
+        bloomFilter.clear();
+        for(String qGram : qGrams) bloomFilter.addData(qGram);
     }
 
     /**

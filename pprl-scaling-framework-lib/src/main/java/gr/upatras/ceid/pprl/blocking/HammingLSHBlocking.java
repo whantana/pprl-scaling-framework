@@ -2,7 +2,6 @@ package gr.upatras.ceid.pprl.blocking;
 
 import gr.upatras.ceid.pprl.encoding.BloomFilter;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
-import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingUtil;
 import gr.upatras.ceid.pprl.matching.PrivateSimilarityUtil;
 import org.apache.avro.generic.GenericRecord;

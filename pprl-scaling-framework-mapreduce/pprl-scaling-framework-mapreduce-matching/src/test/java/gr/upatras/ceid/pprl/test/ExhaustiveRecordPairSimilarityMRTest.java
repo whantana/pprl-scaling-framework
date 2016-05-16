@@ -3,10 +3,12 @@ package gr.upatras.ceid.pprl.test;
 import gr.upatras.ceid.pprl.combinatorics.CombinatoricsUtil;
 import gr.upatras.ceid.pprl.datasets.DatasetException;
 import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
+import gr.upatras.ceid.pprl.mapreduce.CommonKeys;
 import gr.upatras.ceid.pprl.mapreduce.ExhaustiveRecordPairSimilarityTool;
 import gr.upatras.ceid.pprl.mapreduce.GenerateRecordPairsMapper;
 import gr.upatras.ceid.pprl.mapreduce.RecordPairSimilarityCombiner;
 import gr.upatras.ceid.pprl.mapreduce.RecordPairSimilarityReducer;
+import gr.upatras.ceid.pprl.mapreduce.TextArrayWritable;
 import gr.upatras.ceid.pprl.matching.SimilarityUtil;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
@@ -36,36 +38,38 @@ import static org.junit.Assert.assertEquals;
 
 public class ExhaustiveRecordPairSimilarityMRTest {
 
-    private MapDriver<AvroKey<GenericRecord>, NullWritable, LongWritable, AvroValue<GenericRecord>> mapDriver;
+    private MapDriver<AvroKey<GenericRecord>, NullWritable, LongWritable, TextArrayWritable> mapDriver;
     private MapReduceDriver<
             AvroKey<GenericRecord>, NullWritable,
-            LongWritable, AvroValue<GenericRecord>,
+            LongWritable, TextArrayWritable,
             NullWritable,NullWritable> mapReduceDriver;
 
     private static final Logger LOG = LoggerFactory.getLogger(ExhaustiveRecordPairSimilarityMRTest.class);
 
 
-    private Schema schema;
     private GenericRecord[] records;
     private final String[] fieldNames = {"name","surname","location"};
 
     @Before
     public void setup() throws IOException, DatasetException {
-        FileSystem fs = FileSystem.get(new Configuration());
-        schema = DatasetsUtil.loadSchemaFromFSPath(fs,new Path("data/person_small/schema/person_small.avsc"));
+        final Configuration conf = new Configuration();
+        FileSystem fs = FileSystem.get(conf);
+        Schema schema = DatasetsUtil.loadSchemaFromFSPath(fs, new Path("data/person_small/schema/person_small.avsc"));
 
         records = DatasetsUtil.loadAvroRecordsFromFSPaths(
-                fs,schema, new Path("data/person_small/avro/person_small.avro"));
+                fs, schema, new Path("data/person_small/avro/person_small.avro"));
+
+        conf.setInt(CommonKeys.RECORD_COUNT_KEY, records.length);
+        conf.set(CommonKeys.UID_FIELD_NAME_KEY,"uiid");
+        conf.setStrings(CommonKeys.FIELD_NAMES_KEY, fieldNames);
+        conf.set(CommonKeys.SCHEMA_KEY, schema.toString());
 
         mapDriver = MapDriver.newMapDriver(new GenerateRecordPairsMapper());
-        mapDriver.getContext().getConfiguration().setInt("record.count", records.length);
-        mapDriver.getContext().getConfiguration().set("uid.field.name", "uiid");
+        mapDriver.getConfiguration().addResource(conf);
         AvroSerialization.setKeyWriterSchema(mapDriver.getConfiguration(), schema);
         AvroSerialization.setKeyReaderSchema(mapDriver.getConfiguration(), schema);
         mapDriver.setOutputSerializationConfiguration(mapDriver.getConfiguration());
         AvroSerialization.addToConfiguration(mapDriver.getOutputSerializationConfiguration());
-        AvroSerialization.setValueWriterSchema(mapDriver.getOutputSerializationConfiguration(), schema);
-        AvroSerialization.setValueReaderSchema(mapDriver.getOutputSerializationConfiguration(), schema);
         LOG.info("MapDriver ready.");
 
         mapReduceDriver = MapReduceDriver.newMapReduceDriver(
@@ -73,30 +77,28 @@ public class ExhaustiveRecordPairSimilarityMRTest {
                 new RecordPairSimilarityReducer(),
                 new RecordPairSimilarityCombiner()
         );
-        mapReduceDriver.getConfiguration().setInt(GenerateRecordPairsMapper.RECORD_COUNT_KEY, records.length);
-        mapReduceDriver.getConfiguration().set(GenerateRecordPairsMapper.UID_FIELD_NAME_KEY, "uiid");
-        mapReduceDriver.getConfiguration().setStrings(RecordPairSimilarityReducer.FIELD_NAMES_KEY,fieldNames);
-        mapReduceDriver.getConfiguration().set(RecordPairSimilarityReducer.SCHEMA_KEY,schema.toString());
+        mapReduceDriver.getConfiguration().addResource(conf);
         AvroSerialization.setKeyWriterSchema(mapReduceDriver.getConfiguration(), schema);
         AvroSerialization.setKeyReaderSchema(mapReduceDriver.getConfiguration(), schema);
         mapReduceDriver.setOutputSerializationConfiguration(mapReduceDriver.getConfiguration());
         AvroSerialization.addToConfiguration(mapReduceDriver.getOutputSerializationConfiguration());
-        AvroSerialization.setValueWriterSchema(mapReduceDriver.getOutputSerializationConfiguration(), schema);
-        AvroSerialization.setValueReaderSchema(mapReduceDriver.getOutputSerializationConfiguration(), schema);
         LOG.info("MapReduceDriver ready.");
     }
 
     @Test
     public void test0() throws IOException {
         mapDriver.withInput(new AvroKey<GenericRecord>(records[0]), NullWritable.get());
-        List<Pair<LongWritable, AvroValue<GenericRecord>>> expectedOutputs =
-                new ArrayList<Pair<LongWritable,  AvroValue<GenericRecord>>>();
         long[] ranksWith0 = CombinatoricsUtil.ranksContaining(0,records.length);
         LOG.info("Ranks of element 0 in {} : {}",records.length, Arrays.toString(ranksWith0));
-        for (int i = 0; i <ranksWith0.length; i++) {
-            expectedOutputs.add(new Pair<LongWritable, AvroValue<GenericRecord>>(
-                    new LongWritable(ranksWith0[i]),
-                    new AvroValue<GenericRecord>(records[0])));
+
+        List<Pair<LongWritable, TextArrayWritable>> expectedOutputs =
+                new ArrayList<Pair<LongWritable, TextArrayWritable>>();
+        TextArrayWritable values =
+                GenerateRecordPairsMapper.toWritableFieldValues(records[0],fieldNames);
+        for (long rank : ranksWith0) {
+            expectedOutputs.add(
+                    new Pair<LongWritable, TextArrayWritable>(
+                            new LongWritable(rank), values));
         }
 
         mapDriver.withAllOutput(expectedOutputs);
@@ -113,25 +115,28 @@ public class ExhaustiveRecordPairSimilarityMRTest {
                 new AvroKey<GenericRecord>(records[0]), NullWritable.get()));
         inputs.add(new Pair<AvroKey<GenericRecord>, NullWritable>(
                 new AvroKey<GenericRecord>(records[1]), NullWritable.get()));
-
         mapDriver.withAll(inputs);
-        List<Pair<LongWritable, AvroValue<GenericRecord>>> expectedOutputs =
-                new ArrayList<Pair<LongWritable,  AvroValue<GenericRecord>>>();
+
+        TextArrayWritable values0 =
+                GenerateRecordPairsMapper.toWritableFieldValues(records[0],fieldNames);
+        TextArrayWritable values1 =
+                GenerateRecordPairsMapper.toWritableFieldValues(records[1],fieldNames);
+
+        List<Pair<LongWritable, TextArrayWritable>> expectedOutputs =
+                new ArrayList<Pair<LongWritable,  TextArrayWritable>>();
         long[] ranksWith0 = CombinatoricsUtil.ranksContaining(0,records.length);
         long[] ranksWith1 = CombinatoricsUtil.ranksContaining(1,records.length);
         LOG.info("Ranks of element 0 in {} : {}",records.length, Arrays.toString(ranksWith0));
         LOG.info("Ranks of element 1 in {} : {}",records.length, Arrays.toString(ranksWith1));
         assert ranksWith0.length == ranksWith1.length;
         for (int i = 0; i <ranksWith0.length; i++) {
-            expectedOutputs.add(new Pair<LongWritable, AvroValue<GenericRecord>>(
-                    new LongWritable(ranksWith0[i]),
-                    new AvroValue<GenericRecord>(records[0])));
-            expectedOutputs.add(new Pair<LongWritable, AvroValue<GenericRecord>>(
-                    new LongWritable(ranksWith1[i]),
-                    new AvroValue<GenericRecord>(records[1])));
+            expectedOutputs.add(new Pair<LongWritable, TextArrayWritable>(
+                    new LongWritable(ranksWith0[i]), values0));
+            expectedOutputs.add(new Pair<LongWritable, TextArrayWritable>(
+                    new LongWritable(ranksWith1[i]), values1));
         }
 
-        final List<Pair<LongWritable, AvroValue<GenericRecord>>> result = mapDriver.run();
+        final List<Pair<LongWritable, TextArrayWritable>> result = mapDriver.run();
         for (Pair p : result) {
             LOG.info(String.format("Rank %s -> contains %s records",p.getFirst(),p.getSecond()));
         }

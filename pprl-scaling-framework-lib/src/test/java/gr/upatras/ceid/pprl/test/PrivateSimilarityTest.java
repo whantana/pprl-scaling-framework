@@ -39,7 +39,9 @@ public class PrivateSimilarityTest {
         LOG.info("Hamming : {} ", PrivateSimilarityUtil.hamming(bf1, bf2));
         LOG.info("Hamming1 : {} ",PrivateSimilarityUtil.hamming1(bf1, bf2));
         LOG.info("Jaccard : {} ",PrivateSimilarityUtil.jaccard(bf1, bf2));
+        LOG.info("Jaccard1 : {} ",PrivateSimilarityUtil.jaccard1(bf1, bf2));
         LOG.info("Dice : {} ",PrivateSimilarityUtil.dice(bf1, bf2));
+        LOG.info("Dice1 : {} ",PrivateSimilarityUtil.dice1(bf1, bf2));
     }
 
     @Test
@@ -62,7 +64,9 @@ public class PrivateSimilarityTest {
         LOG.info("Hamming : {} ", PrivateSimilarityUtil.hamming(bf1, bf2));
         LOG.info("Hamming1 : {} ",PrivateSimilarityUtil.hamming1(bf1, bf2));
         LOG.info("Jaccard : {} ",PrivateSimilarityUtil.jaccard(bf1, bf2));
-        LOG.info("Dice : {} ",PrivateSimilarityUtil.dice(bf1,bf2));
+        LOG.info("Jaccard1 : {} ",PrivateSimilarityUtil.jaccard1(bf1, bf2));
+        LOG.info("Dice : {} ",PrivateSimilarityUtil.dice(bf1, bf2));
+        LOG.info("Dice1 : {} ",PrivateSimilarityUtil.dice1(bf1, bf2));
     }
 
     @Test
@@ -81,11 +85,12 @@ public class PrivateSimilarityTest {
         LOG.info("BF2 : {}",DatasetsUtil.prettyBinary(bytes));
         final BloomFilter bf2 = new BloomFilter(N,bytes);
 
-
         LOG.info("Hamming : {} ", PrivateSimilarityUtil.hamming(bf1, bf2));
         LOG.info("Hamming1 : {} ",PrivateSimilarityUtil.hamming1(bf1, bf2));
         LOG.info("Jaccard : {} ",PrivateSimilarityUtil.jaccard(bf1, bf2));
-        LOG.info("Dice : {} ",PrivateSimilarityUtil.dice(bf1,bf2));
+        LOG.info("Jaccard1 : {} ",PrivateSimilarityUtil.jaccard1(bf1, bf2));
+        LOG.info("Dice : {} ",PrivateSimilarityUtil.dice(bf1, bf2));
+        LOG.info("Dice1 : {} ",PrivateSimilarityUtil.dice1(bf1, bf2));
     }
 
     @Test
@@ -136,9 +141,23 @@ public class PrivateSimilarityTest {
                                 encodingB.retrieveBloomFilter(encodedRecordB)
                         )
                 );
+                LOG.info("jaccard1({}) = {}",
+                        String.format("%s,%s", encodedRecordA.get("id"), encodedRecordB.get("id")),
+                        PrivateSimilarityUtil.jaccard1(
+                                encodingA.retrieveBloomFilter(encodedRecordA),
+                                encodingB.retrieveBloomFilter(encodedRecordB)
+                        )
+                );
                 LOG.info("dice({}) = {}",
                         String.format("%s,%s", encodedRecordA.get("id"), encodedRecordB.get("id")),
                         PrivateSimilarityUtil.dice(
+                                encodingA.retrieveBloomFilter(encodedRecordA),
+                                encodingB.retrieveBloomFilter(encodedRecordB)
+                        )
+                );
+                LOG.info("dice1({}) = {}",
+                        String.format("%s,%s", encodedRecordA.get("id"), encodedRecordB.get("id")),
+                        PrivateSimilarityUtil.dice1(
                                 encodingA.retrieveBloomFilter(encodedRecordA),
                                 encodingB.retrieveBloomFilter(encodedRecordB)
                         )

@@ -18,42 +18,33 @@ import java.util.List;
 /**
  * Record-Pair similarity reducer class.
  */
-public class RecordPairSimilarityReducer extends Reducer<LongWritable, AvroValue<GenericRecord>,NullWritable,NullWritable> {
-    public static String SIMILARITY_VECTORS_KEY = "similarity.vectors";
-    public static String FIELD_NAMES_KEY = "field.names";
-    public static String PAIRS_DONE_KEY = "pairs.done";
-    public static String SCHEMA_KEY = "schema";
-
-    private String[] fieldNames;
-    private Schema schema;
-
+public class RecordPairSimilarityReducer extends Reducer<LongWritable, TextArrayWritable,NullWritable,NullWritable> {
 
     @Override
-    protected void setup(Context context) throws IOException, InterruptedException {
-        schema = (new Schema.Parser()).parse(context.getConfiguration().get(SCHEMA_KEY));
-        fieldNames = context.getConfiguration().getStrings(FIELD_NAMES_KEY);
-        if(fieldNames == null) throw new InterruptedException("Fields names are not set.");
-    }
+    protected void reduce(LongWritable key, Iterable<TextArrayWritable> values, Context context) throws IOException, InterruptedException {
 
-    @Override
-    protected void reduce(LongWritable key, Iterable<AvroValue<GenericRecord>> values, Context context) throws IOException, InterruptedException {
-
-        final List<GenericRecord> list = new ArrayList<GenericRecord>();
-        for(AvroValue<GenericRecord> value : values) {
-            GenericRecord record = new GenericData.Record(schema);
-            for (String fieldName : DatasetsUtil.fieldNames(schema))
-                record.put(fieldName,value.datum().get(fieldName));
-            list.add(record);
+        final List<TextArrayWritable> list = new ArrayList<TextArrayWritable>();
+        for(TextArrayWritable value : values) {
+            TextArrayWritable copy = new TextArrayWritable();
+            copy.set(value.get());
+            list.add(copy);
         }
 
         switch (list.size()) {
+            case 1:
+                // ignore
+                break;
             case 2:
-                final GenericRecord[] recordPair = {list.get(0),list.get(1)};
-                boolean[] vector = SimilarityUtil.recordPairSimilarity(recordPair, fieldNames);
+                final TextArrayWritable[] pair = {list.get(0),list.get(1)};
+                assert pair[0].getStrings().length == pair[1].getStrings().length;
+                final String[][] strings = new String[2][pair[0].getStrings().length];
+                System.arraycopy(pair[0].getStrings(),0,strings[0],0,pair[0].getStrings().length);
+                System.arraycopy(pair[1].getStrings(),0,strings[1],0,pair[1].getStrings().length);
+                boolean[] vector = SimilarityUtil.stringPairSimilarity(strings);
                 context.getCounter(
-                        RecordPairSimilarityReducer.SIMILARITY_VECTORS_KEY ,
+                        CommonKeys.SIMILARITY_VECTORS_KEY ,
                         String.valueOf(SimilarityVectorFrequencies.vector2Index(vector))).increment(1);
-                context.getCounter(RecordPairSimilarityReducer.PAIRS_DONE_KEY,"reduce").increment(1);
+                context.getCounter(CommonKeys.PAIRS_DONE_KEY,"reduce").increment(1);
                 break;
             default:
                 throw new IllegalStateException("No record pair!.");

@@ -64,23 +64,21 @@ public class ExhaustiveRecordPairSimilarityTool extends Configured implements To
         final int reducersCount = Integer.valueOf(args[6]);
         final Schema inputSchema = loadAvroSchemaFromHdfs(FileSystem.get(conf), inputSchemaPath);
 
-        conf.set(GenerateRecordPairsMapper.UID_FIELD_NAME_KEY,uidFieldName);
-        conf.setInt(GenerateRecordPairsMapper.RECORD_COUNT_KEY, recordCount);
-        conf.setStrings(RecordPairSimilarityReducer.FIELD_NAMES_KEY,fieldNames);
-        conf.set(RecordPairSimilarityReducer.SCHEMA_KEY,inputSchema.toString());
-
+        conf.set(CommonKeys.UID_FIELD_NAME_KEY,uidFieldName);
+        conf.setInt(CommonKeys.RECORD_COUNT_KEY, recordCount);
+        conf.setStrings(CommonKeys.FIELD_NAMES_KEY,fieldNames);
 
         // set description and log it
         final String description = String.format("%s(" +
                         "input-path : %s, input-schema-path : %s," +
                         "output-path : %s," +
-                        "uid-field-name : %s, record-count : %d , field-names : %s" +
+                        "uid-field-name : %s, record-count : %d , field-names : %s " +
                         "reducers-count : %d)",
                 JOB_DESCRIPTION,
                 shortenUrl(input.toString()),shortenUrl(inputSchemaPath.toString()),
                 shortenUrl(outputPath.toString()),
                 uidFieldName,recordCount,Arrays.toString(fieldNames),reducersCount);
-        LOG.info("Running :" + description);
+        LOG.info("Running : " + description);
 
         // setup job
         final Job job = Job.getInstance(conf);
@@ -96,7 +94,7 @@ public class ExhaustiveRecordPairSimilarityTool extends Configured implements To
         // setup mapper
         job.setMapperClass(GenerateRecordPairsMapper.class);
         job.setMapOutputKeyClass(LongWritable.class);
-        AvroJob.setMapOutputValueSchema(job,inputSchema);
+        job.setMapOutputValueClass(TextArrayWritable.class);
 
         // setup combiners
         job.setCombinerClass(RecordPairSimilarityCombiner.class);
@@ -149,7 +147,7 @@ public class ExhaustiveRecordPairSimilarityTool extends Configured implements To
         final SimilarityVectorFrequencies matrix = new SimilarityVectorFrequencies(fieldNames.length);
         for (int i = 0; i <  matrix.getVectorFrequencies().length; i++) {
             final Counter counter = counters.findCounter(
-                    RecordPairSimilarityReducer.SIMILARITY_VECTORS_KEY,
+                    CommonKeys.SIMILARITY_VECTORS_KEY,
                     String.valueOf(i));
             long value = counter.getValue();
             LOG.info("Counter {} value {}",counter.getDisplayName(),value);
@@ -166,10 +164,10 @@ public class ExhaustiveRecordPairSimilarityTool extends Configured implements To
     public static void logPairComparisonDuringMRPhases(final Counters counters) {
         long pairsDoneInCombine =
                 counters.findCounter(
-                        RecordPairSimilarityReducer.PAIRS_DONE_KEY, "combine").getValue();
+                        CommonKeys.PAIRS_DONE_KEY, "combine").getValue();
         long pairsDoneInReduce =
                 counters.findCounter(
-                        RecordPairSimilarityReducer.PAIRS_DONE_KEY, "reduce").getValue();
+                        CommonKeys.PAIRS_DONE_KEY, "reduce").getValue();
         LOG.info("Pairs Done during COMBINE={}\tPairs Done during REDUCE={}",
                 pairsDoneInCombine, pairsDoneInReduce);
     }

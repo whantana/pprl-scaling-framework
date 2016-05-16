@@ -53,5 +53,5 @@
     <bean id="datasetsService" class="gr.upatras.ceid.pprl.service.datasets.DatasetsService"/>
     <bean id="encodingService" class="gr.upatras.ceid.pprl.service.encoding.EncodingService"/>
     <bean id="matchingService" class="gr.upatras.ceid.pprl.service.matching.MatchingService"/>
-
+    <bean id="blockingService" class="gr.upatras.ceid.pprl.service.blocking.BlockingService"/>
 </beans>

@@ -36,13 +36,11 @@ public class LocalServicesTest {
     private static final Logger LOG = LoggerFactory.getLogger(LocalServicesTest.class);
 
     private static final Path dataRepo = new Path("data");
-
     private static final String[] dataNames = {
             "person_small",
             "voters_a",
             "voters_b"
     };
-
     private static final String[][] selectedFieldNames = new String[][]{
             {"name", "surname"},
             {"surname", "name", "address", "city"},
@@ -54,7 +52,9 @@ public class LocalServicesTest {
             {"id"}
     };
     private static final String[] uidFieldNames = new String[]{
-            "id","id","id"
+            "id",
+            "id",
+            "id"
     };
 
     private static final double[][] initialMUP = new double[][]{
@@ -66,7 +66,6 @@ public class LocalServicesTest {
     private static final int ENCODING_N = 1024;
     private static final int ENCODING_K = 10;
     private static final int ENCODING_Q = 2;
-
 
     private static final int HLSH_BLOCKING_L = 10;
     private static final int HLSH_BLOCKING_K = 5;
@@ -80,18 +79,15 @@ public class LocalServicesTest {
     private static final Path[] datasetsAvro;
     private static final Path[] datasetsSchema;
     private static final Path[] datasetsStats;
-
     static {
         datasetsBase = new Path[dataNames.length];
 
         for (int i = 0; i < dataNames.length; i++) {
             datasetsBase[i] = new Path(dataRepo, dataNames[i]);
         }
-
         datasetsAvro = new Path[datasetsBase.length];
         datasetsSchema = new Path[datasetsBase.length];
         datasetsStats = new Path[datasetsBase.length];
-
         for (int i = 0; i < dataNames.length; i++) {
             datasetsAvro[i] = new Path(datasetsBase[i], "avro");
             datasetsSchema[i] =
@@ -99,9 +95,6 @@ public class LocalServicesTest {
             datasetsStats[i] = new Path(datasetsBase[i], "stats_report.properties");
         }
     }
-
-    ;
-
 
     @Autowired
     private LocalDatasetsService ds;

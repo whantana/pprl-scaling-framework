@@ -44,13 +44,8 @@ public class BlockingUtil {
         fsdos.writeBytes("Frequent Pairs : " + result.getFrequentPairsCount() + "\n");
         fsdos.writeBytes("Matched Pairs : " + result.getMatchedPairsCount() + "\n");
         for (RecordIdPair pair : result.getMatchedPairs()){
-            String ps = String.format("%s , %s", pair.aliceId, pair.bobId);
-            if(pair.hasDistances())
-                fsdos.writeBytes(ps + " " +
-                        String.format("hamming=%.2f,jaccard=%.2f,dice=%.2f",
-                                pair.hammingDistance,pair.jaccardCoeff,pair.diceCoeff)+"\n");
-            else
-                fsdos.writeBytes(ps + "\n");
+            String ps = String.format("%s , %s\n", pair.aliceId, pair.bobId);
+            fsdos.writeBytes(ps + "\n");
         }
 
         fsdos.close();

@@ -171,4 +171,34 @@ public class SimilarityUtil {
         }
         return vector;
     }
+
+    /**
+     * Returns a boolean vector representing the a record pairs similarity among their fields.
+     *
+     * @param strings A two dimentional string array. First dimention must be equal to 2 (pair).
+     *                Second dimentation must be of the same length
+     * @param similarityMethodName similarity method name.
+     * @return a similarity boolean vector.
+     */
+    public static boolean[] stringPairSimilarity(final String[][] strings,
+                                                 final String similarityMethodName) {
+        assert strings.length == 2;
+        assert strings[0].length == strings[1].length;
+        final boolean[] vector = new boolean[strings[0].length];
+        for (int i = 0 ; i < strings[0].length ; i++) {
+            vector[i] =  similarity(similarityMethodName, strings[0][i], strings[1][i]);
+        }
+        return vector;
+    }
+
+    /**
+     * Returns a boolean vector representing the a record pairs similarity among their fields.
+     *
+     * @param strings A two dimentional string array. First dimention must be equal to 2 (pair).
+     *                Second dimentation must be of the same length
+     * @return a similarity boolean vector.
+     */
+    public static boolean[] stringPairSimilarity(final String[][] strings) {
+        return stringPairSimilarity(strings,DEFAULT_SIMILARITY_METHOD_NAME);
+    }
 }

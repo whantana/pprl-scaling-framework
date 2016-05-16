@@ -194,7 +194,7 @@ public class HammingLSHBlocking {
         List<RecordIdPair> mathcedPairs = new LinkedList<RecordIdPair>();
         int matchedPairsCount = 0;
         int frequentPairsCount = 0;
-        final short[] collisions = new short[bobRecords.length];
+        final short[] collisions = new short[bobRecords.length]; // use a HashBag?
         System.out.print("Counting colission with alice records (0/" + aliceRecords.length + ").");
         for(int aid=0; aid < aliceRecords.length; aid++) {
             System.out.print("\rCounting collisions with alice records (" + (aid+1)

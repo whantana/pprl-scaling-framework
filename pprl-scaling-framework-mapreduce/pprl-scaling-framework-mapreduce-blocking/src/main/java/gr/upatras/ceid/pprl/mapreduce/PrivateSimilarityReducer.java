@@ -33,6 +33,8 @@ public class PrivateSimilarityReducer extends Reducer<Text,AvroValue<GenericReco
 
     private int N;
 
+    private long matchedPairsCount = 0;
+
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
@@ -67,7 +69,8 @@ public class PrivateSimilarityReducer extends Reducer<Text,AvroValue<GenericReco
     }
 
     @Override
-    protected void reduce(Text key, Iterable<AvroValue<GenericRecord>> values, Context context) throws IOException, InterruptedException {
+    protected void reduce(Text key, Iterable<AvroValue<GenericRecord>> values, Context context)
+            throws IOException, InterruptedException {
         GenericRecord aliceRecord = null;
         GenericRecord bobRecord = null;
         for (AvroValue<GenericRecord> v : values) {
@@ -92,9 +95,19 @@ public class PrivateSimilarityReducer extends Reducer<Text,AvroValue<GenericReco
         final boolean matches =
                 PrivateSimilarityUtil.similarity(similarityMethodName,aliceBf,bobBf,similarityThreshold);
 
-        if(matches) context.write(
-                new Text(String.valueOf(aliceRecord.get(aliceUidFieldname))),
-                new Text(String.valueOf(bobRecord.get(bobUidFieldname)))
-        );
+        if(matches) {
+            matchedPairsCount++;
+            context.write(
+                    new Text(String.valueOf(aliceRecord.get(aliceUidFieldname))),
+                    new Text(String.valueOf(bobRecord.get(bobUidFieldname)))
+            );
+        }
+    }
+
+    @Override
+    protected void cleanup(Context context) throws IOException, InterruptedException {
+        context.getCounter(CommonKeys.COUNTER_GROUP_NAME,
+                CommonKeys.MATCHED_PAIR_COUNTER).increment(matchedPairsCount);
     }
 }
+

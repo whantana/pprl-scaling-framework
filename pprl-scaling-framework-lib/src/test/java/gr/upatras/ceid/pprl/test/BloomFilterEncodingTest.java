@@ -186,14 +186,12 @@ public class BloomFilterEncodingTest {
         encoding.initialize();
 
         final File encodedSchemaFile = new File(name + ".avsc");
-        LOG.info("Encoding schema file : ", encodedSchemaFile.toString());
         encodedSchemaFile.createNewFile();
         final PrintWriter schemaWriter = new PrintWriter(encodedSchemaFile);
         schemaWriter.print(encodingSchema .toString(true));
         schemaWriter.close();
 
         final File encodedFile = new File(name + ".avro");
-        LOG.info("Encoding avro file : ", encodedFile.toString());
         encodedFile.createNewFile();
         final DataFileWriter<GenericRecord> writer =
                 new DataFileWriter<GenericRecord>(

@@ -96,7 +96,7 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         conf.setStrings(CommonKeys.BLOCKING_KEYS_KEY,blocking.groupsAsStrings());
         conf.set(CommonKeys.SIMILARITY_METHOD_NAME_KEY,similarityMethodName);
         conf.setDouble(CommonKeys.SIMILARITY_THRESHOLD_KEY,similarityThreshold);
-        conf.setInt(CommonKeys.FREQUENT_PAIR_LIMIT_KEY, C);
+        conf.setInt(CommonKeys.FREQUENT_PAIR_LIMIT, C);
 
 
         // setup job1
@@ -188,9 +188,9 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
             return 1;
         }
         fs.delete(allPairsPath,true);
-//        LOG.info("Counters : ");
-//        for(Counter c : job2.getCounters().getGroup(FindFrequentIdPairsReducer.COUNTER_GROUP_NAME))
-//            LOG.info("\t{} : {}",c.getDisplayName(),c.getValue()); // TODO How many frequent pairs
+        LOG.info("Counters : ");
+        for(Counter c : job2.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME))
+            LOG.info("\t{} : {}",c.getDisplayName(),c.getValue());
 
         // setup job3
         final String description3 = String.format("%s(" +
@@ -236,9 +236,9 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
             return 1;
         }
         fs.delete(frequentPairsPath,true);
-//        LOG.info("Counters : ");
-//        for(Counter c : job3.getCounters().getGroup(FindFrequentIdPairsReducer.COUNTER_GROUP_NAME))
-//            LOG.info("\t{} : {}",c.getDisplayName(),c.getValue()); // TODO How many matched pairs
+        LOG.info("Counters : ");
+        for(Counter c : job3.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME))
+            LOG.info("\t{} : {}",c.getDisplayName(),c.getValue());
 
         LOG.info("All jobs are succesfull. See \"{}\" for the matched pairs list.", matchedPairsPath);
         return 0;

@@ -65,7 +65,7 @@ public class CreateHashesBenchmarkTest {
         long[][] millisV3backed = benchmarkCreateHashesV3MapBacked();
 
         LOG.info("\nSaving benchmarks to CSV files.");
-        final String header = "k,createHashesV1,createHashesV2,MBcreateHashesV1,MBcreateHashesV2,MBcreateHashesV3";
+        final String header = "k,createHashesV1,createHashesV2,createHashesV3,MBcreateHashesV1,MBcreateHashesV2,MBcreateHashesV3";
         for (int i = 10,j=0; j<3; i=i/2,j++) {
             final String fileName = String.format("benchmark_scale_%d.csv",j+1);
             final File file = new File(fileName);
@@ -127,7 +127,7 @@ public class CreateHashesBenchmarkTest {
         long end = System.currentTimeMillis();
         long totalTime = (end-start)/1000;
         LOG.info("Benchmarking : BloomFilter.createHashesV1() 100%.");
-        LOG.info(String.format("Read %d bytes +, Time %d seconds.",totalBytesRead,totalTime));
+        LOG.info(String.format("Read %d bytes , Time %d seconds.",totalBytesRead,totalTime));
         return millis;
     }
 
@@ -225,7 +225,7 @@ public class CreateHashesBenchmarkTest {
         long end = System.currentTimeMillis();
         long totalTime = (end-start)/1000;
         LOG.info("Benchmarking : BloomFilter.createHashesV1() backed by dictionary 100%.");
-        LOG.info(String.format("Read %d bytes, Hashed %d bytes, Time %d seconds\n", totalBytesRead, totalBytesHashed, totalTime));
+        LOG.info(String.format("Read %d bytes, Hashed %d bytes, Time %d seconds", totalBytesRead, totalBytesHashed, totalTime));
         LOG.info("Final dictionary keys size : " + map.keySet().size());
         return millis;
     }
@@ -262,8 +262,8 @@ public class CreateHashesBenchmarkTest {
         }
         long end = System.currentTimeMillis();
         long totalTime = (end-start)/1000;
-        LOG.info("\rBenchmarking : BloomFilter.createHashesV2() backed by dictionary 100%.");
-        LOG.info(String.format("Read %d bytes, Hashed %d bytes, Time %d seconds\n", totalBytesRead, totalBytesHashed, totalTime));
+        LOG.info("Benchmarking : BloomFilter.createHashesV2() backed by dictionary 100%.");
+        LOG.info(String.format("Read %d bytes, Hashed %d bytes, Time %d seconds", totalBytesRead, totalBytesHashed, totalTime));
         LOG.info("Final dictionary keys size : " +  map.keySet().size() );
         return millis;
     }

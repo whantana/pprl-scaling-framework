@@ -29,6 +29,8 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Counter;
+import org.apache.hadoop.mapreduce.Counters;
 import org.apache.hadoop.mrunit.mapreduce.MapDriver;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import org.apache.hadoop.mrunit.mapreduce.ReduceDriver;
@@ -41,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -62,7 +65,7 @@ public class HammingLSHBlockingMRTest {
     private MapReduceDriver<Text,Text,Text,IntWritable,Text,Text> findFrequentPairsMapReduceDriver;
     private MapDriver<AvroKey<GenericRecord>,NullWritable,Text,AvroValue<GenericRecord>> formRecordPairsMapperDriverA;
     private MapDriver<AvroKey<GenericRecord>,NullWritable,Text,AvroValue<GenericRecord>> formRecordPairsMapperDriverB;
-    private ReduceDriver<Text,AvroValue<GenericRecord>,Text,Text> privateSimilarityReducer;
+    private ReduceDriver<Text,AvroValue<GenericRecord>,Text,Text> privateSimilarityReducerDriver;
 
     private GenericRecord[] aliceEncodedRecords;
     private GenericRecord[] bobEncodedRecords;
@@ -109,9 +112,9 @@ public class HammingLSHBlockingMRTest {
         conf.set(CommonKeys.BOB_SCHEMA_KEY, bobEncodingSchema.toString());
         conf.set(CommonKeys.BOB_UID_KEY, "id");
         conf.setStrings(CommonKeys.BLOCKING_KEYS_KEY, blocking.groupsAsStrings());
-        conf.setInt(CommonKeys.BLOCKING_GROUP_COUNT_KEY,L);
+        conf.setInt(CommonKeys.BLOCKING_GROUP_COUNT,L);
         conf.setInt("mapreduce.job.reduces",R);
-        conf.setInt(CommonKeys.FREQUENT_PAIR_LIMIT_KEY, C);
+        conf.setInt(CommonKeys.FREQUENT_PAIR_LIMIT, C);
         conf.set(CommonKeys.SIMILARITY_METHOD_NAME_KEY,"hamming");
         conf.setDouble(CommonKeys.SIMILARITY_THRESHOLD_KEY,100);
 
@@ -167,10 +170,10 @@ public class HammingLSHBlockingMRTest {
         formRecordPairsMapperDriverB.setOutputSerializationConfiguration(conf);
         LOG.info("formRecordPairsMapperDriverB is ready.");
 
-        privateSimilarityReducer = ReduceDriver.newReduceDriver(new PrivateSimilarityReducer());
-        privateSimilarityReducer.getConfiguration().addResource(conf);
-        privateSimilarityReducer.setOutputSerializationConfiguration(conf);
-        LOG.info("privateSimilarityReducer is ready.");
+        privateSimilarityReducerDriver = ReduceDriver.newReduceDriver(new PrivateSimilarityReducer());
+        privateSimilarityReducerDriver.getConfiguration().addResource(conf);
+        privateSimilarityReducerDriver.setOutputSerializationConfiguration(conf);
+        LOG.info("privateSimilarityReducerDriver is ready.");
     }
 
     @Test
@@ -271,12 +274,32 @@ public class HammingLSHBlockingMRTest {
             LOG.info(sb.toString());
         }
         for (Pair<Text,List<AvroValue<GenericRecord>>> p : intermediatePairs) {
-            privateSimilarityReducer.addInput(p);
+            privateSimilarityReducerDriver.addInput(p);
         }
 
         LOG.info("Matched pairs : ");
-        for(Pair<Text,Text> p : privateSimilarityReducer.run()) {
+        for(Pair<Text,Text> p : privateSimilarityReducerDriver.run()) {
             LOG.info("Record from Alice : {} , Record from Bob : {}",p.getFirst(),p.getSecond());
+        }
+
+        List<Counters> allCounters = new ArrayList<Counters>();
+        allCounters.add(blockingMapperDriverA.getCounters());
+        allCounters.add(blockingMapperDriverB.getCounters());
+        for (int i = 0 ; i < generatePairReducerDriver.length; i++)
+            allCounters.add( generatePairReducerDriver[i].getCounters());
+        allCounters.add(findFrequentPairsMapReduceDriver.getCounters());
+        allCounters.add(formRecordPairsMapperDriverA.getCounters());
+        allCounters.add(formRecordPairsMapperDriverB.getCounters());
+        allCounters.add(privateSimilarityReducerDriver.getCounters());
+
+        LOG.info("Counters : ");
+        for(Counters c : allCounters) {
+            Iterator<Counter> iterator =
+                    c.getGroup(CommonKeys.COUNTER_GROUP_NAME).iterator();
+            while(iterator.hasNext()) {
+                final Counter cc = iterator.next();
+                LOG.info("{} : {}",cc.getDisplayName(), cc.getValue());
+            }
         }
     }
 }

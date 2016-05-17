@@ -19,7 +19,7 @@ public class BlockingGroupPartitioner extends Partitioner<Text, Text> implements
 
     public void setConf(Configuration configuration) {
         this.configuration = configuration;
-        L = configuration.getInt(CommonKeys.BLOCKING_GROUP_COUNT_KEY,-1);
+        L = configuration.getInt(CommonKeys.BLOCKING_GROUP_COUNT,-1);
         try {
             Job job = new Job(this.configuration);
             R = job.getNumReduceTasks();

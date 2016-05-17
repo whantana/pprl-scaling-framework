@@ -44,6 +44,24 @@
                            file://${build.test.dir}/avro-mapred-${avro.version}-hadoop2.jar,
                            file://${build.test.dir}/pprl-scaling-framework-lib-${build.version}.jar"/>
 
+    <hdp:tool-runner id="hammingLshBlockingToolRunner"
+                     configuration-ref="hadoopConfiguration"
+                     jar="file://${build.test.dir}/pprl-scaling-framework-mapreduce-blocking-${build.version}.jar"
+                     tool-class="gr.upatras.ceid.pprl.mapreduce.HammingLSHBlockingTool"
+                     close-fs="false"
+                     libs="file://${build.test.dir}/avro-${avro.version}.jar,
+						   file://${build.test.dir}/avro-mapred-${avro.version}-hadoop2.jar,
+                           file://${build.test.dir}/pprl-scaling-framework-lib-${build.version}.jar"/>
+
+    <hdp:tool-runner id="hammingLshFpsBlockingToolRunner"
+                     configuration-ref="hadoopConfiguration"
+                     jar="file://${build.test.dir}/pprl-scaling-framework-mapreduce-blocking-${build.version}.jar"
+                     tool-class="gr.upatras.ceid.pprl.mapreduce.HammingLSHFPSBlockingTool"
+                     close-fs="false"
+                     libs="file://${build.test.dir}/avro-${avro.version}.jar,
+						   file://${build.test.dir}/avro-mapred-${avro.version}-hadoop2.jar,
+                           file://${build.test.dir}/pprl-scaling-framework-lib-${build.version}.jar"/>
+
     <hdp:configuration id="hadoopConfiguration"/>
     <hdp:file-system id="hdfs"/>
     <bean id="localFs" class="org.apache.hadoop.fs.FileSystem" factory-method="getLocal">

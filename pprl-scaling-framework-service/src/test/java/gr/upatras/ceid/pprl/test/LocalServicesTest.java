@@ -69,7 +69,7 @@ public class LocalServicesTest {
 
     private static final int HLSH_BLOCKING_L = 10;
     private static final int HLSH_BLOCKING_K = 5;
-    private static final int HLSH_BLOCKING_C = 2;
+    private static final short HLSH_BLOCKING_C = 2;
 
     private static final String SIMILARITY_METHOD_NAME = "hamming";
     private static final double SIMILARITY_THRESHOLD = 100;
@@ -353,7 +353,7 @@ public class LocalServicesTest {
             HammingLSHBlocking.HammingLSHBlockingResult result = bs.runFPSonHammingBlocking(blocking,
                     aliceEncodedRecords, aliceUidFieldName,
                     bobEncodedRecords, bobUidFieldName,
-                    (short) HLSH_BLOCKING_C, SIMILARITY_METHOD_NAME, SIMILARITY_THRESHOLD);
+                    HLSH_BLOCKING_C, SIMILARITY_METHOD_NAME, SIMILARITY_THRESHOLD);
 
             final Path blockingOutputPath = new Path(dataRepo,"blocking_" + encName + "voters_a_voters_b.pairs");
             bs.saveResult(result,blockingOutputPath);

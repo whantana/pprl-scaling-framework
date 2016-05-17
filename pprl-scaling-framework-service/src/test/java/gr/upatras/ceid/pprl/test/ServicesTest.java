@@ -25,7 +25,9 @@ import org.springframework.data.hadoop.test.junit.AbstractMapReduceTests;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 
 import static org.junit.Assert.assertTrue;
 
@@ -68,7 +70,7 @@ public class ServicesTest extends AbstractMapReduceTests {
 
     private static final int HLSH_BLOCKING_L = 10;
     private static final int HLSH_BLOCKING_K = 5;
-    private static final int HLSH_BLOCKING_C = 2;
+    private static final short HLSH_BLOCKING_C = 2;
 
     private static final String SIMILARITY_METHOD_NAME = "hamming";
     private static final double SIMILARITY_THRESHOLD = 100;
@@ -509,7 +511,58 @@ public class ServicesTest extends AbstractMapReduceTests {
     }
 
     @Test
-    public void test7() throws IOException, DatasetException {
+    public void test7() throws Exception {
+        final String[] encNames = {
+                "clk_",
+                "fbf_static_",
+                "fbf_dynamic_",
+                "rbf_uniform_fbf_static_",
+                "rbf_uniform_fbf_dynamic_",
+                "rbf_weighted_fbf_static_",
+                "rbf_weighted_fbf_dynamic_"
+        };
+
+        for (String encName : encNames) {
+            final String aliceName = encName + "voters_a";
+            final Path[] alicePaths = ds.retrieveDirectories(aliceName);
+            final Path aliceAvroPath = alicePaths[1];
+            final Path aliceSchemaPath = ds.retrieveSchemaPath(alicePaths[2]);
+            final String aliceUidFieldName = uidFieldNames[1];
+            final String bobName = encName + "voters_b";
+            final Path[] bobPaths = ds.retrieveDirectories(bobName);
+            final Path bobAvroPath = alicePaths[1];
+            final Path bobSchemaPath = ds.retrieveSchemaPath(alicePaths[2]);
+            final String bobUidFieldName = uidFieldNames[2];
+            final String blockingName1 = String.format("blocking.%s.%s.%s",
+                    (new SimpleDateFormat("yyyy.MM.dd.hh.mm")).format(new Date()),
+                    aliceName,bobName
+            );
+
+            bs.runHammingLSHBlockingToolRunner(
+                    aliceAvroPath,aliceSchemaPath,aliceUidFieldName,
+                    bobAvroPath,bobSchemaPath,bobUidFieldName,
+                    blockingName1,
+                    HLSH_BLOCKING_L,HLSH_BLOCKING_K,HLSH_BLOCKING_C,
+                    4,4,4
+            );
+
+            final String blockingName2 = String.format("blocking.%s.%s.%s",
+                    (new SimpleDateFormat("yyyy.MM.dd.hh.mm")).format(new Date()),
+                    aliceName,bobName
+            );
+
+            bs.runHammingLSHFPSBlockingToolRuner(
+                    aliceAvroPath,aliceSchemaPath,aliceUidFieldName,
+                    bobAvroPath,bobSchemaPath,bobUidFieldName,
+                    blockingName2,
+                    HLSH_BLOCKING_L,HLSH_BLOCKING_K,HLSH_BLOCKING_C,
+                    4,4,4
+            );
+        }
+    }
+
+    @Test
+    public void test8() throws IOException, DatasetException {
         final FileSystem hdfs = getFileSystem();
         final Path basePPRLpath = new Path(hdfs.getHomeDirectory(), "pprl");
         boolean baseExists = hdfs.exists(basePPRLpath);

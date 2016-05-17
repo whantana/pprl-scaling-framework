@@ -23,7 +23,7 @@ public class EncodingService implements InitializingBean {
     }
 
     @Autowired
-    private ToolRunner encodeDatasetToolRunner; // Encode datast tool runner.
+    private ToolRunner encodeDatasetToolRunner; // Runner of Encode Dataset Tool
 
     /**
      * Run encode dataset tool runner tool.

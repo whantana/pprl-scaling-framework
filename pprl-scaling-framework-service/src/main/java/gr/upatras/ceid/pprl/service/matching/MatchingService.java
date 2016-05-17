@@ -24,7 +24,7 @@ public class MatchingService implements InitializingBean {
     private static final Logger LOG = LoggerFactory.getLogger(MatchingService.class);
 
     public void afterPropertiesSet() {
-        LOG.info(String.format("Matching service initialized[Tool#1 = %s]",
+        LOG.info(String.format("Matching service initialized [Tool#1 = %s]",
                 (exhaustiveRecordPairSimilarityToolRunner != null)));
     }
 
@@ -33,7 +33,7 @@ public class MatchingService implements InitializingBean {
 
 
     @Autowired
-    private ToolRunner exhaustiveRecordPairSimilarityToolRunner;
+    private ToolRunner exhaustiveRecordPairSimilarityToolRunner;   // Runner of Exhaustive Record Pair Similarity Tool
 
     @Autowired
     private FileSystem hdfs;
@@ -80,7 +80,7 @@ public class MatchingService implements InitializingBean {
         }
     }
     /**
-     * Run Exhaustinve record pair similarity tool.
+     * Run Exhaustive record pair similarity tool.
      *
      * @param inputPath an input path.
      * @param inputSchemaPath an input schema path.

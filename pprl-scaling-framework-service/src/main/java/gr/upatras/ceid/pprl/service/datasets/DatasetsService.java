@@ -42,8 +42,8 @@ public class DatasetsService implements InitializingBean {
             boolean onlyOwnerPermissionbaseDir = hdfs.getFileStatus(basePath)
                     .getPermission().equals(ONLY_OWNER_PERMISSION);
             LOG.info(String.format("Dataset service initialized [" +
-                            " nn=%s, " +
-                            " statsBasePath = %s (ONLY_OWNER_PERMISION = %s)," +
+                            " nn = %s, " +
+                            " basePath = %s (ONLY_OWNER_PERMISION = %s)," +
                             " Tool#1 = %s, Tool#2 = %s, Tool#3 = %s]",
                     hdfs.getUri(),
                     basePath,onlyOwnerPermissionbaseDir,
@@ -65,21 +65,21 @@ public class DatasetsService implements InitializingBean {
             = new FsPermission(FsAction.ALL, FsAction.NONE, FsAction.READ, false);
 
     @Autowired
-    private FileSystem hdfs;     // HDFS FileSystem reference
+    private FileSystem hdfs; // HDFS FileSystem reference
 
     @Autowired
-    private FileSystem localFs;  // Local FileSystem reference
+    private FileSystem localFs; // Local FileSystem reference
 
     @Autowired
-    private ToolRunner dblpXmlToAvroToolRunner;       // DBLP XML TO AVRO ToolRunner
+    private ToolRunner dblpXmlToAvroToolRunner; // Runner of DBLP XML TO AVRO Tool
 
     @Autowired
-    private ToolRunner qGramCountingToolRunner;       // Q-Gram Counting Tool
+    private ToolRunner qGramCountingToolRunner; // Runner of Q-Gram Counting Tool
 
     @Autowired
-    private ToolRunner sortAvroToolRunner;
+    private ToolRunner sortAvroToolRunner; // Runner of Sort-Avro Tool
 
-    private Path basePath;                            // PPRL Base Path on the HDFS (pprl-site).
+    private Path basePath; // PPRL Base Path on the HDFS (pprl-site).
 
     /**
      * Set only-owner permission on path.

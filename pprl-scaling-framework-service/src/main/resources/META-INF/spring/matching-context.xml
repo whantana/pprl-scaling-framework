@@ -10,6 +10,7 @@
 
     <context:property-placeholder location="build.properties"/>
 
+    <!-- Tool Runner configuration -->
     <hdp:tool-runner id="exhaustiveRecordPairSimilarityToolRunner"
                      configuration-ref="hadoopConfiguration"
                      jar="file://${app.repo}/pprl-scaling-framework-mapreduce-matching-${build.version}.jar"

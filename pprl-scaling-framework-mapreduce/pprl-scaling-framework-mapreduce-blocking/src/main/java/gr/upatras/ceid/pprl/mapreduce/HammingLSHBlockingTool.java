@@ -39,16 +39,16 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
     public int run(String[] args) throws Exception {
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
-        if (args.length != 18) {
+        if (args.length != 17) {
             LOG.error("args.length= {}",args.length);
             for (int i = 0; i < args.length; i++) {
                 LOG.error("args[{}] = {}",i,args[i]);
             }
             LOG.error("Usage: HammingLSHBlockingTool " +
-                    "<alice-avro-path> <alice-schema-path> <alice-uid-fieldname> " +
-                    "<bob-avro-path> <bob-schema-path> <bob-uid-fieldname> " +
+                    "<alice-avro-path> <alice-schema-path> <alice-uid-field-name> " +
+                    "<bob-avro-path> <bob-schema-path> <bob-uid-field-name> " +
                     "<all-pairs-path> <frequent-pair-path> <matched-pairs-path>" +
-                    "<number-of-blocks> <number-of-hashes> <frequent-pair-collision-limit> " +
+                    "<number-of-blocking-groups-L> <number-of-hashes-K> <frequent-pair-collision-limit-C> " +
                     "<number-of-reducers-job1> <number-of-reducers-job2> <number-of-reducers-job3> " +
                     "<similarity-method-name> <similarity-threshold>");
             throw new IllegalArgumentException("Invalid number of arguments.");
@@ -187,7 +187,6 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
             LOG.error("Job \"{}\"not successful",JOB_2_DESCRIPTION);
             return 1;
         }
-        fs.delete(allPairsPath,true);
         LOG.info("Counters : ");
         for(Counter c : job2.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME))
             LOG.info("\t{} : {}",c.getDisplayName(),c.getValue());
@@ -229,18 +228,19 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
                 SequenceFile.CompressionType.NONE);
         SequenceFileOutputFormat.setOutputPath(job3,allPairsPath);
 
-
-        final boolean job3Success = job2.waitForCompletion(true);
+        // run job 3
+        final boolean job3Success = job3.waitForCompletion(true);
         if(!job3Success) {
-            LOG.error("Job \"{}\"not successful",JOB_2_DESCRIPTION);
+            LOG.error("Job \"{}\"not successful",JOB_3_DESCRIPTION);
             return 1;
         }
-        fs.delete(frequentPairsPath,true);
         LOG.info("Counters : ");
         for(Counter c : job3.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME))
             LOG.info("\t{} : {}",c.getDisplayName(),c.getValue());
 
         LOG.info("All jobs are succesfull. See \"{}\" for the matched pairs list.", matchedPairsPath);
+
+        // TODO save counters at stat
         return 0;
     }
 

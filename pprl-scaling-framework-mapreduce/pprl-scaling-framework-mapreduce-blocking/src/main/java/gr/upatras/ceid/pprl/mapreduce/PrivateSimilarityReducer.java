@@ -35,7 +35,6 @@ public class PrivateSimilarityReducer extends Reducer<Text,AvroValue<GenericReco
 
     private long matchedPairsCount = 0;
 
-
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         final String aliceSchemaString = context.getConfiguration().get(CommonKeys.ALICE_SCHEMA_KEY);

@@ -45,7 +45,7 @@ public class BlockingUtil {
         fsdos.writeBytes("Matched Pairs : " + result.getMatchedPairsCount() + "\n");
         for (RecordIdPair pair : result.getMatchedPairs()){
             String ps = String.format("%s , %s\n", pair.aliceId, pair.bobId);
-            fsdos.writeBytes(ps + "\n");
+            fsdos.writeBytes(ps);
         }
 
         fsdos.close();

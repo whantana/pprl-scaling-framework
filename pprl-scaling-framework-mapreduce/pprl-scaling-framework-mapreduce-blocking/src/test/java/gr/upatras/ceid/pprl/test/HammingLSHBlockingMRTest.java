@@ -140,7 +140,7 @@ public class HammingLSHBlockingMRTest {
         // partitioner setup
         partitioner = new BlockingGroupPartitioner();
         partitioner.setConf(conf);
-        LOG.info("BlockingGroupPartitioner ready.");
+        LOG.info("partitioner ready.");
 
         // reducers setup
         partitionedMapperResults = new Map[R];

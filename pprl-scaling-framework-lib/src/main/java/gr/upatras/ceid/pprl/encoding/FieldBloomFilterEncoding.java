@@ -116,7 +116,7 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
                 final String[] docs = doc.split(",");
                 setN(new int[docs.length]);
                 for (int i = 0; i < docs.length; i++)
-                    setN(Integer.parseInt(docs[0]), i);
+                    setN(Integer.parseInt(docs[i]), i);
                 final String name = field.name();
                 String restName = name.substring(ENCODING_FIELD_PREFIX.length());
                 String[] partss = restName.split(FIELD_DELIMITER);
@@ -202,7 +202,7 @@ public class FieldBloomFilterEncoding extends BloomFilterEncoding {
             for (int bit = 0; bit < fbfN; bit++) {
                 bf.setBit(Npart + bit,fbf.getBit(bit));
             }
-            Npart = fbf.getN();
+            Npart += fbf.getN();
         }
 
         final Schema schema = encodingRecord.getSchema().getField(encodingFieldName).schema();

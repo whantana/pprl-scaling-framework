@@ -10,12 +10,14 @@ import org.apache.avro.mapreduce.AvroJob;
 import org.apache.avro.mapreduce.AvroKeyInputFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Counter;
+import org.apache.hadoop.mapreduce.CounterGroup;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
@@ -25,10 +27,15 @@ import org.apache.hadoop.util.ToolRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class HammingLSHBlockingTool extends Configured implements Tool {
+
+    // TODO This job should use BlockingKeyWritable at first job
+    // TODO In the counting job the intermediate key should be a custom writable.
+    // TODO
 
     private static final Logger LOG = LoggerFactory.getLogger(HammingLSHBlockingTool.class);
 
@@ -39,7 +46,7 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
     public int run(String[] args) throws Exception {
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
-        if (args.length != 17) {
+        if (args.length != 18) {
             LOG.error("args.length= {}",args.length);
             for (int i = 0; i < args.length; i++) {
                 LOG.error("args[{}] = {}",i,args[i]);
@@ -47,7 +54,7 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
             LOG.error("Usage: HammingLSHBlockingTool " +
                     "<alice-avro-path> <alice-schema-path> <alice-uid-field-name> " +
                     "<bob-avro-path> <bob-schema-path> <bob-uid-field-name> " +
-                    "<all-pairs-path> <frequent-pair-path> <matched-pairs-path>" +
+                    "<all-pairs-path> <frequent-pair-path> <matched-pairs-path> <stats-path>" +
                     "<number-of-blocking-groups-L> <number-of-hashes-K> <frequent-pair-collision-limit-C> " +
                     "<number-of-reducers-job1> <number-of-reducers-job2> <number-of-reducers-job3> " +
                     "<similarity-method-name> <similarity-threshold>");
@@ -63,14 +70,15 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         final Path allPairsPath = new Path(args[6]);
         final Path frequentPairsPath = new Path(args[7]);
         final Path matchedPairsPath = new Path(args[8]);
-        final int L = Integer.valueOf(args[9]);
-        final int K = Integer.valueOf(args[10]);
-        final short C = Short.valueOf(args[11]);
-        final int R1 = Integer.valueOf(args[12]);
-        final int R2 = Integer.valueOf(args[13]);
-        final int R3 = Integer.valueOf(args[14]);
-        final String similarityMethodName = args[15];
-        final double similarityThreshold = Double.valueOf(args[16]);
+        final Path statsPath = new Path(args[9]);
+        final int L = Integer.valueOf(args[10]);
+        final int K = Integer.valueOf(args[11]);
+        final short C = Short.valueOf(args[12]);
+        final int R1 = Integer.valueOf(args[13]);
+        final int R2 = Integer.valueOf(args[14]);
+        final int R3 = Integer.valueOf(args[15]);
+        final String similarityMethodName = args[16];
+        final double similarityThreshold = Double.valueOf(args[17]);
 
         if(K < 1)
             throw new IllegalArgumentException("Number of hashes K cannot be smaller than 1.");
@@ -146,6 +154,10 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         LOG.info("Counters : ");
         for(Counter c : job1.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME))
             LOG.info("\t{} : {}",c.getDisplayName(),c.getValue());
+        final int aliceRecordCount = (int)job1.getCounters().findCounter(
+                CommonKeys.COUNTER_GROUP_NAME,CommonKeys.ALICE_RECORD_COUNT_COUNTER).getValue();
+        final int bobRecordCount  = (int)job1.getCounters().findCounter(
+                CommonKeys.COUNTER_GROUP_NAME,CommonKeys.BOB_RECORD_COUNT_COUNTER).getValue();
 
         // setup job2
         final String description2 = String.format("%s(" +
@@ -192,6 +204,8 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
             LOG.info("\t{} : {}",c.getDisplayName(),c.getValue());
 
         // setup job3
+        conf.setInt(CommonKeys.ALICE_RECORD_COUNT_COUNTER, aliceRecordCount);
+        conf.setInt(CommonKeys.BOB_RECORD_COUNT_COUNTER, bobRecordCount);
         final String description3 = String.format("%s(" +
                         "alice-path : %s, alice-schema-path : %s," +
                         "bob-path : %s, bob-schema-path : %s," +
@@ -240,7 +254,13 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
 
         LOG.info("All jobs are succesfull. See \"{}\" for the matched pairs list.", matchedPairsPath);
 
-        // TODO save counters at stat
+
+        saveCountersToStats(fs,statsPath,
+                job1.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME),
+                job2.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME),
+                job3.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME));
+        LOG.info("See \"{}\" for collected stats.", statsPath);
+
         return 0;
     }
 
@@ -272,5 +292,21 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
             if(m.matches()) return m.group(1);
             else return url;
         }
+    }
+
+    /**
+     * Save counters to stats files.
+     *
+     * @param groups counter groups.
+     */
+    private static void saveCountersToStats(final FileSystem fs, final Path statsPath,final CounterGroup... groups)
+            throws IOException {
+        final FSDataOutputStream fsdos = fs.create(statsPath, true);
+        for(CounterGroup group : groups) {
+            for(Counter c : group) {
+                fsdos.writeBytes(String.format("%s : %d\n",c.getDisplayName(),c.getValue()));
+            }
+        }
+        fsdos.close();
     }
 }

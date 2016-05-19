@@ -193,7 +193,7 @@ public class HammingLSHBlocking {
         List<RecordIdPair> mathcedPairs = new LinkedList<RecordIdPair>();
         int matchedPairsCount = 0;
         int frequentPairsCount = 0;
-        final short[] collisions = new short[bobRecords.length]; // use a HashBag?
+        final short[] collisions = new short[bobRecords.length];
         System.out.print("Counting colission with alice records (0/" + aliceRecords.length + ").");
         for(int aid=0; aid < aliceRecords.length; aid++) {
             System.out.print("\rCounting collisions with alice records (" + (aid+1)
@@ -246,62 +246,6 @@ public class HammingLSHBlocking {
         }
         return array;
     }
-
-
-    /**
-     * True if Alice's record. False otherwise.
-     *
-     * @param record a generic record
-     * @return True if Alice's record. False otherwise.
-     */
-    public boolean isAliceRecord(final GenericRecord record) {
-        return record.getSchema().getName().equals(aliceEncodingName);
-    }
-
-    /**
-     * True if Bob's record. False otherwise.
-     *
-     * @param record a generic record
-     * @return True if Bob's record. False otherwise.
-     */
-    public boolean isBobRecord(final GenericRecord record) {
-        return record.getSchema().getName().equals(bobEncodingName);
-    }
-
-    /**
-     * Hash a record according to its schema.
-     *
-     * @param record a generic record
-     * @return keys from hashing.
-     * @throws BlockingException
-     */
-    public BitSet[] hashRecord(final GenericRecord record) throws BlockingException {
-        if(isAliceRecord(record)) return hashAliceRecord(record);
-        else if(isBobRecord(record)) return hashBobRecord(record);
-        else throw new BlockingException("No alice or bob record.");
-    }
-
-
-    /**
-     * Hash an alice's record.
-     *
-     * @param record a generic record
-     * @return keys from hashing.
-     */
-    public BitSet[] hashAliceRecord(final GenericRecord record) {
-        return hashRecord(record,aliceEncodingFieldName);
-    }
-
-    /**
-     * Hash bob's record.
-     *
-     * @param record a generic record
-     * @return keys from hashing.
-     */
-    public BitSet[] hashBobRecord(final GenericRecord record) {
-        return hashRecord(record,bobEncodingFieldName);
-    }
-
 
     /**
      * Hash a record.

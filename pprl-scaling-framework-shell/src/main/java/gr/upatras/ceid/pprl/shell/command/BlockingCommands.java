@@ -216,9 +216,10 @@ public class BlockingCommands implements CommandMarker {
                 throw new IllegalArgumentException("Not a valid field name \"" + bobUidFieldName  + "\"");
 
             BlockingUtil.schemeNameSupported(blockingSchemeName);
-            final String blockingName = String.format("blocking.%s.%s.%s",
-                    (new SimpleDateFormat("yyyy.MM.dd.hh.mm")).format(new Date()),
-                    aliceName,bobName
+            final String blockingName = String.format("blocking.%s.%s.%s.%s",
+					blockingSchemeName.toLowerCase(),
+					aliceName,bobName,
+                    (new SimpleDateFormat("yyyy.MM.dd.hh.mm")).format(new Date())
             );
 
             final String similarityMethodName = CommandUtil.retrieveString(similarityMethodNameStr,"hamming");

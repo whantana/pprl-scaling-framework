@@ -319,7 +319,6 @@ public class ServicesTest extends AbstractMapReduceTests {
     @Test
     public void test5() throws Exception {
         // stat based encodings
-        // Simple encoding schemes not stats involved
         for (int i = 0; i < dataNames.length; i++) {
             if (i == 1) continue;
             final Path[] paths = ds.retrieveDirectories(dataNames[i]);
@@ -484,7 +483,7 @@ public class ServicesTest extends AbstractMapReduceTests {
         final Schema aliceSchema = ds.loadSchema(ds.retrieveSchemaPath(alicePaths[2]));
         for (String encName : encNames) {
             final Path[] bobEncodingPaths = ds.retrieveDirectories(encName + "voters_b");
-            final Schema bobEncodingSchema = ds.loadSchema(ds.retrieveSchemaPath(bobEncodingPaths[1]));
+            final Schema bobEncodingSchema = ds.loadSchema(ds.retrieveSchemaPath(bobEncodingPaths[2]));
 
             final String schemeName = BloomFilterEncodingUtil.retrieveSchemeName(bobEncodingSchema);
             final BloomFilterEncoding encoding =
@@ -498,7 +497,8 @@ public class ServicesTest extends AbstractMapReduceTests {
             final Path[] aliceEncodingPaths =
                     ds.createDirectories(encName + "voters_a", DatasetsService.OTHERS_CAN_READ_PERMISSION);
             final Path aliceEncodingAvroPath = aliceEncodingPaths[1];
-            final Path aliceEncodingSchemaPath = ds.retrieveSchemaPath(aliceEncodingPaths[2]);
+            final Path aliceEncodingSchemaPath = new Path(aliceEncodingPaths[2],encName + "voters_a.avsc");
+            ds.saveSchema(aliceEncodingSchemaPath,encoding.getEncodingSchema());
             LOG.info("Encoding Scheme : {}", schemeName);
             es.runEncodeDatasetTool(aliceAvroPath, aliceSchemaPath, aliceEncodingAvroPath, aliceEncodingSchemaPath);
             LOG.info("Encoding Scheme : {}. DONE at : {}.", schemeName, aliceEncodingPaths[0]);
@@ -530,10 +530,12 @@ public class ServicesTest extends AbstractMapReduceTests {
             final String aliceUidFieldName = uidFieldNames[1];
             final String bobName = encName + "voters_b";
             final Path[] bobPaths = ds.retrieveDirectories(bobName);
-            final Path bobAvroPath = alicePaths[1];
-            final Path bobSchemaPath = ds.retrieveSchemaPath(alicePaths[2]);
+            final Path bobAvroPath = bobPaths[1];
+            final Path bobSchemaPath = ds.retrieveSchemaPath(bobPaths[2]);
             final String bobUidFieldName = uidFieldNames[2];
-            final String blockingName1 = String.format("blocking.%s.%s.%s",
+
+            final String blockingName1 = String.format("blocking.%s.%s.%s.%s",
+                    "HLSH_MR".toLowerCase(),
                     (new SimpleDateFormat("yyyy.MM.dd.hh.mm")).format(new Date()),
                     aliceName,bobName
             );
@@ -546,18 +548,19 @@ public class ServicesTest extends AbstractMapReduceTests {
                     4,4,4
             );
 
-            final String blockingName2 = String.format("blocking.%s.%s.%s",
-                    (new SimpleDateFormat("yyyy.MM.dd.hh.mm")).format(new Date()),
-                    aliceName,bobName
-            );
+           final String blockingName2 = String.format("blocking.%s.%s.%s.%s",
+                   "HLSH_FPS_MR".toLowerCase(),
+                   (new SimpleDateFormat("yyyy.MM.dd.hh.mm")).format(new Date()),
+                   aliceName,bobName
+           );
 
-            bs.runHammingLSHFPSBlockingToolRuner(
-                    aliceAvroPath,aliceSchemaPath,aliceUidFieldName,
-                    bobAvroPath,bobSchemaPath,bobUidFieldName,
-                    blockingName2,
-                    HLSH_BLOCKING_L,HLSH_BLOCKING_K,HLSH_BLOCKING_C,
-                    4,4,4
-            );
+           bs.runHammingLSHFPSBlockingToolRuner(
+                   aliceAvroPath,aliceSchemaPath,aliceUidFieldName,
+                   bobAvroPath,bobSchemaPath,bobUidFieldName,
+                   blockingName2,
+                   HLSH_BLOCKING_L,HLSH_BLOCKING_K,HLSH_BLOCKING_C,
+                   4,4,4
+           );
         }
     }
 

@@ -104,14 +104,19 @@ public class FormRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
      * Makes and returns a frequent pair map of keys.
      *
      * @param context context.
-     * @param followKeyValue if true the A Ids are put as keys to the map and the respect B Ids are set as values.The opposite if false
+     * @param followKeyValue if true the A Ids are put as keys to the map and the respect B Ids are set as values.
+     *                       The opposite if false.
      * @return a frequent pair map of keys.
      * @throws IOException
      */
     public static Map<String,List<String>> getFrequentPairMaps(final Context context, boolean followKeyValue)
             throws IOException {
         final Configuration conf = context.getConfiguration();
-        final Map<String,List<String>> map = new HashMap<String,List<String>>(); // TODO could improve this by providing capacity and load factor. This requires some stats
+        final int aliceRecordCount = conf.getInt(CommonKeys.ALICE_RECORD_COUNT_COUNTER,16);
+        final int bobRecordCount = conf.getInt(CommonKeys.BOB_RECORD_COUNT_COUNTER,16);
+        final Map<String,List<String>> map = new HashMap<String,List<String>>(
+                (followKeyValue ? bobRecordCount : aliceRecordCount) + 1,
+                1.00f);
         for(final URI uri : context.getCacheFiles()) {
             final Path path = new Path(uri);
             SequenceFile.Reader reader = new SequenceFile.Reader(conf, SequenceFile.Reader.file(path));

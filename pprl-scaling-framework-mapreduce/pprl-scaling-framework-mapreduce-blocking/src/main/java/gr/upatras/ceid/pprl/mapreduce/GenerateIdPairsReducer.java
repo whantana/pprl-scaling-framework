@@ -25,7 +25,7 @@ public class GenerateIdPairsReducer extends Reducer<Text,Text,Text,Text> {
     @Override
     protected void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 
-        evaluateMinMaxOnBlockingGroupChange(key);
+        checkIfCurrentBlockingGroupIdChanged(key);
 
         if(keyQ.isEmpty()) {
             if(key.toString().endsWith("_B")) return;
@@ -80,7 +80,13 @@ public class GenerateIdPairsReducer extends Reducer<Text,Text,Text,Text> {
             ).setValue(minBlockingKeys);
     }
 
-    private void evaluateMinMaxOnBlockingGroupChange(final Text key) {
+    /**
+     * If reducer moved on to the next blocking group we can evaluate if the
+     * previous groupd had the max/min number of blocking keys for this reducer blocking keys.
+     *
+     * @param key a key.
+     */
+    private void checkIfCurrentBlockingGroupIdChanged(final Text key) {
         final String blockingGroupId = extractBlockingGroupId(key);
         if(currentBlockingGroup == null) {
             currentBlockingGroup = blockingGroupId;

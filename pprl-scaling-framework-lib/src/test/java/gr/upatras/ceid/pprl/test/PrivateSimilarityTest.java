@@ -18,6 +18,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
+import static org.junit.Assert.assertEquals;
+
 public class PrivateSimilarityTest {
 
     private static Logger LOG = LoggerFactory.getLogger(PrivateSimilarityTest.class);
@@ -96,7 +98,11 @@ public class PrivateSimilarityTest {
     @Test
     public void test4() throws IOException, DatasetException, BloomFilterEncodingException {
         final FileSystem fs = FileSystem.getLocal(new Configuration());
-        final String[] ENCODING_NAMES = {"clk","static_fbf","uniform_rbf"};
+        final String[] ENCODING_NAMES = {
+                "clk",
+                "static_fbf","dynamic_fbf",
+                "uniform_rbf_static_fbf","uniform_rbf_dynamic_fbf",
+                "weighted_rbf_static_fbf","weighted_rbf_dynamic_fbf"};
         for (String encName : ENCODING_NAMES) {
             LOG.info("Working with " + encName );
             final Schema schemaVotersA =
@@ -117,51 +123,73 @@ public class PrivateSimilarityTest {
 
     private void compareRecords(final BloomFilterEncoding encodingA, final BloomFilterEncoding encodingB,
                                 final GenericRecord[] encodedRecordsA, final GenericRecord[] encodedRecordsB) {
+        for (GenericRecord encodedRecordB : encodedRecordsB) {
+            for (GenericRecord encodedRecordA : encodedRecordsA) {
+                double hamming = PrivateSimilarityUtil.hamming(
+                        encodingA.retrieveBloomFilter(encodedRecordA),
+                        encodingB.retrieveBloomFilter(encodedRecordB)
+                );
+                double hamming1 = PrivateSimilarityUtil.hamming1(
+                        encodingA.retrieveBloomFilter(encodedRecordA),
+                        encodingB.retrieveBloomFilter(encodedRecordB)
+                );
+                assertEquals(hamming, hamming1, 0.01);
 
-        for (GenericRecord encodedRecordA : encodedRecordsA) {
-            for (GenericRecord encodedRecordB : encodedRecordsB) {
-                LOG.info("hamming({}) = {}",
-                        String.format("%s,%s", encodedRecordA.get("id"), encodedRecordB.get("id")),
-                        PrivateSimilarityUtil.hamming(
-                                encodingA.retrieveBloomFilter(encodedRecordA),
-                                encodingB.retrieveBloomFilter(encodedRecordB)
-                        )
+                double jaccard = PrivateSimilarityUtil.jaccard(
+                        encodingA.retrieveBloomFilter(encodedRecordA),
+                        encodingB.retrieveBloomFilter(encodedRecordB)
                 );
-                LOG.info("hamming1({}) = {}",
-                        String.format("%s,%s", encodedRecordA.get("id"), encodedRecordB.get("id")),
-                        PrivateSimilarityUtil.hamming1(
-                                encodingA.retrieveBloomFilter(encodedRecordA),
-                                encodingB.retrieveBloomFilter(encodedRecordB)
-                        )
+                double jaccard1 = PrivateSimilarityUtil.jaccard1(
+                        encodingA.retrieveBloomFilter(encodedRecordA),
+                        encodingB.retrieveBloomFilter(encodedRecordB)
                 );
-                LOG.info("jaccard({}) = {}",
-                        String.format("%s,%s", encodedRecordA.get("id"), encodedRecordB.get("id")),
-                        PrivateSimilarityUtil.jaccard(
-                                encodingA.retrieveBloomFilter(encodedRecordA),
-                                encodingB.retrieveBloomFilter(encodedRecordB)
-                        )
+                assertEquals(jaccard,jaccard1,0.01);
+
+                double dice = PrivateSimilarityUtil.dice(
+                        encodingA.retrieveBloomFilter(encodedRecordA),
+                        encodingB.retrieveBloomFilter(encodedRecordB)
                 );
-                LOG.info("jaccard1({}) = {}",
-                        String.format("%s,%s", encodedRecordA.get("id"), encodedRecordB.get("id")),
-                        PrivateSimilarityUtil.jaccard1(
-                                encodingA.retrieveBloomFilter(encodedRecordA),
-                                encodingB.retrieveBloomFilter(encodedRecordB)
-                        )
+                double dice1 = PrivateSimilarityUtil.dice1(
+                        encodingA.retrieveBloomFilter(encodedRecordA),
+                        encodingB.retrieveBloomFilter(encodedRecordB)
                 );
-                LOG.info("dice({}) = {}",
-                        String.format("%s,%s", encodedRecordA.get("id"), encodedRecordB.get("id")),
-                        PrivateSimilarityUtil.dice(
-                                encodingA.retrieveBloomFilter(encodedRecordA),
-                                encodingB.retrieveBloomFilter(encodedRecordB)
-                        )
-                );
-                LOG.info("dice1({}) = {}",
-                        String.format("%s,%s", encodedRecordA.get("id"), encodedRecordB.get("id")),
-                        PrivateSimilarityUtil.dice1(
-                                encodingA.retrieveBloomFilter(encodedRecordA),
-                                encodingB.retrieveBloomFilter(encodedRecordB)
-                        )
-                );
+                assertEquals(dice,dice1,0.01);
+
+                boolean hammingMatch = hamming <= 100;
+                boolean jaccardMatch = jaccard >= 0.7;
+
+                boolean matchesCompletely = hammingMatch && jaccardMatch;
+                boolean matchesPartialy = hammingMatch != jaccardMatch;
+                boolean doesNotMatchAtAll = !(hammingMatch || jaccardMatch);
+
+                boolean shouldMatch = String.valueOf(encodedRecordA.get("id")).charAt(1) ==
+                        String.valueOf(encodedRecordB.get("id")).charAt(1);
+                boolean shouldNotMatch = !shouldMatch;
+
+                final String pairString = String.format("%s,%s",
+                        String.valueOf(encodedRecordA.get("id")),
+                        String.valueOf(encodedRecordB.get("id")));
+                if(matchesCompletely && shouldMatch) LOG.info("Pair : {} its correctly matched",pairString);
+                if(matchesPartialy && shouldMatch) {
+                    LOG.info("Pair : {} matches partialy {}.",pairString, String.format("hamming = %f , jaccard = %f",hamming,jaccard));
+                }
+                if(matchesPartialy && shouldNotMatch) {
+                    LOG.info("Pair : {} matches partialy while it should not {}.",pairString, String.format("hamming = %f , jaccard = %f",hamming,jaccard));
+                }
+
+                if(matchesCompletely && shouldNotMatch) {
+                    LOG.info("Pair : {} matches completely but it shouldn't. {}.",pairString, String.format("hamming = %f , jaccard = %f",hamming,jaccard));
+                    LOG.info("Encoded Record A : {}",DatasetsUtil.prettyRecord(encodedRecordA,encodingA.getEncodingSchema()));
+                    LOG.info("Encoded Record B : {}",DatasetsUtil.prettyRecord(encodedRecordB,encodingB.getEncodingSchema()));
+                }
+                if(doesNotMatchAtAll && shouldMatch) {
+                    LOG.info("Pair : {} does not match at all but it should. {}.",pairString, String.format("hamming = %f , jaccard = %f",hamming,jaccard));
+                    LOG.info("Encoded Record A : {}",DatasetsUtil.prettyRecord(encodedRecordA,encodingA.getEncodingSchema()));
+                    LOG.info("Encoded Record B : {}",DatasetsUtil.prettyRecord(encodedRecordB,encodingB.getEncodingSchema()));
+
+                }
+
+                if(doesNotMatchAtAll && shouldNotMatch) LOG.info("Pair : {} its correctly not matched",pairString);
             }
         }
     }

@@ -22,8 +22,12 @@ import java.io.IOException;
 public class HammingLSHBlockingTest {
     private static Logger LOG = LoggerFactory.getLogger(HammingLSHBlockingTest.class);
 
-    private static String[] ENCODING_NAMES = {"clk","static_fbf","uniform_rbf"};
-
+    final String[] ENCODING_NAMES = {
+            "clk",
+            "static_fbf","dynamic_fbf",
+            "uniform_rbf_static_fbf","uniform_rbf_dynamic_fbf",
+            "weighted_rbf_static_fbf","weighted_rbf_dynamic_fbf"
+    };
     @Test
     public void test0()
             throws IOException, DatasetException,

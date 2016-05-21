@@ -107,19 +107,18 @@ public class BlockingService implements InitializingBean {
     /**
      * Run Hamming LSH-FPS Blocking Tool.
      *
-     * @param aliceAvroPath
-     * @param aliceSchemaPath
-     * @param aliceUidFieldName
-     * @param bobAvroPath
-     * @param bobSchemaPath
-     * @param bobUidFieldName
-     * @param blockingName
-     * @param L
-     * @param K
-     * @param C
-     * @param R1
-     * @param R2
-     * @param R3
+     * @param aliceAvroPath Alice encoded avro data path.
+     * @param aliceSchemaPath Alice encoding schema path.
+     * @param aliceUidFieldName Alice uid field name.
+     * @param bobAvroPath Bob avro path.
+     * @param bobSchemaPath Bob encoding schema path.
+     * @param bobUidFieldName Bob uid field name.
+     * @param blockingName Name of this blacking (as base path).
+     * @param L Blocking Groups Count.
+     * @param K Hash values Count.
+     * @param C Collision Frequency limit.
+     * @param R1 Number of reducers for first job.
+     * @param R2 Number of reducers for third job.
      * @throws Exception
      */
     public void runHammingLSHFPSBlockingToolRuner(final Path aliceAvroPath, final Path aliceSchemaPath,
@@ -128,7 +127,7 @@ public class BlockingService implements InitializingBean {
                                                   final String bobUidFieldName,
                                                   final String blockingName,
                                                   final int L, final int K, final short C,
-                                                  final int R1, final int R2, final int R3)
+                                                  final int R1, final int R2)
             throws Exception {
         try {
             final Path blockingPath = new Path(basePath,blockingName);
@@ -153,7 +152,6 @@ public class BlockingService implements InitializingBean {
             argsList.add(String.valueOf(C));
             argsList.add(String.valueOf(R1));
             argsList.add(String.valueOf(R2));
-            argsList.add(String.valueOf(R3));
             String[] args = new String[argsList.size()];
             args = argsList.toArray(args);
             hammingLshFpsBlockingToolRunner.setArguments(args);

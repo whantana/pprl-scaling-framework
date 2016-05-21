@@ -15,6 +15,8 @@ import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
 
+import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.increaseMatchedPairsCounter;
+
 /**
  * Private Similarity Reducer class.
  */
@@ -33,19 +35,19 @@ public class PrivateSimilarityReducer extends Reducer<Text,AvroValue<GenericReco
 
     private int N;
 
-    private long matchedPairsCount = 0;
+    private long matchedPairsCount;
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
-        final String aliceSchemaString = context.getConfiguration().get(CommonKeys.ALICE_SCHEMA_KEY);
+        final String aliceSchemaString = context.getConfiguration().get(CommonKeys.ALICE_SCHEMA);
         if (aliceSchemaString == null) throw new IllegalStateException("Alice schema not set.");
-        final String bobSchemaString = context.getConfiguration().get(CommonKeys.BOB_SCHEMA_KEY);
+        final String bobSchemaString = context.getConfiguration().get(CommonKeys.BOB_SCHEMA);
         if (bobSchemaString == null) throw new IllegalStateException("Bob schema not set.");
-        final String[] blockingKeys = context.getConfiguration().getStrings(CommonKeys.BLOCKING_KEYS_KEY, null);
+        final String[] blockingKeys = context.getConfiguration().getStrings(CommonKeys.BLOCKING_KEYS, null);
         if (blockingKeys == null) throw new IllegalStateException("Blocking keys not set.");
-        aliceUidFieldname = context.getConfiguration().get(CommonKeys.ALICE_UID_KEY);
+        aliceUidFieldname = context.getConfiguration().get(CommonKeys.ALICE_UID);
         if (aliceUidFieldname == null) throw new IllegalStateException("Alice uid not set.");
-        bobUidFieldname = context.getConfiguration().get(CommonKeys.BOB_UID_KEY);
+        bobUidFieldname = context.getConfiguration().get(CommonKeys.BOB_UID);
         if (bobUidFieldname == null) throw new IllegalStateException("Bob uid not set.");
         try {
             BloomFilterEncoding aliceEncoding = BloomFilterEncodingUtil.setupNewInstance(
@@ -63,8 +65,9 @@ public class PrivateSimilarityReducer extends Reducer<Text,AvroValue<GenericReco
         } catch (BloomFilterEncodingException e) {
             throw new InterruptedException(e.getMessage());
         }
-        similarityMethodName = context.getConfiguration().get(CommonKeys.SIMILARITY_METHOD_NAME_KEY,"hamming");
-        similarityThreshold = context.getConfiguration().getDouble(CommonKeys.SIMILARITY_THRESHOLD_KEY, 100);
+        similarityMethodName = context.getConfiguration().get(CommonKeys.SIMILARITY_METHOD_NAME,"hamming");
+        similarityThreshold = context.getConfiguration().getDouble(CommonKeys.SIMILARITY_THRESHOLD, 100);
+        matchedPairsCount = 0;
     }
 
     @Override
@@ -95,18 +98,17 @@ public class PrivateSimilarityReducer extends Reducer<Text,AvroValue<GenericReco
                 PrivateSimilarityUtil.similarity(similarityMethodName,aliceBf,bobBf,similarityThreshold);
 
         if(matches) {
-            matchedPairsCount++;
             context.write(
                     new Text(String.valueOf(aliceRecord.get(aliceUidFieldname))),
                     new Text(String.valueOf(bobRecord.get(bobUidFieldname)))
             );
+            matchedPairsCount++;
         }
     }
 
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
-        context.getCounter(CommonKeys.COUNTER_GROUP_NAME,
-                CommonKeys.MATCHED_PAIR_COUNTER).increment(matchedPairsCount);
+        increaseMatchedPairsCounter(context, matchedPairsCount);
     }
 }
 

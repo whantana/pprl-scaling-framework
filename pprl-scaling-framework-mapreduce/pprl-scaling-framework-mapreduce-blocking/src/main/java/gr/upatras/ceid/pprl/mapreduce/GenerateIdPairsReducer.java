@@ -10,22 +10,33 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
+import static gr.upatras.ceid.pprl.mapreduce.BlockingKeyStatistics.setMaxMinBlockingKeysCounters;
+import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.increaseTotalBlockingKeyCount;
+import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.increaseTotalPairCounter;
+
 /**
  * Hamming LSH Blocking Reducer class.
  */
 public class GenerateIdPairsReducer extends Reducer<Text,Text,Text,Text> {
 
-    private final Queue<Text> keyQ = new LinkedList<Text>();
-    private final Queue<List<Text>> valQ = new LinkedList<List<Text>>();
-    private long maxBlockingKeys = -1;
-    private long minBlockingKeys = -1;
-    private String currentBlockingGroup = null;
-    private long currentBlockingKeysCount = 0;
+    private Queue<Text> keyQ;
+    private Queue<List<Text>> valQ;
+    private BlockingKeyStatistics statistics;
+
+
+    @Override
+    protected void setup(Context context) throws IOException, InterruptedException {
+        keyQ = new LinkedList<Text>();
+        valQ = new LinkedList<List<Text>>();
+        statistics = new BlockingKeyStatistics();
+    }
 
     @Override
     protected void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 
-        checkIfCurrentBlockingGroupIdChanged(key);
+        statistics.refreshOnBlockingGroupUpdate(
+                Integer.parseInt(key.toString().substring(0, key.toString().indexOf('_')))
+        );
 
         if(keyQ.isEmpty()) {
             if(key.toString().endsWith("_B")) return;
@@ -57,8 +68,8 @@ public class GenerateIdPairsReducer extends Reducer<Text,Text,Text,Text> {
                         pairsCounter++;
                     }
                 }
-                increaseTotalPairCounter(context,pairsCounter);
-                currentBlockingKeysCount++;
+                increaseTotalPairCounter(context, pairsCounter);
+                statistics.increaseCurrentBlockingKeysCount();
             }
         }
     }
@@ -66,48 +77,12 @@ public class GenerateIdPairsReducer extends Reducer<Text,Text,Text,Text> {
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
         final int id = context.getTaskAttemptID().getTaskID().getId();
-        if(currentBlockingKeysCount > 0) {
-            maxBlockingKeys = (maxBlockingKeys == -1 || currentBlockingKeysCount > maxBlockingKeys) ?
-                    currentBlockingKeysCount : maxBlockingKeys;
-            minBlockingKeys = (minBlockingKeys == -1 || currentBlockingKeysCount < minBlockingKeys) ?
-                    currentBlockingKeysCount : minBlockingKeys;
-        }
-        context.getCounter(CommonKeys.COUNTER_GROUP_NAME,
-                String.format("%d.%s",id,CommonKeys.MAX_BLOCKING_KEYS_IN_ANY_GROUP_COUNTER)
-            ).setValue(maxBlockingKeys);
-        context.getCounter(CommonKeys.COUNTER_GROUP_NAME,
-                String.format("%d.%s",id,CommonKeys.MIN_BLOCKING_KEYS_IN_ANY_GROUP_COUNTER)
-            ).setValue(minBlockingKeys);
-    }
-
-    /**
-     * If reducer moved on to the next blocking group we can evaluate if the
-     * previous groupd had the max/min number of blocking keys for this reducer blocking keys.
-     *
-     * @param key a key.
-     */
-    private void checkIfCurrentBlockingGroupIdChanged(final Text key) {
-        final String blockingGroupId = extractBlockingGroupId(key);
-        if(currentBlockingGroup == null) {
-            currentBlockingGroup = blockingGroupId;
-        } else if(!currentBlockingGroup.equals(blockingGroupId)){
-            maxBlockingKeys = (maxBlockingKeys == -1 || currentBlockingKeysCount > maxBlockingKeys) ?
-                    currentBlockingKeysCount : maxBlockingKeys;
-            minBlockingKeys = (minBlockingKeys == -1 || currentBlockingKeysCount < minBlockingKeys) ?
-                    currentBlockingKeysCount : minBlockingKeys;
-            currentBlockingKeysCount = 0;
-            currentBlockingGroup = blockingGroupId;
-        }
-    }
-
-    /**
-     * Returns the blocking group id.
-     *
-     * @param key key
-     * @return the blocking group id.
-     */
-    private static String extractBlockingGroupId(final Text key) {
-        return key.toString().substring(0,key.toString().indexOf('_'));
+        statistics.refresh();
+        increaseTotalBlockingKeyCount(context, statistics.getTotalBlockingKeyCount());
+        setMaxMinBlockingKeysCounters(context, id,
+                statistics.getMaxBlockingKeys(),
+                statistics.getMinBlockingKeys()
+        );
     }
 
     /**
@@ -116,7 +91,7 @@ public class GenerateIdPairsReducer extends Reducer<Text,Text,Text,Text> {
      * @param values iterable.
      * @return a values list from the iterable.
      */
-    private static List<Text> formValuesList(final Iterable<Text> values) {
+    private List<Text> formValuesList(final Iterable<Text> values) {
         List<Text> vlist = new ArrayList<Text>();
         for (Text v : values) vlist.add(new Text(v));
         return vlist;
@@ -129,18 +104,9 @@ public class GenerateIdPairsReducer extends Reducer<Text,Text,Text,Text> {
      * @param key2 key 2.
      * @return true if blocking keys are equal, false otherwise.
      */
-    private static boolean equalBlockingKeys(final Text key1, final Text key2) {
+    private boolean equalBlockingKeys(final Text key1, final Text key2) {
         final String s1 = key1.toString();
         final String s2 = key2.toString();
         return s1.substring(0,s1.lastIndexOf("_")).equals(s2.substring(0,s2.lastIndexOf("_")));
-    }
-
-    /**
-     * Increate the total pair counter.
-     * @param context <code>Context</code> instance.
-     * @param value value to increase.
-     */
-    private static void increaseTotalPairCounter(final Context context, long value) {
-        context.getCounter(CommonKeys.COUNTER_GROUP_NAME, CommonKeys.TOTAL_PAIR_COUNTER).increment(value);
     }
 }

@@ -13,6 +13,8 @@ import org.apache.hadoop.mapreduce.Mapper;
 import java.io.IOException;
 import java.util.BitSet;
 
+import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.increaseRecordCounter;
+
 /**
  * Hamming LSH Blocking Mapper class.
  */
@@ -31,7 +33,7 @@ public class HammingLSHBlockingMapper extends Mapper<AvroKey<GenericRecord>,Null
         final String uid = String.valueOf(record.get(uidFieldName));
         for (int i = 0; i < keys.length; i++) {
             final Text blockingKey =
-                    new Text(String.format("%05d_%s_%c", i, keyToString(keys[i],blocking.getK()),dataset));
+                    new Text(String.format("%05d_%s_%c", i, keyToString(keys[i], blocking.getK()),dataset));
             final Text val = new Text(uid);
             context.write(blockingKey,val);
         }
@@ -50,9 +52,7 @@ public class HammingLSHBlockingMapper extends Mapper<AvroKey<GenericRecord>,Null
                 recordCount++;
             } while (context.nextKeyValue());
         } finally {
-            context.getCounter(
-                    CommonKeys.COUNTER_GROUP_NAME,
-                    String.format("%s.%c",CommonKeys.RECORD_COUNT_COUNTER,dataset)).increment(recordCount);
+            increaseRecordCounter(context,dataset,recordCount);
             cleanup(context);
         }
     }
@@ -65,11 +65,11 @@ public class HammingLSHBlockingMapper extends Mapper<AvroKey<GenericRecord>,Null
      */
     private void setupBlocking(final Context context) throws InterruptedException {
         try {
-            final String aliceSchemaString = context.getConfiguration().get(CommonKeys.ALICE_SCHEMA_KEY);
+            final String aliceSchemaString = context.getConfiguration().get(CommonKeys.ALICE_SCHEMA);
             if (aliceSchemaString == null) throw new IllegalStateException("Alice schema not set.");
-            final String bobSchemaString = context.getConfiguration().get(CommonKeys.BOB_SCHEMA_KEY);
+            final String bobSchemaString = context.getConfiguration().get(CommonKeys.BOB_SCHEMA);
             if (bobSchemaString == null) throw new IllegalStateException("Bob schema not set.");
-            final String[] blockingKeys = context.getConfiguration().getStrings(CommonKeys.BLOCKING_KEYS_KEY);
+            final String[] blockingKeys = context.getConfiguration().getStrings(CommonKeys.BLOCKING_KEYS);
             if (blockingKeys == null) throw new IllegalStateException("Blocking keys not set.");
             BloomFilterEncoding aliceEncoding = BloomFilterEncodingUtil.setupNewInstance(
                     ((new Schema.Parser()).parse(aliceSchemaString)));
@@ -89,11 +89,11 @@ public class HammingLSHBlockingMapper extends Mapper<AvroKey<GenericRecord>,Null
         ;
         if(schema.getName().equals(blocking.getAliceEncodingName())){
             encodingFieldName = blocking.getAliceEncodingFieldName();
-            uidFieldName = context.getConfiguration().get(CommonKeys.ALICE_UID_KEY);
+            uidFieldName = context.getConfiguration().get(CommonKeys.ALICE_UID);
             dataset = 'A';
         } else if(schema.getName().equals(blocking.getBobEncodingName())){
             encodingFieldName = blocking.getBobEncodingFieldName();
-            uidFieldName = context.getConfiguration().get(CommonKeys.BOB_UID_KEY);
+            uidFieldName = context.getConfiguration().get(CommonKeys.BOB_UID);
             dataset = 'B';
 
         } else throw new IllegalStateException("Unknown schema name : " + schema.getName());
@@ -106,7 +106,7 @@ public class HammingLSHBlockingMapper extends Mapper<AvroKey<GenericRecord>,Null
      * @param K number of bits.
      * @return string representation of a key
      */
-    private static String keyToString(final BitSet bitSet,int K) {
+    public static String keyToString(final BitSet bitSet, int K) {
         StringBuilder sb = new StringBuilder();
         for (int i = (K-1); i >= 0; i--)
             sb.append(bitSet.get(i)?"1":"0");

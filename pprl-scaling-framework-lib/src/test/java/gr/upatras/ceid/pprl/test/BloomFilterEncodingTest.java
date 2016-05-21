@@ -103,7 +103,7 @@ public class BloomFilterEncodingTest {
         encodeOriginal(new FieldBloomFilterEncoding(avgQGrams,K,Q),"dynamic_fbf",
                 fs,avroPaths,schemaPath,SELECTED_FIELDS,REST_FIELDS);
         encodeCopy("dynamic_fbf_copy", fs, avroPaths, schemaPath,
-                new Path("data/person_small/dynamic_fbf_.avsc"));
+                new Path("data/person_small/dynamic_fbf.avsc"));
 
         encodeOriginal(new RowBloomFilterEncoding(Narray,N,K,Q),"uniform_rbf_static_fbf",
                 fs,avroPaths,schemaPath,SELECTED_FIELDS,REST_FIELDS);

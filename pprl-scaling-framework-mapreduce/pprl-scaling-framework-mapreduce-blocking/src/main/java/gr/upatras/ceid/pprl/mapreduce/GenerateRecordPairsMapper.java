@@ -5,27 +5,26 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.avro.mapred.AvroValue;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 /**
  * Form Record pairs Mapper.
  */
-public class FormRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWritable,Text,AvroValue<GenericRecord>> {
+public class GenerateRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWritable,Text,AvroValue<GenericRecord>> {
 
     private String aliceEncodingName;
     private String bobEncodingName;
@@ -70,9 +69,9 @@ public class FormRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
      */
     private void setupNames(final Context context) throws InterruptedException {
         try {
-            final String aliceSchemaString = context.getConfiguration().get(CommonKeys.ALICE_SCHEMA_KEY);
+            final String aliceSchemaString = context.getConfiguration().get(CommonKeys.ALICE_SCHEMA);
             if (aliceSchemaString == null) throw new IllegalStateException("Alice schema not set.");
-            final String bobSchemaString = context.getConfiguration().get(CommonKeys.BOB_SCHEMA_KEY);
+            final String bobSchemaString = context.getConfiguration().get(CommonKeys.BOB_SCHEMA);
             if (bobSchemaString == null) throw new IllegalStateException("Bob schema not set.");
             aliceEncodingName = ((new Schema.Parser()).parse(aliceSchemaString)).getName();
             bobEncodingName = ((new Schema.Parser()).parse(bobSchemaString)).getName();
@@ -90,14 +89,14 @@ public class FormRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
     private void setupMapper(final Schema schema,final Context context)
             throws IOException {
         if(schema.getName().equals(aliceEncodingName)){
-            uidFieldName = context.getConfiguration().get(CommonKeys.ALICE_UID_KEY);
+            uidFieldName = context.getConfiguration().get(CommonKeys.ALICE_UID);
             followsKeyValue = true;
         } else if(schema.getName().equals(bobEncodingName)){
-            uidFieldName = context.getConfiguration().get(CommonKeys.BOB_UID_KEY);
+            uidFieldName = context.getConfiguration().get(CommonKeys.BOB_UID);
             followsKeyValue = false;
         } else throw new IllegalStateException("Unknown schema name : " + schema.getName());
 
-        frequentPairMap = getFrequentPairMaps(context,followsKeyValue);
+        frequentPairMap = loadFrequentPairs(context, followsKeyValue);
     }
 
     /**
@@ -109,7 +108,7 @@ public class FormRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
      * @return a frequent pair map of keys.
      * @throws IOException
      */
-    public static Map<String,List<String>> getFrequentPairMaps(final Context context, boolean followKeyValue)
+    private Map<String,List<String>> loadFrequentPairs(final Context context, boolean followKeyValue)
             throws IOException {
         final Configuration conf = context.getConfiguration();
         final int aliceRecordCount = conf.getInt(CommonKeys.ALICE_RECORD_COUNT_COUNTER,16);
@@ -117,42 +116,26 @@ public class FormRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
         final Map<String,List<String>> map = new HashMap<String,List<String>>(
                 (followKeyValue ? bobRecordCount : aliceRecordCount) + 1,
                 1.00f);
-        for(final URI uri : context.getCacheFiles()) {
-            final Path path = new Path(uri);
+
+        final SortedSet<Path> frequentPairsPaths = new TreeSet<Path>();
+        for(final URI uri : context.getCacheFiles())
+            frequentPairsPaths.add(new Path(uri));
+
+        for(final Path path : frequentPairsPaths) {
             SequenceFile.Reader reader = new SequenceFile.Reader(conf, SequenceFile.Reader.file(path));
             Text key = new Text();
             Text value = new Text();
             while(reader.next(key,value)) {
                 if (followKeyValue) {
-                    if(!map.containsKey(key.toString())) map.put(key.toString(),new ArrayList<String>());
+                    if(!map.containsKey(key.toString())) map.put(key.toString(),new LinkedList<String>());
                     map.get(key.toString()).add(value.toString());
                 } else {
-                    if(!map.containsKey(value.toString())) map.put(value.toString(),new ArrayList<String>());
+                    if(!map.containsKey(value.toString())) map.put(value.toString(),new LinkedList<String>());
                     map.get(value.toString()).add(key.toString());
                 }
             }
             reader.close();
         }
         return map;
-    }
-
-    /**
-     * Add all frequent pair files to cache.
-     * @param job job.
-     * @param fs file system.
-     * @param frequentPairsPath frequent pairs path (parent).
-     * @throws IOException
-     */
-    public static void addFrequentPairsToCache(final Job job,final FileSystem fs,final Path frequentPairsPath)
-            throws IOException {
-        if(fs.isFile(frequentPairsPath)) {
-            job.addCacheFile(fs.makeQualified(frequentPairsPath).toUri());
-            return;
-        }
-        RemoteIterator<LocatedFileStatus> iterator = fs.listFiles(frequentPairsPath, false);
-        while(iterator.hasNext()) {
-            LocatedFileStatus lfs = iterator.next();
-            if (lfs.isFile()) job.addCacheFile(fs.makeQualified(lfs.getPath()).toUri());
-        }
     }
 }

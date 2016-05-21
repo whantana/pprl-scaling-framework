@@ -479,8 +479,8 @@ public class ServicesTest extends AbstractMapReduceTests {
         };
         final Path[] alicePaths = ds.retrieveDirectories("voters_a");
         final Path aliceAvroPath = alicePaths[1];
-        final Path aliceSchemaPath = alicePaths[2];
-        final Schema aliceSchema = ds.loadSchema(ds.retrieveSchemaPath(alicePaths[2]));
+        final Path aliceSchemaPath = ds.retrieveSchemaPath(alicePaths[2]);
+        final Schema aliceSchema = ds.loadSchema(aliceSchemaPath);
         for (String encName : encNames) {
             final Path[] bobEncodingPaths = ds.retrieveDirectories(encName + "voters_b");
             final Schema bobEncodingSchema = ds.loadSchema(ds.retrieveSchemaPath(bobEncodingPaths[2]));
@@ -504,7 +504,7 @@ public class ServicesTest extends AbstractMapReduceTests {
             LOG.info("Encoding Scheme : {}. DONE at : {}.", schemeName, aliceEncodingPaths[0]);
             final Path downloadedPath = ds.downloadFiles(
                     encName + "voters_a",
-                    "dl" + encName + "voters_a",
+                    "dl_" + encName + "voters_a",
                     new Path("data"));
             LOG.info("Downloaded to path : {} ", downloadedPath);
         }
@@ -559,7 +559,7 @@ public class ServicesTest extends AbstractMapReduceTests {
                    bobAvroPath,bobSchemaPath,bobUidFieldName,
                    blockingName2,
                    HLSH_BLOCKING_L,HLSH_BLOCKING_K,HLSH_BLOCKING_C,
-                   4,4,4
+                   4,4
            );
         }
     }
@@ -576,11 +576,6 @@ public class ServicesTest extends AbstractMapReduceTests {
             LocatedFileStatus lfs = iterator.next();
             if(lfs.isFile() && !lfs.getPath().toString().startsWith(".")) {
                 LOG.info("File {} with size : {} bytes",lfs.getPath(),lfs.getLen());
-                if(lfs.getPath().toString().endsWith(".avsc") ||
-                        lfs.getPath().toString().endsWith(".properties")) {
-                    hdfs.copyToLocalFile(lfs.getPath(),new Path("data",lfs.getPath().getName()));
-                    LOG.info("Downloaded at : {}",new Path("data",lfs.getPath().getName()));
-                }
             }
         }
     }

@@ -97,16 +97,16 @@ public class HammingLSHFPSBlockingMRTest {
                 Lists.newArrayList(aliceEncodingSchema, bobEncodingSchema));
 
         // common conf setup
-        conf.set(CommonKeys.ALICE_SCHEMA_KEY, aliceEncodingSchema.toString());
-        conf.set(CommonKeys.ALICE_UID_KEY, "id");
-        conf.set(CommonKeys.BOB_SCHEMA_KEY, bobEncodingSchema.toString());
-        conf.set(CommonKeys.BOB_UID_KEY, "id");
-        conf.setStrings(CommonKeys.BLOCKING_KEYS_KEY, blocking.groupsAsStrings());
+        conf.set(CommonKeys.ALICE_SCHEMA, aliceEncodingSchema.toString());
+        conf.set(CommonKeys.ALICE_UID, "id");
+        conf.set(CommonKeys.BOB_SCHEMA, bobEncodingSchema.toString());
+        conf.set(CommonKeys.BOB_UID, "id");
+        conf.setStrings(CommonKeys.BLOCKING_KEYS, blocking.groupsAsStrings());
         conf.setInt(CommonKeys.BLOCKING_GROUP_COUNT,L);
         conf.setInt("mapreduce.job.reduces",R);
         conf.setInt(CommonKeys.FREQUENT_PAIR_LIMIT, C);
-        conf.set(CommonKeys.SIMILARITY_METHOD_NAME_KEY,"hamming");
-        conf.setDouble(CommonKeys.SIMILARITY_THRESHOLD_KEY,100);
+        conf.set(CommonKeys.SIMILARITY_METHOD_NAME,"hamming");
+        conf.setDouble(CommonKeys.SIMILARITY_THRESHOLD,100);
 
         // avro conf setup
         AvroSerialization.setKeyWriterSchema(conf, bobEncodingSchema);
@@ -220,6 +220,7 @@ public class HammingLSHFPSBlockingMRTest {
         allCounters.add(blockingMapperDriverB.getCounters());
         for (int i = 0 ; i < generateBuckets.length; i++)
             allCounters.add( generateBuckets[i].getCounters());
+// TODO TESTS HERE FOR THE FPS SOLUTION
 //        allCounters.add(findFrequentPairsMapReduceDriver.getCounters());
 //        allCounters.add(formRecordPairsMapperDriverA.getCounters());
 //        allCounters.add(formRecordPairsMapperDriverB.getCounters());

@@ -13,7 +13,7 @@ import gr.upatras.ceid.pprl.mapreduce.CommonKeys;
 import gr.upatras.ceid.pprl.mapreduce.CountIdPairsMapper;
 import gr.upatras.ceid.pprl.mapreduce.FindFrequentIdPairsCombiner;
 import gr.upatras.ceid.pprl.mapreduce.FindFrequentIdPairsReducer;
-import gr.upatras.ceid.pprl.mapreduce.FormRecordPairsMapper;
+import gr.upatras.ceid.pprl.mapreduce.GenerateRecordPairsMapper;
 import gr.upatras.ceid.pprl.mapreduce.GenerateIdPairsReducer;
 import gr.upatras.ceid.pprl.mapreduce.HammingLSHBlockingMapper;
 import gr.upatras.ceid.pprl.mapreduce.PrivateSimilarityReducer;
@@ -107,16 +107,16 @@ public class HammingLSHBlockingMRTest {
                 Lists.newArrayList(aliceEncodingSchema, bobEncodingSchema));
 
         // common conf setup
-        conf.set(CommonKeys.ALICE_SCHEMA_KEY, aliceEncodingSchema.toString());
-        conf.set(CommonKeys.ALICE_UID_KEY, "id");
-        conf.set(CommonKeys.BOB_SCHEMA_KEY, bobEncodingSchema.toString());
-        conf.set(CommonKeys.BOB_UID_KEY, "id");
-        conf.setStrings(CommonKeys.BLOCKING_KEYS_KEY, blocking.groupsAsStrings());
+        conf.set(CommonKeys.ALICE_SCHEMA, aliceEncodingSchema.toString());
+        conf.set(CommonKeys.ALICE_UID, "id");
+        conf.set(CommonKeys.BOB_SCHEMA, bobEncodingSchema.toString());
+        conf.set(CommonKeys.BOB_UID, "id");
+        conf.setStrings(CommonKeys.BLOCKING_KEYS, blocking.groupsAsStrings());
         conf.setInt(CommonKeys.BLOCKING_GROUP_COUNT,L);
         conf.setInt("mapreduce.job.reduces",R);
         conf.setInt(CommonKeys.FREQUENT_PAIR_LIMIT, C);
-        conf.set(CommonKeys.SIMILARITY_METHOD_NAME_KEY,"hamming");
-        conf.setDouble(CommonKeys.SIMILARITY_THRESHOLD_KEY,100);
+        conf.set(CommonKeys.SIMILARITY_METHOD_NAME,"hamming");
+        conf.setDouble(CommonKeys.SIMILARITY_THRESHOLD,100);
 
         // avro conf setup
         AvroSerialization.setKeyWriterSchema(conf, unionSchema);
@@ -160,12 +160,12 @@ public class HammingLSHBlockingMRTest {
         LOG.info("findFrequentPairsMapReduceDriver ready.");
 
         // Map & Reduce drivers for matching frequent pairs.
-        formRecordPairsMapperDriverA = MapDriver.newMapDriver(new FormRecordPairsMapper());
+        formRecordPairsMapperDriverA = MapDriver.newMapDriver(new GenerateRecordPairsMapper());
         formRecordPairsMapperDriverA.getConfiguration().addResource(conf);
         formRecordPairsMapperDriverA.setOutputSerializationConfiguration(conf);
         LOG.info("formRecordPairsMapperDriverA is ready.");
 
-        formRecordPairsMapperDriverB = MapDriver.newMapDriver(new FormRecordPairsMapper());
+        formRecordPairsMapperDriverB = MapDriver.newMapDriver(new GenerateRecordPairsMapper());
         formRecordPairsMapperDriverB.getConfiguration().addResource(conf);
         formRecordPairsMapperDriverB.setOutputSerializationConfiguration(conf);
         LOG.info("formRecordPairsMapperDriverB is ready.");

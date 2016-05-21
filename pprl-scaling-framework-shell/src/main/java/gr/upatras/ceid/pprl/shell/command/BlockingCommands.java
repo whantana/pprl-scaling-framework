@@ -268,8 +268,8 @@ public class BlockingCommands implements CommandMarker {
                 final int K = CommandUtil.retrieveInt(hlshKStr,5);
                 final short C = CommandUtil.retrieveShort(hlshCStr, (short) 2);
                 final int[] R = CommandUtil.retrieveInts(reducersString);
-                if(R.length != 3) throw new IllegalArgumentException("This job consists of 3 sub-jobs and requires" +
-                                        " to define exactly 3 reducer numbers.");
+                if(R.length != 2) throw new IllegalArgumentException("This job consists of 3 sub-jobs and requires" +
+                                        " to define exactly 2 reducer numbers.");
                 LOG.info("\tHLSH Blocking Groups (L) : {}",L);
                 LOG.info("\tHLSH Blocking Hash Values (K) : {}",K);
                 LOG.info("\tFPS Collision Limit (C) : {}",C);
@@ -280,7 +280,7 @@ public class BlockingCommands implements CommandMarker {
                         bobAvroPAth, bobSchemaPath, bobUidFieldName,
                         blockingName,
                         L, K, C,
-                        R[0], R[1],R[2]);
+                        R[0], R[1]);
             } else throw new UnsupportedOperationException("\"" + blockingSchemeName + "\" is not implemented yet.");
 
             return "DONE";

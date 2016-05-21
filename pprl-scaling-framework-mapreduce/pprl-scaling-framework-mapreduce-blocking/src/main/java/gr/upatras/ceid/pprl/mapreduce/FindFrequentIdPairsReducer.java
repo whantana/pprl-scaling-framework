@@ -6,6 +6,8 @@ import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
 
+import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.increaseFrequentPairCounter;
+
 
 /**
  * Find frequent id pair reducer class.
@@ -37,7 +39,6 @@ public class FindFrequentIdPairsReducer extends Reducer<Text,IntWritable,Text,Te
 
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
-        context.getCounter(CommonKeys.COUNTER_GROUP_NAME,
-                CommonKeys.FREQUENT_PAIR_COUNTER).increment(frequentPairCount);
+        increaseFrequentPairCounter(context, frequentPairCount);
     }
 }

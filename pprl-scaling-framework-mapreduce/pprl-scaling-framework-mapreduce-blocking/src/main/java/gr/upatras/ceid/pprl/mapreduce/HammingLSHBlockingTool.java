@@ -10,14 +10,12 @@ import org.apache.avro.mapreduce.AvroJob;
 import org.apache.avro.mapreduce.AvroKeyInputFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Counter;
-import org.apache.hadoop.mapreduce.CounterGroup;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
@@ -27,15 +25,14 @@ import org.apache.hadoop.util.ToolRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.addContainingPathsToCache;
+import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.saveCountersToStats;
+import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.shortenUrl;
 
 public class HammingLSHBlockingTool extends Configured implements Tool {
 
     // TODO This job should use BlockingKeyWritable at first job
     // TODO In the counting job the intermediate key should be a custom writable.
-    // TODO
 
     private static final Logger LOG = LoggerFactory.getLogger(HammingLSHBlockingTool.class);
 
@@ -97,21 +94,21 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         final BloomFilterEncoding bobEncoding = BloomFilterEncodingUtil.setupNewInstance(bobEncodingSchema);
         final HammingLSHBlocking blocking = new HammingLSHBlocking(L,K,aliceEncoding,bobEncoding);
 
-        conf.set(CommonKeys.ALICE_SCHEMA_KEY,aliceEncodingSchema.toString());
-        conf.set(CommonKeys.ALICE_UID_KEY,aliceUidFieldName);
-        conf.set(CommonKeys.BOB_SCHEMA_KEY,bobEncodingSchema.toString());
-        conf.set(CommonKeys.BOB_UID_KEY,bobUidFieldName);
-        conf.setStrings(CommonKeys.BLOCKING_KEYS_KEY,blocking.groupsAsStrings());
-        conf.set(CommonKeys.SIMILARITY_METHOD_NAME_KEY,similarityMethodName);
-        conf.setDouble(CommonKeys.SIMILARITY_THRESHOLD_KEY,similarityThreshold);
+        conf.set(CommonKeys.ALICE_SCHEMA,aliceEncodingSchema.toString());
+        conf.set(CommonKeys.ALICE_UID,aliceUidFieldName);
+        conf.set(CommonKeys.BOB_SCHEMA,bobEncodingSchema.toString());
+        conf.set(CommonKeys.BOB_UID,bobUidFieldName);
+        conf.setStrings(CommonKeys.BLOCKING_KEYS,blocking.groupsAsStrings());
+        conf.set(CommonKeys.SIMILARITY_METHOD_NAME,similarityMethodName);
+        conf.setDouble(CommonKeys.SIMILARITY_THRESHOLD,similarityThreshold);
         conf.setInt(CommonKeys.FREQUENT_PAIR_LIMIT, C);
 
 
         // setup job1
         final String description1 = String.format("%s(" +
-                        "alice-path : %s, alice-schema-path : %s," +
-                        "bob-path : %s, bob-schema-path : %s," +
-                        "all-pairs-path : %s," +
+                        "alice-path : %s, alice-schema-path : %s, " +
+                        "bob-path : %s, bob-schema-path : %s, " +
+                        "all-pairs-path : %s, " +
                         "L : %d, K : %d, R : %d)",
                 JOB_1_DESCRIPTION,
                 shortenUrl(alicePath.toString()), shortenUrl(aliceSchemaPath.toString()),
@@ -148,7 +145,7 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         // run job 1
         final boolean job1Success = job1.waitForCompletion(true);
         if(!job1Success) {
-            LOG.error("Job \"{}\"not successful",JOB_1_DESCRIPTION);
+            LOG.error("Job \"{}\" not successful",JOB_1_DESCRIPTION);
             return 1;
         }
         LOG.info("Counters : ");
@@ -161,7 +158,7 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
 
         // setup job2
         final String description2 = String.format("%s(" +
-                        "all-pairs-path : %s, frequent-pairs-path : %s," +
+                        "all-pairs-path : %s, frequent-pairs-path : %s, " +
                         " C: %d, R : %d)",
                 JOB_2_DESCRIPTION,
                 shortenUrl(allPairsPath.toString()),
@@ -196,7 +193,7 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         // run job 2
         final boolean job2Success = job2.waitForCompletion(true);
         if(!job2Success) {
-            LOG.error("Job \"{}\"not successful",JOB_2_DESCRIPTION);
+            LOG.error("Job \"{}\" not successful",JOB_2_DESCRIPTION);
             return 1;
         }
         LOG.info("Counters : ");
@@ -207,9 +204,9 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         conf.setInt(CommonKeys.ALICE_RECORD_COUNT_COUNTER, aliceRecordCount);
         conf.setInt(CommonKeys.BOB_RECORD_COUNT_COUNTER, bobRecordCount);
         final String description3 = String.format("%s(" +
-                        "alice-path : %s, alice-schema-path : %s," +
-                        "bob-path : %s, bob-schema-path : %s," +
-                        "frequent-pairs-path: %s, matched-pairs-path : %s," +
+                        "alice-path : %s, alice-schema-path : %s, " +
+                        "bob-path : %s, bob-schema-path : %s, " +
+                        "frequent-pairs-path: %s, matched-pairs-path : %s, " +
                         " R : %d)",
                 JOB_3_DESCRIPTION,
                 shortenUrl(alicePath.toString()), shortenUrl(aliceSchemaPath.toString()),
@@ -222,13 +219,13 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         job3.setNumReduceTasks(R3);
 
         // setup  cache
-        FormRecordPairsMapper.addFrequentPairsToCache(job3, fs, frequentPairsPath);
+        addContainingPathsToCache(job3, fs, frequentPairsPath);
 
         // setup input & mappers
         AvroKeyInputFormat.setInputPaths(job3, alicePath,bobPath);
         AvroJob.setInputKeySchema(job3, unionSchema);
         job3.setInputFormatClass(AvroKeyInputFormat.class);
-        job3.setMapperClass(FormRecordPairsMapper.class);
+        job3.setMapperClass(GenerateRecordPairsMapper.class);
         job3.setMapOutputKeyClass(Text.class);
         AvroJob.setMapOutputValueSchema(job3,unionSchema);
 
@@ -240,12 +237,12 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         SequenceFileOutputFormat.setCompressOutput(job3,true);
         SequenceFileOutputFormat.setOutputCompressionType(job3,
                 SequenceFile.CompressionType.NONE);
-        SequenceFileOutputFormat.setOutputPath(job3,allPairsPath);
+        SequenceFileOutputFormat.setOutputPath(job3,matchedPairsPath);
 
         // run job 3
         final boolean job3Success = job3.waitForCompletion(true);
         if(!job3Success) {
-            LOG.error("Job \"{}\"not successful",JOB_3_DESCRIPTION);
+            LOG.error("Job \"{}\" not successful",JOB_3_DESCRIPTION);
             return 1;
         }
         LOG.info("Counters : ");
@@ -281,32 +278,4 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
      * @param url URL string
      * @return shorten URL string.
      */
-    private static String shortenUrl(final String url) {
-        Pattern p = Pattern.compile(".*://.*?(/.*)");
-        Matcher m = p.matcher(url);
-        if(m.matches()) {
-            return m.group(1);
-        } else {
-            p = Pattern.compile(".*?(/.*)");
-            m = p.matcher(url);
-            if(m.matches()) return m.group(1);
-            else return url;
-        }
-    }
-
-    /**
-     * Save counters to stats files.
-     *
-     * @param groups counter groups.
-     */
-    private static void saveCountersToStats(final FileSystem fs, final Path statsPath,final CounterGroup... groups)
-            throws IOException {
-        final FSDataOutputStream fsdos = fs.create(statsPath, true);
-        for(CounterGroup group : groups) {
-            for(Counter c : group) {
-                fsdos.writeBytes(String.format("%s : %d\n",c.getDisplayName(),c.getValue()));
-            }
-        }
-        fsdos.close();
-    }
 }

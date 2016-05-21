@@ -20,15 +20,16 @@ public class CommonKeys {
     public static final String ALICE_RECORD_COUNT_COUNTER = "record.count.A";
     public static final String BOB_RECORD_COUNT_COUNTER = "record.count.A";
 
-    public static final String ALICE_SCHEMA_KEY = "alice.encoding.schema";
-    public static final String BOB_SCHEMA_KEY = "bob.encoding.schema";
+    public static final String ALICE_SCHEMA = "alice.encoding.schema";
+    public static final String BOB_SCHEMA = "bob.encoding.schema";
 
-    public static final String ALICE_UID_KEY = "alice.uid.field.name";
-    public static final String BOB_UID_KEY = "bob.uid.field.name";
+    public static final String ALICE_UID = "alice.uid.field.name";
+    public static final String BOB_UID = "bob.uid.field.name";
 
-    public static final String BLOCKING_KEYS_KEY = "blocking.keys";
+    public static final String BLOCKING_KEYS = "blocking.keys";
 
-    public static final String SIMILARITY_METHOD_NAME_KEY = "similarity.method.name";
-    public static final String SIMILARITY_THRESHOLD_KEY = "similarity.threshold";
+    public static final String SIMILARITY_METHOD_NAME = "similarity.method.name";
+    public static final String SIMILARITY_THRESHOLD = "similarity.threshold";
 
+    public static final String BUCKET_INITIAL_CAPACITY = "blocking.bucket.capacity";
 }

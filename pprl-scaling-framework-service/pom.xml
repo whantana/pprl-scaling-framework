@@ -195,6 +195,13 @@
                                 </artifactItem>
                                 <artifactItem>
                                     <groupId>gr.upatras.ceid</groupId>
+                                    <artifactId>pprl-scaling-framework-mapreduce-blocking</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>gr.upatras.ceid</groupId>
                                     <artifactId>pprl-scaling-framework-lib</artifactId>
                                     <version>${project.version}</version>
                                     <type>jar</type>

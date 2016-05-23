@@ -3,49 +3,40 @@ package gr.upatras.ceid.pprl.mapreduce;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Partitioner;
-
-import java.io.IOException;
 
 /**
  * A partitioner for this key class.
  */
 public class BlockingKeyWritablePartitioner extends Partitioner<BlockingKeyWritable,Text> implements Configurable {
 
-    private Configuration configuration;
+    private Configuration conf;
+    private RangesInRanges RR;
     private int L;
-    private int R;
 
     public void setConf(Configuration configuration) {
-        this.configuration = configuration;
+        conf = configuration;
+        RR = null;
         L = configuration.getInt(CommonKeys.BLOCKING_GROUP_COUNT,-1);
-        try {
-            Job job = new Job(this.configuration);
-            R = job.getNumReduceTasks();
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Can't retrieve number of reducers", e);
-        }
         if(L <= 0) throw new IllegalStateException("Must set the blocking group count.");
-        if(R <= 0) throw new IllegalStateException("Must set the reducers number count.");
-        if(L < R) throw new IllegalStateException("Number of reducers cant be greater than N");
     }
 
     public Configuration getConf() {
-        return configuration;
+        return conf;
     }
 
     @Override
     public int getPartition(BlockingKeyWritable key, Text value, int numPartitions) {
         assert key.blockingGroupId >= 0 && key.blockingGroupId < L;
-        if(L == R) return key.blockingGroupId;
-        return (new RangesInRanges(L-1,0,R)).belongsToRange(key.blockingGroupId);
+        if(L == numPartitions) return key.blockingGroupId;
+        if(RR == null) RR = new RangesInRanges(0,L-1,numPartitions);
+        return RR.belongsToRange(key.blockingGroupId);
     }
 
     /**
      * Helper class to partition up the blocking group space.
      */
-    private class RangesInRanges {
+    private static class RangesInRanges {
         private int max;
         private int min;
         private int rc;
@@ -54,7 +45,7 @@ public class BlockingKeyWritablePartitioner extends Partitioner<BlockingKeyWrita
         private int range;
         private int[][] ranges;
 
-        public RangesInRanges(int max, int min, int rc) {
+        public RangesInRanges(int min, int max, int rc) {
             this.max = max;
             this.min = min;
             this.rc = rc;
@@ -85,5 +76,4 @@ public class BlockingKeyWritablePartitioner extends Partitioner<BlockingKeyWrita
             return -1;
         }
     }
-
 }

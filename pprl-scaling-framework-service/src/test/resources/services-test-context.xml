@@ -62,7 +62,12 @@
 						   file://${build.test.dir}/avro-mapred-${avro.version}-hadoop2.jar,
                            file://${build.test.dir}/pprl-scaling-framework-lib-${build.version}.jar"/>
 
-    <hdp:configuration id="hadoopConfiguration"/>
+    <hdp:configuration>
+		mapreduce.map.memory.mb=2048
+		mapreduce.map.java.opts=-Xmx1024m -Xss600m
+		mapreduce.reduce.memory.mb=2048
+		mapreduce.reduce.java.opts=-Xmx1024m -Xss600m
+	</hdp:configuration>
     <hdp:file-system id="hdfs"/>
     <bean id="localFs" class="org.apache.hadoop.fs.FileSystem" factory-method="getLocal">
         <constructor-arg type="org.apache.hadoop.conf.Configuration" ref="hadoopConfiguration"/>

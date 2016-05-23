@@ -26,7 +26,7 @@ import java.util.TreeSet;
 import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.increaseFrequentPairCounter;
 import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.increaseRecordCounter;
 
-public class HammingLSHFPSMapper extends Mapper<AvroKey<GenericRecord>,NullWritable,Text,Text> {
+public class FPSMapper extends Mapper<AvroKey<GenericRecord>,NullWritable,Text,Text> {
 
 
     private Map<BitSet,List<Text>>[] bobBuckets;
@@ -167,11 +167,13 @@ public class HammingLSHFPSMapper extends Mapper<AvroKey<GenericRecord>,NullWrita
 
         Map<BitSet,List<Text>>[] buckets = new Map[blocking.getL()];
         for(int i=0 ; i < blocking.getL() ; i++)
-            buckets[i] = new HashMap<BitSet, List<Text>>(capacity,1.0f);
+            buckets[i] = new HashMap<BitSet, List<Text>>(capacity+1,1.0f);
 
         final SortedSet<Path> bucketPaths = new TreeSet<Path>();
-        for(final URI uri : context.getCacheFiles())
+        for(final URI uri : context.getCacheFiles()) {
+            if(!uri.toString().endsWith("jar"))
             bucketPaths.add(new Path(uri));
+        }
 
         for (Path bucketPath : bucketPaths) {
             SequenceFile.Reader reader = new SequenceFile.Reader(conf, SequenceFile.Reader.file(bucketPath));

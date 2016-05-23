@@ -13,15 +13,15 @@ import java.io.IOException;
  */
 public class BlockingGroupPartitioner extends Partitioner<Text, Text> implements Configurable{
 
-    private Configuration configuration;
+    private Configuration conf;
     private int L;
     private int R;
 
     public void setConf(Configuration configuration) {
-        this.configuration = configuration;
-        L = configuration.getInt(CommonKeys.BLOCKING_GROUP_COUNT,-1);
+        conf = configuration;
+        L = conf.getInt(CommonKeys.BLOCKING_GROUP_COUNT,-1);
         try {
-            Job job = new Job(this.configuration);
+            Job job = new Job(conf);
             R = job.getNumReduceTasks();
         } catch (IOException e) {
             throw new IllegalArgumentException("Can't retrieve number of reducers", e);
@@ -32,7 +32,7 @@ public class BlockingGroupPartitioner extends Partitioner<Text, Text> implements
     }
 
     public Configuration getConf() {
-        return configuration;
+        return conf;
     }
 
     @Override

@@ -1,69 +1,50 @@
 package gr.upatras.ceid.pprl.mapreduce;
 
-
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
 
 import static gr.upatras.ceid.pprl.mapreduce.BlockingKeyStatistics.setMaxMinBlockingKeysCounters;
-import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.increaseTotalBlockingKeyCount;
+import static gr.upatras.ceid.pprl.mapreduce.BlockingKeyWritable.sameBlockingKey;
 import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.increaseTotalPairCounter;
 
 /**
- * Hamming LSH Blocking Reducer class.
+ * Generate Id Pairs Reducer class.
  */
-public class GenerateIdPairsReducer extends Reducer<Text,Text,Text,Text> {
+public class GenerateIdPairsReducer extends Reducer<BlockingKeyWritable,Text,Text,Text> {
+    public BlockingKeyWritable previousKey;
+    public TextArrayWritable previousValue;
 
-    private Queue<Text> keyQ;
-    private Queue<List<Text>> valQ;
-    private BlockingKeyStatistics statistics;
-
+    private BlockingKeyStatistics statistics ;
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
-        keyQ = new LinkedList<Text>();
-        valQ = new LinkedList<List<Text>>();
         statistics = new BlockingKeyStatistics();
+        initPrevious();
     }
 
     @Override
-    protected void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+    protected void reduce(BlockingKeyWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+        statistics.refreshOnBlockingGroupUpdate(key.blockingGroupId);
 
-        statistics.refreshOnBlockingGroupUpdate(
-                Integer.parseInt(key.toString().substring(0, key.toString().indexOf('_')))
-        );
-
-        if(keyQ.isEmpty()) {
-            if(key.toString().endsWith("_B")) return;
-            keyQ.add(key);
-            valQ.add(formValuesList(values));
+        // if we dont set previous key set it and its value
+        if(previousKey == null && previousValue == null) {
+            if(key.datasetId == 'B') return;
+            updatePrevious(key,values);
             return;
-        } else if(keyQ.size() == 2 && valQ.size() == 2) {
-            keyQ.remove();
-            valQ.remove();
         }
 
-        final boolean isAliceIds = key.toString().endsWith("_A");
-        final boolean isBobIds = key.toString().endsWith("_B");
-        assert isAliceIds != isBobIds;
-
-        if(isAliceIds) {
-            keyQ.add(key);
-            valQ.add(formValuesList(values));
-        } else {
-            Text previousKey = keyQ.remove();
-            List<Text> previousValues = valQ.remove();
-            if(!previousKey.toString().endsWith("_A"))
-                throw new IllegalStateException("This must be an Alice entry.");
-            if(equalBlockingKeys(previousKey,key)) {
+        // if we have a previous key (only from A) and the current one is from A swap em
+        if(key.datasetId == 'A') {
+            previousKey = new BlockingKeyWritable(key.blockingGroupId, key.hash, key.datasetId);
+            updatePrevious(key, values);
+        } else { // if current one is from B and have the same blocking key (group and hash)
+            if(sameBlockingKey(previousKey, key)) {
                 int pairsCounter = 0;
                 for (Text bv : values) {
-                    for (Text av : previousValues) {
+                    for (Text av : previousValue.get()) {
                         context.write(av, bv);
                         pairsCounter++;
                     }
@@ -71,6 +52,7 @@ public class GenerateIdPairsReducer extends Reducer<Text,Text,Text,Text> {
                 increaseTotalPairCounter(context, pairsCounter);
                 statistics.increaseCurrentBlockingKeysCount();
             }
+            initPrevious();
         }
     }
 
@@ -78,7 +60,6 @@ public class GenerateIdPairsReducer extends Reducer<Text,Text,Text,Text> {
     protected void cleanup(Context context) throws IOException, InterruptedException {
         final int id = context.getTaskAttemptID().getTaskID().getId();
         statistics.refresh();
-        increaseTotalBlockingKeyCount(context, statistics.getTotalBlockingKeyCount());
         setMaxMinBlockingKeysCounters(context, id,
                 statistics.getMaxBlockingKeys(),
                 statistics.getMinBlockingKeys()
@@ -86,27 +67,22 @@ public class GenerateIdPairsReducer extends Reducer<Text,Text,Text,Text> {
     }
 
     /**
-     * Form a values list from the iterable.
+     * Updates previous key and values with the current ones.
      *
-     * @param values iterable.
-     * @return a values list from the iterable.
+     * @param key a blocking key.
+     * @param values values of a blocking key.
      */
-    private List<Text> formValuesList(final Iterable<Text> values) {
-        List<Text> vlist = new ArrayList<Text>();
-        for (Text v : values) vlist.add(new Text(v));
-        return vlist;
+    private void updatePrevious(final BlockingKeyWritable key, final Iterable<Text> values) {
+        previousKey = new BlockingKeyWritable(key.blockingGroupId, key.hash, key.datasetId);
+        previousValue = new TextArrayWritable();
+        ArrayList<Text> textList = new ArrayList<Text>();
+        for (Text v : values) { textList.add(new Text(v)); }
+        previousValue.set(textList.toArray(new Text[textList.size()]));
+
     }
 
-    /**
-     * True if blocking keys are equal, false otherwise.
-     *
-     * @param key1 key 1.
-     * @param key2 key 2.
-     * @return true if blocking keys are equal, false otherwise.
-     */
-    private boolean equalBlockingKeys(final Text key1, final Text key2) {
-        final String s1 = key1.toString();
-        final String s2 = key2.toString();
-        return s1.substring(0,s1.lastIndexOf("_")).equals(s2.substring(0,s2.lastIndexOf("_")));
+    private void initPrevious() {
+        previousKey = null;
+        previousValue = null;
     }
 }

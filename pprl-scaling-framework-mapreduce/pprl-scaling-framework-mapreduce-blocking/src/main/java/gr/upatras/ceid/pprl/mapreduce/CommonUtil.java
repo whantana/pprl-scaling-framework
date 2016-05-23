@@ -13,7 +13,6 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
-import java.util.BitSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -177,5 +176,17 @@ public class CommonUtil {
             LocatedFileStatus lfs = iterator.next();
             if (lfs.isFile()) job.addCacheFile(fs.makeQualified(lfs.getPath()).toUri());
         }
+    }
+
+    /**
+     * Remove _SUCCESS file from path.
+     *
+     * @param path a path.
+     * @throws IOException
+     */
+    public static void removeSuccessFile(final FileSystem fs,
+                                         final Path path) throws IOException {
+        final Path p = new Path(path,"_SUCCESS");
+        if (fs.exists(p)) fs.delete(p, false);
     }
 }

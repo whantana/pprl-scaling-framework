@@ -93,6 +93,7 @@ public class HammingLSHFPSBlockingTool extends Configured implements Tool {
         conf.set(CommonKeys.ALICE_UID,aliceUidFieldName);
         conf.set(CommonKeys.BOB_SCHEMA,bobEncodingSchema.toString());
         conf.set(CommonKeys.BOB_UID,bobUidFieldName);
+		conf.setInt(CommonKeys.BLOCKING_GROUP_COUNT, L);
         conf.setStrings(CommonKeys.BLOCKING_KEYS,blocking.groupsAsStrings());
         conf.set(CommonKeys.SIMILARITY_METHOD_NAME,similarityMethodName);
         conf.setDouble(CommonKeys.SIMILARITY_THRESHOLD,similarityThreshold);
@@ -112,12 +113,13 @@ public class HammingLSHFPSBlockingTool extends Configured implements Tool {
         job1.setJarByClass(HammingLSHFPSBlockingTool.class);
         job1.setJobName(description1);
         job1.setNumReduceTasks(R1);
+        job1.setSpeculativeExecution(false);
 
         // setup input & Mappers
         AvroKeyInputFormat.setInputPaths(job1, bobPath);
         AvroJob.setInputKeySchema(job1, bobEncodingSchema);
         job1.setInputFormatClass(AvroKeyInputFormat.class);
-        job1.setMapperClass(HammingLSHBlockingMapperV2.class);
+        job1.setMapperClass(HammingLSHBlockingMapper.class);
         job1.setMapOutputKeyClass(BlockingKeyWritable.class);
         job1.setMapOutputValueClass(Text.class);
 
@@ -143,6 +145,7 @@ public class HammingLSHFPSBlockingTool extends Configured implements Tool {
             LOG.error("Job \"{}\" not successful",JOB_1_DESCRIPTION);
             return 1;
         }
+        removeSuccessFile(fs,bobBucketsPath);
         LOG.info("Counters : ");
         for(Counter c : job1.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME))
             LOG.info("\t{} : {}",c.getDisplayName(),c.getValue());
@@ -168,9 +171,10 @@ public class HammingLSHFPSBlockingTool extends Configured implements Tool {
                 L, K, C);
         LOG.info("Running.2 : {}",description2);
         final Job job2 = Job.getInstance(conf);
-        job1.setJarByClass(HammingLSHFPSBlockingTool.class);
-        job1.setJobName(description2);
-        job1.setNumReduceTasks(0);
+        job2.setJarByClass(HammingLSHFPSBlockingTool.class);
+        job2.setJobName(description2);
+        job2.setNumReduceTasks(0);
+        job2.setSpeculativeExecution(false);
 
         // setup  cache
         addContainingPathsToCache(job2, fs, bobBucketsPath);
@@ -179,7 +183,7 @@ public class HammingLSHFPSBlockingTool extends Configured implements Tool {
         AvroKeyInputFormat.setInputPaths(job2, alicePath);
         AvroJob.setInputKeySchema(job2, aliceEncodingSchema);
         job2.setInputFormatClass(AvroKeyInputFormat.class);
-        job2.setMapperClass(HammingLSHFPSMapper.class);
+        job2.setMapperClass(FPSMapper.class);
         job2.setMapOutputKeyClass(Text.class);
         job2.setMapOutputValueClass(Text.class);
 
@@ -189,12 +193,17 @@ public class HammingLSHFPSBlockingTool extends Configured implements Tool {
                 SequenceFile.CompressionType.BLOCK);
         SequenceFileOutputFormat.setOutputPath(job2,frequentPairsPath);
 
-        // run job 1
+        // run job 2
         final boolean job2success = job2.waitForCompletion(true);
         if(!job2success) {
             LOG.error("Job \"{}\" not successful",JOB_2_DESCRIPTION);
             return 1;
         }
+        removeSuccessFile(fs,frequentPairsPath);
+        LOG.info("Counters : ");
+        for(Counter c : job1.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME))
+            LOG.info("\t{} : {}",c.getDisplayName(),c.getValue());
+
 
         // get important stats for the next job
         final int aliceRecordCount = (int)job2.getCounters().findCounter(
@@ -215,9 +224,10 @@ public class HammingLSHFPSBlockingTool extends Configured implements Tool {
                 shortenUrl(frequentPairsPath.toString()), shortenUrl(matchedPairsPath.toString()),R3);
         LOG.info("Running.3 : {}",description3);
         final Job job3 = Job.getInstance(conf);
-        job3.setJarByClass(HammingLSHBlockingTool.class);
+        job3.setJarByClass(HammingLSHFPSBlockingTool.class);
         job3.setJobName(description3);
         job3.setNumReduceTasks(R3);
+        job3.setSpeculativeExecution(false);
 
         // setup  cache
         addContainingPathsToCache(job3, fs, frequentPairsPath);
@@ -226,7 +236,7 @@ public class HammingLSHFPSBlockingTool extends Configured implements Tool {
         AvroKeyInputFormat.setInputPaths(job3, alicePath,bobPath);
         AvroJob.setInputKeySchema(job3, unionSchema);
         job3.setInputFormatClass(AvroKeyInputFormat.class);
-        job3.setMapperClass(GenerateRecordPairsMapper.class);
+        job3.setMapperClass(MakeRecordPairsMapper.class);
         job3.setMapOutputKeyClass(Text.class);
         AvroJob.setMapOutputValueSchema(job3,unionSchema);
 
@@ -246,13 +256,15 @@ public class HammingLSHFPSBlockingTool extends Configured implements Tool {
             LOG.error("Job \"{}\" not successful",JOB_3_DESCRIPTION);
             return 1;
         }
+        removeSuccessFile(fs,matchedPairsPath);
         LOG.info("Counters : ");
         for(Counter c : job3.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME))
             LOG.info("\t{} : {}",c.getDisplayName(),c.getValue());
 
-        LOG.info("All jobs are succesfull. See \"{}\" for the matched pairs list.", matchedPairsPath);
 
-        // save counters to stats path
+
+        // all jobs are succesfull save counters to stats path
+        LOG.info("All jobs are succesfull. See \"{}\" for the matched pairs list.", matchedPairsPath);
         saveCountersToStats(fs, statsPath,
                 job1.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME),
                 job2.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME),

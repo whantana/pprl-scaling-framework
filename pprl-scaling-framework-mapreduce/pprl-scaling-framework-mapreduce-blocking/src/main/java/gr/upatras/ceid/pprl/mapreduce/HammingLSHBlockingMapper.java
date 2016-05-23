@@ -15,10 +15,8 @@ import java.util.BitSet;
 
 import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.increaseRecordCounter;
 
-/**
- * Hamming LSH Blocking Mapper class.
- */
-public class HammingLSHBlockingMapper extends Mapper<AvroKey<GenericRecord>,NullWritable,Text,Text> {
+
+public class HammingLSHBlockingMapper extends Mapper<AvroKey<GenericRecord>,NullWritable,BlockingKeyWritable,Text> {
 
     private HammingLSHBlocking blocking;
     private String uidFieldName;
@@ -32,8 +30,7 @@ public class HammingLSHBlockingMapper extends Mapper<AvroKey<GenericRecord>,Null
         final BitSet[] keys = blocking.hashRecord(record,encodingFieldName);
         final String uid = String.valueOf(record.get(uidFieldName));
         for (int i = 0; i < keys.length; i++) {
-            final Text blockingKey =
-                    new Text(String.format("%05d_%s_%c", i, keyToString(keys[i], blocking.getK()),dataset));
+            final BlockingKeyWritable blockingKey = new BlockingKeyWritable(i,keys[i],dataset);
             final Text val = new Text(uid);
             context.write(blockingKey,val);
         }
@@ -86,7 +83,6 @@ public class HammingLSHBlockingMapper extends Mapper<AvroKey<GenericRecord>,Null
      * @param context context.
      */
     private void setupMapper(final Schema schema,final Context context) {
-        ;
         if(schema.getName().equals(blocking.getAliceEncodingName())){
             encodingFieldName = blocking.getAliceEncodingFieldName();
             uidFieldName = context.getConfiguration().get(CommonKeys.ALICE_UID);
@@ -98,18 +94,5 @@ public class HammingLSHBlockingMapper extends Mapper<AvroKey<GenericRecord>,Null
 
         } else throw new IllegalStateException("Unknown schema name : " + schema.getName());
         if(uidFieldName == null) throw new IllegalStateException("UID field name not set.");
-    }
-
-    /**
-     * Turns a bucket key (bitset) to a string.
-     * @param bitSet bitset key.
-     * @param K number of bits.
-     * @return string representation of a key
-     */
-    public static String keyToString(final BitSet bitSet, int K) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = (K-1); i >= 0; i--)
-            sb.append(bitSet.get(i)?"1":"0");
-        return sb.toString();
     }
 }

@@ -9,9 +9,8 @@ public class BlockingKeyStatistics {
     private long maxBlockingKeys ;
     private long minBlockingKeys;
     private int currentBlockingGroupId;
-    private long totalBlockingKeysCount;
     private long currentBlockingKeysCount;
-    private long totalBlockingKeyCount;
+    private long totalBlockingKeysCount;
 
     /**
      * Constructor
@@ -96,7 +95,7 @@ public class BlockingKeyStatistics {
         return minBlockingKeys;
     }
 
-    public long getTotalBlockingKeyCount() {
-        return totalBlockingKeyCount;
+    public long getTotalBlockingKeysCount() {
+        return totalBlockingKeysCount;
     }
 }

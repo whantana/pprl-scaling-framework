@@ -13,7 +13,6 @@ import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -22,9 +21,9 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 /**
- * Form Record pairs Mapper.
+ * Make Record pairs Mapper.
  */
-public class GenerateRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWritable,Text,AvroValue<GenericRecord>> {
+public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWritable,TextPairWritable,AvroValue<GenericRecord>> {
 
     private String aliceEncodingName;
     private String bobEncodingName;
@@ -39,9 +38,9 @@ public class GenerateRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,Nul
         final String uid = String.valueOf(record.get(uidFieldName));
         if(!frequentPairMap.containsKey(uid)) return;
         for(String ouid : frequentPairMap.get(uid)) {
-            final Text keyPair = new Text(followsKeyValue ?
-                    uid + CommonKeys.RECORD_PAIR_DELIMITER + ouid :
-                    ouid + CommonKeys.RECORD_PAIR_DELIMITER + uid);
+            final TextPairWritable keyPair = followsKeyValue ?
+                    new TextPairWritable(uid,ouid) :
+                    new TextPairWritable(ouid,uid);
             context.write(keyPair,avroValue);
         }
     }
@@ -118,9 +117,10 @@ public class GenerateRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,Nul
                 1.00f);
 
         final SortedSet<Path> frequentPairsPaths = new TreeSet<Path>();
-        for(final URI uri : context.getCacheFiles())
-            frequentPairsPaths.add(new Path(uri));
-
+        for(final URI uri : context.getCacheFiles()) {
+            if(!uri.toString().endsWith("jar"))
+                frequentPairsPaths.add(new Path(uri));
+        }
         for(final Path path : frequentPairsPaths) {
             SequenceFile.Reader reader = new SequenceFile.Reader(conf, SequenceFile.Reader.file(path));
             Text key = new Text();

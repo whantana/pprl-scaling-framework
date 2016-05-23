@@ -54,6 +54,8 @@ public class BlockingService implements InitializingBean {
      * @param L Blocking Groups Count.
      * @param K Hash values Count.
      * @param C Collision Frequency limit.
+     * @param similarirtyMethodName similarity method name.
+     * @param similarityThreshold similarity threshold.
      * @param R1 Number of reducers for first job.
      * @param R2 Number of reducers for second job.
      * @param R3 Number of reducers for third job.
@@ -65,6 +67,8 @@ public class BlockingService implements InitializingBean {
                                                 final String bobUidFieldName,
                                                 final String blockingName,
                                                 final int L, final int K, final short C,
+												final String similarirtyMethodName,
+												final double similarityThreshold,
                                                 final int R1, final int R2, final int R3)
             throws Exception {
         try {
@@ -91,6 +95,8 @@ public class BlockingService implements InitializingBean {
             argsList.add(String.valueOf(R1));
             argsList.add(String.valueOf(R2));
             argsList.add(String.valueOf(R3));
+			argsList.add(similarirtyMethodName);
+			argsList.add(String.valueOf(similarityThreshold));
             String[] args = new String[argsList.size()];
             args = argsList.toArray(args);
             hammingLshBlockingToolRunner.setArguments(args);
@@ -117,6 +123,8 @@ public class BlockingService implements InitializingBean {
      * @param L Blocking Groups Count.
      * @param K Hash values Count.
      * @param C Collision Frequency limit.
+     * @param similarirtyMethodName similarity method name.
+     * @param similarityThreshold similarity threshold.
      * @param R1 Number of reducers for first job.
      * @param R2 Number of reducers for third job.
      * @throws Exception
@@ -127,6 +135,8 @@ public class BlockingService implements InitializingBean {
                                                   final String bobUidFieldName,
                                                   final String blockingName,
                                                   final int L, final int K, final short C,
+												  final String similarirtyMethodName,
+												  final double similarityThreshold,
                                                   final int R1, final int R2)
             throws Exception {
         try {
@@ -152,6 +162,8 @@ public class BlockingService implements InitializingBean {
             argsList.add(String.valueOf(C));
             argsList.add(String.valueOf(R1));
             argsList.add(String.valueOf(R2));
+			argsList.add(similarirtyMethodName);
+			argsList.add(String.valueOf(similarityThreshold));
             String[] args = new String[argsList.size()];
             args = argsList.toArray(args);
             hammingLshFpsBlockingToolRunner.setArguments(args);

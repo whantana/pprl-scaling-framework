@@ -1,7 +1,6 @@
 package gr.upatras.ceid.pprl.mapreduce;
 
 import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
@@ -9,7 +8,7 @@ import java.io.IOException;
 /**
  * Find Frequent Id Pairs Combiner class.
  */
-public class FindFrequentIdPairsCombiner extends Reducer<Text,IntWritable,Text,IntWritable> {
+public class FindFrequentIdPairsCombiner extends Reducer<TextPairWritable,IntWritable,TextPairWritable,IntWritable> {
     private short C;
 
     @Override
@@ -19,11 +18,14 @@ public class FindFrequentIdPairsCombiner extends Reducer<Text,IntWritable,Text,I
     }
 
     @Override
-    protected void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
+    protected void reduce(TextPairWritable key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
         int sum = 0;
         for(IntWritable v : values) {
             sum += v.get();
-            if(sum >= C) { context.write(key,new IntWritable(sum)); return; }
+            if(sum >= C) {
+                context.write(key,new IntWritable(sum));
+                return;
+            }
         }
         context.write(key,new IntWritable(sum));
     }

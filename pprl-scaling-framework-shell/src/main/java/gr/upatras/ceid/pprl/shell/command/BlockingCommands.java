@@ -259,9 +259,9 @@ public class BlockingCommands implements CommandMarker {
                         aliceAvroPath,aliceSchemaPath,aliceUidFieldName,
                         bobAvroPAth,bobSchemaPath,bobUidFieldName,
                         blockingName,
-                        L,K,C,
-                        R[0],R[1],R[2]
-                        );
+                        L, K, C,
+						similarityMethodName, similarityThreshold,
+                        R[0],R[1],R[2]);
 
             } else if(blockingSchemeName.equals("HLSH_FPS_MR")) {
                 final int L = CommandUtil.retrieveInt(hlshLStr,32);
@@ -280,6 +280,7 @@ public class BlockingCommands implements CommandMarker {
                         bobAvroPAth, bobSchemaPath, bobUidFieldName,
                         blockingName,
                         L, K, C,
+						similarityMethodName, similarityThreshold,
                         R[0], R[1]);
             } else throw new UnsupportedOperationException("\"" + blockingSchemeName + "\" is not implemented yet.");
 

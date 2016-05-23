@@ -7,15 +7,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.increaseTotalBlockingKeyCount;
 import static gr.upatras.ceid.pprl.mapreduce.BlockingKeyStatistics.setMaxMinBlockingKeysCounters;
+import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.increaseTotalBlockingKeyCount;
 
 /**
  * Generate blocking buckets reducer class.
  */
 public class GenerateBucketsReducer extends Reducer<BlockingKeyWritable,Text,BlockingKeyWritable,TextArrayWritable> {
 
-    private long totalBlockingKeysCount;
     private BlockingKeyStatistics statistics;
 
     @Override
@@ -40,7 +39,7 @@ public class GenerateBucketsReducer extends Reducer<BlockingKeyWritable,Text,Blo
     protected void cleanup(Context context) throws IOException, InterruptedException {
         final int id = context.getTaskAttemptID().getTaskID().getId();
         statistics.refresh();
-        increaseTotalBlockingKeyCount(context, statistics.getTotalBlockingKeyCount());
+        increaseTotalBlockingKeyCount(context, statistics.getTotalBlockingKeysCount());
         setMaxMinBlockingKeysCounters(context, id,
                 statistics.getMaxBlockingKeys(),
                 statistics.getMinBlockingKeys()

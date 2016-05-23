@@ -1,12 +1,6 @@
 package gr.upatras.ceid.pprl.mapreduce;
 
-import org.apache.hadoop.conf.Configurable;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.io.WritableComparator;
-import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.Partitioner;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -144,5 +138,9 @@ public class BlockingKeyWritable implements WritableComparable<BlockingKeyWritab
         return sb.toString();
     }
 
-
+    public static boolean sameBlockingKey(final BlockingKeyWritable akey,
+                                          final BlockingKeyWritable bkey) {
+        assert akey.datasetId == 'A' && bkey.datasetId == 'B';
+        return akey.blockingGroupId == bkey.blockingGroupId && akey.hash.equals(bkey.hash);
+    }
 }

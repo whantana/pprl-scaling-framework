@@ -18,11 +18,15 @@ import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
 
 public class DifferentSchemaInputTest {
+
+    private static final Logger LOG = LoggerFactory.getLogger(HammingLSHBlockingMRTest.class);
 
     @Test
     public void test0() throws IOException, DatasetException, InterruptedException {
@@ -60,8 +64,8 @@ public class DifferentSchemaInputTest {
         for (int i = 0; i < 5; i++) {
             readerA.nextKeyValue();
             readerB.nextKeyValue();
-            System.out.println("readerA.getCurrentKey() : " + readerA.getCurrentKey().datum().get("id"));
-            System.out.println("readerB.getCurrentKey() : " + readerB.getCurrentKey().datum().get("id"));
+            LOG.info("readerA.getCurrentKey() : {}",String.valueOf(readerA.getCurrentKey().datum().get("id")));
+            LOG.info("readerB.getCurrentKey() : {}",String.valueOf(readerB.getCurrentKey().datum().get("id")));
         }
 
     }

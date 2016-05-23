@@ -237,7 +237,7 @@ public class DatasetsService implements InitializingBean {
 
             final Path src = schemaPath;
             final Path dest = new Path(destSchemaPath,schemaPath.getName());
-            LOG.info("Uploading {} avro schema file.");
+            LOG.info("Uploading 1 avro schema file.");
             LOG.info("\tUploading {} to {}.", src, dest);
             hdfs.copyFromLocalFile(src, dest);
             return destBasePath;

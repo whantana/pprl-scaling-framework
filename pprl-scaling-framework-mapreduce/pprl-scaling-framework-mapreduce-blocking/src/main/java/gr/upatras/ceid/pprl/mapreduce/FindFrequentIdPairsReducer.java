@@ -12,7 +12,7 @@ import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.increaseFrequentPairCoun
 /**
  * Find frequent id pair reducer class.
  */
-public class FindFrequentIdPairsReducer extends Reducer<Text,IntWritable,Text,Text> {
+public class FindFrequentIdPairsReducer extends Reducer<TextPairWritable,IntWritable,Text,Text> {
     private short C;
     private long frequentPairCount = 0;
 
@@ -23,16 +23,14 @@ public class FindFrequentIdPairsReducer extends Reducer<Text,IntWritable,Text,Te
     }
 
     @Override
-    protected void reduce(Text key, Iterable<IntWritable> values, Context context)
+    protected void reduce(TextPairWritable key, Iterable<IntWritable> values, Context context)
             throws IOException, InterruptedException {
         int sum = 0;
         for(IntWritable v : values) {
             sum += v.get();
             if(v.get() >= C || sum >= C) {
-                String[] splitKeys = key.toString().split(CommonKeys.RECORD_PAIR_DELIMITER);
-                context.write(new Text(splitKeys[0]),new Text(splitKeys[1]));
+                context.write(new Text(key.getFirst()),new Text(key.getSecond()));
                 frequentPairCount++;
-                return;
             }
         }
     }

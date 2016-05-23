@@ -20,7 +20,7 @@ import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.increaseMatchedPairsCoun
 /**
  * Private Similarity Reducer class.
  */
-public class PrivateSimilarityReducer extends Reducer<Text,AvroValue<GenericRecord>,Text,Text> {
+public class PrivateSimilarityReducer extends Reducer<TextPairWritable,AvroValue<GenericRecord>,Text,Text> {
 
     private double similarityThreshold;
     private String similarityMethodName;
@@ -71,7 +71,7 @@ public class PrivateSimilarityReducer extends Reducer<Text,AvroValue<GenericReco
     }
 
     @Override
-    protected void reduce(Text key, Iterable<AvroValue<GenericRecord>> values, Context context)
+    protected void reduce(TextPairWritable key, Iterable<AvroValue<GenericRecord>> values, Context context)
             throws IOException, InterruptedException {
         GenericRecord aliceRecord = null;
         GenericRecord bobRecord = null;

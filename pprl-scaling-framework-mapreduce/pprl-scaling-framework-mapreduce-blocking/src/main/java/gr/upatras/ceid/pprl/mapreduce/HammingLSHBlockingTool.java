@@ -25,9 +25,7 @@ import org.apache.hadoop.util.ToolRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.addContainingPathsToCache;
-import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.saveCountersToStats;
-import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.shortenUrl;
+import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.*;
 
 public class HammingLSHBlockingTool extends Configured implements Tool {
 
@@ -98,6 +96,7 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         conf.set(CommonKeys.ALICE_UID,aliceUidFieldName);
         conf.set(CommonKeys.BOB_SCHEMA,bobEncodingSchema.toString());
         conf.set(CommonKeys.BOB_UID,bobUidFieldName);
+		conf.setInt(CommonKeys.BLOCKING_GROUP_COUNT, L);
         conf.setStrings(CommonKeys.BLOCKING_KEYS,blocking.groupsAsStrings());
         conf.set(CommonKeys.SIMILARITY_METHOD_NAME,similarityMethodName);
         conf.setDouble(CommonKeys.SIMILARITY_THRESHOLD,similarityThreshold);
@@ -120,17 +119,21 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         job1.setJarByClass(HammingLSHBlockingTool.class);
         job1.setJobName(description1);
         job1.setNumReduceTasks(R1);
+        job1.setSpeculativeExecution(false);
 
         // setup input & Mappers
         AvroKeyInputFormat.setInputPaths(job1, alicePath,bobPath);
         AvroJob.setInputKeySchema(job1, unionSchema);
         job1.setInputFormatClass(AvroKeyInputFormat.class);
         job1.setMapperClass(HammingLSHBlockingMapper.class);
-        job1.setMapOutputKeyClass(Text.class);
+        job1.setMapOutputKeyClass(BlockingKeyWritable.class);
         job1.setMapOutputValueClass(Text.class);
 
         // partitioner
-        job1.setPartitionerClass(BlockingGroupPartitioner.class);
+        job1.setPartitionerClass(BlockingKeyWritablePartitioner.class);
+
+        // sort class
+        job1.setSortComparatorClass(BlockingKeyWritableComparator.class);
 
         // reducers & setup output
         job1.setReducerClass(GenerateIdPairsReducer.class);
@@ -148,6 +151,7 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
             LOG.error("Job \"{}\" not successful",JOB_1_DESCRIPTION);
             return 1;
         }
+        removeSuccessFile(fs,allPairsPath);
         LOG.info("Counters : ");
         for(Counter c : job1.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME))
             LOG.info("\t{} : {}",c.getDisplayName(),c.getValue());
@@ -169,16 +173,20 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         job2.setJarByClass(HammingLSHBlockingTool.class);
         job2.setJobName(description2);
         job2.setNumReduceTasks(R2);
+        job2.setSpeculativeExecution(false);
 
         // setup input & mappers
         SequenceFileInputFormat.setInputPaths(job2, allPairsPath);
         job2.setInputFormatClass(SequenceFileInputFormat.class);
         job2.setMapperClass(CountIdPairsMapper.class);
-        job2.setMapOutputKeyClass(Text.class);
+        job2.setMapOutputKeyClass(TextPairWritable.class);
         job2.setMapOutputValueClass(IntWritable.class);
 
         // setup combiner
         job2.setCombinerClass(FindFrequentIdPairsCombiner.class);
+
+        // setup sort
+        job2.setSortComparatorClass(TextPairWritableComparator.class);
 
         // reducers & setup output
         job2.setReducerClass(FindFrequentIdPairsReducer.class);
@@ -196,6 +204,7 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
             LOG.error("Job \"{}\" not successful",JOB_2_DESCRIPTION);
             return 1;
         }
+        removeSuccessFile(fs,frequentPairsPath);
         LOG.info("Counters : ");
         for(Counter c : job2.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME))
             LOG.info("\t{} : {}",c.getDisplayName(),c.getValue());
@@ -217,6 +226,7 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         job3.setJarByClass(HammingLSHBlockingTool.class);
         job3.setJobName(description3);
         job3.setNumReduceTasks(R3);
+        job3.setSpeculativeExecution(false);
 
         // setup  cache
         addContainingPathsToCache(job3, fs, frequentPairsPath);
@@ -225,9 +235,12 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         AvroKeyInputFormat.setInputPaths(job3, alicePath,bobPath);
         AvroJob.setInputKeySchema(job3, unionSchema);
         job3.setInputFormatClass(AvroKeyInputFormat.class);
-        job3.setMapperClass(GenerateRecordPairsMapper.class);
-        job3.setMapOutputKeyClass(Text.class);
+        job3.setMapperClass(MakeRecordPairsMapper.class);
+        job3.setMapOutputKeyClass(TextPairWritable.class);
         AvroJob.setMapOutputValueSchema(job3,unionSchema);
+
+        // setup sort
+        job3.setSortComparatorClass(TextPairWritableComparator.class);
 
         // reducers & setup output
         job3.setReducerClass(PrivateSimilarityReducer.class);
@@ -245,13 +258,13 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
             LOG.error("Job \"{}\" not successful",JOB_3_DESCRIPTION);
             return 1;
         }
+        removeSuccessFile(fs,matchedPairsPath);
         LOG.info("Counters : ");
         for(Counter c : job3.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME))
             LOG.info("\t{} : {}",c.getDisplayName(),c.getValue());
 
+        // all jobs are succesfull save counters to stats path
         LOG.info("All jobs are succesfull. See \"{}\" for the matched pairs list.", matchedPairsPath);
-
-
         saveCountersToStats(fs,statsPath,
                 job1.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME),
                 job2.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME),
@@ -271,11 +284,4 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         int res = ToolRunner.run(new HammingLSHBlockingTool(), args);
         System.exit(res);
     }
-
-    /**
-     * Shortens the given URL string.
-     *
-     * @param url URL string
-     * @return shorten URL string.
-     */
 }

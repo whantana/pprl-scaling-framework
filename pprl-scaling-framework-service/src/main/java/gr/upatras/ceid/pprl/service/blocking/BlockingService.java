@@ -22,11 +22,12 @@ public class BlockingService implements InitializingBean {
         if(basePath == null)
             basePath = new Path(hdfs.getHomeDirectory(),"pprl");
         LOG.info(String.format("Blocking service initialized [" +
-                "basePath = %s , " +
-                "Tool#1 = %s, Tool#2 = %s].",
+                        "basePath = %s , " +
+                        "Tool#1 = %s, Tool#2 = %s, Tool#3 = %s].",
                 basePath,
                 (hammingLshBlockingToolRunner!=null),
-                (hammingLshFpsBlockingToolRunner!=null)));
+                (hammingLshFpsBlockingToolRunner!=null),
+                (hammingLshFpsBlockingV1ToolRunner!=null)));
     }
 
     private Path basePath; // PPRL Base Path on the HDFS (pprl-site).
@@ -39,6 +40,9 @@ public class BlockingService implements InitializingBean {
 
     @Autowired
     private ToolRunner hammingLshFpsBlockingToolRunner; // Runner of Hamming LSH FPS Blocking Tool
+
+    @Autowired
+    private ToolRunner hammingLshFpsBlockingV1ToolRunner; // Runner of Hamming LSH FPS V1 Blocking Tool
 
 
     /**
@@ -67,8 +71,8 @@ public class BlockingService implements InitializingBean {
                                                 final String bobUidFieldName,
                                                 final String blockingName,
                                                 final int L, final int K, final short C,
-												final String similarirtyMethodName,
-												final double similarityThreshold,
+                                                final String similarirtyMethodName,
+                                                final double similarityThreshold,
                                                 final int R1, final int R2, final int R3)
             throws Exception {
         try {
@@ -95,8 +99,8 @@ public class BlockingService implements InitializingBean {
             argsList.add(String.valueOf(R1));
             argsList.add(String.valueOf(R2));
             argsList.add(String.valueOf(R3));
-			argsList.add(similarirtyMethodName);
-			argsList.add(String.valueOf(similarityThreshold));
+            argsList.add(similarirtyMethodName);
+            argsList.add(String.valueOf(similarityThreshold));
             String[] args = new String[argsList.size()];
             args = argsList.toArray(args);
             hammingLshBlockingToolRunner.setArguments(args);
@@ -126,7 +130,8 @@ public class BlockingService implements InitializingBean {
      * @param similarirtyMethodName similarity method name.
      * @param similarityThreshold similarity threshold.
      * @param R1 Number of reducers for first job.
-     * @param R2 Number of reducers for third job.
+     * @param R2 Number of reducers for second job.
+     * @param R3 Number of reducers for third job.
      * @throws Exception
      */
     public void runHammingLSHFPSBlockingToolRuner(final Path aliceAvroPath, final Path aliceSchemaPath,
@@ -135,9 +140,9 @@ public class BlockingService implements InitializingBean {
                                                   final String bobUidFieldName,
                                                   final String blockingName,
                                                   final int L, final int K, final short C,
-												  final String similarirtyMethodName,
-												  final double similarityThreshold,
-                                                  final int R1, final int R2)
+                                                  final String similarirtyMethodName,
+                                                  final double similarityThreshold,
+                                                  final int R1, final int R2, final int R3)
             throws Exception {
         try {
             final Path blockingPath = new Path(basePath,blockingName);
@@ -162,8 +167,9 @@ public class BlockingService implements InitializingBean {
             argsList.add(String.valueOf(C));
             argsList.add(String.valueOf(R1));
             argsList.add(String.valueOf(R2));
-			argsList.add(similarirtyMethodName);
-			argsList.add(String.valueOf(similarityThreshold));
+            argsList.add(String.valueOf(R3));
+            argsList.add(similarirtyMethodName);
+            argsList.add(String.valueOf(similarityThreshold));
             String[] args = new String[argsList.size()];
             args = argsList.toArray(args);
             hammingLshFpsBlockingToolRunner.setArguments(args);
@@ -175,5 +181,70 @@ public class BlockingService implements InitializingBean {
             LOG.error(e.getMessage());
             throw e;
         }
+    }
+
+    /**
+     * Run Hamming LSH-FPS Blocking Tool.
+     *
+     * @param aliceAvroPath Alice encoded avro data path.
+     * @param aliceSchemaPath Alice encoding schema path.
+     * @param aliceUidFieldName Alice uid field name.
+     * @param bobAvroPath Bob avro path.
+     * @param bobSchemaPath Bob encoding schema path.
+     * @param bobUidFieldName Bob uid field name.
+     * @param blockingName Name of this blacking (as base path).
+     * @param L Blocking Groups Count.
+     * @param K Hash values Count.
+     * @param C Collision Frequency limit.
+     * @param similarirtyMethodName similarity method name.
+     * @param similarityThreshold similarity threshold.
+     * @param R1 Number of reducers for first job.
+     * @param R2 Number of reducers for second job.
+     * @throws Exception
+     */
+    public void runHammingLSHFPSBlockingV1ToolRuner(final Path aliceAvroPath, final Path aliceSchemaPath,
+                                                    final String aliceUidFieldName,
+                                                    final Path bobAvroPath, final Path bobSchemaPath,
+                                                    final String bobUidFieldName,
+                                                    final String blockingName,
+                                                    final int L, final int K, final short C,
+                                                    final String similarirtyMethodName,
+                                                    final double similarityThreshold,
+                                                    final int R1, final int R2) throws Exception {
+        try {
+            final Path blockingPath = new Path(basePath,blockingName);
+            hdfs.mkdirs(blockingPath);
+            final Path bucketsPath = new Path(blockingPath,"buckets");
+            final Path matchedPairsPath = new Path(blockingPath,"matched_pairs");
+            final Path statsPath = new Path(blockingPath,"stats");
+            List<String> argsList = new ArrayList<String>();
+            argsList.add(aliceAvroPath.toString());
+            argsList.add(aliceSchemaPath.toString());
+            argsList.add(aliceUidFieldName);
+            argsList.add(bobAvroPath.toString());
+            argsList.add(bobSchemaPath.toString());
+            argsList.add(bobUidFieldName);
+            argsList.add(bucketsPath.toString());
+            argsList.add(matchedPairsPath.toString());
+            argsList.add(statsPath.toString());
+            argsList.add(String.valueOf(L));
+            argsList.add(String.valueOf(K));
+            argsList.add(String.valueOf(C));
+            argsList.add(String.valueOf(R1));
+            argsList.add(String.valueOf(R2));
+            argsList.add(similarirtyMethodName);
+            argsList.add(String.valueOf(similarityThreshold));
+            String[] args = new String[argsList.size()];
+            args = argsList.toArray(args);
+            hammingLshFpsBlockingV1ToolRunner.setArguments(args);
+            hammingLshFpsBlockingV1ToolRunner.call();
+        } catch (IOException e) {
+            LOG.error(e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            LOG.error(e.getMessage());
+            throw e;
+        }
+
     }
 }

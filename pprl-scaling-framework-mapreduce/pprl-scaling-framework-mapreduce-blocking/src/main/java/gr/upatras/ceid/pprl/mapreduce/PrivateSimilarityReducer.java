@@ -1,6 +1,5 @@
 package gr.upatras.ceid.pprl.mapreduce;
 
-import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import gr.upatras.ceid.pprl.encoding.BloomFilter;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
@@ -15,7 +14,7 @@ import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
 
-import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.increaseMatchedPairsCounter;
+import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.*;
 
 /**
  * Private Similarity Reducer class.
@@ -36,6 +35,10 @@ public class PrivateSimilarityReducer extends Reducer<TextPairWritable,AvroValue
     private int N;
 
     private long matchedPairsCount;
+
+    private long noPairCount;
+    private long aliceRecordMissingCount;
+    private long bobRecordMissingCount;
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
@@ -68,6 +71,9 @@ public class PrivateSimilarityReducer extends Reducer<TextPairWritable,AvroValue
         similarityMethodName = context.getConfiguration().get(CommonKeys.SIMILARITY_METHOD_NAME,"hamming");
         similarityThreshold = context.getConfiguration().getDouble(CommonKeys.SIMILARITY_THRESHOLD, 100);
         matchedPairsCount = 0;
+        noPairCount = 0;
+        aliceRecordMissingCount = 0;
+        bobRecordMissingCount = 0;
     }
 
     @Override
@@ -75,19 +81,22 @@ public class PrivateSimilarityReducer extends Reducer<TextPairWritable,AvroValue
             throws IOException, InterruptedException {
         GenericRecord aliceRecord = null;
         GenericRecord bobRecord = null;
+
         for (AvroValue<GenericRecord> v : values) {
-            if(v.datum().getSchema().getName().equals(aliceEncodingSchema.getName())) {
-                aliceRecord = new GenericData.Record(aliceEncodingSchema);
-                for (String fieldName : DatasetsUtil.fieldNames(aliceEncodingSchema))
-                    aliceRecord.put(fieldName,v.datum().get(fieldName));
-            }
-            if(v.datum().getSchema().getName().equals(bobEncodingSchema.getName())) {
-                bobRecord = new GenericData.Record(bobEncodingSchema);
-                for (String fieldName : DatasetsUtil.fieldNames(bobEncodingSchema))
-                    bobRecord.put(fieldName,v.datum().get(fieldName));
-            }
+            final GenericRecord record = v.datum();
+            if(record.getSchema().getName().equals(aliceEncodingSchema.getName()))
+                aliceRecord = new GenericData.Record((GenericData.Record)record,true);
+            else if(record.getSchema().getName().equals(bobEncodingSchema.getName()))
+                bobRecord = new GenericData.Record((GenericData.Record)record,true);
         }
-        assert aliceRecord != null && bobRecord != null;
+
+        if(aliceRecord == null && bobRecord == null) throw new InterruptedException("We cant have both records as null.");
+        else if(aliceRecord == null || bobRecord == null) {
+            noPairCount++;
+            if(aliceRecord == null) aliceRecordMissingCount++;
+            else bobRecordMissingCount++;
+            return;
+        }
 
         final BloomFilter aliceBf = BloomFilterEncodingUtil.retrieveBloomFilter(aliceRecord,
                 aliceEncodingFieldName, N);
@@ -109,6 +118,9 @@ public class PrivateSimilarityReducer extends Reducer<TextPairWritable,AvroValue
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
         increaseMatchedPairsCounter(context, matchedPairsCount);
+        increaseNoPairCounter(context,noPairCount);
+        increaseAliceRecordMissingCounter(context, aliceRecordMissingCount);
+        increaseBobRecordMissingCounter(context, bobRecordMissingCount);
     }
 }
 

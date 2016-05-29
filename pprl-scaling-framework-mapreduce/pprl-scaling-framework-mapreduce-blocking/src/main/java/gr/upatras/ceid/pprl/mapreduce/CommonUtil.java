@@ -11,8 +11,10 @@ import org.apache.hadoop.mapreduce.Counters;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -41,19 +43,34 @@ public class CommonUtil {
     }
 
     /**
-     * Save counters to stats files.
+     * Save stats to stats files.
      *
-     * @param groups counter groups.
+     * @param stats a stats maps.
      */
-    static void saveCountersToStats(final FileSystem fs, final Path statsPath, final CounterGroup... groups)
+    static void saveStats(final FileSystem fs, final Path statsPath, final Map<String,Long> stats)
             throws IOException {
         final FSDataOutputStream fsdos = fs.create(statsPath, true);
-        for(CounterGroup group : groups) {
-            for(Counter c : group) {
-                fsdos.writeBytes(String.format("%s=%d\n",c.getDisplayName(),c.getValue()));
-            }
-        }
+        for(Map.Entry<String,Long> entry : stats.entrySet())
+            fsdos.writeBytes(String.format("%s=%d\n",entry.getKey(),entry.getValue()));
         fsdos.close();
+    }
+
+    /**
+     * Populate stats with counters.
+     *
+     * @param counterGroup a counter group
+     * @param stats stats map.
+     * @param LOG a log instance for logging.
+     */
+    static void populateStatsWithCounters(final CounterGroup counterGroup,
+                                          final Map<String,Long> stats, final Logger LOG) {
+        LOG.info("Counters : ");
+        for(Counter counter : counterGroup) {
+            final String name = counter.getDisplayName();
+            final long value = counter.getValue();
+            LOG.info("\t{} : {}",name,value);
+            stats.put(name, value);
+        }
     }
 
     /**
@@ -146,6 +163,50 @@ public class CommonUtil {
     }
 
     /**
+     * Increase the matched pair counter.
+     *
+     * @param context <code>Context</code> instance.
+     * @param value value to increase.
+     */
+    public static void increaseMatchedPairsCounter(Mapper.Context context, long value) {
+        context.getCounter(CommonKeys.COUNTER_GROUP_NAME,
+                        CommonKeys.MATCHED_PAIR_COUNTER).increment(value);
+    }
+
+    /**
+     * Increase no pair counter.
+     *
+     * @param context <code>Context</code> instance.
+     * @param value value to increase.
+     */
+    public static void increaseNoPairCounter(Reducer.Context context, long value) {
+        context.getCounter(CommonKeys.COUNTER_GROUP_NAME,
+                        CommonKeys.NO_PAIR_COUNTER).increment(value);
+    }
+
+    /**
+     * Increase missing alice record.
+     *
+     * @param context <code>Context</code> instance.
+     * @param value value to increase.
+     */
+    public static void increaseAliceRecordMissingCounter(Reducer.Context context, long value) {
+        context.getCounter(CommonKeys.COUNTER_GROUP_NAME,
+                CommonKeys.ALICE_RECORD_MISSING_COUNTER).increment(value);
+    }
+
+    /**
+     * Increase missing bob record.
+     *
+     * @param context <code>Context</code> instance.
+     * @param value value to increase.
+     */
+    public static void increaseBobRecordMissingCounter(Reducer.Context context, long value) {
+        context.getCounter(CommonKeys.COUNTER_GROUP_NAME,
+                CommonKeys.BOB_RECORD_MISSING_COUNTER).increment(value);
+    }
+
+    /**
      * Increase the dataset total record counter.
      *
      * @param context <code>Context</code> instance.
@@ -189,4 +250,6 @@ public class CommonUtil {
         final Path p = new Path(path,"_SUCCESS");
         if (fs.exists(p)) fs.delete(p, false);
     }
+
+
 }

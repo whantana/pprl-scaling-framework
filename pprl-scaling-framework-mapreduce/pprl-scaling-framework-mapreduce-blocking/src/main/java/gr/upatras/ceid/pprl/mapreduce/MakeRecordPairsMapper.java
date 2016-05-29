@@ -13,9 +13,9 @@ import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -27,7 +27,7 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
 
     private String aliceEncodingName;
     private String bobEncodingName;
-    private Map<String,List<String>> frequentPairMap;
+    private Map<String,ArrayList<byte[]>> frequentPairMap;
     private String uidFieldName;
     private boolean followsKeyValue;
 
@@ -36,11 +36,13 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
         final GenericRecord record = key.datum();
         final AvroValue<GenericRecord> avroValue = new AvroValue<GenericRecord>(record);
         final String uid = String.valueOf(record.get(uidFieldName));
+
         if(!frequentPairMap.containsKey(uid)) return;
-        for(String ouid : frequentPairMap.get(uid)) {
+
+        for(byte[] ouid : frequentPairMap.get(uid)) {
             final TextPairWritable keyPair = followsKeyValue ?
-                    new TextPairWritable(uid,ouid) :
-                    new TextPairWritable(ouid,uid);
+                    new TextPairWritable(new Text(uid),new Text(ouid)) :
+                    new TextPairWritable(new Text(ouid),new Text(uid));
             context.write(keyPair,avroValue);
         }
     }
@@ -95,47 +97,58 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
             followsKeyValue = false;
         } else throw new IllegalStateException("Unknown schema name : " + schema.getName());
 
-        frequentPairMap = loadFrequentPairs(context, followsKeyValue);
+        loadFrequentPairs(context, followsKeyValue);
     }
 
     /**
-     * Makes and returns a frequent pair map of keys.
+     * Loads frequent pairs as a Map<String,ArrayList<byte[]>). Uses populateFrequent
      *
      * @param context context.
      * @param followKeyValue if true the A Ids are put as keys to the map and the respect B Ids are set as values.
      *                       The opposite if false.
-     * @return a frequent pair map of keys.
      * @throws IOException
      */
-    private Map<String,List<String>> loadFrequentPairs(final Context context, boolean followKeyValue)
+    private void loadFrequentPairs(final Context context, boolean followKeyValue)
             throws IOException {
         final Configuration conf = context.getConfiguration();
-        final int aliceRecordCount = conf.getInt(CommonKeys.ALICE_RECORD_COUNT_COUNTER,16);
-        final int bobRecordCount = conf.getInt(CommonKeys.BOB_RECORD_COUNT_COUNTER,16);
-        final Map<String,List<String>> map = new HashMap<String,List<String>>(
-                (followKeyValue ? bobRecordCount : aliceRecordCount) + 1,
-                1.00f);
 
+        // get pair paths
         final SortedSet<Path> frequentPairsPaths = new TreeSet<Path>();
-        for(final URI uri : context.getCacheFiles()) {
-            if(!uri.toString().endsWith("jar"))
+        for (final URI uri : context.getCacheFiles()) {
+            if (!uri.toString().endsWith("jar"))
                 frequentPairsPaths.add(new Path(uri));
         }
-        for(final Path path : frequentPairsPaths) {
+
+        // construct map , estimate map capacity
+        final int aliceRecordCount = conf.getInt(CommonKeys.ALICE_RECORD_COUNT_COUNTER, 16);
+        final int bobRecordCount = conf.getInt(CommonKeys.BOB_RECORD_COUNT_COUNTER, 16);
+        final int actualCapacity = followKeyValue ? aliceRecordCount : bobRecordCount;
+        final float fillFactor = 0.75f;
+        final int capacity = (int) (actualCapacity / fillFactor + 1);
+        frequentPairMap = new HashMap<String, ArrayList<byte[]>>(capacity, fillFactor);
+
+        for (final Path path : frequentPairsPaths) {
             SequenceFile.Reader reader = new SequenceFile.Reader(conf, SequenceFile.Reader.file(path));
             Text key = new Text();
             Text value = new Text();
-            while(reader.next(key,value)) {
-                if (followKeyValue) {
-                    if(!map.containsKey(key.toString())) map.put(key.toString(),new LinkedList<String>());
-                    map.get(key.toString()).add(value.toString());
-                } else {
-                    if(!map.containsKey(value.toString())) map.put(value.toString(),new LinkedList<String>());
-                    map.get(value.toString()).add(key.toString());
-                }
-            }
+            if (followKeyValue) while (reader.next(key, value)) populateFrequentPairMap(key, value);
+            else while (reader.next(value, key)) populateFrequentPairMap(key, value);
             reader.close();
         }
-        return map;
+    }
+
+
+    /**
+     * Populates frequent pair map with key and values.
+     * @param key key
+     * @param value value.
+     */
+    public void populateFrequentPairMap(final Text key,final Text value) {
+        ArrayList<byte[]> list = frequentPairMap.get(key.toString());
+        if(list == null) {
+            list = new ArrayList<byte[]>();
+            list.add(Arrays.copyOf(value.getBytes(), value.getLength()));
+            frequentPairMap.put(key.toString(), list);
+        } else list.add(Arrays.copyOf(value.getBytes(), value.getLength()));
     }
 }

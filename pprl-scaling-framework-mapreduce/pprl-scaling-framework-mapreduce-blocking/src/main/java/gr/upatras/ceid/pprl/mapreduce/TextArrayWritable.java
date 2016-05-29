@@ -4,7 +4,6 @@ import org.apache.hadoop.io.ArrayWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 
 /**

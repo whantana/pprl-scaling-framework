@@ -12,10 +12,9 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.SequenceFile;
+import org.apache.hadoop.io.ShortWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
@@ -25,16 +24,16 @@ import org.apache.hadoop.util.ToolRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+import java.util.TreeMap;
+
 import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.*;
 
 public class HammingLSHBlockingTool extends Configured implements Tool {
 
-    // TODO This job should use BlockingKeyWritable at first job
-    // TODO In the counting job the intermediate key should be a custom writable.
-
     private static final Logger LOG = LoggerFactory.getLogger(HammingLSHBlockingTool.class);
 
-    private static final String JOB_1_DESCRIPTION = "Retrieve pairs by Haming LSH Blocking.";
+    private static final String JOB_1_DESCRIPTION = "Generate All Blocking buckets.";
     private static final String JOB_2_DESCRIPTION = "Find Frequent Pairs.";
     private static final String JOB_3_DESCRIPTION = "Find Matched Pairs.";
 
@@ -91,6 +90,8 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         final Schema unionSchema = Schema.createUnion(Lists.newArrayList(aliceEncodingSchema, bobEncodingSchema));
         final BloomFilterEncoding bobEncoding = BloomFilterEncodingUtil.setupNewInstance(bobEncodingSchema);
         final HammingLSHBlocking blocking = new HammingLSHBlocking(L,K,aliceEncoding,bobEncoding);
+        final Map<String,Long> stats = new TreeMap<String,Long>();
+
 
         conf.set(CommonKeys.ALICE_SCHEMA,aliceEncodingSchema.toString());
         conf.set(CommonKeys.ALICE_UID,aliceUidFieldName);
@@ -101,7 +102,6 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         conf.set(CommonKeys.SIMILARITY_METHOD_NAME,similarityMethodName);
         conf.setDouble(CommonKeys.SIMILARITY_THRESHOLD,similarityThreshold);
         conf.setInt(CommonKeys.FREQUENT_PAIR_LIMIT, C);
-
 
         // setup job1
         final String description1 = String.format("%s(" +
@@ -151,14 +151,16 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
             LOG.error("Job \"{}\" not successful",JOB_1_DESCRIPTION);
             return 1;
         }
+
+        // cleanup and stats
         removeSuccessFile(fs,allPairsPath);
-        LOG.info("Counters : ");
-        for(Counter c : job1.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME))
-            LOG.info("\t{} : {}",c.getDisplayName(),c.getValue());
+        populateStatsWithCounters(job1.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME),stats,LOG);
+
+        // get important counters
         final int aliceRecordCount = (int)job1.getCounters().findCounter(
-                CommonKeys.COUNTER_GROUP_NAME,CommonKeys.ALICE_RECORD_COUNT_COUNTER).getValue();
+                        CommonKeys.COUNTER_GROUP_NAME,CommonKeys.ALICE_RECORD_COUNT_COUNTER).getValue();
         final int bobRecordCount  = (int)job1.getCounters().findCounter(
-                CommonKeys.COUNTER_GROUP_NAME,CommonKeys.BOB_RECORD_COUNT_COUNTER).getValue();
+                        CommonKeys.COUNTER_GROUP_NAME,CommonKeys.BOB_RECORD_COUNT_COUNTER).getValue();
 
         // setup job2
         final String description2 = String.format("%s(" +
@@ -180,7 +182,7 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
         job2.setInputFormatClass(SequenceFileInputFormat.class);
         job2.setMapperClass(CountIdPairsMapper.class);
         job2.setMapOutputKeyClass(TextPairWritable.class);
-        job2.setMapOutputValueClass(IntWritable.class);
+        job2.setMapOutputValueClass(ShortWritable.class);
 
         // setup combiner
         job2.setCombinerClass(FindFrequentIdPairsCombiner.class);
@@ -204,10 +206,10 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
             LOG.error("Job \"{}\" not successful",JOB_2_DESCRIPTION);
             return 1;
         }
+
+        // cleanup and stats
         removeSuccessFile(fs,frequentPairsPath);
-        LOG.info("Counters : ");
-        for(Counter c : job2.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME))
-            LOG.info("\t{} : {}",c.getDisplayName(),c.getValue());
+        populateStatsWithCounters(job2.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME), stats, LOG);
 
         // setup job3
         conf.setInt(CommonKeys.ALICE_RECORD_COUNT_COUNTER, aliceRecordCount);
@@ -258,17 +260,15 @@ public class HammingLSHBlockingTool extends Configured implements Tool {
             LOG.error("Job \"{}\" not successful",JOB_3_DESCRIPTION);
             return 1;
         }
+
+        // cleanup and stats
         removeSuccessFile(fs,matchedPairsPath);
-        LOG.info("Counters : ");
-        for(Counter c : job3.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME))
-            LOG.info("\t{} : {}",c.getDisplayName(),c.getValue());
+        populateStatsWithCounters(job3.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME), stats, LOG);
+
 
         // all jobs are succesfull save counters to stats path
         LOG.info("All jobs are succesfull. See \"{}\" for the matched pairs list.", matchedPairsPath);
-        saveCountersToStats(fs,statsPath,
-                job1.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME),
-                job2.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME),
-                job3.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME));
+        saveStats(fs, statsPath, stats);
         LOG.info("See \"{}\" for collected stats.", statsPath);
 
         return 0;

@@ -18,6 +18,7 @@ public class BlockingUtil {
         SCHEME_NAMES.add("HLSH_FPS");
         SCHEME_NAMES.add("HLSH_MR");
         SCHEME_NAMES.add("HLSH_FPS_MR");
+        SCHEME_NAMES.add("HLSH_FPS_MR_V1");
     }
 
     /**

@@ -24,7 +24,6 @@ public class TextPairWritable implements WritableComparable<TextPairWritable> {
     }
 
     public TextPairWritable() {
-
         first = new Text();
         second = new Text();
     }

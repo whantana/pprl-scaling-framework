@@ -1,6 +1,5 @@
 package gr.upatras.ceid.pprl.mapreduce;
 
-import avro.shaded.com.google.common.collect.Lists;
 import gr.upatras.ceid.pprl.blocking.HammingLSHBlocking;
 import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
@@ -29,30 +28,29 @@ import java.util.TreeMap;
 import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.*;
 
 /**
- * Hamming LSH-FPS Blocking tool class
+ * Hamming LSH-FPS Blocking V1 tool class.
  */
-public class HammingLSHFPSBlockingTool extends Configured implements Tool {
+public class HammingLSHFPSBlockingV1Tool  extends Configured implements Tool {
 
-    private static final Logger LOG = LoggerFactory.getLogger(HammingLSHFPSBlockingTool.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HammingLSHFPSBlockingV1Tool.class);
 
     private static final String JOB_1_DESCRIPTION = "Generate Bob Blocking buckets";
-    private static final String JOB_2_DESCRIPTION = "Find Frequent Pairs (FPS).";
-    private static final String JOB_3_DESCRIPTION = "Find Matched Pairs.";
+    private static final String JOB_2_DESCRIPTION = "Find Matched Pairs (FPS).";
 
     public int run(String[] args) throws Exception {
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
-        if (args.length != 18) {
-            LOG.error("args.length= {}",args.length);
+        if (args.length != 16) {
+            LOG.error("args.length= {}", args.length);
             for (int i = 0; i < args.length; i++) {
-                LOG.error("args[{}] = {}",i,args[i]);
+                LOG.error("args[{}] = {}", i, args[i]);
             }
-            LOG.error("Usage: HammingLSHFPSBlockingTool " +
+            LOG.error("Usage: HammingLSHFPSBlockingV1Tool " +
                     "<alice-avro-path> <alice-schema-path> <alice-uid-field-name> " +
                     "<bob-avro-path> <bob-schema-path> <bob-uid-field-name> " +
-                    "<bob-buckets-path> <frequent-pair-path> <matched-pairs-path> <stats-path>" +
+                    "<bob-buckets-path> <matched-pairs-path> <stats-path>" +
                     "<number-of-blocking-groups-L> <number-of-hashes-K> <frequent-pair-collision-limit-C> " +
-                    "<number-of-reducers-job1> <number-of-reducers-job2> <number-of-reducers-job3> " +
+                    "<number-of-reducers-job1> <number-of-reducers-job2> " +
                     "<similarity-method-name> <similarity-threshold>");
             throw new IllegalArgumentException("Invalid number of arguments.");
         }
@@ -64,17 +62,15 @@ public class HammingLSHFPSBlockingTool extends Configured implements Tool {
         final Path bobSchemaPath = new Path(args[4]);
         final String bobUidFieldName = args[5];
         final Path bobBucketsPath = new Path(args[6]);
-        final Path frequentPairsPath = new Path(args[7]);
-        final Path matchedPairsPath = new Path(args[8]);
-        final Path statsPath = new Path(args[9]);
-        final int L = Integer.valueOf(args[10]);
-        final int K = Integer.valueOf(args[11]);
-        final short C = Short.valueOf(args[12]);
-        final int R1 = Integer.valueOf(args[13]);
-        final int R2 = Integer.valueOf(args[14]);
-        final int R3 = Integer.valueOf(args[15]);
-        final String similarityMethodName = args[16];
-        final double similarityThreshold = Double.valueOf(args[17]);
+        final Path matchedPairsPath = new Path(args[7]);
+        final Path statsPath = new Path(args[8]);
+        final int L = Integer.valueOf(args[9]);
+        final int K = Integer.valueOf(args[10]);
+        final short C = Short.valueOf(args[11]);
+        final int R1 = Integer.valueOf(args[12]);
+        final int R2 = Integer.valueOf(args[13]);
+        final String similarityMethodName = args[14];
+        final double similarityThreshold = Double.valueOf(args[15]);
 
         if(K < 1)
             throw new IllegalArgumentException("Number of hashes K cannot be smaller than 1.");
@@ -89,10 +85,10 @@ public class HammingLSHFPSBlockingTool extends Configured implements Tool {
         final Schema aliceEncodingSchema = DatasetsUtil.loadSchemaFromFSPath(fs, aliceSchemaPath);
         final BloomFilterEncoding aliceEncoding = BloomFilterEncodingUtil.setupNewInstance(aliceEncodingSchema);
         final Schema bobEncodingSchema = DatasetsUtil.loadSchemaFromFSPath(fs, bobSchemaPath);
-        final Schema unionSchema = Schema.createUnion(Lists.newArrayList(aliceEncodingSchema, bobEncodingSchema));
         final BloomFilterEncoding bobEncoding = BloomFilterEncodingUtil.setupNewInstance(bobEncodingSchema);
         final HammingLSHBlocking blocking = new HammingLSHBlocking(L,K,aliceEncoding,bobEncoding);
         final Map<String,Long> stats = new TreeMap<String,Long>();
+
 
         conf.set(CommonKeys.ALICE_SCHEMA,aliceEncodingSchema.toString());
         conf.set(CommonKeys.ALICE_UID,aliceUidFieldName);
@@ -115,7 +111,7 @@ public class HammingLSHFPSBlockingTool extends Configured implements Tool {
                 L, K, R1);
         LOG.info("Running.1 : {}",description1);
         final Job job1 = Job.getInstance(conf);
-        job1.setJarByClass(HammingLSHFPSBlockingTool.class);
+        job1.setJarByClass(HammingLSHFPSBlockingV1Tool.class);
         job1.setJobName(description1);
         job1.setNumReduceTasks(R1);
         job1.setSpeculativeExecution(false);
@@ -150,10 +146,9 @@ public class HammingLSHFPSBlockingTool extends Configured implements Tool {
             LOG.error("Job \"{}\" not successful",JOB_1_DESCRIPTION);
             return 1;
         }
-
         // cleanup and stats
         removeSuccessFile(fs,bobBucketsPath);
-        populateStatsWithCounters(job1.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME),stats,LOG);
+        populateStatsWithCounters(job1.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME), stats, LOG);
 
 
         // get important stats for the next job
@@ -164,20 +159,24 @@ public class HammingLSHFPSBlockingTool extends Configured implements Tool {
         final int bobRecordCount  = (int)job1.getCounters().findCounter(
                 CommonKeys.COUNTER_GROUP_NAME,CommonKeys.BOB_RECORD_COUNT_COUNTER).getValue();
 
+
         // setup job2
+        conf.set(CommonKeys.BOB_DATA_PATH, bobPath.toUri().toString());
         conf.setInt(CommonKeys.BOB_RECORD_COUNT_COUNTER, bobRecordCount);
         conf.setInt(CommonKeys.BUCKET_INITIAL_CAPACITY,maxKeyCount);
         final String description2 = String.format("%s(" +
                         "alice-path : %s, alice-schema-path : %s, " +
-                        "bob-buckets-path : %s, frequent-pairs-path : %s, " +
+                        "bob-path : %s, bob-schema-path : %s," +
+                        "bob-buckets-path : %s, matched-pairs-path : %s, " +
                         "L : %d, K : %d, C : %d)",
                 JOB_2_DESCRIPTION,
                 shortenUrl(alicePath.toString()), shortenUrl(aliceSchemaPath.toString()),
-                shortenUrl(bobBucketsPath.toString()), shortenUrl(frequentPairsPath.toString()),
+                shortenUrl(bobPath.toString()), shortenUrl(bobSchemaPath.toString()),
+                shortenUrl(bobBucketsPath.toString()), shortenUrl(matchedPairsPath.toString()),
                 L, K, C);
         LOG.info("Running.2 : {}",description2);
         final Job job2 = Job.getInstance(conf);
-        job2.setJarByClass(HammingLSHFPSBlockingTool.class);
+        job2.setJarByClass(HammingLSHFPSBlockingV1Tool.class);
         job2.setJobName(description2);
         job2.setNumReduceTasks(R2);
         job2.setSpeculativeExecution(false);
@@ -185,11 +184,10 @@ public class HammingLSHFPSBlockingTool extends Configured implements Tool {
         // setup  cache
         addContainingPathsToCache(job2, fs, bobBucketsPath);
 
-        // reducers & setup output
         AvroKeyInputFormat.setInputPaths(job2, alicePath);
         AvroJob.setInputKeySchema(job2, aliceEncodingSchema);
         job2.setInputFormatClass(AvroKeyInputFormat.class);
-        job2.setMapperClass(FPSMapper.class);
+        job2.setMapperClass(FPSMapperV1.class);
         job2.setMapOutputKeyClass(Text.class);
         job2.setMapOutputValueClass(Text.class);
 
@@ -200,8 +198,8 @@ public class HammingLSHFPSBlockingTool extends Configured implements Tool {
         job2.setOutputValueClass(Text.class);
         SequenceFileOutputFormat.setCompressOutput(job2,true);
         SequenceFileOutputFormat.setOutputCompressionType(job2,
-                SequenceFile.CompressionType.BLOCK);
-        SequenceFileOutputFormat.setOutputPath(job2,frequentPairsPath);
+                SequenceFile.CompressionType.NONE);
+        SequenceFileOutputFormat.setOutputPath(job2,matchedPairsPath);
 
         // run job 2
         final boolean job2success = job2.waitForCompletion(true);
@@ -211,67 +209,9 @@ public class HammingLSHFPSBlockingTool extends Configured implements Tool {
         }
 
         // cleanup and stats
-        removeSuccessFile(fs,frequentPairsPath);
-        populateStatsWithCounters(
-                job2.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME),stats,LOG);
-
-
-        // get important stats for the next job
-        final int aliceRecordCount = (int)job2.getCounters().findCounter(
-                CommonKeys.COUNTER_GROUP_NAME,CommonKeys.ALICE_RECORD_COUNT_COUNTER).getValue();
-
-        // setup job3
-        conf.setInt(CommonKeys.ALICE_RECORD_COUNT_COUNTER, aliceRecordCount);
-        conf.setInt(CommonKeys.BOB_RECORD_COUNT_COUNTER, bobRecordCount);
-        final String description3 = String.format("%s(" +
-                        "alice-path : %s, alice-schema-path : %s," +
-                        "bob-path : %s, bob-schema-path : %s," +
-                        "frequent-pairs-path: %s, matched-pairs-path : %s," +
-                        " R : %d)",
-                JOB_3_DESCRIPTION,
-                shortenUrl(alicePath.toString()), shortenUrl(aliceSchemaPath.toString()),
-                shortenUrl(bobPath.toString()), shortenUrl(bobSchemaPath.toString()),
-                shortenUrl(frequentPairsPath.toString()), shortenUrl(matchedPairsPath.toString()),R3);
-        LOG.info("Running.3 : {}",description3);
-        final Job job3 = Job.getInstance(conf);
-        job3.setJarByClass(HammingLSHFPSBlockingTool.class);
-        job3.setJobName(description3);
-        job3.setNumReduceTasks(R3);
-        job3.setSpeculativeExecution(false);
-
-        // setup  cache
-        addContainingPathsToCache(job3, fs, frequentPairsPath);
-
-        // setup input & mappers
-        AvroKeyInputFormat.setInputPaths(job3, alicePath,bobPath);
-        AvroJob.setInputKeySchema(job3, unionSchema);
-        job3.setInputFormatClass(AvroKeyInputFormat.class);
-        job3.setMapperClass(MakeRecordPairsMapper.class);
-        job3.setMapOutputKeyClass(TextPairWritable.class);
-        AvroJob.setMapOutputValueSchema(job3,unionSchema);
-
-        // reducers & setup output
-        job3.setReducerClass(PrivateSimilarityReducer.class);
-        job3.setOutputFormatClass(SequenceFileOutputFormat.class);
-        job3.setOutputKeyClass(Text.class);
-        job3.setOutputValueClass(Text.class);
-        SequenceFileOutputFormat.setCompressOutput(job3,true);
-        SequenceFileOutputFormat.setOutputCompressionType(job3,
-                SequenceFile.CompressionType.NONE);
-        SequenceFileOutputFormat.setOutputPath(job3,matchedPairsPath);
-
-        // run job 3
-        final boolean job3Success = job3.waitForCompletion(true);
-        if(!job3Success) {
-            LOG.error("Job \"{}\" not successful",JOB_3_DESCRIPTION);
-            return 1;
-        }
-
-        // cleanup and stats
         removeSuccessFile(fs,matchedPairsPath);
         populateStatsWithCounters(
-                job3.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME), stats, LOG);
-
+                job2.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME),stats,LOG);
 
         // all jobs are succesfull save counters to stats path
         LOG.info("All jobs are succesfull. See \"{}\" for the matched pairs list.", matchedPairsPath);

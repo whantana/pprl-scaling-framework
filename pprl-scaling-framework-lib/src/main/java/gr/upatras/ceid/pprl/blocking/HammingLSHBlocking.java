@@ -23,7 +23,7 @@ public class HammingLSHBlocking {
 
     private HammingLSHBlockingGroup[] blockingGroups;
 
-    private Map<BitSet,List<Integer>>[] buckets; // blocking buckets for bob records.
+    private Map<BitSet,BitSet>[] buckets; // blocking buckets for bob records.
 
     private String aliceEncodingName;
     private String bobEncodingName;
@@ -155,11 +155,9 @@ public class HammingLSHBlocking {
      * Initialization method.
      */
     public void initialize() {
-        assert L == blockingGroups.length;
         buckets = new HashMap[L];
-        for (int i = 0; i < L; i++) {
-            buckets[i] = new HashMap<BitSet,List<Integer>>();
-        }
+        for (int i = 0; i < L; i++)
+            buckets[i] = new HashMap<BitSet,BitSet>();
     }
 
     /**
@@ -184,8 +182,8 @@ public class HammingLSHBlocking {
         // hash bob records into the buckets.
         for(int r=0; r < bobRecords.length; r++) {
             BitSet[] keys = hashRecord(bobRecords[r], bobEncodingFieldName);
-            for(int l = 0 ; l < keys.length ; l++)
-                addToBucket(keys[l],r, buckets[l]);
+            for(int l = 0 ; l < L ; l++)
+                addToBucket(l,keys[l],r,bobRecords.length );
         }
         System.out.println("\rBlocking bob records...DONE");
 
@@ -195,35 +193,35 @@ public class HammingLSHBlocking {
         int frequentPairsCount = 0;
         final short[] collisions = new short[bobRecords.length];
         System.out.print("Counting colission with alice records (0/" + aliceRecords.length + ").");
-        for(int aid=0; aid < aliceRecords.length; aid++) {
-            System.out.print("\rCounting collisions with alice records (" + (aid+1)
+        for(int aliceId=0; aliceId < aliceRecords.length; aliceId++) {
+            System.out.print("\rCounting collisions with alice records (" + (aliceId+1)
                     + "/" + aliceRecords.length + ")." +
                     " Frequent pairs so far :" + frequentPairsCount + "." +
                     " Matched pairs so far : " + matchedPairsCount + ".");
-            final BitSet[] keys = hashRecord(aliceRecords[aid], aliceEncodingFieldName);
+            final BitSet[] keys = hashRecord(aliceRecords[aliceId], aliceEncodingFieldName);
             Arrays.fill(collisions, (short) 0);
             for (int l = 0; l < blockingGroups.length; l++) {
-                final List<Integer> bobIds = buckets[l].get(keys[l]);
+                final BitSet bobIds = buckets[l].get(keys[l]);
                 if(bobIds == null) continue;
-                for (int bid : bobIds) {
-                    if(collisions[bid] < 0) continue;
-                    collisions[bid]++;
-                    if(collisions[bid] >= C) {
+                for (int bobId = bobIds.nextSetBit(0); bobId != -1; bobId = bobIds.nextSetBit(bobId + 1) ) {
+                    if(collisions[bobId] < 0) continue;
+                    collisions[bobId]++;
+                    if(collisions[bobId] >= C) {
                         frequentPairsCount++;
-                        final BloomFilter bf1 = BloomFilterEncodingUtil.retrieveBloomFilter(aliceRecords[aid],
+                        final BloomFilter bf1 = BloomFilterEncodingUtil.retrieveBloomFilter(aliceRecords[aliceId],
                                 aliceEncodingFieldName, N);
-                        final BloomFilter bf2 = BloomFilterEncodingUtil.retrieveBloomFilter(bobRecords[bid],
+                        final BloomFilter bf2 = BloomFilterEncodingUtil.retrieveBloomFilter(bobRecords[bobId],
                                 bobEncodingFieldName, N);
                         if(PrivateSimilarityUtil.similarity(similarityMethodName,bf1,bf2, similarityThreshold)) {
                             mathcedPairs.add(
                                     new RecordIdPair(
-                                            String.valueOf(aliceRecords[aid].get(aliceUidFieldName)),
-                                            String.valueOf(bobRecords[bid].get(bobUidFieldName))
+                                            String.valueOf(aliceRecords[aliceId].get(aliceUidFieldName)),
+                                            String.valueOf(bobRecords[bobId].get(bobUidFieldName))
                                     )
                             );
                             matchedPairsCount++;
                         }
-                        collisions[bid] = -1;
+                        collisions[bobId] = -1;
                     }
                 }
             }
@@ -263,19 +261,15 @@ public class HammingLSHBlocking {
         return keys;
     }
 
-    /**
-     * Add key and index to bucket.
-     *
-     * @param key key.
-     * @param index index.
-     * @param bucket bucket.
-     */
-    private static void addToBucket(final BitSet key, final int index,
-                                    final Map<BitSet,List<Integer>> bucket) {
-        if(!bucket.containsKey(key)) {
-            bucket.put(key, new ArrayList<Integer>());
-        }
-        bucket.get(key).add(index);
+    private void addToBucket(final int blockingGroupId ,
+                             final BitSet hash,
+                             final int bobIndex, final int bobIdCount) {
+        BitSet ids = buckets[blockingGroupId].get(hash);
+        if(ids == null) {
+            ids = new BitSet(bobIdCount);
+            ids.set(bobIndex);
+            buckets[blockingGroupId].put(hash, ids);
+        } else ids.set(bobIndex);
     }
 
     /**
@@ -340,7 +334,7 @@ public class HammingLSHBlocking {
      * @throws BlockingException
      */
     private void setup(final BloomFilterEncoding aliceEncoding,
-                      final BloomFilterEncoding bobEncoding)
+                       final BloomFilterEncoding bobEncoding)
             throws BlockingException {
         final String schemeName = aliceEncoding.schemeName();
         if(!schemeName.equals(bobEncoding.schemeName()))

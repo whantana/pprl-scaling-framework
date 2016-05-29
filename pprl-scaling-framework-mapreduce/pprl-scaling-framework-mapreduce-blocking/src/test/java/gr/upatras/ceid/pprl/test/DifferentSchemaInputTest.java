@@ -26,7 +26,7 @@ import java.io.IOException;
 
 public class DifferentSchemaInputTest {
 
-    private static final Logger LOG = LoggerFactory.getLogger(HammingLSHBlockingMRTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DifferentSchemaInputTest.class);
 
     @Test
     public void test0() throws IOException, DatasetException, InterruptedException {

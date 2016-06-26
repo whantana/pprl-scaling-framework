@@ -1,97 +1,99 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
 
-    <groupId>gr.upatras.ceid</groupId>
-    <artifactId>pprl-scaling-framework</artifactId>
-    <version>0.3-SNAPSHOT</version>
-    <packaging>pom</packaging>
+	<groupId>gr.upatras.ceid</groupId>
+	<artifactId>pprl-scaling-framework</artifactId>
+	<version>0.3-SNAPSHOT</version>
+	<packaging>pom</packaging>
 
-    <name>PPRL Scaling Framework</name>
-    <url>https://github.com/whantana/pprl-scaling-framework</url>
+	<name>PPRL Scaling Framework</name>
+	<url>https://github.com/whantana/pprl-scaling-framework</url>
 
-    <repositories>
-        <repository>
-            <id>cloudera</id>
-            <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
-        </repository>
-        <repository>
-            <id>spring-milestones</id>
-            <url>http://repo.spring.io/libs-release</url>
-        </repository>
-        <repository>
-            <id>spring-snapshots</id>
-            <name>Spring Snapshots</name>
-            <url>http://repo.spring.io/snapshot</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
+	<repositories>
+		<repository>
+			<id>cloudera</id>
+			<url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+		</repository>
+		<repository>
+			<id>spring-milestones</id>
+			<url>http://repo.spring.io/libs-release</url>
+		</repository>
+		<repository>
+			<id>spring-snapshots</id>
+			<name>Spring Snapshots</name>
+			<url>http://repo.spring.io/snapshot</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java.version>1.7</java.version>
-        <hadoop.version>2.6.0-cdh5.4.0</hadoop.version>
-        <spark.version>1.3.0-cdh5.4.0</spark.version>
-        <hibernate.version>5.0.7.Final</hibernate.version>
-        <mysql.connector.version>5.1.30</mysql.connector.version>
-        <avro.version>1.8.0</avro.version>
-        <mr.unit.version>1.1.0</mr.unit.version>
-        <junit.version>4.12</junit.version>
-        <slf4j.version>1.7.12</slf4j.version>
-        <commons.math3.version>3.5</commons.math3.version>
-        <string.similarity.version>RELEASE</string.similarity.version>
-        <spring.framework.version>4.2.2.RELEASE</spring.framework.version>
-        <spring.boot.version>1.2.5.RELEASE</spring.boot.version>
-        <spring.data.hadoop.version>2.3.0.RELEASE-cdh5</spring.data.hadoop.version>
-        <spring.data.hadoop.test.version>2.3.0.RELEASE-cdh5</spring.data.hadoop.test.version>
-        <spring.shell.version>1.1.0.RELEASE</spring.shell.version>
-    </properties>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<java.version>1.7</java.version>
+		<hadoop.version>2.6.0-cdh5.4.0</hadoop.version>
+		<spark.version>1.3.0-cdh5.4.0</spark.version>
+		<hibernate.version>5.0.7.Final</hibernate.version>
+		<mysql.connector.version>5.1.30</mysql.connector.version>
+		<avro.version>1.8.0</avro.version>
+		<mr.unit.version>1.1.0</mr.unit.version>
+		<junit.version>4.12</junit.version>
+		<slf4j.version>1.7.12</slf4j.version>
+		<commons.math3.version>3.5</commons.math3.version>
+		<string.similarity.version>RELEASE</string.similarity.version>
+		<spring.framework.version>4.2.2.RELEASE</spring.framework.version>
+		<spring.boot.version>1.2.5.RELEASE</spring.boot.version>
+		<spring.data.hadoop.version>2.3.0.RELEASE-cdh5</spring.data.hadoop.version>
+		<spring.data.hadoop.test.version>2.3.0.RELEASE-cdh5</spring.data.hadoop.test.version>
+		<spring.shell.version>1.1.0.RELEASE</spring.shell.version>
+	</properties>
 
-    <dependencies>
-        <!-- Logging -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>${slf4j.version}</version>
-            <scope>runtime</scope>
-        </dependency>
+	<dependencies>
+		<!-- Logging -->
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>${slf4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+			<version>${slf4j.version}</version>
+			<scope>runtime</scope>
+		</dependency>
 
-        <!-- JUnit dependencies -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+		<!-- JUnit dependencies -->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>${junit.version}</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
 
-    <modules>
-        <module>pprl-scaling-framework-lib</module>
-        <module>pprl-scaling-framework-mapreduce</module>
-        <module>pprl-scaling-framework-service</module>
-        <module>pprl-scaling-framework-shell</module>
-        <module>pprl-scaling-framework-webapp</module>
-    </modules>
+	<modules>
+		<module>pprl-scaling-framework-lib</module>
+		<module>pprl-scaling-framework-mapreduce</module>
+		<module>pprl-scaling-framework-service</module>
+		<module>pprl-scaling-framework-shell</module>
+		<module>pprl-scaling-framework-webapp</module>
+	</modules>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.12.4</version>
-                <configuration>
-                    <workingDirectory>${project.build.testOutputDirectory}</workingDirectory>
-                    <forkMode>pertest</forkMode>
-                    <argLine>-Xms256m -Xmx512m</argLine>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<version>2.12.4</version>
+					<configuration>
+						<workingDirectory>${project.build.testOutputDirectory}</workingDirectory>
+						<forkMode>never</forkMode>
+						<argLine>-Xms256m -Xmx512m</argLine>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
 </project>

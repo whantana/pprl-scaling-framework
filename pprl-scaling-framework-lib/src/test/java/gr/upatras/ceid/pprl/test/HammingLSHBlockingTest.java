@@ -47,13 +47,14 @@ public class HammingLSHBlockingTest {
 
             final int LC = 36;
             final int K = 5;
-            final int hammingThreshold = 100;
+			final String similarityMethodName = "jaccard";
+            final double similarityThreshold = 0.7;
             final short C = 5;
             final HammingLSHBlocking blocking = new HammingLSHBlocking(LC, K, encodingA, encodingB);
 
             blocking.initialize();
             final HammingLSHBlocking.HammingLSHBlockingResult result =
-                    blocking.runFPS(recordsA, "id", recordsB, "id", C, "hamming", hammingThreshold);
+                    blocking.runFPS(recordsA, "id", recordsB, "id", C, similarityMethodName, similarityThreshold);
             LOG.info("Matched pairs list size : {}", result.getMatchedPairsCount());
             LOG.info("Frequent pairs list size : {}", result.getFrequentPairsCount());
             final Path blockingOutputPath = new Path("data/blocking_" + encName + "_voters_a_voters_b.pairs");

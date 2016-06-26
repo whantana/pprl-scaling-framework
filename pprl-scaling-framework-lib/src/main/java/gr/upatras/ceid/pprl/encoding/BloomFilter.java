@@ -219,10 +219,10 @@ public class BloomFilter {
 //            );
 
             dictionary.put(data,positions);
+            setPositions(positions);
         } else {
             positions = dictionary.get(data);
         }
-        setPositions(positions);
         return positions;
 
     }

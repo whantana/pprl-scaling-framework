@@ -73,7 +73,7 @@ public class PrivateSimilarityUtil {
      * @param bf2 bloom filter 2.
      * @return the jaccard coefficient.
      */
-    public static double jaccard(final BloomFilter bf1, final BloomFilter bf2) {
+    public static double jaccard1(final BloomFilter bf1, final BloomFilter bf2) {
         final int N = bf1.getN();
         final int[] m = new int[4]; /* m[0] = m00 number of both 0 at any bit i on bf1 and bf2.
                                        m[1] = m01 number of 1 in bf1 and 0 in bf2 at any bit i.
@@ -93,7 +93,7 @@ public class PrivateSimilarityUtil {
      * @param bf2 bloom filter 2.
      * @return the jaccard coefficient.
      */
-    public static double jaccard1(final BloomFilter bf1, final BloomFilter bf2) {
+    public static double jaccard(final BloomFilter bf1, final BloomFilter bf2) {
         byte[] ba1 = bf1.getByteArray();
         byte[] ba2 = bf2.getByteArray();
         assert ba1.length == ba2.length;
@@ -162,7 +162,7 @@ public class PrivateSimilarityUtil {
      * @param bf2 bloom filter 2.
      * @return the Dice coefficient.
      */
-    public static double dice(BloomFilter bf1, BloomFilter bf2) {
+    public static double dice1(BloomFilter bf1, BloomFilter bf2) {
         final int[] cardinalities = new int[2];
         cardinalities[0] = bf1.countOnes();
         cardinalities[1] = bf2.countOnes();
@@ -181,7 +181,7 @@ public class PrivateSimilarityUtil {
      * @param bf2 bloom filter 2.
      * @return the Dice coefficient.
      */
-    public static double dice1(BloomFilter bf1, BloomFilter bf2) {
+    public static double dice(BloomFilter bf1, BloomFilter bf2) {
         final int[] cardinalities = new int[2];
         cardinalities[0] = bf1.countOnes();
         cardinalities[1] = bf2.countOnes();

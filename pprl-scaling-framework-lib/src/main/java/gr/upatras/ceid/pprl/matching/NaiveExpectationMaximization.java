@@ -84,8 +84,11 @@ public class NaiveExpectationMaximization {
         pairCount = matrix.getPairCount();
         for(iteration = 1; iteration <= MAX_ITERATIONS; iteration++ ) {
             g = runExpecationStep(matrix);
-            boolean converges = runMaximizationStep(matrix, g);
-            if(converges) break;
+			double[] previousM = Arrays.copyOf(m,m.length);
+			double[] previousU = Arrays.copyOf(u,u.length);
+			double previousP = p;
+			runMaximizationStep(matrix, g);
+            if(converges(previousM,previousU,previousP)) break;
         }
     }
 
@@ -124,9 +127,8 @@ public class NaiveExpectationMaximization {
      *
      * @param matrix similarity matrix
      * @param g vectors g[*][2].
-     * @return
      */
-    private boolean runMaximizationStep(final SimilarityMatrix matrix, double[][] g) {
+    private void runMaximizationStep(final SimilarityMatrix matrix, double[][] g) {
         double mSum = 0.0;
         double uSum = 0.0;
         for(int j=0; j < fieldCount; j++) {
@@ -143,9 +145,7 @@ public class NaiveExpectationMaximization {
             m[j] = a/mSum;
             u[j] = b/uSum;
         }
-        double pPreviousIteration = p;
         p = mSum/(double) pairCount;
-        return (Math.abs(p  - pPreviousIteration) <= 0.00001);
     }
 
     /**
@@ -193,6 +193,26 @@ public class NaiveExpectationMaximization {
         return fieldCount;
     }
 
+    /**
+     * Return true if probabilities m,u,p converge, false otherwise.
+     *
+     * @param previousM previous iteration m values.
+     * @param previousU previous iteration u values.
+     * @param previousU previous iteration p value.
+     * @return true if probabilities m,u,p converge, false otherwise.
+     */
+	private boolean converges(double[] previousM,double[] previousU, double previousP) {
+		// boolean converges = (Math.abs(p - previousP) <= 0.00001);
+		// if(!converges) return false;
+		boolean converges = true;
+		for(int i = 0 ; i < previousM.length; i++)
+			converges &= (Math.abs(m[i] - previousM[i]) <= 0.00001);
+		if(!converges) return false;
+		for(int i = 0 ; i < previousU.length; i++)
+			converges &= (Math.abs(u[i] - previousU[i]) <= 0.00001);
+		return converges;
+	}
+
     @Override
     public String toString() {
         StringBuilder msb = new StringBuilder();
@@ -206,7 +226,7 @@ public class NaiveExpectationMaximization {
         }
         msb.append("]");
         usb.append("]");
-        return "ExpectationMaximization{" +
+        return "NaiveExpectationMaximization{" +
                 "pairCount=" + pairCount +
                 ", fieldCount=" + fieldCount +
                 ", iteration=" + iteration +

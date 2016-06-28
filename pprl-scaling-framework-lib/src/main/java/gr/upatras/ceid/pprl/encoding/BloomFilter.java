@@ -205,24 +205,24 @@ public class BloomFilter {
 
         final int[] positions;
         if(!dictionary.containsKey(data)) {
-            positions= createHashesV1(
-                    data.getBytes(StandardCharsets.UTF_8),
-                    N,K, getHmacMD5(),getHmacSHA1()
-            );
+            // positions= createHashesV1(
+            //         data.getBytes(StandardCharsets.UTF_8),
+            //         N,K, getHmacMD5(),getHmacSHA1()
+            // );
 //            positions = createHashesV2(
 //                    data.getBytes(StandardCharsets.UTF_8),
 //                    N,K, getHmacMD5()
 //            );
-//            positions = createHashesV3(
-//                    data.getBytes(StandardCharsets.UTF_8),
-//                    N,K, getHmacMD5(),getHmacSHA1()
-//            );
+           positions = createHashesV3(
+                   data.getBytes(StandardCharsets.UTF_8),
+                   N,K, getHmacMD5(),getHmacSHA1()
+           );
 
             dictionary.put(data,positions);
-            setPositions(positions);
         } else {
             positions = dictionary.get(data);
         }
+        setPositions(positions);
         return positions;
 
     }

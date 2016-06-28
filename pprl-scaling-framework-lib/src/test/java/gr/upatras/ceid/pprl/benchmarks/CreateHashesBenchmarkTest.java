@@ -83,8 +83,8 @@ public class CreateHashesBenchmarkTest {
         final String header = "k,createHashesV3,MBcreateHashesV3,collisions,dictionary_size\n";
         for (int j = 0 ; j < SIZES.length; j++) {
             for (int q = minQ, i = 0; q <= maxQ; q++, i++) {
-                final String fileName = String.format("benchmarks/benchmark_%d_%d.csv",j,q);
-                FSDataOutputStream fsdos = fs.create(new Path("data", fileName));
+                final String fileName = String.format("benchmark_%d_%d.csv",j,q);
+                FSDataOutputStream fsdos = fs.create(new Path("data/benchmarks", fileName));
                 fsdos.writeBytes(header);
                 for (int k=0; k<K; k++)
                     fsdos.writeBytes(String.format("%d,%d,%d,%d,%d\n",
@@ -287,7 +287,7 @@ public class CreateHashesBenchmarkTest {
                 final int capacity = (int) ((int)Math.pow(CHARSET_AZ_09_.length,q) / FILL_FACTOR + 1);
                 final Map<String,int[]> map = new HashMap<String,int[]>(capacity, FILL_FACTOR);
                 FileSystem fs = FileSystem.get(new Configuration());
-                FSDataInputStream fsdis = fs.open(new Path("data", "names.txt"));
+                FSDataInputStream fsdis = fs.open(new Path("data/benchmarks", "names.txt"));
                 BufferedReader reader = new BufferedReader(new InputStreamReader(fsdis));
                 String line;
                 long start = System.currentTimeMillis();

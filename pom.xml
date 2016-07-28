@@ -47,6 +47,8 @@
 		<spring.data.hadoop.version>2.3.0.RELEASE-cdh5</spring.data.hadoop.version>
 		<spring.data.hadoop.test.version>2.3.0.RELEASE-cdh5</spring.data.hadoop.test.version>
 		<spring.shell.version>1.1.0.RELEASE</spring.shell.version>
+		<maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
+        <timestamp>${maven.build.timestamp}</timestamp>
 	</properties>
 
 	<dependencies>

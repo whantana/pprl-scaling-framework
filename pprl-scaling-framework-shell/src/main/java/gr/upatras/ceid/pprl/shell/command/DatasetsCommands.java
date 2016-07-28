@@ -45,19 +45,24 @@ public class DatasetsCommands implements CommandMarker {
     private LocalMatchingService lms;
 
     @CliAvailabilityIndicator(value = {
-            "sample_local_data", "describe_local_data",
-            "sort_local_data"})
-    public boolean availability0() {
-        return lds != null;
-    }
+		"sample_local_data",
+ 		"describe_local_data",
+		"sort_local_data"})
+    public boolean availability0() { return lds != null;}
+
     @CliAvailabilityIndicator(value = {
-            "calc_local_data_stats"})
+		"calc_local_data_stats"})
     public boolean availability1() { return lds != null && lms != null;}
-    @CliAvailabilityIndicator(value = {
-            "upload_local_data","download_data",
-            "import_dblp","describe_data",
-            "sample_data","sort_data"})
+    
+	@CliAvailabilityIndicator(value = {
+		"upload_local_data",
+		"download_data",
+		"import_dblp",
+		"describe_data",
+		"sample_data",
+		"sort_data"})
     public boolean availability2() { return ds != null;}
+
     @CliAvailabilityIndicator(value = {
             "calc_data_stats"})
     public boolean availability3() { return ds != null && ms != null;}
@@ -74,7 +79,7 @@ public class DatasetsCommands implements CommandMarker {
             final String schemaStr,
             @CliOption(key = {"size"}, mandatory = false, help = "(Optional) Sample size. Default is 10.")
             final String sizeStr,
-            @CliOption(key = {"name"}, mandatory = false, help = "(Optional) Name to save sample to local filesystem. If not provided no sample will be saved.")
+            @CliOption(key = {"out_name"}, mandatory = false, help = "(Optional) Name to save sample to local filesystem. If not provided no sample will be saved.")
             final String nameStr,
             @CliOption(key = {"partitions"}, mandatory = false, help = "(Optional) Partitions of the output. Default is 1 (No partitioning).")
             final String partitionsStr
@@ -150,7 +155,7 @@ public class DatasetsCommands implements CommandMarker {
             final String schemaStr,
             @CliOption(key = {"fields"}, mandatory = true, help = "Filter fields to collect statistics from.")
             final String fieldsStr,
-            @CliOption(key = {"name"}, mandatory = false, help = "(Optional) Name to save statistics report to local filesystem as properties file. If not provided no report will be saved.")
+            @CliOption(key = {"out_name"}, mandatory = false, help = "(Optional) Name to save statistics report to local filesystem as properties file. If not provided no report will be saved.")
             final String nameStr,
             @CliOption(key = {"m"}, mandatory = false, help = "(Optional) Initial m values . 0.9 for all fields is default.")
             final String mStr,
@@ -222,7 +227,7 @@ public class DatasetsCommands implements CommandMarker {
             final String avroStr,
             @CliOption(key = {"schema"}, mandatory = true, help = "Local schema avro file.")
             final String schemaStr,
-            @CliOption(key = {"name"}, mandatory = true, help = "Name of the dataset. Will be stored at hdfs://users/${USER.HOME}/${name}")
+            @CliOption(key = {"dataset_name"}, mandatory = true, help = "Name of the dataset. Will be stored at hdfs://users/${USER.HOME}/${name}")
             final String name
     ) {
         try{
@@ -255,7 +260,7 @@ public class DatasetsCommands implements CommandMarker {
             final String schemaStr,
             @CliOption(key = {"sort_by"}, mandatory = true, help = "Fields to be used in sorting. Order matters. Sort by first field then second and so on.")
             final String fieldsStr,
-            @CliOption(key = {"name"}, mandatory = false, help = "(Optional) Name to save the updated records.")
+            @CliOption(key = {"out_name"}, mandatory = false, help = "(Optional) Name to save the updated records.")
             final String nameStr,
             @CliOption(key = {"ulid_field"}, mandatory = false, help = "(Optional) Name of the ULID field. If none provided no extra field will be added")
             final String fieldStr,
@@ -298,7 +303,7 @@ public class DatasetsCommands implements CommandMarker {
             if(save) {
                 final Path[] datasetPaths = lds.createDirectories(name);
                 final Path datasetAvroPath = datasetPaths[1];
-                lds.saveDatasetRecords(name, updatedRecords, schema,datasetAvroPath, partitions);
+                lds.saveDatasetRecords(name, updatedRecords, updatedSchema,datasetAvroPath, partitions);
                 final Path datasetSchemaPath  = datasetPaths[2];
                 lds.saveSchema(name,datasetSchemaPath,updatedSchema);
                 final Path datasetBasePath = datasetPaths[0];
@@ -319,9 +324,9 @@ public class DatasetsCommands implements CommandMarker {
 
     @CliCommand(value = "download_data", help = "Download remote dataset to local machine.")
     public String command5(
-            @CliOption(key = {"name"}, mandatory = true, help = "HDFS dataset name.")
+            @CliOption(key = {"dataset_name"}, mandatory = true, help = "HDFS dataset name.")
             final String name,
-            @CliOption(key = {"download_name"}, mandatory = true, help = "Name to save to local disk.")
+            @CliOption(key = {"out_name"}, mandatory = true, help = "Name to save to local disk.")
             final String downloadName
     ) {
         try {
@@ -342,7 +347,7 @@ public class DatasetsCommands implements CommandMarker {
     public String command6(
             @CliOption(key = {"xml"}, mandatory = true, help = "Local DBLP(xml) file.")
             final String xmlPathStr,
-            @CliOption(key = {"name"}, mandatory = false, help = "(Optional) Name of the imported dataset. Default is \"dblp\".")
+            @CliOption(key = {"dataset_name"}, mandatory = false, help = "(Optional) Name of the imported dataset. Default is \"dblp\".")
             String nameStr
     ) {
         try {
@@ -363,7 +368,7 @@ public class DatasetsCommands implements CommandMarker {
 
     @CliCommand(value = "calc_data_stats", help = "Calculate usefull field statistics from hdfs data.")
     public String command8(
-            @CliOption(key = {"name"}, mandatory = true, help = "HDFS Dataset name.")
+            @CliOption(key = {"dataset_name"}, mandatory = true, help = "HDFS Dataset name.")
             final String name,
             @CliOption(key = {"uid"}, mandatory = true, help = "Unique field name.")
             final String uidFieldName,
@@ -439,7 +444,7 @@ public class DatasetsCommands implements CommandMarker {
 
     @CliCommand(value = "describe_data", help = "View schema description of HDFS data.")
     public String command9(
-            @CliOption(key = {"name"}, mandatory = true, help = "HDFS dataset name.")
+            @CliOption(key = {"dataset_name"}, mandatory = true, help = "HDFS dataset name.")
             final String name
     ) {
         try{
@@ -461,9 +466,9 @@ public class DatasetsCommands implements CommandMarker {
 
     @CliCommand(value = "sample_data", help = "View a sample of HDFS data.")
     public String command10(
-            @CliOption(key = {"name"}, mandatory = true, help = "HDFS dataset name.")
+            @CliOption(key = {"dataset_name"}, mandatory = true, help = "HDFS dataset name.")
             final String name,
-            @CliOption(key = {"sample_name"}, mandatory = true, help = "Name to save sample to HDFS.")
+            @CliOption(key = {"sample_dataset_name"}, mandatory = true, help = "Name to save sample to HDFS.")
             final String sampleName,
             @CliOption(key = {"size"}, mandatory = false, help = "(Optional) Sample size. Default is 100.")
             final String sizeStr
@@ -494,11 +499,11 @@ public class DatasetsCommands implements CommandMarker {
 
     @CliCommand(value = "sort_data", help = "Sort HDFS data records by a selected field name.")
     public String command11(
-            @CliOption(key = {"name"}, mandatory = true, help = "HDFS dataset name.")
+            @CliOption(key = {"dataset_name"}, mandatory = true, help = "HDFS dataset name.")
             final String name,
             @CliOption(key = {"sort_by"}, mandatory = true, help = "Fields to be used in sorting. Order matters. Sort by first field then second and so on.")
             final String fieldsStr,
-            @CliOption(key = {"sorted_name"}, mandatory = true, help = "Sorted dataset name records.")
+            @CliOption(key = {"sorted_dataset_name"}, mandatory = true, help = "Sorted dataset name records.")
             final String sortedName,
             @CliOption(key = {"ulid_field"}, mandatory = false, help = "(Optional) Name of the ULID field. If none provided no extra field will be added")
             final String fieldStr,

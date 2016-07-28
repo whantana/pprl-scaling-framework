@@ -2,6 +2,7 @@
 # Local data actions
 # ------------------
 
+
 #  describe a local schema
 describe_local_data --schema data/person_small/schema/person_small.avsc
 
@@ -9,19 +10,32 @@ describe_local_data --schema data/person_small/schema/person_small.avsc
 sort_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --sort_by name
 sort_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --sort_by surname
 sort_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --sort_by location 
-sort_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --sort_by name --name sorted_person_small_0
-sort_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --sort_by surname --name sorted_person_small_1
-sort_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --sort_by location --name sorted_person_small_2
-sort_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --sort_by name --ulid_field order  --name sorted_person_small_3
-sort_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --sort_by surname --ulid_field order  --name sorted_person_small_4
-sort_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --sort_by location --ulid_field order  --name sorted_person_small_5
-sort_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --sort_by name --partitions 3 --name sorted_person_small_6 
-sort_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --sort_by name --partitions 4 --ulid_field order --name sorted_person_small_7
+sort_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --sort_by name --out_name sorted_person_small_0
+sort_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --sort_by surname --out_name sorted_person_small_1
+sort_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --sort_by location --out_name sorted_person_small_2
+sort_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --sort_by name --ulid_field order  --out_name sorted_person_small_3
+sort_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --sort_by surname --ulid_field order  --out_name sorted_person_small_4
+sort_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --sort_by location --ulid_field order  --out_name sorted_person_small_5
+sort_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --sort_by name --partitions 3 --out_name sorted_person_small_6 
+sort_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --sort_by name --partitions 4 --ulid_field order --out_name sorted_person_small_7
 
 #  sample local data 
 sample_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc
 sample_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --size 20
-sample_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --name sample_person_small_10
-sample_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --size 20 --name sample_person_small_20
-sample_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --partitions 2 --name sample_person_small_102 
-sample_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --partitions 4 --name sample_person_small_104
+sample_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --out_name sample_person_small_10
+sample_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --size 20 --out_name sample_person_small_20
+sample_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --partitions 2 --out_name sample_person_small_102 
+sample_local_data --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --partitions 4 --out_name sample_person_small_104
+sample_local_data --avro data/voters_b/avro --schema data/voters_b/schema/voters_b.avsc --size 20
+
+#  calc data stats
+calc_local_data_stats --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --fields name,surname,location --out_name person_small_stats
+calc_local_data_stats --avro data/voters_b/avro --schema data/voters_b/schema/voters_b.avsc --fields name,surname,address,city --p 0.000000001 --out_name voters_b_stats
+
+
+# list supported encoding schemes
+list_supported_encoding_schemes
+
+# calculate encoding sizes
+encode_calculate_encoding_sizes --stats person_small_stats.properties
+encode_calculate_encoding_sizes --stats voters_b_stats.properties

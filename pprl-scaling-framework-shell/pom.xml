@@ -17,8 +17,6 @@
 
     <properties>
         <jar.mainclass>gr.upatras.ceid.pprl.shell.Main</jar.mainclass>
-        <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
-        <timestamp>${maven.build.timestamp}</timestamp>
     </properties>
 
     <dependencies>

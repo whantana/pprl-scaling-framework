@@ -52,14 +52,25 @@ public class EncodingCommands implements CommandMarker {
 
     private List<String> ENCODING_SCHEMES = BloomFilterEncodingUtil.SCHEME_NAMES;
 
-    @CliAvailabilityIndicator(value = {"list_supported_encoding_schemes"})
-    public boolean availability0() { return true; }
-    @CliAvailabilityIndicator(value = {"encode_local_data","encode_local_data_by_schema"})
-    public boolean availability1() { return les != null && lds != null; }
-    @CliAvailabilityIndicator(value = {"encode_calculate_encoding_sizes"})
-    public boolean availability2() { return lds != null; }
-    @CliAvailabilityIndicator(value = {"encode_data","encode_data_by_schema"})
-    public boolean availability3() { return ds != null && es != null; }
+	@CliAvailabilityIndicator(value = {
+		"list_supported_encoding_schemes",
+		"encode_calculate_encoding_sizes"
+	})
+	public boolean availability0() { return lds != null; }
+
+    @CliAvailabilityIndicator(value = {
+		"encode_local_data",
+		"encode_local_data_by_schema"
+	})
+	public boolean availability1() { return les != null && lds != null; }
+
+	@CliAvailabilityIndicator(value = {
+		"encode_data",
+		"encode_data_by_schema"
+	})
+    public boolean availability2() { 
+		return ds != null && es != null; 
+	}
 
     /**
      *  COMMON ENCODING COMMANDS
@@ -81,11 +92,11 @@ public class EncodingCommands implements CommandMarker {
     public String command1(
             @CliOption(key = {"stats"}, mandatory = true, help = "Path to property file containing the required data statistics")
             final String pathStr,
-            @CliOption(key = {"local"}, mandatory = false, help = "(Optional).Either local file or HDFS look up for stats. Default is true")
+            @CliOption(key = {"local"}, mandatory = false, help = "(Optional) True for local file. Otherwsie, look at HDFS for stats. Default is true")
             final String localStr,
-            @CliOption(key = {"Q"}, mandatory = false, help = "Q for q-grams. Limited to Q={2,3,4}. Default is 2.")
+            @CliOption(key = {"Q"}, mandatory = false, help = "(Optional) Q for q-grams. Limited to Q={2,3,4}. Default is 2.")
             final String qStr,
-            @CliOption(key = {"K"}, mandatory = false, help = "K for number of hash functions.Default is 15.")
+            @CliOption(key = {"K"}, mandatory = false, help = "(Optional) K for number of hash functions.Default is 15.")
             final String kStr
     ) {
         try {
@@ -131,13 +142,13 @@ public class EncodingCommands implements CommandMarker {
             final String avroStr,
             @CliOption(key = {"schema"}, mandatory = true, help = "Local schema avro file.")
             final String schemaStr,
-            @CliOption(key = {"name"}, mandatory = true, help = "Name of encoding.")
+            @CliOption(key = {"out_name"}, mandatory = true, help = "Name of encoding.")
             final String name,
             @CliOption(key = {"fields"}, mandatory = true, help = "Selected fields to be encoded")
             final String fieldsStr,
             @CliOption(key= {"scheme"}, mandatory = true, help = "One of the following encoding schemes : {FBF,RBF,CLK}.")
             final String scheme,
-            @CliOption(key = {"stats"}, mandatory = true, help = "Path to property file containing the required data statistics")
+            @CliOption(key = {"stats"}, mandatory = false, help = "(Optional) Path to property file containing the required data statistics")
             final String pathStr,
             @CliOption(key = {"include"}, mandatory = false, help = "(Optional) Fields to be included")
             final String includeStr,
@@ -174,7 +185,7 @@ public class EncodingCommands implements CommandMarker {
             if(statsPath != null) {
                 DatasetStatistics statistics = lds.loadStats(statsPath);
                 if(scheme.equals("RBF") && N < 0 && fields.length != statistics.getFieldCount())
-                    throw new IllegalStateException("In the case of weighted RBF all fields in stats must be included. Should recalculate stats");
+                    throw new IllegalStateException("Did not find stats for fields " + Arrays.toString(fields) + ".");
                 int i = 0;
                 for (String fieldName : fields) {
                     avgQgrams[i] = statistics.getFieldStatistics().get(fieldName).getQgramCount(Q);

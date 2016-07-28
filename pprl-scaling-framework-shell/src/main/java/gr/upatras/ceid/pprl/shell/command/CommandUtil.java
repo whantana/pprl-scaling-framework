@@ -81,7 +81,7 @@ public class CommandUtil {
 
 
     public static boolean isValidName(final String name) {
-        return name.matches("^[a-zA-Z1-9_]+$");
+        return name.matches("^[a-zA-Z0-9_]+$");
     }
     public static boolean isValidFieldName(final String name) { return name.matches("^[a-z_A-Z][a-z_A-Z0-9]*$");}
 

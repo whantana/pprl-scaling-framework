@@ -298,11 +298,11 @@ public class DatasetStatistics implements Serializable {
             statistics.getFieldStatistics().get(fieldNames[i]).setM(m[i]);
             statistics.getFieldStatistics().get(fieldNames[i]).setU(u[i]);
             final double wa =
-                    Math.log(m[i] == 0 ? Double.MIN_NORMAL : m[i]) -
-                            Math.log(u[i] == 0 ? Double.MIN_NORMAL : u[i]);
+                    Math.log(m[i] == 0 ? Double.MIN_VALUE : m[i]) -
+                            Math.log(u[i] == 0 ? Double.MIN_VALUE : u[i]);
             final double wd =
-                    Math.log((1 - m[i] ) == 0 ? Double.MIN_NORMAL : (1 - m[i])) -
-                            Math.log((1 - u[i] ) == 0 ? Double.MIN_NORMAL : (1 - u[i]));
+                    Math.log((1 - m[i] ) == 0 ? Double.MIN_VALUE : (1 - m[i])) -
+                            Math.log((1 - u[i] ) == 0 ? Double.MIN_VALUE : (1 - u[i]));
             statistics.getFieldStatistics().get(fieldNames[i]).setAgreeWeight(wa);
             statistics.getFieldStatistics().get(fieldNames[i]).setDisagreeWeight(wd);
             final double wrange = Math.abs(wa - wd);
@@ -387,15 +387,6 @@ public class DatasetStatistics implements Serializable {
             ssb.append(String.format("|%25s", String.format("%d",fbfN)));
         }
         sb.append(ssb.toString()).append("\n");
-
-//        StringBuilder ssb = new StringBuilder(String.format("%50s","Dynamic FBF size (unique q-grams)"));
-//        for (String fieldName : fieldStatistics.keySet()) {
-//            double g = fieldStatistics.get(fieldName).getUniqueQgramCount(Q);
-//            int fbfN = FieldBloomFilterEncoding.dynamicsize(g,K);
-//            fbfNsUQ.put(fieldName,fbfN);
-//            ssb.append(String.format("|%25s", String.format("%d",fbfN)));
-//        }
-//        sb.append(ssb.toString()).append("\n");
 
         ssb = new StringBuilder(String.format("%50s","Candidate RBF length"));
         for (String fieldName : fieldStatistics.keySet()) {

@@ -486,4 +486,18 @@ public class BloomFilter {
     private static void unSetBit(int i, byte[] bytes) {
         bytes[i/8] = (byte) (bytes[i/8]  & ~(1 << (i%8)));
     }
+
+    /**
+     * Calculate false positive probability for a bloom filter.
+     *
+     * @param M number of bits in a Bloom-Filter.
+     * @param K number of hash functinos.
+     * @param N number of already inserted elements in Bloom Filter.
+     * @return  false positive probability for a bloom filter.
+     */
+    public static double calcFPP(final int M, final int K, final int N) {
+        double xpnt= -(K*N/(double)M);
+        double base = (1 - Math.exp(xpnt));
+        return Math.pow(base,K);
+    }
 }

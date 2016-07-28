@@ -202,9 +202,8 @@ public class NaiveExpectationMaximization {
      * @return true if probabilities m,u,p converge, false otherwise.
      */
 	private boolean converges(double[] previousM,double[] previousU, double previousP) {
-		// boolean converges = (Math.abs(p - previousP) <= 0.00001);
-		// if(!converges) return false;
-		boolean converges = true;
+		 boolean converges = (Math.abs(p - previousP) <= 0.00001);
+		 if(!converges) return false;
 		for(int i = 0 ; i < previousM.length; i++)
 			converges &= (Math.abs(m[i] - previousM[i]) <= 0.00001);
 		if(!converges) return false;

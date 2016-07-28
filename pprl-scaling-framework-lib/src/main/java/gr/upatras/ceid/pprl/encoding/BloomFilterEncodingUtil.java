@@ -332,8 +332,6 @@ public class BloomFilterEncodingUtil {
 
         restFields.addAll(encodingFields);
         encodingSchema.setFields(restFields);
-        LOG.debug("Encoding Schema ready :\n-----------------------\n" +
-                encodingSchema.toString(true) + "-----------------------\n");
         return encodingSchema;
     }
 

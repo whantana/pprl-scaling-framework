@@ -22,7 +22,11 @@ import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -30,6 +34,7 @@ public class CreateHashesBenchmarkTest {
     private static Logger LOG = LoggerFactory.getLogger(CreateHashesBenchmarkTest.class);
     private static final int N = 1024;
     private static final int K = 30;
+    private static final int[] Ks = new int[]{1,5,10,15,20,25,30};
     private static final int minQ = 2;
     private static final int maxQ = 4;
     private static final int ITERATIONS = 20;
@@ -48,10 +53,10 @@ public class CreateHashesBenchmarkTest {
 
     private static final long[] SIZES = {10*1024,20*1024,50*1024}; // 10 kbytes,20 kbytes,50 kbytes
 
-    long[][][] millisV3 = new long [SIZES.length][maxQ-minQ + 1][K];
-    long[][][] millisV3backed = new long [SIZES.length][maxQ-minQ + 1][K];
-    long[][][] mapSizeV3 = new long [SIZES.length][maxQ-minQ + 1][K];
-    long[][][] collisionsV3 = new long [SIZES.length][maxQ-minQ + 1][K];
+    long[][][] millisV3 = new long [SIZES.length][maxQ-minQ + 1][Ks.length];
+    long[][][] millisV3backed = new long [SIZES.length][maxQ-minQ + 1][Ks.length];
+    long[][][] mapSizeV3 = new long [SIZES.length][maxQ-minQ + 1][Ks.length];
+    long[][][] collisionsV3 = new long [SIZES.length][maxQ-minQ + 1][Ks.length];
 
     static {
         Mac tmp;
@@ -73,37 +78,40 @@ public class CreateHashesBenchmarkTest {
     }
 
     @Test
-    public void test0() throws IOException {
+    public void test1() throws IOException {
         LOG.info("Running benchmarks (iterations : {}):",ITERATIONS);
+        benchCreateHashes();
+        LOG.info("Running 1MB benchmark:");
+        OneMBBenchmark();
+        LOG.info("Running 1 million names benchmark:");
+        OneMNamesBenchmark();
+    }
+
+    public void benchCreateHashes() throws IOException {
         benchmarkCreateHashesV3();
         benchmarkCreateHashesV3MapBacked();
 
         FileSystem fs = FileSystem.getLocal(new Configuration());
         LOG.info("\nSaving benchmarks to CSV files.");
-        final String header = "k,createHashesV3,MBcreateHashesV3,collisions,dictionary_size\n";
+        final String header = "k,ch_time,mb_ch_time,mb_hits,mb_size\n";
         for (int j = 0 ; j < SIZES.length; j++) {
             for (int q = minQ, i = 0; q <= maxQ; q++, i++) {
                 final String fileName = String.format("benchmark_%d_%d.csv",j,q);
                 FSDataOutputStream fsdos = fs.create(new Path("data/benchmarks", fileName));
                 fsdos.writeBytes(header);
-                for (int k=0; k<K; k++)
+                int kk = 0;
+                for (int k : Ks) {
                     fsdos.writeBytes(String.format("%d,%d,%d,%d,%d\n",
-                            k + 1,
-                            millisV3[j][i][k],
-                            millisV3backed[j][i][k],
-                            collisionsV3[j][i][k],
-                            mapSizeV3[j][i][k]));
+                            k,
+                            millisV3[j][i][kk],
+                            millisV3backed[j][i][kk],
+                            collisionsV3[j][i][kk],
+                            mapSizeV3[j][i][kk]));
+                    kk++;
+                }
                 fsdos.close();
             }
         }
-    }
-
-    @Test
-    public void test1() throws IOException {
-        LOG.info("Running 1MB benchmark:");
-        OneMBBenchmark();
-        LOG.info("Running 1 million names benchmark:");
-        OneMNamesBenchmark();
     }
 
     private static String randomQgram(final int q) {
@@ -120,10 +128,11 @@ public class CreateHashesBenchmarkTest {
         for (int j = 0 ; j < SIZES.length; j++) {
             long size = SIZES[j];
             for(int q = minQ,i = 0 ; q <= maxQ ; q++,i++) {
-                for(int k = 1 ; k <= K; k++) {
+                int kk = 0;
+                for(int k : Ks) {
                     statsTime.clear();
                     for (int it = 0; it < ITERATIONS / 4; it++) {
-                        BloomFilter.createHashesV3(randomQgram(q).getBytes("UTF-8"), N, k, HMAC_MD5, HMAC_SHA1);
+                        int[] hashes = BloomFilter.createHashesV3(randomQgram(q).getBytes("UTF-8"), N, k, HMAC_MD5, HMAC_SHA1);
                     }
                     LOG.info("Benchmarking : BloomFilter.createHashesV3() ({})",
                             String.format("input-size : %d, K : %d, Q : %d",size,k,q));
@@ -132,7 +141,7 @@ public class CreateHashesBenchmarkTest {
                         long before = System.currentTimeMillis();
                         while (bytesRead < size) {
                             byte[] b = randomQgram(q).getBytes("UTF-8");
-                            BloomFilter.createHashesV3(b, N, k, HMAC_MD5, HMAC_SHA1);
+                            int[] hashes = BloomFilter.createHashesV3(b, N, k, HMAC_MD5, HMAC_SHA1);
                             bytesRead += b.length;
                         }
                         long after = System.currentTimeMillis();
@@ -140,7 +149,8 @@ public class CreateHashesBenchmarkTest {
                         statsTime.addValue(diff);
                         totalBytesRead += bytesRead;
                     }
-                    millisV3[j][i][k-1] = (long) getCorrectMean(statsTime);
+                    millisV3[j][i][kk] = (long) getCorrectMean(statsTime);
+                    kk++;
                 }
             }
         }
@@ -159,7 +169,8 @@ public class CreateHashesBenchmarkTest {
         for (int j = 0 ; j < SIZES.length; j++) {
             long size = SIZES[j];
             for(int q = minQ,i = 0 ; q <= maxQ ; q++,i++) {
-                for(int k = 1 ; k <= K; k++) {
+                int kk = 0;
+                for(int k : Ks) {
                     statsTime.clear();
                     statsCollisions.clear();
                     statsDictionary.clear();
@@ -197,9 +208,10 @@ public class CreateHashesBenchmarkTest {
                         statsTime.addValue(diff);
                         totalBytesRead += bytesRead;
                     }
-                    millisV3backed[j][i][k-1] = (long) getCorrectMean(statsTime);
-                    mapSizeV3[j][i][k-1] = (long) getCorrectMean(statsDictionary);
-                    collisionsV3[j][i][k-1] = (long) getCorrectMean(statsCollisions);
+                    millisV3backed[j][i][kk] = (long) getCorrectMean(statsTime);
+                    mapSizeV3[j][i][kk] = (long) getCorrectMean(statsDictionary);
+                    collisionsV3[j][i][kk] = (long) getCorrectMean(statsCollisions);
+                    kk++;
                 }
             }
         }
@@ -212,7 +224,6 @@ public class CreateHashesBenchmarkTest {
     private void OneMBBenchmark() throws UnsupportedEncodingException {
 
         long maxBytes = 1024*1024; //1MB
-        int K = 30;
         {
             for(int q = minQ; q<= maxQ; q++) {
                 long bytesRead = 0;
@@ -255,12 +266,11 @@ public class CreateHashesBenchmarkTest {
 
 
     private void OneMNamesBenchmark() throws IOException {
-        int K = 30;
         {
             for(int q = minQ; q<= maxQ; q++) {
                 long bytesRead = 0;
                 FileSystem fs = FileSystem.get(new Configuration());
-                FSDataInputStream fsdis = fs.open(new Path("data", "names.txt"));
+                FSDataInputStream fsdis = fs.open(new Path("data/benchmarks", "names.txt"));
                 BufferedReader reader = new BufferedReader(new InputStreamReader(fsdis));
                 String line;
                 long start = System.currentTimeMillis();
@@ -273,10 +283,11 @@ public class CreateHashesBenchmarkTest {
                         bytesRead += b.length;
                     }
                 }while (true);
-                reader.close();
                 long end = System.currentTimeMillis();
                 long millis = end - start;
-                LOG.info("q = " + q + "createHashesV3 : Time took " + millis + " milliseconds. Read " + bytesRead + " bytes.");
+                reader.close();
+                fsdis.close();
+                LOG.info("q = " + q + " createHashesV3 : Time took " + millis + " milliseconds. Read " + bytesRead + " bytes.");
             }
         }
 
@@ -286,6 +297,7 @@ public class CreateHashesBenchmarkTest {
                 long collisions = 0;
                 final int capacity = (int) ((int)Math.pow(CHARSET_AZ_09_.length,q) / FILL_FACTOR + 1);
                 final Map<String,int[]> map = new HashMap<String,int[]>(capacity, FILL_FACTOR);
+                final Map<String,Integer> mapC = new HashMap<String,Integer>(capacity, FILL_FACTOR);
                 FileSystem fs = FileSystem.get(new Configuration());
                 FSDataInputStream fsdis = fs.open(new Path("data/benchmarks", "names.txt"));
                 BufferedReader reader = new BufferedReader(new InputStreamReader(fsdis));
@@ -298,17 +310,51 @@ public class CreateHashesBenchmarkTest {
                         byte[] b = qgram.getBytes("UTF-8");
                         if(!map.containsKey(qgram)) {
                             map.put(qgram,BloomFilter.createHashesV3(b, N, K, HMAC_MD5, HMAC_SHA1));
-                        } else collisions++;
+                            mapC.put(qgram,0);
+                        } else {
+                            collisions++;
+                            int c = mapC.get(qgram);
+                            mapC.put(qgram,c+1);
+                        }
                         bytesRead += b.length;
                     }
                 }while (true);
-                reader.close();
                 long end = System.currentTimeMillis();
                 long millis = end - start;
-                LOG.info("q = " + q + "createHashesV3 : Time took " + millis + " milliseconds. Read " + bytesRead + " bytes." +
+                reader.close();
+                fsdis.close();
+                LOG.info("q = " + q + " createHashesV3 : Time took " + millis + " milliseconds. Read " + bytesRead + " bytes." +
                         " Collisions :" + collisions + " Dictionary size : " + map.keySet().size() + " keys");
+                sortByValue(mapC);
             }
         }
+    }
+
+    public <K, V extends Comparable<? super V>> Map<K, V> sortByValue( Map<K, V> map ) {
+        List<Map.Entry<K, V>> list =
+                new ArrayList<Map.Entry<K, V>>( map.entrySet() );
+        Collections.sort( list, new Comparator<Map.Entry<K, V>>()
+        {
+            public int compare( Map.Entry<K, V> o1, Map.Entry<K, V> o2 )
+            {
+                return -(o1.getValue()).compareTo( o2.getValue() );
+            }
+        } );
+        int top5 = 1;
+        long total = 0;
+        Map<K, V> result = new HashMap<K, V>();
+        for (Map.Entry<K, V> entry : list)
+        {
+            result.put( entry.getKey(), entry.getValue() );
+            total += ((Integer) entry.getValue()).intValue();
+            if(top5 <= 5) {
+                LOG.info(entry.toString());
+                top5++;
+            }
+
+        }
+        LOG.info("total : {} ",total);
+        return result;
     }
 
 

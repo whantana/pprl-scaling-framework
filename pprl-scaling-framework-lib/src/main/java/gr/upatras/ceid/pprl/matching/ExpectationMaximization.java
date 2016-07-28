@@ -102,9 +102,9 @@ public class ExpectationMaximization {
                 uSum += g[i][1]* frequencies.getVectorFrequency(i);
             }
 
-			double[] previousM = Arrays.copyOf(m,m.length);
-			double[] previousU = Arrays.copyOf(u,u.length);
-			double previousP = p;
+            double[] previousM = Arrays.copyOf(m,m.length);
+            double[] previousU = Arrays.copyOf(u,u.length);
+            double previousP = p;
 
             // Maximization Step - Using g to estimate m,u and p.
             // For each j 2^{fieldCount - 1} iterations occur.
@@ -188,17 +188,16 @@ public class ExpectationMaximization {
      * @param previousU previous iteration p value.
      * @return true if probabilities m,u,p converge, false otherwise.
      */
-	private boolean converges(double[] previousM,double[] previousU, double previousP) {
-		// boolean converges = (Math.abs(p - previousP) <= 0.00001);
-		// if(!converges) return false;
-		boolean converges = true;
-		for(int i = 0 ; i < previousM.length; i++)
-			converges &= (Math.abs(m[i] - previousM[i]) <= 0.00001);
-		if(!converges) return false;
-		for(int i = 0 ; i < previousU.length; i++)
-			converges &= (Math.abs(u[i] - previousU[i]) <= 0.00001);
-		return converges;
-	}
+    private boolean converges(double[] previousM,double[] previousU, double previousP) {
+        boolean converges = (Math.abs(p - previousP) <= 0.00001);
+        if(!converges) return false;
+        for(int i = 0 ; i < previousM.length; i++)
+            converges &= (Math.abs(m[i] - previousM[i]) <= 0.00001);
+        if(!converges) return false;
+        for(int i = 0 ; i < previousU.length; i++)
+            converges &= (Math.abs(u[i] - previousU[i]) <= 0.00001);
+        return converges;
+    }
 
     @Override
     public String toString() {

@@ -255,7 +255,7 @@ public class DatasetsCommands implements CommandMarker {
             final String schemaStr,
             @CliOption(key = {"sort_by"}, mandatory = true, help = "Fields to be used in sorting. Order matters. Sort by first field then second and so on.")
             final String fieldsStr,
-            @CliOption(key = {"name"}, mandatory = false, help = "(Optional)Name to save the updated records.")
+            @CliOption(key = {"name"}, mandatory = false, help = "(Optional) Name to save the updated records.")
             final String nameStr,
             @CliOption(key = {"ulid_field"}, mandatory = false, help = "(Optional) Name of the ULID field. If none provided no extra field will be added")
             final String fieldStr,

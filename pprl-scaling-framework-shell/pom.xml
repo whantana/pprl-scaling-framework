@@ -114,6 +114,7 @@
                                     <systemProperty>64</systemProperty>
                                     <systemProperty>yarn.resourcemanager=$PPRL_YARN_RM</systemProperty>
                                     <systemProperty>hadoop.namenode=$PPRL_HADOOP_NN</systemProperty>
+                                    <systemProperty>mapred.jobhistory=$PPRL_MAPRED_JH</systemProperty>
                                     <systemProperty>spark.master=$PPRL_SPARK_MASTER</systemProperty>
                                     <systemProperty>database.host=$PPRL_DB_HOST</systemProperty>
                                     <systemProperty>database.user=$PPRL_DB_USER</systemProperty>

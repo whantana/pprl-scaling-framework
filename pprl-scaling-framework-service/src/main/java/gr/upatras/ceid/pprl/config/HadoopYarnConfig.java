@@ -26,6 +26,9 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
     @Value("${yarn.resourcemanager}")
     private String yarnResourceManager;
 
+    @Value("${mapred.jobhistory}")
+    private String mapredJobHistory;
+
     @Value("${yarn.mapreduce.framework}")
     private String yarnMapReduceFramework;
 
@@ -34,20 +37,25 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
 
     @Override
     public void configure(HadoopConfigConfigurer config) throws Exception {
-        LOG.info("HDFS Namenode : " +
+        LOG.info("HDFS Namenode host : " +
                 (isDefined(hadoopNamenode) ? hadoopNamenode : "Not provided"));
-        config.fileSystemUri(String.format("hdfs://%s:8020", hadoopNamenode));
-        LOG.info("YARN ResourceManager : " +
+        LOG.info("YARN ResourceManager host : " +
                 (isDefined(yarnResourceManager) ? yarnResourceManager : "Not provided"));
+        LOG.info("YARN MapReduce Framework : " +
+                (isDefined(yarnMapReduceFramework) ? yarnMapReduceFramework : "Not provided"));
+        LOG.info("YARN Application Classpath : " +
+                (isDefined(yarnApplicationClasspath) ? yarnApplicationClasspath : "Not provided"));
+        LOG.info("MapReduce Job History host : " +
+                (isDefined(mapredJobHistory) ? mapredJobHistory : "Not provided"));
+
+        config.fileSystemUri(String.format("hdfs://%s:8020", hadoopNamenode));
         config.resourceManagerAddress(String.format("%s:8032", yarnResourceManager));
+        config.jobHistoryAddress(String.format("%s:19888",mapredJobHistory));
         config
                 .withProperties()
                 .property("mapreduce.framework.fieldName", yarnMapReduceFramework)
                 .property("yarn.nodemanager.aux-services", "mapreduce_shuffle")
-//                .property("dfs.client.use.datanode.hostname", "true")
                 .property("yarn.application.classpath", yarnApplicationClasspath);
-		
-		// TODO review spring capabilities for different hadoop vendors 
     }
 
     @Bean(name = "hdfs")

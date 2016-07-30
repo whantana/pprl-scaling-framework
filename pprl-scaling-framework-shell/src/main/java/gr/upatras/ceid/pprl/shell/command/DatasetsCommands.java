@@ -56,10 +56,10 @@ public class DatasetsCommands implements CommandMarker {
     
 	@CliAvailabilityIndicator(value = {
 		"upload_local_data",
+        "describe_data",
+        "sample_data",
 		"download_data",
 		"import_dblp",
-		"describe_data",
-		"sample_data",
 		"sort_data"})
     public boolean availability2() { return ds != null;}
 

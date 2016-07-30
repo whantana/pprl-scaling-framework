@@ -53,7 +53,7 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
         config.jobHistoryAddress(String.format("%s:19888",mapredJobHistory));
         config
                 .withProperties()
-                .property("mapreduce.framework.fieldName", yarnMapReduceFramework)
+                .property("mapreduce.framework.name", yarnMapReduceFramework)
                 .property("yarn.nodemanager.aux-services", "mapreduce_shuffle")
                 .property("yarn.application.classpath", yarnApplicationClasspath);
     }

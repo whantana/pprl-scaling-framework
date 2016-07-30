@@ -44,7 +44,7 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
                 .withProperties()
                 .property("mapreduce.framework.fieldName", yarnMapReduceFramework)
                 .property("yarn.nodemanager.aux-services", "mapreduce_shuffle")
-                .property("dfs.client.use.datanode.hostname", "true")
+//                .property("dfs.client.use.datanode.hostname", "true")
                 .property("yarn.application.classpath", yarnApplicationClasspath);
 		
 		// TODO review spring capabilities for different hadoop vendors 

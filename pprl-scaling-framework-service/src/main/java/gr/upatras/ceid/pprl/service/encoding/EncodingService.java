@@ -51,7 +51,7 @@ public class EncodingService implements InitializingBean {
             encodeDatasetToolRunner.setArguments(args);
             encodeDatasetToolRunner.call();
         } catch (Exception e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         }
     }

@@ -72,10 +72,10 @@ public class MatchingService implements InitializingBean {
             frequencies.fromProperties(properties);
             return frequencies;
         } catch (IOException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         } catch (Exception e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         }
     }

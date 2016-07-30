@@ -58,10 +58,10 @@ public class LocalBlockingService implements InitializingBean {
                     BloomFilterEncodingUtil.setupNewInstance(aliceSchema),
                     BloomFilterEncodingUtil.setupNewInstance(bobSchema));
         } catch (BloomFilterEncodingException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         } catch (BlockingException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         }
     }
@@ -93,7 +93,7 @@ public class LocalBlockingService implements InitializingBean {
                     C,
                     similarityMethodName, similarityThreshold);
         } catch (BlockingException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         }
     }
@@ -103,7 +103,7 @@ public class LocalBlockingService implements InitializingBean {
         try {
             BlockingUtil.saveBlockingResult(localFs, blockingOutputPath, result);
         } catch (IOException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         }
     }

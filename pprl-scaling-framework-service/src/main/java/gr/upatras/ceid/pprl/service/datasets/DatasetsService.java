@@ -51,7 +51,7 @@ public class DatasetsService implements InitializingBean {
                     (qGramCountingToolRunner != null),
                     (sortAvroToolRunner != null)));
         } catch (IOException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
         }
     }
 
@@ -94,7 +94,7 @@ public class DatasetsService implements InitializingBean {
                 throw new IllegalArgumentException("Path \"" + path + "\" does not exist.");
             hdfs.setPermission(path,ONLY_OWNER_PERMISSION);
         } catch (IOException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         }
     }
@@ -112,7 +112,7 @@ public class DatasetsService implements InitializingBean {
                 throw new IllegalArgumentException("Path \"" + path + "\" does not exist.");
             hdfs.setPermission(path,OTHERS_CAN_READ_PERMISSION);
         } catch (IOException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         }
     }
@@ -170,7 +170,7 @@ public class DatasetsService implements InitializingBean {
             LOG.info("Retrieving directories for {} at {}.",name,basePath);
             return DatasetsUtil.retrieveDatasetDirectories(hdfs,name,basePath);
         } catch (IOException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         }
     }
@@ -188,7 +188,7 @@ public class DatasetsService implements InitializingBean {
             LOG.info("Retrieving schema from {}.",basePath);
             return DatasetsUtil.getSchemaPath(hdfs,basePath);
         } catch (IOException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         }
     }
@@ -242,7 +242,7 @@ public class DatasetsService implements InitializingBean {
             hdfs.copyFromLocalFile(src, dest);
             return destBasePath;
         } catch (IOException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         }
     }
@@ -323,7 +323,7 @@ public class DatasetsService implements InitializingBean {
 
             return destBasePath;
         } catch (IOException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         }
     }
@@ -356,10 +356,10 @@ public class DatasetsService implements InitializingBean {
             LOG.info("Load schema from {}.",schemaPath);
             return DatasetsUtil.loadSchemaFromFSPath(hdfs,schemaPath);
         } catch (DatasetException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         } catch (IOException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         }
     }
@@ -378,10 +378,10 @@ public class DatasetsService implements InitializingBean {
             LOG.info("Saving schema to {}.",schemaPath);
             DatasetsUtil.saveSchemaToFSPath(hdfs, schema, schemaPath);
         } catch (DatasetException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         } catch (IOException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         }
     }
@@ -437,7 +437,7 @@ public class DatasetsService implements InitializingBean {
 
             return datasetPath;
         } catch (Exception e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         }
     }
@@ -467,7 +467,7 @@ public class DatasetsService implements InitializingBean {
             hdfs.setPermission(statsPath, ONLY_OWNER_PERMISSION);
             return statsPath;
         } catch (Exception e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         }
     }
@@ -540,7 +540,7 @@ public class DatasetsService implements InitializingBean {
             fsdos.close();
             return propertiesPath;
         } catch (IOException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         }
     }
@@ -569,10 +569,10 @@ public class DatasetsService implements InitializingBean {
             statistics.fromProperties(properties);
             return statistics;
         } catch (IOException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         } catch (DatasetException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         }
     }
@@ -625,10 +625,10 @@ public class DatasetsService implements InitializingBean {
 
             return sampleBasePath;
         } catch (IOException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         } catch (DatasetException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         }
     }
@@ -661,10 +661,10 @@ public class DatasetsService implements InitializingBean {
 
             return sortedBasePath;
         } catch (IOException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         } catch (Exception e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         }
     }
@@ -745,10 +745,10 @@ public class DatasetsService implements InitializingBean {
             hdfs.delete(inputAvroPath,true);
             hdfs.rename(tmp,inputAvroPath);
         }  catch (IOException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         } catch (DatasetException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         }
     }

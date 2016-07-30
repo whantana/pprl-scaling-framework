@@ -42,8 +42,6 @@ import java.util.TreeSet;
  * Datasets utility class.
  */
 public class DatasetsUtil {
-    private static final Logger LOG = LoggerFactory.getLogger(DatasetsUtil.class);
-
     /**
      * Returns true if <code>FileSystem</code> is local. False for HDFS filesystem.
      *
@@ -81,16 +79,10 @@ public class DatasetsUtil {
         final Path paths[] = new Path[3];
         paths[0] = path;
         checkIfExists(fs,paths[0]);
-        LOG.debug(String.format("Path exists [FileSystem=%s,Path=%s].",
-                fsIsLocal(fs) ? "local" : fs.getUri(), paths[0]));
         paths[1] = new Path(paths[0],"avro");
         checkIfExists(fs,paths[1]);
-        LOG.debug(String.format("Path exists [FileSystem=%s,Path=%s].",
-                fsIsLocal(fs) ? "local" : fs.getUri(), paths[1]));
         paths[2] = new Path(paths[0],"schema");
         checkIfExists(fs,paths[2]);
-        LOG.debug(String.format("Path exists [FileSystem=%s,Path=%s].",
-                fsIsLocal(fs) ? "local" : fs.getUri(), paths[2]));
         return paths;
     }
 
@@ -125,8 +117,6 @@ public class DatasetsUtil {
                     nameFound = true ;
                     break;
                 }
-            LOG.debug("Fieldname \"{}\" {} in schema.",name,
-                    (nameFound ? "found" : "not found"));
             if(!nameFound) return false;
         }
         return true;
@@ -159,43 +149,24 @@ public class DatasetsUtil {
     public static Path[] createDatasetDirectories(final FileSystem fs, final String name, final Path basePath,
                                                   final FsPermission permission)
             throws IOException {
-        LOG.debug(String.format("Creating dataset directories [FileSystem=%s,Path=%s].",
-                fsIsLocal(fs) ? "local" : fs.getUri(), name));
         final Path datasetPath = new Path(basePath,name);
-        if (fs.exists(datasetPath)) {
-            LOG.debug(String.format("Directory it already exists " +
-                            "[FileSystem=%s,basePath=%s].",
-                    fsIsLocal(fs) ? "local" : fs.getUri(), name));
-        } else {
-            LOG.debug(String.format("Making base directory [FileSystem=%s,basePath=%s].",
-                    fsIsLocal(fs) ? "local" : fs.getUri(), datasetPath));
+        if (!fs.exists(datasetPath)) {
             if(permission == null ) fs.mkdirs(datasetPath);
             else fs.mkdirs(datasetPath, permission);
         }
 
         final Path datasetAvroPath = new Path(datasetPath,"avro");
         if (fs.exists(datasetAvroPath)) {
-            LOG.debug(String.format("Deleting avro directory because it exists " +
-                            "[FileSystem=%s,datasetAvroPath=%s].",
-                    fsIsLocal(fs) ? "local" : fs.getUri(), datasetAvroPath));
             fs.delete(datasetAvroPath, true);
-
         }
-        LOG.debug(String.format("Making avro directory [FileSystem=%s,datasetAvroPath=%s].",
-                fsIsLocal(fs) ? "local" : fs.getUri(), datasetAvroPath));
         if(permission == null ) fs.mkdirs(datasetPath);
         else fs.mkdirs(datasetPath, permission);
 
 
         final Path datasetSchemaPath = new Path(datasetPath,"schema");
         if (fs.exists(datasetSchemaPath)) {
-            LOG.debug(String.format("Deleting avro directory because it exists " +
-                            "[FileSystem=%s,datasetAvroPath=%s].",
-                    fsIsLocal(fs) ? "local" : fs.getUri(), datasetSchemaPath));
             fs.delete(datasetSchemaPath,true);
         }
-        LOG.debug(String.format("Making schema directory [FileSystem=%s,datasetSchemaPath=%s].",
-                fsIsLocal(fs) ? "local" : fs.getUri(), datasetSchemaPath));
         if(permission == null ) fs.mkdirs(datasetPath);
         else fs.mkdirs(datasetPath, permission);
 
@@ -214,8 +185,6 @@ public class DatasetsUtil {
     public static GenericRecord[] loadAvroRecordsFromFSPaths(final FileSystem fs,
                                                              final Schema schema,
                                                              final Path... paths) throws IOException {
-        LOG.debug(String.format("Loading records from [FileSystem=%s,paths=%s].",
-                fsIsLocal(fs) ? "local" : fs.getUri(), Arrays.toString(paths)));
         final List<GenericRecord> recordList = new ArrayList<GenericRecord>();
         final DatasetsUtil.DatasetRecordReader reader =
                 new DatasetsUtil.DatasetRecordReader(fs, schema, paths);
@@ -225,9 +194,6 @@ public class DatasetsUtil {
             i++;
         }
         reader.close();
-        LOG.debug(String.format("%d records loaded from [FileSystem=%s,paths=%s].",
-                recordList.size(), fsIsLocal(fs) ? "local" : fs.getUri(),
-                Arrays.toString(paths)));
         return recordList.toArray(new GenericRecord[recordList.size()]);
     }
 
@@ -246,8 +212,6 @@ public class DatasetsUtil {
                                                              final Schema schema,
                                                              final Path... paths)
             throws IOException {
-        LOG.debug(String.format("Loading records from [FileSystem=%s,paths=%s].",
-                fsIsLocal(fs) ? "local" : fs.getUri(), Arrays.toString(paths)));
         final List<GenericRecord> recordList = new ArrayList<GenericRecord>();
         final DatasetsUtil.DatasetRecordReader reader =
                 new DatasetsUtil.DatasetRecordReader(fs, schema, paths);
@@ -257,9 +221,6 @@ public class DatasetsUtil {
             i++;
         }
         reader.close();
-        LOG.debug(String.format("%d records loaded from [FileSystem=%s,paths=%s].",
-                recordList.size(), fsIsLocal(fs) ? "local" : fs.getUri(),
-                Arrays.toString(paths)));
         return recordList.toArray(new GenericRecord[recordList.size()]);
     }
 
@@ -280,9 +241,6 @@ public class DatasetsUtil {
                                                final Path basePath,
                                                final String name,
                                                final int partitions) throws IOException {
-        LOG.debug(String.format("Saving %d records into  [FileSystem=%s,paths=%s].",
-                records.length,
-                fsIsLocal(fs) ? "local" : fs.getUri(), basePath));
         final DatasetsUtil.DatasetRecordWriter writer =
                 new DatasetsUtil.DatasetRecordWriter(fs,name,schema,basePath,partitions);
         writer.writeRecords(records);
@@ -300,8 +258,6 @@ public class DatasetsUtil {
      */
     public static Schema loadSchemaFromFSPath(final FileSystem fs, final Path schemaPath)
             throws DatasetException, IOException {
-        LOG.debug(String.format("Loading schema [FileSystem=%s,Path=%s].",
-                fsIsLocal(fs) ? "local" : fs.getUri(), schemaPath));
         FileStatus fss = fs.getFileStatus(schemaPath);
         if (fss.isFile() && fss.getPath().getName().endsWith(".avsc"))
             return (new Schema.Parser()).parse(fs.open(fss.getPath()));
@@ -319,8 +275,6 @@ public class DatasetsUtil {
      */
     public static void saveSchemaToFSPath(final FileSystem fs, final Schema schema, final Path schemaPath)
             throws DatasetException, IOException {
-        LOG.debug(String.format("Saving schema [FileSystem=%s,Path=%s].",
-                fsIsLocal(fs) ? "local" : fs.getUri(), schemaPath));
         final FSDataOutputStream fsdos = fs.create(schemaPath, true);
         fsdos.write(schema.toString(true).getBytes());
         fsdos.close();
@@ -777,8 +731,6 @@ public class DatasetsUtil {
      */
     public static SortedSet<Path> getAllAvroPaths(final FileSystem fs, final Path... pathArray) throws IOException {
         final SortedSet<Path> paths = new TreeSet<Path>();
-        LOG.debug(String.format("Retrieve all Avro Paths [FileSystem=%s,Paths=%s].",
-                fsIsLocal(fs) ? "local" : fs.getUri(), Arrays.toString(pathArray)));
         for(Path p : pathArray) {
             if (fs.isDirectory(p)) {
                 final RemoteIterator<LocatedFileStatus> iterator = fs.listFiles(p, true);
@@ -793,9 +745,6 @@ public class DatasetsUtil {
                     paths.add(p);
             }
         }
-        LOG.debug(String.format("Retrieve all Avro Paths [FileSystem=%s,Paths=%s," +
-                        "Returned=%s].", fsIsLocal(fs) ? "local" : fs.getUri(),
-                Arrays.toString(pathArray),paths));
         return paths;
     }
 
@@ -808,15 +757,10 @@ public class DatasetsUtil {
      * @throws IOException
      */
     public static Path getSchemaPath(final FileSystem fs, final Path parentPath) throws IOException{
-        LOG.debug(String.format("Retrieve schema path [FileSystem=%s,parentPath=%s].",
-                fsIsLocal(fs) ? "local" : fs.getUri(), parentPath));
         final RemoteIterator<LocatedFileStatus> iterator = fs.listFiles(parentPath, true);
         while (iterator.hasNext()) {
             final LocatedFileStatus lfs = iterator.next();
             if (lfs.isFile() && lfs.getPath().toString().endsWith(".avsc")) {
-                LOG.debug(String.format("Retrieve schema path [FileSystem=%s,parentPath=%s," +
-                                "Path=%s].", fsIsLocal(fs) ? "local" : fs.getUri(),
-                        parentPath,lfs.getPath()));
                 return lfs.getPath();
             }
         }
@@ -832,9 +776,6 @@ public class DatasetsUtil {
      * @throws IOException
      */
     public static SortedSet<Path> getAllPropertiesPaths(final FileSystem fs, final Path... pathArray) throws IOException {
-        LOG.debug(String.format("Retrieve schema path [FileSystem=%s,parentPaths=%s].",
-                fsIsLocal(fs) ? "local" : fs.getUri(),
-                Arrays.toString(pathArray)));
         final SortedSet<Path> paths = new TreeSet<Path>();
         for(Path p : pathArray) {
             if (fs.isDirectory(p)) {
@@ -850,9 +791,6 @@ public class DatasetsUtil {
                     paths.add(p);
             }
         }
-        LOG.debug(String.format("Retrieve schema path [FileSystem=%s,parentPaths=%s,path=%s].",
-                fsIsLocal(fs) ? "local" : fs.getUri(),
-                Arrays.toString(pathArray),paths));
         return paths;
     }
 
@@ -970,7 +908,6 @@ public class DatasetsUtil {
      * @return a sample from the records array.
      */
     public static GenericRecord[] sampleDataset(final GenericRecord[] records,final int sampleSize) {
-        LOG.debug(String.format("Sampling from records [size=%d]", sampleSize));
         final SecureRandom RANDOM = new SecureRandom();
         int i = 0;
         int sampled = 0;

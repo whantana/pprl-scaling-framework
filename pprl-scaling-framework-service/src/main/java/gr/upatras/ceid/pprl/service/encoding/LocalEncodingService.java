@@ -42,7 +42,7 @@ public class LocalEncodingService implements InitializingBean {
 
             return encodedRecords;
         } catch (BloomFilterEncodingException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         }
     }

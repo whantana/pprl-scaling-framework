@@ -3,8 +3,6 @@ package gr.upatras.ceid.pprl.encoding;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,8 +14,6 @@ import java.util.Map;
  * Bloom Filter Encoding utility class.
  */
 public class BloomFilterEncodingUtil {
-
-    private static final Logger LOG = LoggerFactory.getLogger(BloomFilterEncodingUtil.class);
 
     public static final List<String> SCHEME_NAMES = new ArrayList<String>(); // Available Encoding Schemes
     public static final Map<String,Class<?>> SCHEMES = new HashMap<String, Class<?>>();
@@ -164,45 +160,31 @@ public class BloomFilterEncodingUtil {
         final boolean rbfWeighetdFbfStatic = rbfWeighted && (fbfN > 0);
         final boolean rbfWeighetdFbfDynamic = rbfWeighted && (fbfN <= 0);
 
-        if(clk) {
-            LOG.debug("New Encoding instance is CLK.");
-            return new CLKEncoding(N,K,Q);
-        } else if (fbfStatic) {
+        if(clk) { return new CLKEncoding(N,K,Q);}
+        else if (fbfStatic) {
             int fbfNs[] = FieldBloomFilterEncoding.staticsizes(fbfN, fieldCount);
-            LOG.debug(String.format("New Encoding instance is FBF/Static : [fbfNs=%s,K=%d,Q=%d].",
-                    Arrays.toString(fbfNs),K,Q));
             return  new FieldBloomFilterEncoding(fbfNs,K,Q);
         } else if (fbfDynamic) {
             if(containsNan(avgQgrams)) throw new IllegalArgumentException("Avg q grams contains NaN.");
             int fbfNs[] = FieldBloomFilterEncoding.dynamicsizes(avgQgrams, K);
-            LOG.debug(String.format("New Encoding instance is FBF/Dynamic : [fbfNs=%s,K=%d,Q=%d].",
-                    Arrays.toString(fbfNs),K,Q));
             return  new FieldBloomFilterEncoding(fbfNs,K,Q);
         } else if (rbfUniformFbfStatic) {
             int fbfNs[] = FieldBloomFilterEncoding.staticsizes(fbfN, fieldCount);
-            LOG.debug(String.format("New Encoding instance is RBF/Uniform/FBF/Static : [fbfNs=%s,N=%d,K=%d,Q=%d].",
-                    Arrays.toString(fbfNs),N,K,Q));
             return  new RowBloomFilterEncoding(fbfNs, N,K,Q);
         } else if (rbfUniformFbfDynamic) {
             if(containsNan(avgQgrams)) throw new IllegalArgumentException("Avg q grams contains NaN.");
             int fbfNs[] = FieldBloomFilterEncoding.dynamicsizes(avgQgrams, K);
-            LOG.debug(String.format("New Encoding instance is RBF/Uniform/FBF/Dynamic : [fbfNs=%s,N=%d,K=%d,Q=%d].",
-                    Arrays.toString(fbfNs),N,K,Q));
             return  new RowBloomFilterEncoding(fbfNs, N,K,Q);
         } else if (rbfWeighetdFbfStatic) {
             int fbfNs[] = FieldBloomFilterEncoding.staticsizes(fbfN, fieldCount);
             if(containsNan(weights)) throw new IllegalArgumentException("Weights contains NaN.");
             if(!doublesAddUpTo1(weights, 0.0001)) throw new IllegalArgumentException("Weights do not add up to 1.");
-            LOG.debug(String.format("New Encoding instance is RBF/Weighted/FBF/Static : [fbfNs=%s,weights=%s,K=%d,Q=%d].",
-                    Arrays.toString(fbfNs),Arrays.toString(weights),K,Q));
             return new RowBloomFilterEncoding(fbfNs, weights,K,Q);
         } else if (rbfWeighetdFbfDynamic) {
             if(containsNan(avgQgrams)) throw new IllegalArgumentException("Avg q grams contains NaN.");
             int fbfNs[] = FieldBloomFilterEncoding.dynamicsizes(avgQgrams, K);
             if(containsNan(weights)) throw new IllegalArgumentException("Weights contains NaN.");
             if(!doublesAddUpTo1(weights, 0.0001)) throw new IllegalArgumentException("Weights do not add up to 1.");
-            LOG.debug(String.format("New Encoding instance is RBF/Weighted/FBF/Dynamic : [fbfNs=%s,weights=%s,K=%d,Q=%d].",
-                    Arrays.toString(fbfNs),Arrays.toString(weights),K,Q));
             return new RowBloomFilterEncoding(fbfNs, weights,K,Q);
         } else throw new IllegalStateException("illegal state.");
     }

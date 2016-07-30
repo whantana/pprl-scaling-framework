@@ -106,10 +106,10 @@ public class BlockingService implements InitializingBean {
             hammingLshBlockingToolRunner.setArguments(args);
             hammingLshBlockingToolRunner.call();
         } catch (IOException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         } catch (Exception e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         }
     }
@@ -175,10 +175,10 @@ public class BlockingService implements InitializingBean {
             hammingLshFpsBlockingToolRunner.setArguments(args);
             hammingLshFpsBlockingToolRunner.call();
         } catch (IOException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         } catch (Exception e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         }
     }
@@ -239,10 +239,10 @@ public class BlockingService implements InitializingBean {
             hammingLshFpsBlockingV1ToolRunner.setArguments(args);
             hammingLshFpsBlockingV1ToolRunner.call();
         } catch (IOException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         } catch (Exception e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(),e);
             throw e;
         }
 

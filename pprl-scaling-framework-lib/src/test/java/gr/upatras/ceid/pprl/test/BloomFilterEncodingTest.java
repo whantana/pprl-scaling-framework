@@ -37,7 +37,6 @@ import java.util.SortedSet;
 import static org.junit.Assert.assertTrue;
 
 public class BloomFilterEncodingTest {
-    // TODO Benchmark the accuracy of each format with the sorted neighborhood
     private static Logger LOG = LoggerFactory.getLogger(BloomFilterEncodingTest.class);
 
     private static final int N = 1024;

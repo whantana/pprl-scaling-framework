@@ -54,8 +54,8 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
         config
                 .withProperties()
                 .property("mapreduce.framework.name", yarnMapReduceFramework)
-                .property("yarn.nodemanager.aux-services", "mapreduce_shuffle")
-                .property("yarn.application.classpath", yarnApplicationClasspath);
+                .property("yarn.nodemanager.aux-services", "mapreduce_shuffle");
+                //.property("yarn.application.classpath", yarnApplicationClasspath);
     }
 
     @Bean(name = "hdfs")

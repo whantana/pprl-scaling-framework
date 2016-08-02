@@ -15,35 +15,28 @@ public class PPRLCLusterCondition implements Condition {
 
     private static final Logger LOG = LoggerFactory.getLogger(PPRLCLusterCondition.class);
 
-
     @Autowired
     @Bean(name="isClusterReady")
     public Boolean isClusterReady(final Environment env) {
         boolean defined = areAllDefined(
-//                env.getProperty("database.host"),
-//                env.getProperty("database.user"),
-//                env.getProperty("database.password"),
-//                env.getProperty("spark.master"),
                 env.getProperty("hadoop.namenode"),
+				env.getProperty("mapred.jobhistory"),
                 env.getProperty("yarn.resourcemanager")
         );
-        LOG.info(String.format("Application %s cluster ready.",defined ? "is" :"is not"));
-//        boolean persistence = areAllDefined(
-//                env.getProperty("database.host"),
-//                env.getProperty("database.user"),
-//                env.getProperty("database.password"));
+
+
+        if(!defined) LOG.info(String.format("Application is not hadoop ready."));
+
         boolean hdfs = isDefined(env.getProperty("hadoop.namenode"));
         boolean yarn = isDefined(env.getProperty("yarn.resourcemanager"));
-//        boolean spark = isDefined(env.getProperty("spark.master"));
+		boolean mapreduce = isDefined(env.getProperty("apred.jobhistory"));
 
-        LOG.info(String.format("Details : [" +
-//                        " Persistence : %s," +
-//                        " Spark : %s," +
-                        " HDFS : %s," +
+        if(!defined) LOG.info(String.format("Details : [" +
+					    " HDFS : %s," +
+					    " MR-JH : %s" +
                         " YARN : %s]",
-//                persistence ? "set" :"not set",
-//                spark ? "set" :"not set",
                 hdfs ? "set" :"not set",
+                mapreduce ? "set" : "not set",
                 yarn ? "set" :"not set")
         );
         return defined;
@@ -52,16 +45,13 @@ public class PPRLCLusterCondition implements Condition {
     public boolean matches(ConditionContext ctx, AnnotatedTypeMetadata meta) {
         final Environment env = ctx.getEnvironment();
         return areAllDefined(
-//                env.getProperty("database.host"),
-//                env.getProperty("database.user"),
-//                env.getProperty("database.password"),
-//                env.getProperty("spark.master"),
                 env.getProperty("hadoop.namenode"),
-                env.getProperty("yarn.resourcemanager")
+                env.getProperty("yarn.resourcemanager"),
+                env.getProperty("mapred.jobhistory")
         );
     }
 
-    private static boolean isDefined ( final String str){
+    private static boolean isDefined (final String str){
         return str != null && !str.isEmpty();
     }
 

@@ -108,7 +108,7 @@
                             <name>pprl_shell</name>
                             <jvmSettings>
                                 <initialMemorySize>512m</initialMemorySize>
-                                <maxMemorySize>4g</maxMemorySize>
+                                <maxMemorySize>2g</maxMemorySize>
                                 <maxStackSize>256m</maxStackSize>
                                 <systemProperties>
                                     <systemProperty>64</systemProperty>

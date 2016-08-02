@@ -175,10 +175,10 @@ public class SimilarityMatrixTest {
     public void test5() throws IOException {
         SimilarityVectorFrequencies frequencies = SimilarityUtil.vectorFrequencies(records, fieldNames);
         Properties properties = frequencies.toProperties();
-        properties.store(new FileOutputStream(new File("sim_freqs.properties")),"Similarity Vector Frequencies");
+        properties.store(new FileOutputStream(new File("data/sim_freqs.properties")),"Similarity Vector Frequencies");
 
         Properties properties1 = new Properties();
-        properties1.load(new FileInputStream(new File("sim_freqs.properties")));
+        properties1.load(new FileInputStream(new File("data/sim_freqs.properties")));
         SimilarityVectorFrequencies frequencies1 = new SimilarityVectorFrequencies();
         frequencies1.fromProperties(properties1);
         assertEquals(frequencies,frequencies1);

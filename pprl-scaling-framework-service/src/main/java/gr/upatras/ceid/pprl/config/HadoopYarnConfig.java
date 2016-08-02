@@ -32,6 +32,9 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
     @Value("${yarn.mapreduce.framework}")
     private String yarnMapReduceFramework;
 
+    @Value("${local.resources}")
+    private String localResources;
+
     @Override
     public void configure(HadoopConfigConfigurer config) throws Exception {
         LOG.info("HDFS Namenode host : " +
@@ -43,12 +46,17 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
         LOG.info("MapReduce Job History host : " +
                 (isDefined(mapredJobHistory) ? mapredJobHistory : "Not provided"));
 
-
         config.fileSystemUri(String.format("hdfs://%s:8020", hadoopNamenode));
         config.resourceManagerAddress(String.format("%s:8032", yarnResourceManager));
         config.jobHistoryAddress(String.format("%s:19888",mapredJobHistory));
-        config.withProperties()
-                .property("mapreduce.framework.name", yarnMapReduceFramework);
+        config.withProperties().property("mapreduce.framework.name", yarnMapReduceFramework);
+        if(isDefined(localResources)) {
+            LOG.info("Local Resources : " + localResources);
+            if (localResources.contains(",")) {
+                for (String s : localResources.split(","))
+                config.withResources().resource(s);
+            } else config.withResources().resource(localResources);
+        }
     }
 
     @Bean(name = "hdfs")

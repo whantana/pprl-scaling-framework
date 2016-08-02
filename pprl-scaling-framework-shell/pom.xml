@@ -107,14 +107,15 @@
                             <mainClass>gr.upatras.ceid.pprl.shell.Main</mainClass>
                             <name>pprl_shell</name>
                             <jvmSettings>
-                                <initialMemorySize>512m</initialMemorySize>
-                                <maxMemorySize>2g</maxMemorySize>
+                                <initialMemorySize>256m</initialMemorySize>
+                                <maxMemorySize>1g</maxMemorySize>
                                 <maxStackSize>256m</maxStackSize>
                                 <systemProperties>
                                     <systemProperty>64</systemProperty>
                                     <systemProperty>yarn.resourcemanager=$PPRL_YARN_RM</systemProperty>
                                     <systemProperty>hadoop.namenode=$PPRL_HADOOP_NN</systemProperty>
                                     <systemProperty>mapred.jobhistory=$PPRL_MAPRED_JH</systemProperty>
+                                    <systemProperty>local.resources=$PPRL_LOCAL_CLUSTER_RESOURCES</systemProperty>
                                     <systemProperty>pprl.shell.log.dir=$BASEDIR/logs</systemProperty>
                                 </systemProperties>
                             </jvmSettings>

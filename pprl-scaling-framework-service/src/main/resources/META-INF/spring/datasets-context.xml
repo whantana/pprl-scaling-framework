@@ -8,8 +8,6 @@
        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
        http://www.springframework.org/schema/hadoop http://www.springframework.org/schema/hadoop/spring-hadoop.xsd">
 
-    <context:property-placeholder location="build.properties"/>
-
     <!-- Tool Runner configuration -->
     <hdp:tool-runner id="dblpXmlToAvroToolRunner"
                      configuration-ref="hadoopConfiguration"

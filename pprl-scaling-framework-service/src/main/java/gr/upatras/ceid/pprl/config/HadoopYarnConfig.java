@@ -32,9 +32,6 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
     @Value("${yarn.mapreduce.framework}")
     private String yarnMapReduceFramework;
 
-    @Value("${yarn.application.classpath}")
-    private String yarnApplicationClasspath;
-
     @Override
     public void configure(HadoopConfigConfigurer config) throws Exception {
         LOG.info("HDFS Namenode host : " +
@@ -43,8 +40,6 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
                 (isDefined(yarnResourceManager) ? yarnResourceManager : "Not provided"));
         LOG.info("YARN MapReduce Framework : " +
                 (isDefined(yarnMapReduceFramework) ? yarnMapReduceFramework : "Not provided"));
-        LOG.info("YARN Application Classpath : " +
-                (isDefined(yarnApplicationClasspath) ? yarnApplicationClasspath : "Not provided"));
         LOG.info("MapReduce Job History host : " +
                 (isDefined(mapredJobHistory) ? mapredJobHistory : "Not provided"));
 

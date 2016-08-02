@@ -23,12 +23,6 @@ public class ShellBannerProvider extends DefaultBannerProvider {
     @Value("${yarn.resourcemanager}")
     private String yarnResourceManager;
 
-    @Value("${spark.master}")
-    private String sparkMaster;
-
-    @Value("${database.host}")
-    private String dbHost;
-
     @Value("${build.version}")
     private String buildVersion;
 

@@ -47,9 +47,8 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
         config.fileSystemUri(String.format("hdfs://%s:8020", hadoopNamenode));
         config.resourceManagerAddress(String.format("%s:8032", yarnResourceManager));
         config.jobHistoryAddress(String.format("%s:19888",mapredJobHistory));
-        config.loadDefaults(false);
         config.withProperties()
-			.property("mapreduce.framework.name", yarnMapReduceFramework);
+                .property("mapreduce.framework.name", yarnMapReduceFramework);
     }
 
     @Bean(name = "hdfs")

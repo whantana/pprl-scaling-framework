@@ -63,6 +63,9 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
     @Conditional(PPRLCLusterCondition.class)
     @Autowired
     public FileSystem fileSystem(final org.apache.hadoop.conf.Configuration conf) throws IOException {
+        LOG.info("-START-HADOOP-CONFIGURATION---\n");
+        LOG.info(conf.toString());
+        LOG.info("-END-HADOOP-CONFIGURATION---\n");
         return FileSystem.get(conf);
     }
 

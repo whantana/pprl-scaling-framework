@@ -13,6 +13,7 @@ import org.springframework.data.hadoop.config.annotation.SpringHadoopConfigurerA
 import org.springframework.data.hadoop.config.annotation.builders.HadoopConfigConfigurer;
 
 import java.io.IOException;
+import java.util.Map;
 
 @Configuration
 @EnableHadoop
@@ -64,7 +65,9 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
     @Autowired
     public FileSystem fileSystem(final org.apache.hadoop.conf.Configuration conf) throws IOException {
         LOG.info("-START-HADOOP-CONFIGURATION---\n");
-        LOG.info(conf.toString());
+        for (Map.Entry<String, String> entry : conf) {
+            LOG.info(entry.getKey() + " = " + entry.getValue());
+        }
         LOG.info("-END-HADOOP-CONFIGURATION---\n");
         return FileSystem.get(conf);
     }

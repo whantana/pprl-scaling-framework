@@ -30,7 +30,7 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
     @Value("${resourcemanager.host}")
     private String resourcemanagerHost;
 
-    @Value("jobhistory.host")
+    @Value("${jobhistory.host}")
     private String jobhistoryHost;
 
     @Override

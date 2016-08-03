@@ -113,9 +113,9 @@
                                 <systemProperties>
                                     <systemProperty>64</systemProperty>
                                     <systemProperty>local.resources=$PPRL_LOCAL_RESOURCES</systemProperty>
-                                    <systemProperty>namenode.host=$PPRL_NAMENODE_HOST</systemProperty>
-                                    <systemProperty>resourcemanager.host=$PPRL_RESOURCEMANAGER_HOST</systemProperty>
-                                    <systemProperty>jobhistory.host=$PPRL_JOBHISTORY_HOST</systemProperty>
+                                    <!--<systemProperty>namenode.host=$PPRL_NAMENODE_HOST</systemProperty>-->
+                                    <!--<systemProperty>resourcemanager.host=$PPRL_RESOURCEMANAGER_HOST</systemProperty>-->
+                                    <!--<systemProperty>jobhistory.host=$PPRL_JOBHISTORY_HOST</systemProperty>-->
                                     <systemProperty>pprl.shell.log.dir=$BASEDIR/logs</systemProperty>
                                 </systemProperties>
                             </jvmSettings>

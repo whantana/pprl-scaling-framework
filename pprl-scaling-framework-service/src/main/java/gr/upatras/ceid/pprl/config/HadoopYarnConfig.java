@@ -47,24 +47,24 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
             }
         }
 
-        if(isDefined(namenodeHost)) {
-            final String fsUri = String.format("hdfs://%s:8020", namenodeHost);
-            LOG.info("FsUri : " + fsUri);
-            config.fileSystemUri(fsUri);
-
-        }
-
-        if(isDefined(resourcemanagerHost)) {
-            final String rmAddress = String.format("%s:8032", resourcemanagerHost);
-            LOG.info("Resource Manager Address : " + rmAddress);
-            config.resourceManagerAddress(rmAddress);
-        }
-
-        if(isDefined(jobhistoryHost)) {
-            final String jobHistoryAddress = String.format("%s:10020", jobhistoryHost);
-            LOG.info("MapReduce Job History Address : " + jobHistoryAddress);
-            config.jobHistoryAddress(jobHistoryAddress);
-        }
+//        if(isDefined(namenodeHost)) {
+//            final String fsUri = String.format("hdfs://%s:8020", namenodeHost);
+//            LOG.info("FsUri : " + fsUri);
+//            config.fileSystemUri(fsUri);
+//
+//        }
+//
+//        if(isDefined(resourcemanagerHost)) {
+//            final String rmAddress = String.format("%s:8032", resourcemanagerHost);
+//            LOG.info("Resource Manager Address : " + rmAddress);
+//            config.resourceManagerAddress(rmAddress);
+//        }
+//
+//        if(isDefined(jobhistoryHost)) {
+//            final String jobHistoryAddress = String.format("%s:10020", jobhistoryHost);
+//            LOG.info("MapReduce Job History Address : " + jobHistoryAddress);
+//            config.jobHistoryAddress(jobHistoryAddress);
+//        }
     }
 
     @Bean(name = "hdfs")

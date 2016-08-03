@@ -35,12 +35,15 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
                 }
             } else config.withResources().resource("file://"+localResources);
         }
+
     }
 
     @Bean(name = "hdfs")
     @Conditional(PPRLCLusterCondition.class)
     @Autowired
     public FileSystem fileSystem(final org.apache.hadoop.conf.Configuration conf) throws IOException {
+        for(Map.Entry<String,String> c : conf)
+            LOG.info(c.getKey() + " : " + c.getValue());
         return FileSystem.get(conf);
     }
 

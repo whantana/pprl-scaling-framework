@@ -18,7 +18,11 @@ public class PPRLCLusterCondition implements Condition {
     @Autowired
     @Bean(name="isClusterReady")
     public Boolean isClusterReady(final Environment env) {
-        return isDefined(env.getProperty("local.resources"));
+        return areAllDefined(
+                env.getProperty("namenode.host"),
+                env.getProperty("resourcemanager.host"),
+                env.getProperty("jobhistory.host")
+        );
     }
 
     public boolean matches(ConditionContext ctx, AnnotatedTypeMetadata meta) {

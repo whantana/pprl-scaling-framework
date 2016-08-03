@@ -112,10 +112,10 @@
                                 <maxStackSize>256m</maxStackSize>
                                 <systemProperties>
                                     <systemProperty>64</systemProperty>
-                                    <systemProperty>local.resources=$PPRL_LOCAL_CLUSTER_RESOURCES</systemProperty>
-                                    <systemProperty>namenode.host=$PPRL_LOCAL_CLUSTER_NAMENODE</systemProperty>
-                                    <systemProperty>resourcemanager.host=$PPRL_LOCAL_CLUSTER_RESOURCEMANAGER</systemProperty>
-                                    <systemProperty>jobhistory.host=$PPRL_LOCAL_CLUSTER_JOBHISTORY</systemProperty>
+                                    <systemProperty>local.resources=$PPRL_LOCAL_RESOURCES</systemProperty>
+                                    <systemProperty>namenode.host=$PPRL_NAMENODE_HOST</systemProperty>
+                                    <systemProperty>resourcemanager.host=$PPRL_RESOURCEMANAGER_HOST</systemProperty>
+                                    <systemProperty>jobhistory.host=$PPRL_JOBHISTORY_HOST</systemProperty>
                                     <systemProperty>pprl.shell.log.dir=$BASEDIR/logs</systemProperty>
                                 </systemProperties>
                             </jvmSettings>

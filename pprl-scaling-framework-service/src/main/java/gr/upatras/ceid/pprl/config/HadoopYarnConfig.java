@@ -30,10 +30,10 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
             LOG.info("Local Resources : " + localResources);
             if (localResources.contains(",")) {
                 for (String s : localResources.split(",")) {
-                    LOG.info("Loading " + s);
-                    config.withResources().resource(s);
+                    LOG.info("Loading file://" + s);
+                    config.withResources().resource("file://"+s);
                 }
-            } else config.withResources().resource(localResources);
+            } else config.withResources().resource("file://"+localResources);
         }
     }
 

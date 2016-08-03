@@ -19,20 +19,22 @@ public class PPRLCLusterCondition implements Condition {
     @Bean(name="isClusterReady")
     public Boolean isClusterReady(final Environment env) {
         return areAllDefined(
-                env.getProperty("local.resources"),
-                env.getProperty("namenode.host"),
-                env.getProperty("resourcemanager.host"),
-                env.getProperty("jobhistory.host")
+                env.getProperty("local.resources")
+//                ,
+//                env.getProperty("namenode.host"),
+//                env.getProperty("resourcemanager.host"),
+//                env.getProperty("jobhistory.host")
         );
     }
 
     public boolean matches(ConditionContext ctx, AnnotatedTypeMetadata meta) {
         final Environment env = ctx.getEnvironment();
         return areAllDefined(
-                env.getProperty("local.resources"),
-                env.getProperty("namenode.host"),
-                env.getProperty("resourcemanager.host"),
-                env.getProperty("jobhistory.host")
+                env.getProperty("local.resources")
+//                ,
+//                env.getProperty("namenode.host"),
+//                env.getProperty("resourcemanager.host"),
+//                env.getProperty("jobhistory.host")
         );
     }
 

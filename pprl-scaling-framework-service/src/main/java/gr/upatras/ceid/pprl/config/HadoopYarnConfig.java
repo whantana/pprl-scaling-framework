@@ -13,6 +13,7 @@ import org.springframework.data.hadoop.config.annotation.SpringHadoopConfigurerA
 import org.springframework.data.hadoop.config.annotation.builders.HadoopConfigConfigurer;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 
 @Configuration
@@ -38,11 +39,12 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
         if(isDefined(localResources)) {
             LOG.info("Local Resources : " + localResources);
             if (localResources.contains(",")) {
-                for (String s : localResources.split(",")) {
-                    LOG.info("Loading file://" + s);
-                    config.withResources().resource("file://"+s);
-                }
-            } else config.withResources().resource("file://"+localResources);
+                config.withResources().resources(
+                    Arrays.asList(localResources.split(","))
+                );
+            } else {
+                config.withResources().resource("file://"+ localResources);
+            }
         }
 
         if(isDefined(namenodeHost)) {

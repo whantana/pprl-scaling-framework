@@ -24,6 +24,15 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
     @Value("${local.resources}")
     private String localResources;
 
+    @Value("${namenode.host}")
+    private String namenodeHost;
+
+    @Value("${resourcemanager.host}")
+    private String resourcemanagerHost;
+
+    @Value("jobhistory.host")
+    private String jobhistoryHost;
+
     @Override
     public void configure(HadoopConfigConfigurer config) throws Exception {
         if(isDefined(localResources)) {
@@ -36,6 +45,24 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
             } else config.withResources().resource("file://"+localResources);
         }
 
+        if(isDefined(namenodeHost)) {
+            final String fsUri = String.format("hdfs://%s:8020", namenodeHost);
+            LOG.info("FsUri : " + fsUri);
+            config.fileSystemUri(fsUri);
+
+        }
+
+        if(isDefined(resourcemanagerHost)) {
+            final String rmAddress = String.format("%s:8032", resourcemanagerHost);
+            LOG.info("Resource Manager Address : " + rmAddress);
+            config.resourceManagerAddress(rmAddress);
+        }
+
+        if(isDefined(jobhistoryHost)) {
+            final String jobHistoryAddress = String.format("%s:10020", jobhistoryHost);
+            LOG.info("MapReduce Job History Address : " + jobHistoryAddress);
+            config.jobHistoryAddress(jobHistoryAddress);
+        }
     }
 
     @Bean(name = "hdfs")

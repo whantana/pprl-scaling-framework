@@ -23,7 +23,12 @@ public class PPRLCLusterCondition implements Condition {
 
     public boolean matches(ConditionContext ctx, AnnotatedTypeMetadata meta) {
         final Environment env = ctx.getEnvironment();
-        return isDefined(env.getProperty("local.resources"));
+        return areAllDefined(
+                env.getProperty("local.resources"),
+                env.getProperty("namenode.host"),
+                env.getProperty("resourcemanager.host"),
+                env.getProperty("jobhistory.host")
+        );
     }
 
     private static boolean isDefined (final String str){

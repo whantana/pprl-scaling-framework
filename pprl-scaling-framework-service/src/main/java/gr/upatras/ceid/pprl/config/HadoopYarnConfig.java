@@ -21,41 +21,18 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
 
     private static final Logger LOG = LoggerFactory.getLogger(HadoopYarnConfig.class);
 
-    @Value("${hadoop.namenode}")
-    private String hadoopNamenode;
-
-    @Value("${yarn.resourcemanager}")
-    private String yarnResourceManager;
-
-    @Value("${mapred.jobhistory}")
-    private String mapredJobHistory;
-
-    @Value("${yarn.mapreduce.framework}")
-    private String yarnMapReduceFramework;
-
     @Value("${local.resources}")
     private String localResources;
 
     @Override
     public void configure(HadoopConfigConfigurer config) throws Exception {
-        LOG.info("HDFS Namenode host : " +
-                (isDefined(hadoopNamenode) ? hadoopNamenode : "Not provided"));
-        LOG.info("YARN ResourceManager host : " +
-                (isDefined(yarnResourceManager) ? yarnResourceManager : "Not provided"));
-        LOG.info("YARN MapReduce Framework : " +
-                (isDefined(yarnMapReduceFramework) ? yarnMapReduceFramework : "Not provided"));
-        LOG.info("MapReduce Job History host : " +
-                (isDefined(mapredJobHistory) ? mapredJobHistory : "Not provided"));
-
-        config.fileSystemUri(String.format("hdfs://%s:8020", hadoopNamenode));
-        config.resourceManagerAddress(String.format("%s:8032", yarnResourceManager));
-        config.jobHistoryAddress(String.format("%s:19888",mapredJobHistory));
-        config.withProperties().property("mapreduce.framework.name", yarnMapReduceFramework);
         if(isDefined(localResources)) {
             LOG.info("Local Resources : " + localResources);
             if (localResources.contains(",")) {
-                for (String s : localResources.split(","))
-                config.withResources().resource(s);
+                for (String s : localResources.split(",")) {
+                    LOG.info("Loading " + s);
+                    config.withResources().resource(s);
+                }
             } else config.withResources().resource(localResources);
         }
     }
@@ -64,11 +41,6 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
     @Conditional(PPRLCLusterCondition.class)
     @Autowired
     public FileSystem fileSystem(final org.apache.hadoop.conf.Configuration conf) throws IOException {
-        LOG.info("-START-HADOOP-CONFIGURATION---");
-        for (Map.Entry<String, String> entry : conf) {
-            LOG.info(entry.getKey() + " = " + entry.getValue());
-        }
-        LOG.info("-END-HADOOP-CONFIGURATION---");
         return FileSystem.get(conf);
     }
 

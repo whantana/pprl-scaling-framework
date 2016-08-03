@@ -17,12 +17,6 @@ public class ShellBannerProvider extends DefaultBannerProvider {
     @Value("${user.name}")
     private String username;
 
-    @Value("${hadoop.namenode}")
-    private String hadoopNamenode;
-
-    @Value("${yarn.resourcemanager}")
-    private String yarnResourceManager;
-
     @Value("${build.version}")
     private String buildVersion;
 
@@ -47,14 +41,11 @@ public class ShellBannerProvider extends DefaultBannerProvider {
 	}
 
 	public String getWelcomeMessage() {
-        final StringBuilder sb = new StringBuilder("Welcome \"" + username + "\" to PPRL Framework CLI. ");
+        final StringBuilder sb = new StringBuilder("Welcome \"" + username + "\" to PPRL Framework CLI.");
+        sb.append("\n---\nYou can type \'help\' to get started.");
         sb.append(String.format("\n--\nUser directory : %s", userDirectory));
         if (!isClusterReady) return sb.toString();
-        sb.append(String.format("\nPPRL HDFS Site Namenode : %s", hadoopNamenode));
-        sb.append(String.format("\nPPRL YARN Site ResourceManager : %s", yarnResourceManager));
-//        sb.append(String.format("\nPPRL Spark Master : %s", sparkMaster));
-//        sb.append(String.format("\nPPRL Database Host : %s", dbHost));
-        sb.append("\n---\nYou can type \'help\' to get started.");
+        sb.append("\n--\nClient is hadoop-ready. Look for config.log");
         return sb.toString();
     }
 }

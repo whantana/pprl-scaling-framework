@@ -18,37 +18,12 @@ public class PPRLCLusterCondition implements Condition {
     @Autowired
     @Bean(name="isClusterReady")
     public Boolean isClusterReady(final Environment env) {
-        boolean defined = areAllDefined(
-                env.getProperty("hadoop.namenode"),
-				env.getProperty("mapred.jobhistory"),
-                env.getProperty("yarn.resourcemanager")
-        );
-
-
-        if(!defined) LOG.info(String.format("Application is not hadoop ready."));
-
-        boolean hdfs = isDefined(env.getProperty("hadoop.namenode"));
-        boolean yarn = isDefined(env.getProperty("yarn.resourcemanager"));
-		boolean mapreduce = isDefined(env.getProperty("apred.jobhistory"));
-
-        if(!defined) LOG.info(String.format("Details : [" +
-					    " HDFS : %s," +
-					    " MR-JH : %s" +
-                        " YARN : %s]",
-                hdfs ? "set" :"not set",
-                mapreduce ? "set" : "not set",
-                yarn ? "set" :"not set")
-        );
-        return defined;
+        return isDefined(env.getProperty("local.resources"));
     }
 
     public boolean matches(ConditionContext ctx, AnnotatedTypeMetadata meta) {
         final Environment env = ctx.getEnvironment();
-        return areAllDefined(
-                env.getProperty("hadoop.namenode"),
-                env.getProperty("yarn.resourcemanager"),
-                env.getProperty("mapred.jobhistory")
-        );
+        return isDefined(env.getProperty("local.resources"));
     }
 
     private static boolean isDefined (final String str){

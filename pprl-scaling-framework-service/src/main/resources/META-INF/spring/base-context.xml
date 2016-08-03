@@ -8,7 +8,7 @@
 
     <!-- property place holder -->
     <context:property-placeholder
-            location="classpath:hdfs.properties,yarn.properties,build.properties"
+            location="classpath:hadoop.properties,build.properties"
             ignore-unresolvable="true"/>
 
     <!-- component-scan the config package -->

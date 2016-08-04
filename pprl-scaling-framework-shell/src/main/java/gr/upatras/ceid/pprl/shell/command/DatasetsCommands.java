@@ -367,7 +367,7 @@ public class DatasetsCommands implements CommandMarker {
     }
 
     @CliCommand(value = "calc_data_stats", help = "Calculate usefull field statistics from hdfs data.")
-    public String command8(
+    public String command7(
             @CliOption(key = {"dataset_name"}, mandatory = true, help = "HDFS Dataset name.")
             final String name,
             @CliOption(key = {"uid"}, mandatory = true, help = "Unique field name.")
@@ -443,7 +443,7 @@ public class DatasetsCommands implements CommandMarker {
     }
 
     @CliCommand(value = "describe_data", help = "View schema description of HDFS data.")
-    public String command9(
+    public String command8(
             @CliOption(key = {"dataset_name"}, mandatory = true, help = "HDFS dataset name.")
             final String name
     ) {
@@ -465,7 +465,7 @@ public class DatasetsCommands implements CommandMarker {
 
 
     @CliCommand(value = "sample_data", help = "View a sample of HDFS data.")
-    public String command10(
+    public String command9(
             @CliOption(key = {"dataset_name"}, mandatory = true, help = "HDFS dataset name.")
             final String name,
             @CliOption(key = {"sample_dataset_name"}, mandatory = false, help = "(Optional) Name to save sample to HDFS.")
@@ -502,7 +502,7 @@ public class DatasetsCommands implements CommandMarker {
     }
 
     @CliCommand(value = "sort_data", help = "Sort HDFS data records by a selected field name.")
-    public String command11(
+    public String command10(
             @CliOption(key = {"dataset_name"}, mandatory = true, help = "HDFS dataset name.")
             final String name,
             @CliOption(key = {"sort_by"}, mandatory = true, help = "Fields to be used in sorting. Order matters. Sort by first field then second and so on.")

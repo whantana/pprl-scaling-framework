@@ -81,11 +81,9 @@ public class DblpXmlToAvroTool extends Configured implements Tool {
         AvroJob.setMapOutputKeySchema(job, DblpPublication.getClassSchema());
         job.setMapOutputValueClass(NullWritable.class);
 
-
         // setup output
         AvroKeyOutputFormat.setOutputPath(job,output);
         job.setOutputFormatClass(AvroKeyOutputFormat.class);
-        AvroKeyOutputFormat.setCompressOutput(job,false);
 
         // run job
         boolean success = job.waitForCompletion(true);

@@ -49,12 +49,24 @@ public class DblpXmlToAvroMapper extends Mapper<LongWritable, Text, AvroKey<Dblp
             final InputSource input = new InputSource(new ByteArrayInputStream(xmlString.getBytes()));
             Document doc = dBuilder.parse(input);
             doc.getDocumentElement().normalize();
+
             final DblpPublication dblpPublication = new DblpPublication();
             final Node node = doc.getDocumentElement().getFirstChild();
-            dblpPublication.setKey(((Element) node).getAttribute("key"));
-            dblpPublication.setAuthor(doc.getElementsByTagName("author").item(0).getTextContent());
-            dblpPublication.setTitle(doc.getElementsByTagName("title").item(0).getTextContent());
-            dblpPublication.setYear(doc.getElementsByTagName("year").item(0).getTextContent());
+
+            final String strKey = ((Element) node).getAttribute("key");
+            final Node authorNode = doc.getElementsByTagName("author").item(0);
+            final Node titleNode = doc.getElementsByTagName("title").item(0);
+            final Node yearNode = doc.getElementsByTagName("year").item(0);
+
+
+            final String author = (authorNode == null) ? "NULL" :  authorNode.getTextContent();
+            final String title = (titleNode == null) ? "NULL" :  titleNode.getTextContent();
+            final String year = (yearNode == null) ? "NULL" : yearNode.getTextContent();
+
+            dblpPublication.setKey(strKey);
+            dblpPublication.setAuthor(author);
+            dblpPublication.setTitle(title);
+            dblpPublication.setYear(year);
             context.write(new AvroKey<>(dblpPublication), NullWritable.get());
         } catch (SAXException e) {
             throw new IOException(e);

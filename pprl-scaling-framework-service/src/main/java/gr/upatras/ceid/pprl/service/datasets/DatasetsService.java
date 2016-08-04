@@ -9,6 +9,7 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -427,9 +428,17 @@ public class DatasetsService implements InitializingBean {
                     schemaPath);
 
             final Path inputPath = new Path(datasetPath,"xml");
-            LOG.info("Uploading XML path at : " + inputPath);
             hdfs.mkdirs(inputPath,permission);
-            hdfs.copyFromLocalFile(xmlPath, inputPath);
+            if(!xmlPath.toString().contains("hdfs://")) {
+                LOG.info("Uploading XML data from : " + xmlPath);
+                LOG.info("Uploading XML data to : " + inputPath);
+                hdfs.copyFromLocalFile(xmlPath, inputPath);
+            } else {
+                final Path destPath = new Path(inputPath,xmlPath.getName());
+                LOG.info("Copying XML data from : " + xmlPath);
+                LOG.info("Copying XML data to : " + destPath);
+                FileUtil.copy(hdfs,xmlPath,hdfs,destPath,false,true,hdfs.getConf());
+            }
 
             LOG.info("Runing tool:");
             runDblpXmlToAvroTool(inputPath, datasetAvroPath);

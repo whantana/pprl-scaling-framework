@@ -345,7 +345,7 @@ public class DatasetsCommands implements CommandMarker {
 
     @CliCommand(value = "import_dblp", help = "Import DBLP(xml) to the PPRL-site")
     public String command6(
-            @CliOption(key = {"xml"}, mandatory = true, help = "Local DBLP(xml) file.")
+            @CliOption(key = {"xml"}, mandatory = true, help = "Local or HDFS DBLP(xml) file.")
             final String xmlPathStr,
             @CliOption(key = {"dataset_name"}, mandatory = false, help = "(Optional) Name of the imported dataset. Default is \"dblp\".")
             String nameStr

@@ -29,7 +29,10 @@ public class DblpXmlToAvroTool extends Configured implements Tool {
 
     private static final String JOB_DESCRIPTION = "DBLP XML file to Avro";
 
-    private static final String[] TAGS = new String[]{"article","phdthesis","mastersthesis"};
+    private static final String[] TAGS = new String[]{
+            "article","inproceedings","proceedings",
+            "book","incollection","www",
+            "phdthesis","mastersthesis"};
 
     /**
      * Run the tool.

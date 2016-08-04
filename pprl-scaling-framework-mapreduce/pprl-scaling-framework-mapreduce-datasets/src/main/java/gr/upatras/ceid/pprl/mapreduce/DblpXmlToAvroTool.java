@@ -80,6 +80,7 @@ public class DblpXmlToAvroTool extends Configured implements Tool {
         AvroKeyOutputFormat.setOutputPath(job,output);
         job.setOutputFormatClass(AvroKeyOutputFormat.class);
 
+
         // run job
         boolean success = job.waitForCompletion(true);
         if(success) removeSuccessFile(FileSystem.get(conf),output);

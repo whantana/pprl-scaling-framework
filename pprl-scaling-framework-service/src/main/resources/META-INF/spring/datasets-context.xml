@@ -14,14 +14,16 @@
                      jar="file://${app.repo}/pprl-scaling-framework-mapreduce-datasets-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.DblpXmlToAvroTool"
                      close-fs="false"
-                     libs="file://${app.repo}/avro-mapred-${avro.version}-hadoop2.jar"/>
+                     libs="file://${app.repo}/avro-${avro.version}.jar,
+                           file://${app.repo}/avro-mapred-${avro.version}-hadoop2.jar"/>
 
     <hdp:tool-runner id="qGramCountingToolRunner"
                      configuration-ref="hadoopConfiguration"
                      jar="file://${app.repo}/pprl-scaling-framework-mapreduce-datasets-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.QGramCountingTool"
                      close-fs="false"
-                     libs="file://${app.repo}/avro-mapred-${avro.version}-hadoop2.jar"/>
+                     libs="file://${app.repo}/avro-${avro.version}.jar,
+                           file://${app.repo}/avro-mapred-${avro.version}-hadoop2.jar"/>
 
     <hdp:tool-runner id="sortAvroToolRunner"
                      configuration-ref="hadoopConfiguration"

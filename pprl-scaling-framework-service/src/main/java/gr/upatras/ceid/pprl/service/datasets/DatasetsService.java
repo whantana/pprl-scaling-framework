@@ -663,7 +663,7 @@ public class DatasetsService implements InitializingBean {
             }
             reader.close();
 
-            return (GenericRecord[]) recordList.toArray();
+            return recordList.toArray(new GenericRecord[size]);
         } catch (IOException | DatasetException e) {
             LOG.error(e.getMessage(),e);
             throw e;

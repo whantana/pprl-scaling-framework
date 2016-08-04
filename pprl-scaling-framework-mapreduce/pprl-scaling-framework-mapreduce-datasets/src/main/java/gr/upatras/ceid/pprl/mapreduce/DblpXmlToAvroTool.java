@@ -8,6 +8,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
@@ -75,11 +76,13 @@ public class DblpXmlToAvroTool extends Configured implements Tool {
         // setup mapper
         job.setMapperClass(DblpXmlToAvroMapper.class);
         AvroJob.setMapOutputKeySchema(job, DblpPublication.getClassSchema());
+        job.setMapOutputValueClass(NullWritable.class);
+
 
         // setup output
         AvroKeyOutputFormat.setOutputPath(job,output);
         job.setOutputFormatClass(AvroKeyOutputFormat.class);
-
+        AvroKeyOutputFormat.setCompressOutput(job,false);
 
         // run job
         boolean success = job.waitForCompletion(true);

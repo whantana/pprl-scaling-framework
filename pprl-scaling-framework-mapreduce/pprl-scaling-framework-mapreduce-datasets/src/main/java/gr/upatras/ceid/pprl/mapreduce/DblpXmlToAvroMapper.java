@@ -55,7 +55,7 @@ public class DblpXmlToAvroMapper extends Mapper<LongWritable, Text, AvroKey<Dblp
             dblpPublication.setAuthor(doc.getElementsByTagName("author").item(0).getTextContent());
             dblpPublication.setTitle(doc.getElementsByTagName("title").item(0).getTextContent());
             dblpPublication.setYear(doc.getElementsByTagName("year").item(0).getTextContent());
-            context.write(new AvroKey<DblpPublication>(dblpPublication), NullWritable.get());
+            context.write(new AvroKey<>(dblpPublication), NullWritable.get());
         } catch (SAXException e) {
             throw new IOException(e);
         }

@@ -12,9 +12,6 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
 
 @Configuration
 public class PPRLCLusterCondition implements Condition {
-
-    private static final Logger LOG = LoggerFactory.getLogger(PPRLCLusterCondition.class);
-
     @Autowired
     @Bean(name="isClusterReady")
     public Boolean isClusterReady(final Environment env) {

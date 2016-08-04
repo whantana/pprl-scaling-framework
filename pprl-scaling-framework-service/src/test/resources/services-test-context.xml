@@ -46,7 +46,7 @@
 
     <hdp:tool-runner id="hammingLshBlockingToolRunner"
                      jar="file://${build.test.dir}/pprl-scaling-framework-mapreduce-blocking-${build.version}.jar"
-                     tool-class="gr.upatras.ceid.pprl.mapreduce.HammingLSHBlockingTool"
+                     tool-class="gr.upatras.ceid.pprl.mapreduce.HammingLSHFPSToolV0"
                      close-fs="false"
                      libs="file://${build.test.dir}/avro-${avro.version}.jar,
 						   file://${build.test.dir}/avro-mapred-${avro.version}-hadoop2.jar,
@@ -54,7 +54,7 @@
 
     <hdp:tool-runner id="hammingLshFpsBlockingToolRunner"
                      jar="file://${build.test.dir}/pprl-scaling-framework-mapreduce-blocking-${build.version}.jar"
-                     tool-class="gr.upatras.ceid.pprl.mapreduce.HammingLSHFPSBlockingTool"
+                     tool-class="gr.upatras.ceid.pprl.mapreduce.HammingLSHFPSToolV1"
                      close-fs="false"
                      libs="file://${build.test.dir}/avro-${avro.version}.jar,
 						   file://${build.test.dir}/avro-mapred-${avro.version}-hadoop2.jar,
@@ -62,7 +62,7 @@
 
     <hdp:tool-runner id="hammingLshFpsBlockingV1ToolRunner"
                      jar="file://${build.test.dir}/pprl-scaling-framework-mapreduce-blocking-${build.version}.jar"
-                     tool-class="gr.upatras.ceid.pprl.mapreduce.HammingLSHFPSBlockingV1Tool"
+                     tool-class="gr.upatras.ceid.pprl.mapreduce.HammingLSHFPSToolV2"
                      close-fs="false"
                      libs="file://${build.test.dir}/avro-${avro.version}.jar,
 						   file://${build.test.dir}/avro-mapred-${avro.version}-hadoop2.jar,

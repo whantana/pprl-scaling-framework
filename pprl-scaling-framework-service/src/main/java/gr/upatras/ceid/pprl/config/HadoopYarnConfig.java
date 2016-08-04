@@ -15,7 +15,6 @@ import org.springframework.data.hadoop.config.annotation.builders.HadoopConfigCo
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Properties;
 
 @Configuration
 @EnableHadoop
@@ -47,7 +46,8 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
                 config.withResources().resource(localResources);
             }
         }
-        config.withProperties().property("mapreduce.job.user.classpath.first","true");
+        config.withProperties()
+                .property("mapreduce.job.user.classpath.first","true");
 
         if(isDefined(namenodeHost)) {
             final String fsUri = String.format("hdfs://%s:8020", namenodeHost);

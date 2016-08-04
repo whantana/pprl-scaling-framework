@@ -40,14 +40,6 @@ public class LocalDatasetsService implements InitializingBean {
     @Autowired
     private FileSystem localFs;
 
-    public FileSystem getLocalFs() {
-        return localFs;
-    }
-
-    public void setLocalFS(FileSystem localFs) {
-        this.localFs = localFs;
-    }
-
     /**
      * Retrieve and returns directories of a datase on the local working directory.
      *
@@ -147,10 +139,7 @@ public class LocalDatasetsService implements InitializingBean {
         try{
             final Schema schema = DatasetsUtil.loadSchemaFromFSPath(localFs, schemaPath);
             return loadDatasetRecords(avroPaths,schema);
-        } catch (DatasetException e) {
-            LOG.error(e.getMessage(),e);
-            throw e;
-        } catch (IOException e) {
+        } catch (DatasetException | IOException e) {
             LOG.error(e.getMessage(),e);
             throw e;
         }
@@ -277,10 +266,7 @@ public class LocalDatasetsService implements InitializingBean {
         try {
             LOG.info("Loading schema from {}.",schemaPath);
             return DatasetsUtil.loadSchemaFromFSPath(localFs,schemaPath);
-        } catch (DatasetException e) {
-            LOG.error(e.getMessage(),e);
-            throw e;
-        } catch (IOException e) {
+        } catch (DatasetException | IOException e) {
             LOG.error(e.getMessage(),e);
             throw e;
         }
@@ -299,10 +285,7 @@ public class LocalDatasetsService implements InitializingBean {
         try {
             LOG.info("Saving schema to {}.",schemaPath);
             DatasetsUtil.saveSchemaToFSPath(localFs, schema, schemaPath);
-        } catch (DatasetException e) {
-            LOG.error(e.getMessage(),e);
-            throw e;
-        } catch (IOException e) {
+        } catch (DatasetException | IOException e) {
             LOG.error(e.getMessage(),e);
             throw e;
         }
@@ -380,10 +363,7 @@ public class LocalDatasetsService implements InitializingBean {
             final Path path = new Path(basePath,name + ".properties");
             saveStats(path,statistics);
             return path;
-        } catch (IOException e) {
-            LOG.error(e.getMessage(),e);
-            throw e;
-        } catch (DatasetException e) {
+        } catch (IOException | DatasetException e) {
             LOG.error(e.getMessage(),e);
             throw e;
         }
@@ -412,10 +392,7 @@ public class LocalDatasetsService implements InitializingBean {
             DatasetStatistics statistics = new DatasetStatistics();
             statistics.fromProperties(properties);
             return statistics;
-        } catch (IOException e) {
-            LOG.error(e.getMessage(),e);
-            throw e;
-        } catch (DatasetException e) {
+        } catch (IOException | DatasetException e) {
             LOG.error(e.getMessage(),e);
             throw e;
         }
@@ -440,10 +417,7 @@ public class LocalDatasetsService implements InitializingBean {
             final Schema schema = DatasetsUtil.loadSchemaFromFSPath(localFs, schemaPath);
             final GenericRecord[] records = DatasetsUtil.loadAvroRecordsFromFSPaths(localFs,schema,avroPaths);
             return DatasetsUtil.sampleDataset(records,sampleSize);
-        } catch (DatasetException e) {
-            LOG.error(e.getMessage(),e);
-            throw e;
-        } catch (IOException e) {
+        } catch (DatasetException | IOException e) {
             LOG.error(e.getMessage(),e);
             throw e;
         }

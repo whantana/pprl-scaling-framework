@@ -23,7 +23,6 @@ import org.springframework.stereotype.Component;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 
 @Component
 public class BlockingCommands implements CommandMarker {
@@ -46,8 +45,6 @@ public class BlockingCommands implements CommandMarker {
     @Qualifier("localBlockingService")
     private LocalBlockingService lbs;
 
-    private List<String> BLOCKING_SCHEMES = BlockingUtil.SCHEME_NAMES;
-
 
     @CliAvailabilityIndicator(value = {"list_supported_blocking_schemes"})
     public boolean availability0() { return true; }
@@ -64,7 +61,7 @@ public class BlockingCommands implements CommandMarker {
     public String command0() {
         LOG.info("Supported blocking schemes : ");
         int i = 1;
-        for(String methodName: BLOCKING_SCHEMES) {
+        for(String methodName: BlockingUtil.SCHEME_NAMES) {
             LOG.info("\t{}. {}",i,methodName);
             i++;
         }
@@ -243,65 +240,77 @@ public class BlockingCommands implements CommandMarker {
             LOG.info("\tSimilarity method name : {}",similarityMethodName);
             LOG.info("\tSimilarity threshold : {}",similarityThreshold);
 
-            if(blockingSchemeName.equals("HLSH_MR")) {
-                final int L = CommandUtil.retrieveInt(hlshLStr,32);
-                final int K = CommandUtil.retrieveInt(hlshKStr,5);
-                final short C = CommandUtil.retrieveShort(hlshCStr, (short) 2);
-                final int[] R = CommandUtil.retrieveInts(reducersString);
-                if(R.length != 3) throw new IllegalArgumentException("This job consists of 3 sub-jobs and requires" +
-                        " to define exactly 3 reduer numbers.");
-                LOG.info("\tHLSH Blocking Groups (L) : {}",L);
-                LOG.info("\tHLSH Blocking Hash Values (K) : {}",K);
-                LOG.info("\tCollision Limit (C) : {}",C);
-                LOG.info("\tJob Reducers : {}",Arrays.toString(R));
-                LOG.info("\n");
-                bs.runHammingLSHBlockingToolRunner(
-                        aliceAvroPath,aliceSchemaPath,aliceUidFieldName,
-                        bobAvroPAth,bobSchemaPath,bobUidFieldName,
-                        blockingName,
-                        L, K, C,
-						similarityMethodName, similarityThreshold,
-                        R[0],R[1],R[2]);
+            switch (blockingSchemeName) {
+                case "HLSH_FPS_MR_v0": {
+                    final int L = CommandUtil.retrieveInt(hlshLStr, 32);
+                    final int K = CommandUtil.retrieveInt(hlshKStr, 5);
+                    final short C = CommandUtil.retrieveShort(hlshCStr, (short) 2);
+                    final int[] R = CommandUtil.retrieveInts(reducersString);
+                    if (R.length != 3)
+                        throw new IllegalArgumentException("This job consists of 3 sub-jobs and requires" +
+                                " to define exactly 3 reduer numbers.");
+                    LOG.info("\tHLSH Blocking Groups (L) : {}", L);
+                    LOG.info("\tHLSH Blocking Hash Values (K) : {}", K);
+                    LOG.info("\tCollision Limit (C) : {}", C);
+                    LOG.info("\tJob Reducers : {}", Arrays.toString(R));
+                    LOG.info("\n");
+                    bs.runHammingLSHBlockingToolRunner(
+                            aliceAvroPath, aliceSchemaPath, aliceUidFieldName,
+                            bobAvroPAth, bobSchemaPath, bobUidFieldName,
+                            blockingName,
+                            L, K, C,
+                            similarityMethodName, similarityThreshold,
+                            R[0], R[1], R[2]);
 
-            } else if(blockingSchemeName.equals("HLSH_FPS_MR")) {
-                final int L = CommandUtil.retrieveInt(hlshLStr, 32);
-                final int K = CommandUtil.retrieveInt(hlshKStr, 5);
-                final short C = CommandUtil.retrieveShort(hlshCStr, (short) 2);
-                final int[] R = CommandUtil.retrieveInts(reducersString);
-                if (R.length != 3) throw new IllegalArgumentException("This job consists of 3 sub-jobs and requires" +
-                        " to define exactly 3 reducer numbers.");
-                LOG.info("\tHLSH Blocking Groups (L) : {}", L);
-                LOG.info("\tHLSH Blocking Hash Values (K) : {}", K);
-                LOG.info("\tFPS Collision Limit (C) : {}", C);
-                LOG.info("\tJob Reducers : {}", Arrays.toString(R));
-                LOG.info("\n");
-                bs.runHammingLSHFPSBlockingToolRuner(
-                        aliceAvroPath, aliceSchemaPath, aliceUidFieldName,
-                        bobAvroPAth, bobSchemaPath, bobUidFieldName,
-                        blockingName,
-                        L, K, C,
-                        similarityMethodName, similarityThreshold,
-                        R[0], R[1], R[2]);
-            } else if(blockingSchemeName.equals("HLSH_FPS_MR_V1")) {
-                final int L = CommandUtil.retrieveInt(hlshLStr, 32);
-                final int K = CommandUtil.retrieveInt(hlshKStr, 5);
-                final short C = CommandUtil.retrieveShort(hlshCStr, (short) 2);
-                final int[] R = CommandUtil.retrieveInts(reducersString);
-                if (R.length != 2) throw new IllegalArgumentException("This job consists of 2 sub-jobs and requires" +
-                        " to define exactly 2 reducer numbers.");
-                LOG.info("\tHLSH Blocking Groups (L) : {}", L);
-                LOG.info("\tHLSH Blocking Hash Values (K) : {}", K);
-                LOG.info("\tFPS Collision Limit (C) : {}", C);
-                LOG.info("\tJob Reducers : {}", Arrays.toString(R));
-                LOG.info("\n");
-                bs.runHammingLSHFPSBlockingV1ToolRuner(
-                        aliceAvroPath, aliceSchemaPath, aliceUidFieldName,
-                        bobAvroPAth, bobSchemaPath, bobUidFieldName,
-                        blockingName,
-                        L, K, C,
-                        similarityMethodName, similarityThreshold,
-                        R[0], R[1]);
-            } else throw new UnsupportedOperationException("\"" + blockingSchemeName + "\" is not implemented yet.");
+                    break;
+                }
+                case "HLSH_FPS_MR_v1": {
+                    final int L = CommandUtil.retrieveInt(hlshLStr, 32);
+                    final int K = CommandUtil.retrieveInt(hlshKStr, 5);
+                    final short C = CommandUtil.retrieveShort(hlshCStr, (short) 2);
+                    final int[] R = CommandUtil.retrieveInts(reducersString);
+                    if (R.length != 3)
+                        throw new IllegalArgumentException("This job consists of 3 sub-jobs and requires" +
+                                " to define exactly 3 reducer numbers.");
+                    LOG.info("\tHLSH Blocking Groups (L) : {}", L);
+                    LOG.info("\tHLSH Blocking Hash Values (K) : {}", K);
+                    LOG.info("\tFPS Collision Limit (C) : {}", C);
+                    LOG.info("\tJob Reducers : {}", Arrays.toString(R));
+                    LOG.info("\n");
+                    bs.runHammingLSHFPSBlockingToolRuner(
+                            aliceAvroPath, aliceSchemaPath, aliceUidFieldName,
+                            bobAvroPAth, bobSchemaPath, bobUidFieldName,
+                            blockingName,
+                            L, K, C,
+                            similarityMethodName, similarityThreshold,
+                            R[0], R[1], R[2]);
+                    break;
+                }
+                case "HLSH_FPS_MR_v2": {
+                    final int L = CommandUtil.retrieveInt(hlshLStr, 32);
+                    final int K = CommandUtil.retrieveInt(hlshKStr, 5);
+                    final short C = CommandUtil.retrieveShort(hlshCStr, (short) 2);
+                    final int[] R = CommandUtil.retrieveInts(reducersString);
+                    if (R.length != 2)
+                        throw new IllegalArgumentException("This job consists of 2 sub-jobs and requires" +
+                                " to define exactly 2 reducer numbers.");
+                    LOG.info("\tHLSH Blocking Groups (L) : {}", L);
+                    LOG.info("\tHLSH Blocking Hash Values (K) : {}", K);
+                    LOG.info("\tFPS Collision Limit (C) : {}", C);
+                    LOG.info("\tJob Reducers : {}", Arrays.toString(R));
+                    LOG.info("\n");
+                    bs.runHammingLSHFPSBlockingV1ToolRuner(
+                            aliceAvroPath, aliceSchemaPath, aliceUidFieldName,
+                            bobAvroPAth, bobSchemaPath, bobUidFieldName,
+                            blockingName,
+                            L, K, C,
+                            similarityMethodName, similarityThreshold,
+                            R[0], R[1]);
+                    break;
+                }
+                default:
+                    throw new UnsupportedOperationException("\"" + blockingSchemeName + "\" is not implemented yet.");
+            }
 
             return "DONE";
         } catch (Exception e) {

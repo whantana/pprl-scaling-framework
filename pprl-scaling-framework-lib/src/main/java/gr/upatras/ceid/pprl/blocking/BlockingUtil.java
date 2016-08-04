@@ -16,9 +16,9 @@ public class BlockingUtil {
     public static final List<String> SCHEME_NAMES = new ArrayList<String>(); // Available Encoding Schemes
     static {
         SCHEME_NAMES.add("HLSH_FPS");
-        SCHEME_NAMES.add("HLSH_MR");
-        SCHEME_NAMES.add("HLSH_FPS_MR");
-        SCHEME_NAMES.add("HLSH_FPS_MR_V1");
+        SCHEME_NAMES.add("HLSH_FPS_MR_v0");
+        SCHEME_NAMES.add("HLSH_FPS_MR_v1");
+        SCHEME_NAMES.add("HLSH_FPS_MR_v2");
     }
 
     /**

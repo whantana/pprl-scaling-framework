@@ -28,11 +28,11 @@ import java.util.TreeMap;
 import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.*;
 
 /**
- * Hamming LSH-FPS Blocking V1 tool class.
+ * Hamming LSH-FPS v2 tool class.
  */
-public class HammingLSHFPSBlockingV1Tool  extends Configured implements Tool {
+public class HammingLSHFPSToolV2 extends Configured implements Tool {
 
-    private static final Logger LOG = LoggerFactory.getLogger(HammingLSHFPSBlockingV1Tool.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HammingLSHFPSToolV2.class);
 
     private static final String JOB_1_DESCRIPTION = "Generate Bob Blocking buckets";
     private static final String JOB_2_DESCRIPTION = "Find Matched Pairs (FPS).";
@@ -45,7 +45,7 @@ public class HammingLSHFPSBlockingV1Tool  extends Configured implements Tool {
             for (int i = 0; i < args.length; i++) {
                 LOG.error("args[{}] = {}", i, args[i]);
             }
-            LOG.error("Usage: HammingLSHFPSBlockingV1Tool " +
+            LOG.error("Usage: HammingLSHFPSToolV2 " +
                     "<alice-avro-path> <alice-schema-path> <alice-uid-field-name> " +
                     "<bob-avro-path> <bob-schema-path> <bob-uid-field-name> " +
                     "<bob-buckets-path> <matched-pairs-path> <stats-path>" +
@@ -87,7 +87,7 @@ public class HammingLSHFPSBlockingV1Tool  extends Configured implements Tool {
         final Schema bobEncodingSchema = DatasetsUtil.loadSchemaFromFSPath(fs, bobSchemaPath);
         final BloomFilterEncoding bobEncoding = BloomFilterEncodingUtil.setupNewInstance(bobEncodingSchema);
         final HammingLSHBlocking blocking = new HammingLSHBlocking(L,K,aliceEncoding,bobEncoding);
-        final Map<String,Long> stats = new TreeMap<String,Long>();
+        final Map<String,Long> stats = new TreeMap<>();
 
 
         conf.set(CommonKeys.ALICE_SCHEMA,aliceEncodingSchema.toString());
@@ -111,7 +111,7 @@ public class HammingLSHFPSBlockingV1Tool  extends Configured implements Tool {
                 L, K, R1);
         LOG.info("Running.1 : {}",description1);
         final Job job1 = Job.getInstance(conf);
-        job1.setJarByClass(HammingLSHFPSBlockingV1Tool.class);
+        job1.setJarByClass(HammingLSHFPSToolV2.class);
         job1.setJobName(description1);
         job1.setNumReduceTasks(R1);
         job1.setSpeculativeExecution(false);
@@ -176,7 +176,7 @@ public class HammingLSHFPSBlockingV1Tool  extends Configured implements Tool {
                 L, K, C);
         LOG.info("Running.2 : {}",description2);
         final Job job2 = Job.getInstance(conf);
-        job2.setJarByClass(HammingLSHFPSBlockingV1Tool.class);
+        job2.setJarByClass(HammingLSHFPSToolV2.class);
         job2.setJobName(description2);
         job2.setNumReduceTasks(R2);
         job2.setSpeculativeExecution(false);
@@ -228,7 +228,7 @@ public class HammingLSHFPSBlockingV1Tool  extends Configured implements Tool {
      * @throws Exception
      */
     public static void main(String[] args) throws Exception {
-        int res = ToolRunner.run(new HammingLSHBlockingTool(), args);
+        int res = ToolRunner.run(new HammingLSHFPSToolV0(), args);
         System.exit(res);
     }
 }

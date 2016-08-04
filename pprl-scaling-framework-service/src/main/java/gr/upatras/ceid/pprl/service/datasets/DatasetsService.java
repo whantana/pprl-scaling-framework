@@ -21,6 +21,8 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.util.SortedSet;
 
@@ -235,11 +237,10 @@ public class DatasetsService implements InitializingBean {
                 hdfs.setPermission(dest, permission);
             }
 
-            final Path src = schemaPath;
             final Path dest = new Path(destSchemaPath,schemaPath.getName());
             LOG.info("Uploading 1 avro schema file.");
-            LOG.info("\tUploading {} to {}.", src, dest);
-            hdfs.copyFromLocalFile(src, dest);
+            LOG.info("\tUploading {} to {}.", schemaPath, dest);
+            hdfs.copyFromLocalFile(schemaPath, dest);
             return destBasePath;
         } catch (IOException e) {
             LOG.error(e.getMessage(),e);
@@ -328,6 +329,13 @@ public class DatasetsService implements InitializingBean {
         }
     }
 
+    public Schema loadSchema(final String name)
+            throws IOException, DatasetException {
+        final Path basePath = retrieveDirectories(name)[2];
+        return loadSchema(new Path(basePath,String.format("%s.avsc",name)));
+    }
+
+
     /**
      * Load schema.
      *
@@ -355,10 +363,7 @@ public class DatasetsService implements InitializingBean {
         try {
             LOG.info("Load schema from {}.",schemaPath);
             return DatasetsUtil.loadSchemaFromFSPath(hdfs,schemaPath);
-        } catch (DatasetException e) {
-            LOG.error(e.getMessage(),e);
-            throw e;
-        } catch (IOException e) {
+        } catch (DatasetException | IOException e) {
             LOG.error(e.getMessage(),e);
             throw e;
         }
@@ -377,10 +382,7 @@ public class DatasetsService implements InitializingBean {
         try {
             LOG.info("Saving schema to {}.",schemaPath);
             DatasetsUtil.saveSchemaToFSPath(hdfs, schema, schemaPath);
-        } catch (DatasetException e) {
-            LOG.error(e.getMessage(),e);
-            throw e;
-        } catch (IOException e) {
+        } catch (DatasetException | IOException e) {
             LOG.error(e.getMessage(),e);
             throw e;
         }
@@ -429,11 +431,10 @@ public class DatasetsService implements InitializingBean {
             hdfs.mkdirs(inputPath,permission);
             hdfs.copyFromLocalFile(xmlPath, inputPath);
 
-            final Path outputPath = datasetAvroPath;
             LOG.info("Runing tool:");
-            runDblpXmlToAvroTool(inputPath,outputPath);
+            runDblpXmlToAvroTool(inputPath, datasetAvroPath);
 
-            hdfs.setPermission(outputPath, permission);
+            hdfs.setPermission(datasetAvroPath, permission);
 
             return datasetPath;
         } catch (Exception e) {
@@ -568,10 +569,7 @@ public class DatasetsService implements InitializingBean {
             DatasetStatistics statistics = new DatasetStatistics();
             statistics.fromProperties(properties);
             return statistics;
-        } catch (IOException e) {
-            LOG.error(e.getMessage(),e);
-            throw e;
-        } catch (DatasetException e) {
+        } catch (IOException | DatasetException e) {
             LOG.error(e.getMessage(),e);
             throw e;
         }
@@ -624,10 +622,49 @@ public class DatasetsService implements InitializingBean {
             writer.close();
 
             return sampleBasePath;
-        } catch (IOException e) {
+        } catch (IOException | DatasetException e) {
             LOG.error(e.getMessage(),e);
             throw e;
-        } catch (DatasetException e) {
+        }
+    }
+
+    /**
+     * Sample a dataset.
+     *
+     * @param datasetName a dataset name.
+     * @param size size of sample
+     * @return a sample records array of a dataset.
+     * @throws IOException
+     * @throws DatasetException
+     */
+    public GenericRecord[] sampleDataset(final String datasetName,
+                                         int size)
+            throws IOException, DatasetException {
+        try {
+            LOG.info("Sampling {} records from dataset {}.",size, datasetName);
+
+            final Path[] datasetDirectories = retrieveDirectories(datasetName);
+            final Path datasetAvroPath = datasetDirectories[1];
+            final Path datasetSchemaPath = retrieveSchemaPath(datasetDirectories[2]);
+            final Schema schema = loadSchema(datasetSchemaPath);
+            final List<GenericRecord> recordList = new ArrayList<>();
+
+            final DatasetsUtil.DatasetRecordReader reader =
+                    new DatasetsUtil.DatasetRecordReader(hdfs, schema, datasetAvroPath);
+            int sampled = 0;
+            final SecureRandom RANDOM = new SecureRandom();
+
+            while (reader.hasNext() && sampled < size) {
+                final GenericRecord record = reader.next();
+                if(RANDOM.nextBoolean()) {
+                    recordList.add(record);
+                    sampled++;
+                }
+            }
+            reader.close();
+
+            return (GenericRecord[]) recordList.toArray();
+        } catch (IOException | DatasetException e) {
             LOG.error(e.getMessage(),e);
             throw e;
         }
@@ -660,9 +697,6 @@ public class DatasetsService implements InitializingBean {
                     sortedAvroPath, sortedSchemaPath, partitions, fieldNames);
 
             return sortedBasePath;
-        } catch (IOException e) {
-            LOG.error(e.getMessage(),e);
-            throw e;
         } catch (Exception e) {
             LOG.error(e.getMessage(),e);
             throw e;
@@ -744,10 +778,7 @@ public class DatasetsService implements InitializingBean {
 
             hdfs.delete(inputAvroPath,true);
             hdfs.rename(tmp,inputAvroPath);
-        }  catch (IOException e) {
-            LOG.error(e.getMessage(),e);
-            throw e;
-        } catch (DatasetException e) {
+        }  catch (IOException | DatasetException e) {
             LOG.error(e.getMessage(),e);
             throw e;
         }

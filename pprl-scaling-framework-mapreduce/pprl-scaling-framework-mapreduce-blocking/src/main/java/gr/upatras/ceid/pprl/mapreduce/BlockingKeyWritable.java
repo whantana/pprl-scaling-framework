@@ -60,6 +60,7 @@ public class BlockingKeyWritable implements WritableComparable<BlockingKeyWritab
 
             if (blockingGroupId != that.blockingGroupId) return false;
             if (datasetId != that.datasetId) return false;
+
             return !(hash != null ? !hash.equals(that.hash) : that.hash != null);
         }
         return false;

@@ -221,37 +221,6 @@ public class DatasetsCommands implements CommandMarker {
         }
     }
 
-    @CliCommand(value = "upload_local_data", help = "Upload local data to the PPRL-site hdfs cluster.")
-    public String command3(
-            @CliOption(key = {"avro"}, mandatory = true, help = "Local data avro files (comma separated) or including directory.")
-            final String avroStr,
-            @CliOption(key = {"schema"}, mandatory = true, help = "Local schema avro file.")
-            final String schemaStr,
-            @CliOption(key = {"dataset_name"}, mandatory = true, help = "Name of the dataset. Will be stored at hdfs://users/${USER.HOME}/${name}")
-            final String name
-    ) {
-        try{
-            final Path schemaPath = CommandUtil.retrievePath(schemaStr);
-            final Path[] avroPaths = CommandUtil.retrievePaths(avroStr);
-
-            LOG.info("Uploading local data to hdfs :");
-            LOG.info("\tSelected data files : {}", Arrays.toString(avroPaths));
-            LOG.info("\tSelected schema file : {}", schemaPath);
-            LOG.info("\tName : {}",name);
-            LOG.info("\n");
-
-            final Path uploadedPath = ds.uploadFiles(avroPaths,schemaPath,name);
-
-            LOG.info("Destination path : {}",uploadedPath);
-            LOG.info("\n");
-
-            return "DONE";
-        } catch (Exception e) {
-            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
-        }
-    }
-
-
     @CliCommand(value = "sort_local_data", help = "Sort local data records by a selected field name.")
     public String command7(
             @CliOption(key = {"avro"}, mandatory = true, help = "Local data avro files (comma separated) or including directory.")
@@ -321,6 +290,37 @@ public class DatasetsCommands implements CommandMarker {
     /**
      *  HDFS DATASET COMMANDS
      */
+
+    @CliCommand(value = "upload_local_data", help = "Upload local data to the PPRL-site hdfs cluster.")
+    public String command3(
+            @CliOption(key = {"avro"}, mandatory = true, help = "Local data avro files (comma separated) or including directory.")
+            final String avroStr,
+            @CliOption(key = {"schema"}, mandatory = true, help = "Local schema avro file.")
+            final String schemaStr,
+            @CliOption(key = {"dataset_name"}, mandatory = true, help = "Name of the dataset. Will be stored at hdfs://users/${USER.HOME}/${name}")
+            final String name
+    ) {
+        try{
+            final Path schemaPath = CommandUtil.retrievePath(schemaStr);
+            final Path[] avroPaths = CommandUtil.retrievePaths(avroStr);
+
+            LOG.info("Uploading local data to hdfs :");
+            LOG.info("\tSelected data files : {}", Arrays.toString(avroPaths));
+            LOG.info("\tSelected schema file : {}", schemaPath);
+            LOG.info("\tName : {}",name);
+            LOG.info("\n");
+
+            final Path uploadedPath = ds.uploadFiles(avroPaths,schemaPath,name);
+
+            LOG.info("Destination path : {}",uploadedPath);
+            LOG.info("\n");
+
+            return "DONE";
+        } catch (Exception e) {
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
+        }
+    }
+
 
     @CliCommand(value = "download_data", help = "Download remote dataset to local machine.")
     public String command5(
@@ -468,7 +468,7 @@ public class DatasetsCommands implements CommandMarker {
     public String command10(
             @CliOption(key = {"dataset_name"}, mandatory = true, help = "HDFS dataset name.")
             final String name,
-            @CliOption(key = {"sample_dataset_name"}, mandatory = true, help = "Name to save sample to HDFS.")
+            @CliOption(key = {"sample_dataset_name"}, mandatory = false, help = "(Optional) Name to save sample to HDFS.")
             final String sampleName,
             @CliOption(key = {"size"}, mandatory = false, help = "(Optional) Sample size. Default is 100.")
             final String sizeStr
@@ -477,20 +477,24 @@ public class DatasetsCommands implements CommandMarker {
 
             final int size = CommandUtil.retrieveInt(sizeStr, 100);
 
-            if (size < 1) throw new IllegalArgumentException("Sample size must be greater than zero.");
-            if(name.equals(sampleName)) throw new IllegalArgumentException("names must not match.");
-
             LOG.info("Sampling from HDFS data :");
             LOG.info("\tDataset name : {}",name);
-            LOG.info("\tSample Dataset name : {}",sampleName);
             LOG.info("\tSample size : {}", size);
+            if (size < 1) throw new IllegalArgumentException("Sample size must be greater than zero.");
+
+            if(sampleName != null) {
+                LOG.info("\tSample Dataset name : {}", sampleName);
+                if (name.equals(sampleName)) throw new IllegalArgumentException("names must not match.");
+                final Path sampleBasePath = ds.sampleDataset(name,sampleName,size);
+                LOG.info("Sample saved to path : {}", sampleBasePath);
+            } else {
+                final GenericRecord[] sample = ds.sampleDataset(name,size);
+                final Schema schema = ds.loadSchema(
+                        ds.retrieveSchemaPath(ds.retrieveDirectories(name)[2]));
+                LOG.info(DatasetsUtil.prettyRecords(sample, schema));
+                LOG.info("\n");
+            }
             LOG.info("\n");
-
-            final Path sampleBasePath = ds.sampleDataset(name,sampleName,size);
-
-            LOG.info("Sample saved to path : {}", sampleBasePath);
-            LOG.info("\n");
-
             return "DONE";
         } catch(Exception e) {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();

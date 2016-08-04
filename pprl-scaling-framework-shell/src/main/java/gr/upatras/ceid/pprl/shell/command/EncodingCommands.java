@@ -1,5 +1,4 @@
 package gr.upatras.ceid.pprl.shell.command;
-
 import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
 import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
@@ -26,8 +25,10 @@ import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+
+// TODO Encoding commands should have weights optional
+
 
 @Component
 public class EncodingCommands implements CommandMarker {
@@ -49,8 +50,6 @@ public class EncodingCommands implements CommandMarker {
     @Autowired(required = false)
     @Qualifier("localDatasetsService")
     private LocalDatasetsService lds;
-
-    private List<String> ENCODING_SCHEMES = BloomFilterEncodingUtil.SCHEME_NAMES;
 
 	@CliAvailabilityIndicator(value = {
 		"list_supported_encoding_schemes",
@@ -81,7 +80,7 @@ public class EncodingCommands implements CommandMarker {
     public String command0() {
         LOG.info("Supported bloom filter encoding schemes : ");
         int i = 1;
-        for(String methodName: ENCODING_SCHEMES) {
+        for(String methodName: BloomFilterEncodingUtil.SCHEME_NAMES) {
             LOG.info("\t{}. {}",i,methodName);
             i++;
         }
@@ -294,7 +293,7 @@ public class EncodingCommands implements CommandMarker {
             if(included.length !=0)
                 LOG.info("\tSelected fields to included   : {}", Arrays.toString(included));
             LOG.info("\tBase Encoding schema stored in file : {}",existingEncodingSchemaPath);
-            final Map<String,String> field2fieldMap = new HashMap<String,String>();
+            final Map<String,String> field2fieldMap = new HashMap<>();
             for (int i = 0; i < fields.length; i++)
                 field2fieldMap.put(fields[i],mappings[i]);
             LOG.info("\tField Mappings are : {}",field2fieldMap);
@@ -484,7 +483,7 @@ public class EncodingCommands implements CommandMarker {
             if(included.length !=0)
                 LOG.info("\tSelected fields to included   : {}", Arrays.toString(included));
             LOG.info("\tBase Encoding schema stored in file : {}",existingEncodingSchemaPath);
-            final Map<String,String> field2fieldMap = new HashMap<String,String>();
+            final Map<String,String> field2fieldMap = new HashMap<>();
             for (int i = 0; i < fields.length; i++)
                 field2fieldMap.put(fields[i],mappings[i]);
             LOG.info("\tField Mappings are : {}",field2fieldMap);

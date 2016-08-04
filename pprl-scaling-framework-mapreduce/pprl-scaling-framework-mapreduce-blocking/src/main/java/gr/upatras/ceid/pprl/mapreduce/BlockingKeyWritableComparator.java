@@ -38,11 +38,11 @@ public class BlockingKeyWritableComparator extends WritableComparator {
         byte b10 = b1[s1 + 8 + len1];
         byte b11 = b1[s1 + 8 + len1 + 1];
         char d1 = (char) (((b10 << 8) & 0xFF) +
-                ((b11 << 0 ) & 0xFF));
+                ((b11) & 0xFF));
         byte b20 = b2[s2 + 8 + len2];
         byte b21 = b2[s2 + 8 + len2 + 1];
         char d2 = (char) (((b20 << 8) & 0xFF) +
-                ((b21 << 0 ) & 0xFF));
+                ((b21) & 0xFF));
         return (d1 < d2) ? -1 : ((d1 == d2) ? 0 : 1);
     }
 

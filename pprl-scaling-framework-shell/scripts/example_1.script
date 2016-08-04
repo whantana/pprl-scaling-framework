@@ -9,6 +9,7 @@ upload_local_data --avro data/voters_a/avro --schema data/voters_a/schema/voters
 describe_data --dataset_name uploaded_voters_a
 
 # 100 records sampling
+sample_data --dataset_name uploaded_voters_a --size 10
 sample_data --dataset_name uploaded_voters_a --sample_dataset_name sample_voters_a
 
 # download sample
@@ -18,7 +19,7 @@ download_data --dataset_name sample_voters_a --out_name downloaded_sample_voters
 sample_local_data --avro downloaded_sample_voters_a/avro --schema downloaded_sample_voters_a/schema/sample_voters_a.avsc
 
 # import a really small dblp sample
-import_dblp --xml data/dblp/xml/dblp.xml --dataset_name dblp_small
+# import_dblp --xml data/dblp/xml/dblp.xml --dataset_name dblp_small
 
 # sort data and add sort uid
 sort_data  --sort_by name --ulid_field order --dataset_name uploaded_voters_a --sorted_dataset_name sorted_voters_a

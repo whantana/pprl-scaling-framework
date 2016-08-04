@@ -62,11 +62,6 @@ public class BlockingKeyWritablePartitioner extends Partitioner<BlockingKeyWrita
             }
         }
 
-        public int[] getRangeLimits(final int i) {
-            assert i >= 0 && i < rc;
-            return ranges[i];
-        }
-
         public int belongsToRange(final int n) {
             assert n >= min && n <= max;
             for (int i = 0 ; i < rc ; i++) {

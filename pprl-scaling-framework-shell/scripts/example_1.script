@@ -20,9 +20,14 @@ sample_local_data --avro downloaded_sample_voters_a/avro --schema downloaded_sam
 
 # import a really small dblp sample
 # import_dblp --xml data/dblp/xml/dblp.xml --dataset_name dblp_small
+# import_dblp --xml hdfs://namenode-0:8020/user/ubuntu/dblp.xml --dataset_name dblp
 
 # sort data and add sort uid
 sort_data  --sort_by name --ulid_field order --dataset_name uploaded_voters_a --sorted_dataset_name sorted_voters_a
 describe_data --dataset_name sorted_voters_a
+sample_data --dataset_name sorted_voters_a --size 10
+
 sort_data  --sort_by name --ulid_field order --partitions 4 --dataset_name uploaded_voters_a --sorted_dataset_name sorted_voters_a_4
 describe_data --dataset_name sorted_voters_a_4
+sample_data --dataset_name sorted_voters_a_4 --size 10
+

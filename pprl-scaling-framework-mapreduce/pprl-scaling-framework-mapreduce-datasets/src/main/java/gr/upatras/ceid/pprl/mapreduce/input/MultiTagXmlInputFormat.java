@@ -127,9 +127,6 @@ public class MultiTagXmlInputFormat extends TextInputFormat {
                 readUntilAnyStartTagIsFound();
                 if(currentTag[0] == null) return false;
 
-                // write start tag
-                buffer.write(currentTag[0]);
-
                 boolean foundEndTag = readUntilCurrentEndTagIsFound();
                 if(foundEndTag) {
                     key.set(fsin.getPos());
@@ -205,6 +202,8 @@ public class MultiTagXmlInputFormat extends TextInputFormat {
          * @throws IOException
          */
         private boolean readUntilCurrentEndTagIsFound() throws IOException {
+            // write start tag
+            buffer.write(currentTag[0]);
             int i = 0;
             while(true) {
 

@@ -37,6 +37,7 @@ public class DblpXmlToAvroMapper extends Mapper<LongWritable, Text, AvroKey<Dblp
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setValidating(false);
             dBuilder = factory.newDocumentBuilder();
+
         } catch (ParserConfigurationException e) {
             throw new IOException(e);
         }

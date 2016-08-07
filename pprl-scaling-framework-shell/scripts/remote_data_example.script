@@ -1,0 +1,58 @@
+# ------------------
+# Remote data actions
+# ------------------
+
+#  upload data
+upload_local_data --avro data/voters_a/avro --schema data/voters_a/schema/voters_a.avsc --dataset_name uploaded_voters_a
+
+#  describe uploaded data
+describe_data --dataset_name uploaded_voters_a
+
+# 100 records sampling
+sample_data --dataset_name uploaded_voters_a --size 10
+sample_data --dataset_name uploaded_voters_a --sample_dataset_name sample_voters_a
+
+# download sample
+download_data --dataset_name sample_voters_a --out_name downloaded_sample_voters_a
+
+# view a smaller sample of the downloaded
+sample_local_data --avro downloaded_sample_voters_a/avro --schema downloaded_sample_voters_a/schema/sample_voters_a.avsc
+
+# sort data and add sort uid
+sort_data  --sort_by name --ulid_field order --dataset_name uploaded_voters_a --sorted_dataset_name sorted_voters_a
+describe_data --dataset_name sorted_voters_a
+sample_data --dataset_name sorted_voters_a --size 10
+
+# sort data with partitioning
+sort_data  --sort_by name --ulid_field order --partitions 4 --dataset_name uploaded_voters_a --sorted_dataset_name sorted_voters_a_4
+describe_data --dataset_name sorted_voters_a_4
+sample_data --dataset_name sorted_voters_a_4 --size 10
+
+
+# import dblp (already uploaded)
+import_dblp --xml data/dblp_small/xml/dblp_small.xml --dataset_name dblp_small
+describe_data --dataset_name dblp_small
+import_dblp --xml hdfs://namenode-0:8020/user/ubuntu/dblp.xml --dataset_name dblp
+describe_data --dataset_name dblp
+
+# sort and paritition
+sort_data  --sort_by key --ulid_field uid --partitions 4 --dataset_name dblp --sorted_dataset_name dblp_4
+describe_data --dataset_name dblp_4
+sort_data  --sort_by key --ulid_field uid --partitions 8 --dataset_name dblp --sorted_dataset_name dblp_8
+describe_data --dataset_name dblp_8
+sort_data  --sort_by key --ulid_field uid --partitions 16 --dataset_name dblp --sorted_dataset_name dblp_16
+describe_data --dataset_name dblp_16
+
+# sample dblp
+sample_data --size 1000 --dataset_name dblp --sample_dataset_name dblp_sample
+sort_data  --sort_by key --ulid_field uid --dataset_name dblp_sample --sorted_dataset_name dblp_sorted_sample
+calc_data_stats ---dataset_name dblp_sorted_sample --uid uid --fields author,title,year --stats_name dblp_sorted_sample_stats --p 0.000001
+#calc_data_stats ---dataset_name dblp_sorted_sample --uid uid --fields author,title,year --stats_name dblp_sorted_sample_stats --p 0.000001 --reducers 4
+#calc_data_stats ---dataset_name dblp_sorted_sample --uid uid --fields author,title,year --stats_name dblp_sorted_sample_stats --p 0.000001 --reducers 8
+#calc_data_stats ---dataset_name dblp_sorted_sample --uid uid --fields author,title,year --stats_name dblp_sorted_sample_stats --p 0.000001 --reducers 16
+
+
+
+
+
+

@@ -31,3 +31,4 @@ sample_local_data --avro data/voters_b/avro --schema data/voters_b/schema/voters
 #  calc data stats
 calc_local_data_stats --avro data/person_small/avro --schema data/person_small/schema/person_small.avsc --fields name,surname,location --out_name person_small_stats
 calc_local_data_stats --avro data/voters_b/avro --schema data/voters_b/schema/voters_b.avsc --fields name,surname,address,city --p 0.000000001 --out_name voters_b_stats
+

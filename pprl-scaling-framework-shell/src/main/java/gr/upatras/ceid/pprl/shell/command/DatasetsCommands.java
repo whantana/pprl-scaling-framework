@@ -406,9 +406,9 @@ public class DatasetsCommands implements CommandMarker {
             final Path[] paths = ds.retrieveDirectories(name);
             final Path basePath = paths[0];
             final Path avroPath = paths[1];
-            final Path schemaPath = paths[2];
+            final Path schemaPath = ds.retrieveSchemaPath(paths[2]);
 
-            final Schema schema = ds.loadSchema(ds.retrieveSchemaPath(schemaPath));
+            final Schema schema = ds.loadSchema(schemaPath);
             if(fields.length == 0 ) fields = DatasetsUtil.fieldNames(schema);
             else if(!DatasetsUtil.fieldNamesBelongsToSchema(schema,fields))
                 throw new IllegalArgumentException(String.format("fields %s not found in schema",

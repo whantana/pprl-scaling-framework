@@ -10,6 +10,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
@@ -25,7 +26,7 @@ import java.util.regex.Pattern;
  */
 public class DblpToAvroTool  extends Configured implements Tool {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DblpXmlToAvroTool.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DblpToAvroTool.class);
 
     private static final String JOB_DESCRIPTION = "DBLP XML file to Avro";
 
@@ -50,14 +51,20 @@ public class DblpToAvroTool  extends Configured implements Tool {
         // get args
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
-        if (args.length != 2) {
-            LOG.error("Usage: DblpXmlToAvroTool <input-path> <output-path>");
+        if (args.length != 3 ) {
+            LOG.error("args.length= {}",args.length);
+            for (int i = 0; i < args.length; i++) {
+                LOG.error("args[{}] = {}",i,args[i]);
+            }
+            LOG.error("Usage: DblpXmlToAvroTool <input-path> <output-path> <reducer>");
             throw new IllegalArgumentException("Invalid number of arguments.");
         }
 
         // set confuguration and params
         final Path input = new Path(args[0]);
         final Path output = new Path(args[1]);
+        final int reduceNum = Integer.valueOf(args[2]);
+        if(reduceNum < 0 ) throw new InterruptedException("Reduce number is negative.");
         conf.setStrings(DblpXmlInputFormat.TAGS_KEY, TAGS);
         conf.setStrings(DblpXmlInputFormat.SECONDARY_TAGS_KEY, SECONDARY_TAGS );
 
@@ -71,9 +78,9 @@ public class DblpToAvroTool  extends Configured implements Tool {
 
         // setup map only job
         Job job = Job.getInstance(conf);
-        job.setJarByClass(DblpXmlToAvroTool.class);
+        job.setJarByClass(DblpToAvroTool.class);
         job.setJobName(description);
-        job.setNumReduceTasks(0);
+        job.setNumReduceTasks(reduceNum);
 
         // setup input
         DblpXmlInputFormat.setInputPaths(job, input);
@@ -83,6 +90,13 @@ public class DblpToAvroTool  extends Configured implements Tool {
         job.setMapperClass(DblpToAvroMapper.class);
         AvroJob.setMapOutputKeySchema(job, DblpPublication.getClassSchema());
         job.setMapOutputValueClass(NullWritable.class);
+
+        // setup reducer if number is greater than 0
+        if(reduceNum > 0) {
+            job.setReducerClass(Reducer.class);
+            AvroJob.setOutputKeySchema(job, DblpPublication.getClassSchema());
+            job.setOutputValueClass(NullWritable.class);
+        }
 
         // setup output
         AvroKeyOutputFormat.setOutputPath(job, output);
@@ -102,7 +116,7 @@ public class DblpToAvroTool  extends Configured implements Tool {
      * @throws Exception
      */
     public static void main(String[] args) throws Exception {
-        int res = ToolRunner.run(new DblpXmlToAvroTool(), args);
+        int res = ToolRunner.run(new DblpToAvroTool(), args);
         System.exit(res);
     }
 

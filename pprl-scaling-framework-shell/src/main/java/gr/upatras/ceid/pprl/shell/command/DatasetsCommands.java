@@ -348,17 +348,22 @@ public class DatasetsCommands implements CommandMarker {
             @CliOption(key = {"xml"}, mandatory = true, help = "Local or HDFS DBLP(xml) file.")
             final String xmlPathStr,
             @CliOption(key = {"dataset_name"}, mandatory = false, help = "(Optional) Name of the imported dataset. Default is \"dblp\".")
-            String nameStr
+            String nameStr,
+            @CliOption(key = {"reducers"}, mandatory = false, help = "(Optional) Number of reduces. Default 0.")
+            final String reducersStr
+
     ) {
         try {
             final Path xmlPath = CommandUtil.retrievePath(xmlPathStr);
             final String name = CommandUtil.retrieveString(nameStr,"dblp");
+            final int reducersNum = CommandUtil.retrieveInt(reducersStr,0);
             LOG.info("Importing DBLP:");
             LOG.info("\tXML path : " + xmlPath);
             LOG.info("\tName to be saved  : " + name);
+            LOG.info("\tReducers count : " + reducersNum);
             LOG.info("\n");
 
-            final Path path = ds.importDblpXmlDataset(xmlPath,name);
+            final Path path = ds.importDblpXmlDataset(xmlPath,name,reducersNum);
             LOG.info("DBLP imported at : ", path);
             return "DONE";
         } catch (Exception e) {

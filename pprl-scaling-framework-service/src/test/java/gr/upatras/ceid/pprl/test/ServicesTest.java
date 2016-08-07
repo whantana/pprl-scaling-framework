@@ -122,7 +122,7 @@ public class ServicesTest extends AbstractMapReduceTests {
      public void test1() throws Exception {
          // import dblp
          final Path xmlPath = new Path("data/dblp/xml/dblp.xml");
-         final Path uploadedPath = ds.importDblpXmlDataset(xmlPath,"dblp");
+         final Path uploadedPath = ds.importDblpXmlDataset(xmlPath,"dblp",0);
          final FileSystem hdfs = getFileSystem();
          boolean uploadExists =  hdfs.exists(uploadedPath);
          assertTrue(uploadExists);

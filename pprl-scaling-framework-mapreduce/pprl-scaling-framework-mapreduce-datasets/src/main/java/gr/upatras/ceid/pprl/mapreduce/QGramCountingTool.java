@@ -45,6 +45,10 @@ public class QGramCountingTool extends Configured implements Tool {
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
         if (args.length != 4) {
+            LOG.error("args.length= {}",args.length);
+            for (int i = 0; i < args.length; i++) {
+                LOG.error("args[{}] = {}",i,args[i]);
+            }
             LOG.error("Usage: QGramCountingTool <input-path> <input-schema-path> <output-path> <comma-separated-field-names>");
             throw new IllegalArgumentException("Invalid number of arguments (" + args.length + ").");
         }

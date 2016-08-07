@@ -394,12 +394,13 @@ public class DatasetsService implements InitializingBean {
      *
      * @param xmlPath local path to the dblp xml file.
      * @param name dataset name.
+     * @param reducerNumber  number of reducers.
      * @return base path of the imported dblp dataset.
      * @throws Exception
      */
-    public Path importDblpXmlDataset(final Path xmlPath, final String name)
+    public Path importDblpXmlDataset(final Path xmlPath, final String name, final int reducerNumber)
             throws Exception {
-        return importDblpXmlDataset(xmlPath,name,ONLY_OWNER_PERMISSION);
+        return importDblpXmlDataset(xmlPath,name,reducerNumber,ONLY_OWNER_PERMISSION);
     }
 
     /**
@@ -408,10 +409,12 @@ public class DatasetsService implements InitializingBean {
      * @param xmlPath local path to the dblp xml file.
      * @param name dataset name.
      * @param permission permission.
+     * @param reducerNumber  number of reducers.
      * @return base path of the imported dblp dataset.
      * @throws Exception
      */
     public Path importDblpXmlDataset(final Path xmlPath, final String name,
+                                     final int reducerNumber,
                                      final FsPermission permission)
             throws Exception {
         try {
@@ -437,7 +440,7 @@ public class DatasetsService implements InitializingBean {
             } else inputPath = xmlPath;
 
             LOG.info("Runing tool:");
-            runDblpXmlToAvroTool(inputPath, datasetAvroPath);
+            runDblpXmlToAvroTool(inputPath, datasetAvroPath,reducerNumber);
 
             hdfs.setPermission(datasetAvroPath, permission);
 
@@ -483,14 +486,16 @@ public class DatasetsService implements InitializingBean {
      *
      * @param inputPath input path.
      * @param outputPath output path.
+     * @param reducerNumber  number of reducers.
      * @throws Exception
      */
-    private void runDblpXmlToAvroTool(final Path inputPath, final Path outputPath)
+    private void runDblpXmlToAvroTool(final Path inputPath, final Path outputPath,final int reducerNumber)
             throws Exception {
         if(dblpXmlToAvroToolRunner == null) throw new IllegalStateException("tool-runner not set");
         LOG.info("input={}", inputPath);
         LOG.info("output={}", outputPath);
-        dblpXmlToAvroToolRunner.setArguments(inputPath.toString(), outputPath.toString());
+        LOG.info("reducerNumber={}",reducerNumber);
+        dblpXmlToAvroToolRunner.setArguments(inputPath.toString(), outputPath.toString(), String.valueOf(reducerNumber));
         dblpXmlToAvroToolRunner.call();
     }
 

@@ -3,24 +3,18 @@
 # ------------------
 
 # import dblp (already uploaded)
+# import dblp (already uploaded)
 import_dblp --xml hdfs://namenode-0:8020/user/ubuntu/dblp.xml --dataset_name dblp
-describe_data --dataset_name dblp
+import_dblp --xml hdfs://namenode-0:8020/user/ubuntu/dblp.xml --reducers 4  --dataset_name dblp_4
+import_dblp --xml hdfs://namenode-0:8020/user/ubuntu/dblp.xml --reducers 8  --dataset_name dblp_8
+import_dblp --xml hdfs://namenode-0:8020/user/ubuntu/dblp.xml --reducers 16 --dataset_name dblp_16
 
-# sort and paritition
-sort_data  --sort_by key --ulid_field uid --partitions 4 --dataset_name dblp --sorted_dataset_name dblp_4
-describe_data --dataset_name dblp_4
-sort_data  --sort_by key --ulid_field uid --partitions 8 --dataset_name dblp --sorted_dataset_name dblp_8
-describe_data --dataset_name dblp_8
-sort_data  --sort_by key --ulid_field uid --partitions 16 --dataset_name dblp --sorted_dataset_name dblp_16
-describe_data --dataset_name dblp_16
 
 # sample dblp
 sample_data --size 1000 --dataset_name dblp --sample_dataset_name dblp_sample
 sort_data  --sort_by key --ulid_field uid --dataset_name dblp_sample --sorted_dataset_name dblp_sorted_sample
-calc_data_stats ---dataset_name dblp_sorted_sample --uid uid --fields author,title,year --stats_name dblp_sorted_sample_stats --p 0.000001
-#calc_data_stats ---dataset_name dblp_sorted_sample --uid uid --fields author,title,year --stats_name dblp_sorted_sample_stats --p 0.000001 --reducers 4
-#calc_data_stats ---dataset_name dblp_sorted_sample --uid uid --fields author,title,year --stats_name dblp_sorted_sample_stats --p 0.000001 --reducers 8
-#calc_data_stats ---dataset_name dblp_sorted_sample --uid uid --fields author,title,year --stats_name dblp_sorted_sample_stats --p 0.000001 --reducers 16
+calc_data_stats --dataset_name dblp_sorted_sample --uid uid --fields author,title,year --stats_name dblp_sorted_sample_stats --p 0.000001
+
 
 
 

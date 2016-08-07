@@ -364,7 +364,7 @@ public class DatasetsCommands implements CommandMarker {
             LOG.info("\n");
 
             final Path path = ds.importDblpXmlDataset(xmlPath,name,reducersNum);
-            LOG.info("DBLP imported at : ", path);
+            LOG.info("DBLP imported at : {}", path);
             return "DONE";
         } catch (Exception e) {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
@@ -408,7 +408,7 @@ public class DatasetsCommands implements CommandMarker {
             final Path avroPath = paths[1];
             final Path schemaPath = paths[2];
 
-            final Schema schema = ds.loadSchema(schemaPath);
+            final Schema schema = ds.loadSchema(ds.retrieveSchemaPath(schemaPath));
             if(fields.length == 0 ) fields = DatasetsUtil.fieldNames(schema);
             else if(!DatasetsUtil.fieldNamesBelongsToSchema(schema,fields))
                 throw new IllegalArgumentException(String.format("fields %s not found in schema",

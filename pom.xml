@@ -77,7 +77,10 @@
 					<configuration>
 						<workingDirectory>${project.build.testOutputDirectory}</workingDirectory>
 						<forkMode>never</forkMode>
-						<argLine>-Xms256m -Xmx512m</argLine>
+						<argLine>-Xms256m -Xmx1024m</argLine>
+						<excludes>
+        					<exclude>**/*BenchmarkTest.java</exclude>
+						</excludes>
 					</configuration>
 				</plugin>
 				<plugin>

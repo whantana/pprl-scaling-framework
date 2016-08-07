@@ -40,6 +40,7 @@ public class BloomFilterEncodingTest {
     private static Logger LOG = LoggerFactory.getLogger(BloomFilterEncodingTest.class);
 
     private static final int N = 1024;
+    private static final int Nsmall = 256;
     private static final int K = 10;
     private static final int Q = 2;
     private FileSystem fs;
@@ -84,7 +85,7 @@ public class BloomFilterEncodingTest {
         }
 
         int Narray[] = new int [SELECTED_FIELDS.length];
-        Arrays.fill(Narray,N);
+        Arrays.fill(Narray,Nsmall);
 
         encodeOriginal(new CLKEncoding(N,K,Q),"clk",
                 fs,avroPaths,schemaPath,SELECTED_FIELDS,REST_FIELDS);
@@ -129,7 +130,7 @@ public class BloomFilterEncodingTest {
         final String[] REST_FIELDS = {"id"};
 
         int Narray[] = new int [SELECTED_FIELDS.length];
-        Arrays.fill(Narray,N);
+        Arrays.fill(Narray,Nsmall);
 
         final SortedSet<Path> bobAvroPaths = DatasetsUtil.getAllAvroPaths(fs,new Path("data/voters_b/avro"));
         final Path bobSchemaPath = new Path("data/voters_b/schema/voters_b.avsc");

@@ -9,6 +9,8 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.Before;
@@ -175,12 +177,17 @@ public class SimilarityMatrixTest {
     public void test5() throws IOException {
         SimilarityVectorFrequencies frequencies = SimilarityUtil.vectorFrequencies(records, fieldNames);
         Properties properties = frequencies.toProperties();
-        properties.store(new FileOutputStream(new File("data/sim_freqs.properties")),"Similarity Vector Frequencies");
-
+        final FileSystem fs = FileSystem.get(new Configuration());
+        final Path f = new Path("data/sim_freqs.properties");
+        final FSDataOutputStream fsdos = fs.create(f, true);
+        properties.store(fsdos,"Similarity Vector Frequencies");
+        fsdos.close();
         Properties properties1 = new Properties();
-        properties1.load(new FileInputStream(new File("data/sim_freqs.properties")));
+        final FSDataInputStream fsdis = fs.open(f);
+        properties1.load(fsdis);
         SimilarityVectorFrequencies frequencies1 = new SimilarityVectorFrequencies();
         frequencies1.fromProperties(properties1);
         assertEquals(frequencies,frequencies1);
+        fsdis.close();
     }
 }

@@ -85,9 +85,4 @@ public class DblpXmlInputFormatTest {
         while(reader2.nextKeyValue()) {
         }
     }
-
-    @Test
-    public void test3() throws IOException, InterruptedException {
-
-    }
 }

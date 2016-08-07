@@ -171,7 +171,7 @@ public class PrivateSimilarityUtil {
         for (int i = 0; i < N; i++)
             if(bf1.getBit(i) && bf2.getBit(i)) m11++;
 
-        return (double) m11 / ((double)cardinalities[0] + cardinalities[1]);
+        return (double) (2*m11) / ((double)cardinalities[0] + cardinalities[1]);
     }
 
     /**

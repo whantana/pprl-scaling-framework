@@ -69,25 +69,25 @@ public class EncodingEvaluationBenchmarkTest {
         test00();
         test01();
 
-        // test fbf
-//        testFBF();
+        //test fbf
+        testFBF();
 
-//        // open
-//        test02();
-//        test03();
-//        test05(); // Fellegi-Sunter
-//
-//
-//        // encode strings
-//        test04();
-//        // encode records
-//        test06(); // CLK
-//        test07(); // FBF Static
-//        test08(); // FBF Dynamic
-//        test09(); // RBF Uniform/Static
-//        test10(); // RBF Uniform/Dynamic
-//        test11(); // RBF Weighted/Static
-//        test12(); // RBF Weighted/Dynamic
+        // open
+        test02();
+        test03();
+        test05(); // Fellegi-Sunter
+
+
+        // encode strings
+        test04();
+        // encode records
+        test06(); // CLK
+        test07(); // FBF Static
+        test08(); // FBF Dynamic
+        test09(); // RBF Uniform/Static
+        test10(); // RBF Uniform/Dynamic
+        test11(); // RBF Weighted/Static
+        test12(); // RBF Weighted/Dynamic
     }
 
     public void testFBF() throws IOException, DatasetException, BloomFilterEncodingException {
@@ -213,8 +213,6 @@ public class EncodingEvaluationBenchmarkTest {
 
         LOG.info("---");
         LOG.info(DatasetStatistics.prettyStats(statistics));
-        LOG.info("---");
-        LOG.info(DatasetStatistics.prettyBFEStats(statistics.getFieldStatistics(),30,2));
         LOG.info("---");
         LOG.info("Saving stats to {}.", statsPath);
         FSDataOutputStream fsdos = fs.create(statsPath, true);
@@ -447,8 +445,6 @@ public class EncodingEvaluationBenchmarkTest {
 
         LOG.info("---");
         LOG.info(DatasetStatistics.prettyStats(statistics));
-        LOG.info("---");
-        LOG.info(DatasetStatistics.prettyBFEStats(statistics.getFieldStatistics(),30,2));
         LOG.info("---");
 
         LOG.info("---");

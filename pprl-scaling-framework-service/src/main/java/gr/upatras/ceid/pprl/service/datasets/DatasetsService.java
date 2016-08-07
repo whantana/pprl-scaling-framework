@@ -427,18 +427,14 @@ public class DatasetsService implements InitializingBean {
                     DblpPublication.getClassSchema(),
                     schemaPath);
 
-            final Path inputPath = new Path(datasetPath,"xml");
-            hdfs.mkdirs(inputPath,permission);
+            Path inputPath;
             if(!xmlPath.toString().contains("hdfs://")) {
+                inputPath = new Path(datasetPath,"xml");
+                hdfs.mkdirs(inputPath,permission);
                 LOG.info("Uploading XML data from : " + xmlPath);
                 LOG.info("Uploading XML data to : " + inputPath);
                 hdfs.copyFromLocalFile(xmlPath, inputPath);
-            } else {
-                final Path destPath = new Path(inputPath,xmlPath.getName());
-                LOG.info("Copying XML data from : " + xmlPath);
-                LOG.info("Copying XML data to : " + destPath);
-                FileUtil.copy(hdfs,xmlPath,hdfs,destPath,false,true,hdfs.getConf());
-            }
+            } else inputPath = xmlPath;
 
             LOG.info("Runing tool:");
             runDblpXmlToAvroTool(inputPath, datasetAvroPath);
@@ -544,9 +540,17 @@ public class DatasetsService implements InitializingBean {
         try{
             final Properties properties = statistics.toProperties();
             final Path propertiesPath = new Path(basePath,String.format("%s.properties",name));
-            final FSDataOutputStream fsdos = hdfs.create(propertiesPath);
-            LOG.info("Saving stats stats from {}.", propertiesPath);
-            properties.store(fsdos,"Statistics");
+            FSDataOutputStream fsdos;
+            if(hdfs.exists(propertiesPath)) {
+                fsdos = hdfs.append(propertiesPath);
+                LOG.info("Update stats at {}.",properties);
+                properties.store(fsdos,null);
+            } else {
+                fsdos = hdfs.create(propertiesPath);
+                LOG.info("Saving stats at {}.",propertiesPath);
+                properties.store(fsdos, "PPRL Statistics");
+            }
+
             fsdos.close();
             return propertiesPath;
         } catch (IOException e) {

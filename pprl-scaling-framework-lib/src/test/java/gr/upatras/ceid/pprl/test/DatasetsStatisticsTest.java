@@ -44,17 +44,6 @@ public class DatasetsStatisticsTest {
         stats2.fromProperties(stats1.toProperties());
         LOG.info("\n" + stats1.toString() + "\n" + stats2.toString());
         assertTrue(stats2.equals(stats1));
-    }
-
-    @Test
-    public void test1() throws IOException {
-        DatasetStatistics statistics = new DatasetStatistics();
-        File prop1 = new File("data/stats_1.properties");
-        File prop2 = new File("data/stats_2.properties");
-        Properties p = new Properties();
-        p.load(new FileInputStream(prop1));
-        p.load(new FileInputStream(prop2));
-        statistics.fromProperties(p);
-        LOG.info(statistics.toString());
+		
     }
 }

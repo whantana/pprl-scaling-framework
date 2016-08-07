@@ -1019,7 +1019,7 @@ public class DatasetsUtil {
                                                        Schema.Field.Order[] orders) {
         assert orders.length == fieldNames.length;
         final Schema newSchema = Schema.createRecord(
-                schema.getName(),schema.getDoc(),schema.getNamespace(),schema.isError());
+                schema.getName(),schema.getDoc(),schema.getNamespace() +".sorted",schema.isError());
 
         List<Schema.Field> fields = schema.getFields();
         Schema.Field[] selectedFields = new Schema.Field[fieldNames.length];

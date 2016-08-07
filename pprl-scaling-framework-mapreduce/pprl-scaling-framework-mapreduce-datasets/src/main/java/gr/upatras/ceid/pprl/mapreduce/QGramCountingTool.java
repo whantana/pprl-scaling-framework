@@ -64,7 +64,7 @@ public class QGramCountingTool extends Configured implements Tool {
 
         // set description and log it
         final String description = String.format("%s(" +
-                "input-path : %s, input-schema-path : %s" +
+                "input-path : %s, input-schema-path : %s," +
                 "output-path : %s, field-names : %s)",
                 JOB_DESCRIPTION,
                 shortenUrl(input.toString()),shortenUrl(inputSchemaPath.toString()),

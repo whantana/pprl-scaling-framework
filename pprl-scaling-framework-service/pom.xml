@@ -206,6 +206,12 @@
                                     <type>jar</type>
                                     <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
                                 </artifactItem>
+                                <artifactItem>
+                                    <groupId>info.debatty</groupId>
+                                    <artifactId>java-string-similarity</artifactId>
+                                    <version>${string.similarity.version}</version>
+                                    <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
+                                </artifactItem>
                             </artifactItems>
                         </configuration>
                     </execution>

@@ -48,6 +48,7 @@
                      close-fs="false"
                      libs="file://${build.test.dir}/avro-${avro.version}.jar,
                            file://${build.test.dir}/avro-mapred-${avro.version}-hadoop2.jar,
+                           file://${build.test.dir}/java-string-similarity-${string.similarity.version}.jar,
                            file://${build.test.dir}/pprl-scaling-framework-lib-${build.version}.jar"/>
 
     <hdp:tool-runner id="hammingLshBlockingToolRunner"

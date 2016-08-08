@@ -9,7 +9,6 @@ import_dblp --xml hdfs://namenode-0:8020/user/ubuntu/dblp.xml --reducers 4  --da
 import_dblp --xml hdfs://namenode-0:8020/user/ubuntu/dblp.xml --reducers 8  --dataset_name dblp_8
 import_dblp --xml hdfs://namenode-0:8020/user/ubuntu/dblp.xml --reducers 16 --dataset_name dblp_16
 
-
 # sample dblp
 sample_data --size 1000 --dataset_name dblp --sample_dataset_name dblp_sample
 sort_data  --sort_by key --ulid_field uid --dataset_name dblp_sample --sorted_dataset_name dblp_sorted_sample

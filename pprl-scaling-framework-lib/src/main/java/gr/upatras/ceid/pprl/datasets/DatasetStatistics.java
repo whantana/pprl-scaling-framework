@@ -358,43 +358,73 @@ public class DatasetStatistics implements Serializable {
     /**
      * Pretty Bloom Filter Encoding related stats.
      *
-     * @param fieldStatistics field statistic.s
+     * @param fieldStatistics field statistic.
+     * @param N a bloom filter N.
      * @param K a Count of hash values.
      * @param Q a Q as in Q-Grams.
-     * @return
+     * @return a stats report.
      */
-    public static String prettyBFEStats(Map<String, DatasetFieldStatistics> fieldStatistics, final int K, final int Q) {
-        assert K > 0 && Q >= 2 && Q <= 4;
+    public static String prettyBFEStats(Map<String, DatasetFieldStatistics> fieldStatistics,
+                                        final int N, final int K, final int Q) {
+        final int len = fieldStatistics.keySet().size();
+        final String[] fieldNames = fieldStatistics.keySet().toArray(new String[len]);
+        final double[] avgQgrams = new double[len];
+        final double[] weights = new double[len];
+        for (int i = 0; i < len; i++) {
+            avgQgrams[i] = fieldStatistics.get(fieldNames[i]).getQgramCount(Q);
+            weights[i] = fieldStatistics.get(fieldNames[i]).getNormalizedRange();
+        }
+        return prettyBFEStats(fieldNames,avgQgrams,weights,N,K,Q);
+    }
+
+    /**
+     * Pretty Bloom Filter Encoding related stats.
+     *
+     * @param fieldNames field names.
+     * @param avgQgrams average q gram counts per field
+     * @param N bloom filter length.
+     * @param K a Count of hash values.
+     * @param Q a Q as in Q-Grams.
+     * @return a stats report.
+     */
+    public static String prettyBFEStats(final String[] fieldNames,
+                                        final double[] avgQgrams, final double[] weights,
+                                        final int N, final int K, final int Q) {
+
+        assert K > 0 && Q >= 2 && Q <= 4 && N > 0;
         final StringBuilder sb = new StringBuilder();
         Map<String,Integer> fbfNs = new HashMap<String,Integer>();
-        Map<String,Integer> fbfNsUQ = new HashMap<String,Integer>();
         Map<String,Integer> rbfNs = new HashMap<String,Integer>();
+        sb.append("#Encoding Bloom Filters N=").append(N).append("\n");
         sb.append("#Encoding Bloom Filters K=").append(K).append("\n");
         sb.append("#Encoding Bloom Filters Q=").append(Q).append("\n");
 
         final StringBuilder hsb = new StringBuilder(String.format("%50s","Metric\\Field name"));
-        final Set<String> fieldNames = fieldStatistics.keySet();
         for (String fieldName : fieldNames)
             hsb.append(String.format("|%25s", fieldName));
         final String header = hsb.toString();
         sb.append(header).append("\n");
         sb.append(new String(new char[header.length()]).replace("\0", "-")).append("\n");
         StringBuilder ssb = new StringBuilder(String.format("%50s","Dynamic FBF size"));
-        for (String fieldName : fieldStatistics.keySet()) {
-            double g = fieldStatistics.get(fieldName).getQgramCount(Q);
+        int i = 0;
+        for (String fieldName : fieldNames) {
+            double g = avgQgrams[i];
             int fbfN = FieldBloomFilterEncoding.dynamicsize(g, K);
             fbfNs.put(fieldName,fbfN);
             ssb.append(String.format("|%25s", String.format("%d",fbfN)));
+            i++;
         }
         sb.append(ssb.toString()).append("\n");
 
         ssb = new StringBuilder(String.format("%50s","Candidate RBF length"));
-        for (String fieldName : fieldStatistics.keySet()) {
+        i = 0;
+        for (String fieldName : fieldNames) {
             double fbfN = fbfNs.get(fieldName);
-            double nr = fieldStatistics.get(fieldName).getNormalizedRange();
+            double nr = weights[i];
             int rbfN  = (int) Math.ceil(fbfN/ nr);
             rbfNs.put(fieldName,rbfN);
             ssb.append(String.format("|%25s", String.format("%d", rbfN)));
+            i++;
         }
         sb.append(ssb.toString()).append("\n");
 
@@ -404,8 +434,37 @@ public class DatasetStatistics implements Serializable {
         sb.append(new String(new char[header.length()]).replace("\0", "-")).append("\n");
 
         ssb = new StringBuilder(String.format("%50s","Selected bit length"));
-        for (String fieldName : fieldStatistics.keySet()) {
-            double nr = fieldStatistics.get(fieldName).getNormalizedRange();
+
+        for (i = 0; i < fieldNames.length; i++) {
+            double nr = weights[i];
+            int selectedBitCount = (int)Math.ceil(rbfN * nr);
+            ssb.append(String.format("|%25s",
+                    String.format("%d (%.1f %%)",
+                            selectedBitCount,nr*100)
+            ));
+        }
+        sb.append(ssb.toString()).append("\n");
+
+        ssb = new StringBuilder(String.format("%50s","Candidate RBF length"));
+        i = 0;
+        for (String fieldName : fieldNames) {
+            double nr = weights[i];
+            rbfN  = (int) Math.ceil(N/ nr);
+            rbfNs.put(fieldName,rbfN);
+            ssb.append(String.format("|%25s", String.format("%d", rbfN)));
+            i++;
+        }
+        sb.append(ssb.toString()).append("\n");
+
+        rbfN = Collections.max(rbfNs.values());
+        sb.append(new String(new char[header.length()]).replace("\0", "-")).append("\n");
+        sb.append("#RBF length=").append(rbfN).append("\n");
+        sb.append(new String(new char[header.length()]).replace("\0", "-")).append("\n");
+
+        ssb = new StringBuilder(String.format("%50s","Selected bit length"));
+
+        for (i = 0; i < fieldNames.length; i++) {
+            double nr = weights[i];
             int selectedBitCount = (int)Math.ceil(rbfN * nr);
             ssb.append(String.format("|%25s",
                     String.format("%d (%.1f %%)",

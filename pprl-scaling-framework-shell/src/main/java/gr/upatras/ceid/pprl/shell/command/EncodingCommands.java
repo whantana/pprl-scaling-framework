@@ -459,7 +459,7 @@ public class EncodingCommands implements CommandMarker {
                 throw new BloomFilterEncodingException("Encoding does not validate with source dataset.");
             final Schema encodingSchema = encoding.getEncodingSchema();
 
-            final Path[] encodingPaths = ds.createDirectories(encodingName,inputBasePath,DatasetsService.OTHERS_CAN_READ_PERMISSION);
+            final Path[] encodingPaths = ds.createDirectories(encodingName,DatasetsService.OTHERS_CAN_READ_PERMISSION);
             final Path encodingBasePath = encodingPaths[0];
             final Path encodingAvroPath = encodingPaths[1];
             final Path encodingSchemaPath =

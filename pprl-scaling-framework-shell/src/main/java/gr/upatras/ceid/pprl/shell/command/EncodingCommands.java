@@ -357,7 +357,7 @@ public class EncodingCommands implements CommandMarker {
     public String command4(
             @CliOption(key = {"name"}, mandatory = true, help = "Uploaded dataset name.")
             final String name,
-            @CliOption(key = {"! "}, mandatory = true, help = "Name of encoding.")
+            @CliOption(key = {"out_name"}, mandatory = true, help = "Name of encoding.")
             final String encodingName,
             @CliOption(key = {"fields"}, mandatory = true, help = "Selected fields to be encoded")
             final String fieldsStr,

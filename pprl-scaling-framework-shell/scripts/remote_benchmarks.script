@@ -2,45 +2,45 @@
 
 # CLK
 encode_data --name dblp --fields author,title,year --include key --scheme CLK --N 4096 --out_name clk_dblp
-encode_data --name dblp_4 --fields author,title,year --include key --scheme CLK --N 4096 --out_name clk_dblp_4
-encode_data --name dblp_12 --fields author,title,year --include key --scheme CLK --N 4096 --out_name clk_dblp_12
-encode_data --name dblp_20 --fields author,title,year --include key --scheme CLK --N 4096 --out_name clk_dblp_20
+encode_data --name dblp_4 --fields author,title,year --include key --scheme CLK --N 4096 --out_name clk_dblp
+encode_data --name dblp_12 --fields author,title,year --include key --scheme CLK --N 4096 --out_name clk_dblp
+encode_data --name dblp_20 --fields author,title,year --include key --scheme CLK --N 4096 --out_name clk_dblp
 
 # FBF Static
 encode_data --name dblp --fields author,title,year --include key --scheme FBF --fbfN 1024 --out_name fbf_s_dblp
-encode_data --name dblp_4 --fields author,title,year --include key --scheme FBF --fbfN 1024 --out_name fbf_s_dblp_4
-encode_data --name dblp_12 --fields author,title,year --include key --scheme FBF --fbfN 1024 --out_name fbf_s_dblp_12
-encode_data --name dblp_20 --fields author,title,year --include key --scheme FBF --fbfN 1024 --out_name fbf_s_dblp_20
+encode_data --name dblp_4 --fields author,title,year --include key --scheme FBF --fbfN 1024 --out_name fbf_s_dblp
+encode_data --name dblp_12 --fields author,title,year --include key --scheme FBF --fbfN 1024 --out_name fbf_s_dblp
+encode_data --name dblp_20 --fields author,title,year --include key --scheme FBF --fbfN 1024 --out_name fbf_s_dblp
 
 
 # FBF Dynamic
 encode_data --name dblp --fields author,title,year --include key --scheme FBF --stats hdfs://namenode-0:8020/user/ubuntu/pprl/dblp_stats.properties --out_name fbf_d_dblp
-encode_data --name dblp_4 --fields author,title,year --include key --scheme FBF --stats hdfs://namenode-0:8020/user/ubuntu/pprl/dblp_stats.properties --out_name fbf_d_dblp_4
-encode_data --name dblp_12 --fields author,title,year --include key --scheme FBF --stats hdfs://namenode-0:8020/user/ubuntu/pprl/dblp_stats.properties --out_name fbf_d_dblp_12
-encode_data --name dblp_20 --fields author,title,year --include key --scheme FBF --stats hdfs://namenode-0:8020/user/ubuntu/pprl/dblp_stats.properties --out_name fbf_d_dblp_20
+encode_data --name dblp_4 --fields author,title,year --include key --scheme FBF --stats hdfs://namenode-0:8020/user/ubuntu/pprl/dblp_stats.properties --out_name fbf_d_dblp
+encode_data --name dblp_12 --fields author,title,year --include key --scheme FBF --stats hdfs://namenode-0:8020/user/ubuntu/pprl/dblp_stats.properties --out_name fbf_d_dblp
+encode_data --name dblp_20 --fields author,title,year --include key --scheme FBF --stats hdfs://namenode-0:8020/user/ubuntu/pprl/dblp_stats.properties --out_name fbf_d_dblp
 
 # RBF Uniform/Static
 encode_data --name dblp --fields author,title,year --include key --scheme RBF --N 4096 --fbfN 1024 --out_name rbf_us_dblp
-encode_data --name dblp_4 --fields author,title,year --include key --scheme RBF --N 4096 --fbfN 1024 --out_name rbf_us_dblp_4
-encode_data --name dblp_12 --fields author,title,year --include key --scheme RBF --N 4096 --fbfN 1024 --out_name rbf_us_dblp_12
-encode_data --name dblp_20 --fields author,title,year --include key --scheme RBF --N 4096 --fbfN 1024 --out_name rbf_us_dblp_20
+encode_data --name dblp_4 --fields author,title,year --include key --scheme RBF --N 4096 --fbfN 1024 --out_name rbf_us_dblp
+encode_data --name dblp_12 --fields author,title,year --include key --scheme RBF --N 4096 --fbfN 1024 --out_name rbf_us_dblp
+encode_data --name dblp_20 --fields author,title,year --include key --scheme RBF --N 4096 --fbfN 1024 --out_name rbf_us_dblp
 
 # RBF Uniform/Dynamic
 encode_data --name dblp --fields author,title,year --include key --scheme RBF --N 4096 --stats hdfs://namenode-0:8020/user/ubuntu/pprl/dblp_stats.properties --out_name rbf_ud_dblp
-encode_data --name dblp_4 --fields author,title,year --include key --scheme RBF --N 4096 --stats hdfs://namenode-0:8020/user/ubuntu/pprl/dblp_stats.properties --out_name rbf_ud_dblp_4
-encode_data --name dblp_12 --fields author,title,year --include key --scheme RBF --N 4096 --stats hdfs://namenode-0:8020/user/ubuntu/pprl/dblp_stats.properties --out_name rbf_ud_dblp_12
-encode_data --name dblp_20 --fields author,title,year --include key --scheme RBF --N 4096 --stats hdfs://namenode-0:8020/user/ubuntu/pprl/dblp_stats.properties --out_name rbf_ud_dblp_20
+encode_data --name dblp_4 --fields author,title,year --include key --scheme RBF --N 4096 --stats hdfs://namenode-0:8020/user/ubuntu/pprl/dblp_stats.properties --out_name rbf_ud_dblp
+encode_data --name dblp_12 --fields author,title,year --include key --scheme RBF --N 4096 --stats hdfs://namenode-0:8020/user/ubuntu/pprl/dblp_stats.properties --out_name rbf_ud_dblp
+encode_data --name dblp_20 --fields author,title,year --include key --scheme RBF --N 4096 --stats hdfs://namenode-0:8020/user/ubuntu/pprl/dblp_stats.properties --out_name rbf_ud_dblp
 
 # RBF Weighted/Static
 encode_data --name dblp --fields author,title,year --include key --scheme RBF --weights 0.50,0.35,0.15 --fbfN 1024 --out_name rbf_ws_dblp
-encode_data --name dblp_4 --fields author,title,year --include key --scheme RBF --weights 0.50,0.35,0.15 --fbfN 1024 --out_name rbf_ws_dblp_4
-encode_data --name dblp_12 --fields author,title,year --include key --scheme RBF --weights 0.50,0.35,0.15 --fbfN 1024 --out_name rbf_ws_dblp_12
-encode_data --name dblp_20 --fields author,title,year --include key --scheme RBF --weights 0.50,0.35,0.15 --fbfN 1024 --out_name rbf_ws_dblp_20
+encode_data --name dblp_4 --fields author,title,year --include key --scheme RBF --weights 0.50,0.35,0.15 --fbfN 1024 --out_name rbf_ws_dblp
+encode_data --name dblp_12 --fields author,title,year --include key --scheme RBF --weights 0.50,0.35,0.15 --fbfN 1024 --out_name rbf_ws_dblp
+encode_data --name dblp_20 --fields author,title,year --include key --scheme RBF --weights 0.50,0.35,0.15 --fbfN 1024 --out_name rbf_ws_dblp
 
 
 # RBF Weithed/Dynamic
 encode_data --name dblp --fields author,title,year --include key --scheme RBF --weights 0.50,0.35,0.15 --stats hdfs://namenode-0:8020/user/ubuntu/pprl/dblp_stats.properties --out_name rbf_wd_dblp
-encode_data --name dblp_4 --fields author,title,year --include key --scheme RBF --weights 0.50,0.35,0.15 --stats hdfs://namenode-0:8020/user/ubuntu/pprl/dblp_stats.properties --out_name rbf_wd_dblp_4
-encode_data --name dblp_12 --fields author,title,year --include key --scheme RBF --weights 0.50,0.35,0.15 --stats hdfs://namenode-0:8020/user/ubuntu/pprl/dblp_stats.properties --out_name rbf_wd_dblp_12
-encode_data --name dblp_20 --fields author,title,year --include key --scheme RBF --weights 0.50,0.35,0.15 --stats hdfs://namenode-0:8020/user/ubuntu/pprl/dblp_stats.properties --out_name rbf_wd_dblp_20
+encode_data --name dblp_4 --fields author,title,year --include key --scheme RBF --weights 0.50,0.35,0.15 --stats hdfs://namenode-0:8020/user/ubuntu/pprl/dblp_stats.properties --out_name rbf_wd_dblp
+encode_data --name dblp_12 --fields author,title,year --include key --scheme RBF --weights 0.50,0.35,0.15 --stats hdfs://namenode-0:8020/user/ubuntu/pprl/dblp_stats.properties --out_name rbf_wd_dblp
+encode_data --name dblp_20 --fields author,title,year --include key --scheme RBF --weights 0.50,0.35,0.15 --stats hdfs://namenode-0:8020/user/ubuntu/pprl/dblp_stats.properties --out_name rbf_wd_dblp
 

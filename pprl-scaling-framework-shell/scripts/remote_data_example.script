@@ -16,15 +16,3 @@ calc_data_stats --dataset_name dblp_sorted_sample --uid uid --fields author,titl
 
 # move sample to ${home}/pprl
 ! hadoop fs -cp /user/ubuntu/pprl/dblp_sorted_sample/stats/dblp_sorted_sample_stats.properties /user/ubuntu/pprl/dblp_stats.properties
-
-# begin encodings
-
-# CLK
-encode_data --name dblp --fields author,title,year --include key --scheme CLK --N 4096 --out_name clk_dblp
-encode_data --name dblp_4 --fields author,title,year --include key --scheme CLK --N 4096 --out_name clk_dblp_4
-encode_data --name dblp_12 --fields author,title,year --include key --scheme CLK --N 4096 --out_name clk_dblp_12
-encode_data --name dblp_20 --fields author,title,year --include key --scheme CLK --N 4096 --out_name clk_dblp_20
-
-
-
-

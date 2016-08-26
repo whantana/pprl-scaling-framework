@@ -1,7 +1,8 @@
 package gr.upatras.ceid.pprl.shell.command;
 
-import gr.upatras.ceid.pprl.blocking.BlockingUtil;
+import gr.upatras.ceid.pprl.blocking.HammingLSHBlockingUtil;
 import gr.upatras.ceid.pprl.blocking.HammingLSHBlocking;
+import gr.upatras.ceid.pprl.blocking.HammingLSHBlockingResult;
 import gr.upatras.ceid.pprl.matching.PrivateSimilarityUtil;
 import gr.upatras.ceid.pprl.service.blocking.BlockingService;
 import gr.upatras.ceid.pprl.service.blocking.LocalBlockingService;
@@ -61,7 +62,7 @@ public class BlockingCommands implements CommandMarker {
     public String command0() {
         LOG.info("Supported blocking schemes : ");
         int i = 1;
-        for(String methodName: BlockingUtil.SCHEME_NAMES) {
+        for(String methodName: HammingLSHBlockingUtil.SCHEME_NAMES) {
             LOG.info("\t{}. {}",i,methodName);
             i++;
         }
@@ -112,7 +113,7 @@ public class BlockingCommands implements CommandMarker {
             if (!CommandUtil.isValidFieldName(bobUidFieldName))
                 throw new IllegalArgumentException("Not a valid field name \"" + bobUidFieldName  + "\"");
 
-            BlockingUtil.schemeNameSupported(blockingSchemeName);
+            HammingLSHBlockingUtil.schemeNameSupported(blockingSchemeName);
             final Path blockingOutputPath = CommandUtil.retrievePath(blockingOutput);
 
             final String similarityMethodName = CommandUtil.retrieveString(similarityMethodNameStr,"hamming");
@@ -145,12 +146,12 @@ public class BlockingCommands implements CommandMarker {
                 final Schema aliceSchema = lds.loadSchema(aliceSchemaPath);
                 final GenericRecord[] aliceRecords = lds.loadDatasetRecords(aliceAvroPaths,aliceSchema);
 
-                final Schema bobSchema = ds.loadSchema(bobSchemaPath);
+                final Schema bobSchema = lds.loadSchema(bobSchemaPath);
                 final GenericRecord[] bobRecords = lds.loadDatasetRecords(bobAvroPaths,bobSchema);
 
                 final HammingLSHBlocking blocking = lbs.newHammingLSHBlockingInstance(L,K,aliceSchema,bobSchema);
 
-                final HammingLSHBlocking.HammingLSHBlockingResult result = lbs.runFPSonHammingBlocking(
+                final HammingLSHBlockingResult result = lbs.runFPSonHammingBlocking(
                         blocking,
                         aliceRecords, aliceUidFieldName,
                         bobRecords, bobUidFieldName,
@@ -212,7 +213,7 @@ public class BlockingCommands implements CommandMarker {
             if (!CommandUtil.isValidFieldName(bobUidFieldName))
                 throw new IllegalArgumentException("Not a valid field name \"" + bobUidFieldName  + "\"");
 
-            BlockingUtil.schemeNameSupported(blockingSchemeName);
+            HammingLSHBlockingUtil.schemeNameSupported(blockingSchemeName);
             final String blockingName = String.format("blocking.%s.%s.%s.%s",
 					blockingSchemeName.toLowerCase(),
 					aliceName,bobName,

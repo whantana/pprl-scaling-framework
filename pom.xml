@@ -64,7 +64,6 @@
 		<module>pprl-scaling-framework-mapreduce</module>
 		<module>pprl-scaling-framework-service</module>
 		<module>pprl-scaling-framework-shell</module>
-		<module>pprl-scaling-framework-webapp</module>
 	</modules>
 
 	<build>
@@ -76,8 +75,7 @@
 					<version>2.12.4</version>
 					<configuration>
 						<workingDirectory>${project.build.testOutputDirectory}</workingDirectory>
-						<forkMode>never</forkMode>
-						<argLine>-Xms256m -Xmx1024m</argLine>
+						<argLine>-Xmx2048m</argLine>
 						<excludes>
         					<exclude>**/*BenchmarkTest.java</exclude>
 						</excludes>

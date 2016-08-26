@@ -45,6 +45,14 @@ public class BloomFilterEncodingTest {
     private static final int Q = 2;
     private FileSystem fs;
 
+    //    final String[] ENCODING_NAMES = {
+    //            "clk",
+    //            "static_fbf","dynamic_fbf",
+    //            "uniform_rbf_static_fbf","uniform_rbf_dynamic_fbf",
+    //            "weighted_rbf_static_fbf","weighted_rbf_dynamic_fbf"
+    //    };
+
+
 
     @Before
     public void setUp() throws URISyntaxException, IOException, DatasetException {
@@ -58,11 +66,6 @@ public class BloomFilterEncodingTest {
             int sz = FieldBloomFilterEncoding.dynamicsize(i, K);
             LOG.info(String.format("i=%d - %.6f - %d",i, g,sz));
         }
-    }
-
-    @Test
-    public void test00() {
-
     }
 
     @Test
@@ -144,8 +147,8 @@ public class BloomFilterEncodingTest {
             weights[i] = statistics.getFieldStatistics().get(SELECTED_FIELDS[i]).getNormalizedRange();
         }
 
-        encodeOriginal(new CLKEncoding(N,K,Q),"clk",
-                fs,bobAvroPaths,bobSchemaPath,SELECTED_FIELDS,REST_FIELDS);
+        encodeOriginal(new CLKEncoding(N, K, Q), "clk",
+                fs, bobAvroPaths, bobSchemaPath, SELECTED_FIELDS, REST_FIELDS);
         encodeOriginal(new FieldBloomFilterEncoding(N,SELECTED_FIELDS.length,K,Q),"static_fbf",
                 fs,bobAvroPaths,bobSchemaPath,SELECTED_FIELDS,REST_FIELDS);
         encodeOriginal(new FieldBloomFilterEncoding(avgQGrams,K,Q),"dynamic_fbf",
@@ -266,7 +269,7 @@ public class BloomFilterEncodingTest {
         }
         writer.close();
         fsdos.close();
-
+        LOG.info("Saved at path {} ", encodingAvroPath);
         return new String[]{
                 encodingAvroPath.toString(),
                 encodingSchemaPath.toString()

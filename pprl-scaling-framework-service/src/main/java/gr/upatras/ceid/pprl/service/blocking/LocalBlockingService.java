@@ -1,8 +1,8 @@
 package gr.upatras.ceid.pprl.service.blocking;
 
 import gr.upatras.ceid.pprl.blocking.BlockingException;
-import gr.upatras.ceid.pprl.blocking.BlockingUtil;
 import gr.upatras.ceid.pprl.blocking.HammingLSHBlocking;
+import gr.upatras.ceid.pprl.blocking.HammingLSHBlockingResult;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingUtil;
 import org.apache.avro.Schema;
@@ -80,14 +80,14 @@ public class LocalBlockingService implements InitializingBean {
      * @return a <code>HammingLSHBlockingResult</code> instance.
      * @throws BlockingException
      */
-    public HammingLSHBlocking.HammingLSHBlockingResult runFPSonHammingBlocking(HammingLSHBlocking blocking,
-                                                                               final GenericRecord[] aliceRecords, final String aliceUidFieldName,
-                                                                               final GenericRecord[] bobRecords, final String bobUidFieldName,
-                                                                               final short C,
-                                                                               final String similarityMethodName,
-                                                                               final double similarityThreshold) throws BlockingException {
+    public HammingLSHBlockingResult runFPSonHammingBlocking(HammingLSHBlocking blocking,
+                                                            final GenericRecord[] aliceRecords, final String aliceUidFieldName,
+                                                            final GenericRecord[] bobRecords, final String bobUidFieldName,
+                                                            final short C,
+                                                            final String similarityMethodName,
+                                                            final double similarityThreshold) throws BlockingException {
         try {
-            blocking.initialize();
+            blocking.initialize(bobRecords);
             return blocking.runFPS(aliceRecords, aliceUidFieldName,
                     bobRecords, bobUidFieldName,
                     C,
@@ -98,10 +98,10 @@ public class LocalBlockingService implements InitializingBean {
         }
     }
 
-    public void saveResult(HammingLSHBlocking.HammingLSHBlockingResult result, Path blockingOutputPath)
+    public void saveResult(HammingLSHBlockingResult result, Path blockingOutputPath)
             throws IOException {
         try {
-            BlockingUtil.saveBlockingResult(localFs, blockingOutputPath, result);
+            HammingLSHBlockingResult.saveBlockingResult(localFs, blockingOutputPath, result);
         } catch (IOException e) {
             LOG.error(e.getMessage(),e);
             throw e;

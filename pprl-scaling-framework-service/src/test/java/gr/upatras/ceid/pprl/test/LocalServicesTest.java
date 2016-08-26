@@ -2,6 +2,7 @@ package gr.upatras.ceid.pprl.test;
 
 import gr.upatras.ceid.pprl.blocking.BlockingException;
 import gr.upatras.ceid.pprl.blocking.HammingLSHBlocking;
+import gr.upatras.ceid.pprl.blocking.HammingLSHBlockingResult;
 import gr.upatras.ceid.pprl.datasets.DatasetException;
 import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
 import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
@@ -350,7 +351,7 @@ public class LocalServicesTest {
             HammingLSHBlocking blocking = bs.newHammingLSHBlockingInstance(HLSH_BLOCKING_L,HLSH_BLOCKING_K,
                     aliceEncodingSchema, bobEncodingSchema
             );
-            HammingLSHBlocking.HammingLSHBlockingResult result = bs.runFPSonHammingBlocking(blocking,
+            HammingLSHBlockingResult result = bs.runFPSonHammingBlocking(blocking,
                     aliceEncodedRecords, aliceUidFieldName,
                     bobEncodedRecords, bobUidFieldName,
                     HLSH_BLOCKING_C, SIMILARITY_METHOD_NAME, SIMILARITY_THRESHOLD);

@@ -15,7 +15,7 @@ import java.io.IOException;
 
 public class A_Csv2AvroTest {
 
-    private static final Logger LOG = LoggerFactory.getLogger(UpdateSchemaTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(A_Csv2AvroTest.class);
 
     private static final String[] SMALL_HEADER = {"id","name","surname","location"};
     private static final String[] MED_HEADER  =  {"id","name","surname","age"};

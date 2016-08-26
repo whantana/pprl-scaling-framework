@@ -6,14 +6,9 @@ import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingUtil;
 import gr.upatras.ceid.pprl.matching.PrivateSimilarityUtil;
 import org.apache.avro.generic.GenericRecord;
 
-import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -32,9 +27,10 @@ public class HammingLSHBlocking {
     private String bobEncodingFieldName;
 
     private int N; // bloom filter length
-
     private int K; // number of keys
     private int L; // number of groups;
+
+    HammingLSHBlockingResult result; // resets with every initialization
 
     /**
      * Constructor.
@@ -151,13 +147,27 @@ public class HammingLSHBlocking {
         }
     }
 
-    /**
-     * Initialization method.
-     */
-    public void initialize() {
-        buckets = new HashMap[L];
-        for (int i = 0; i < L; i++)
-            buckets[i] = new HashMap<BitSet,BitSet>();
+    public void initialize(final GenericRecord[] bobRecords) throws BlockingException {
+        if(result == null) result = new HammingLSHBlockingResult();
+        if(buckets == null) {
+            buckets = new HashMap[L];
+            for (int i = 0; i < L; i++)
+                buckets[i] = new HashMap<BitSet,BitSet>();
+        }
+
+        // hash bob records into the buckets.
+        final long start = System.currentTimeMillis();
+        System.out.print("Blocking bob records...(0%)");
+        for(int r=0; r < bobRecords.length; r++) {
+            System.out.format("\rBlocking bob records...(%d%%)",
+                    Math.round(100*((double)r/(double)bobRecords.length)));
+            BitSet[] keys = hashRecord(bobRecords[r], bobEncodingFieldName);
+            for(int l = 0 ; l < L ; l++)
+                addToBucket(l,keys[l],r,bobRecords.length );
+        }
+        System.out.println("\rBlocking bob records...(100%). DONE");
+        final long stop = System.currentTimeMillis();
+        result.setBobBlockingTime(stop-start);
     }
 
     /**
@@ -178,26 +188,18 @@ public class HammingLSHBlocking {
                                            final short C,
                                            final String similarityMethodName,
                                            final double similarityThreshold) throws BlockingException {
-        if(buckets == null) throw new BlockingException("FPS : Blocking buckets not initialized");
-        // hash bob records into the buckets.
-        for(int r=0; r < bobRecords.length; r++) {
-            BitSet[] keys = hashRecord(bobRecords[r], bobEncodingFieldName);
-            for(int l = 0 ; l < L ; l++)
-                addToBucket(l,keys[l],r,bobRecords.length );
-        }
-        System.out.println("\rBlocking bob records...DONE");
+
+        if(buckets == null) throw new BlockingException("Error at running FPS Bob's Blocking buckets not initialized");
 
         // count collisions of Alice's bloom filters in bobs buckets
-        List<RecordIdPair> mathcedPairs = new LinkedList<RecordIdPair>();
-        int matchedPairsCount = 0;
-        int frequentPairsCount = 0;
+        final long start = System.currentTimeMillis();
         final short[] collisions = new short[bobRecords.length];
-        System.out.print("Counting colission with alice records (0/" + aliceRecords.length + ").");
+        System.out.print("Counting collisions with alice records...(0%)");
         for(int aliceId=0; aliceId < aliceRecords.length; aliceId++) {
-            System.out.print("\rCounting collisions with alice records (" + (aliceId+1)
-                    + "/" + aliceRecords.length + ")." +
-                    " Frequent pairs so far :" + frequentPairsCount + "." +
-                    " Matched pairs so far : " + matchedPairsCount + ".");
+            System.out.format("\rCounting collisions with alice records...(%d%%) " +
+                            "#Frequents Pairs=%d \t #Matched Pairs=%d.",
+                    Math.round(100* ((aliceId+1)/ (double) aliceRecords.length)),
+                    result.getFrequentPairsCount(),result.getMatchedPairsCount());
             final BitSet[] keys = hashRecord(aliceRecords[aliceId], aliceEncodingFieldName);
             Arrays.fill(collisions, (short) 0);
             for (int l = 0; l < blockingGroups.length; l++) {
@@ -207,29 +209,29 @@ public class HammingLSHBlocking {
                     if(collisions[bobId] < 0) continue;
                     collisions[bobId]++;
                     if(collisions[bobId] >= C) {
-                        frequentPairsCount++;
+                        result.increaseFrequentPairsCount();
                         final BloomFilter bf1 = BloomFilterEncodingUtil.retrieveBloomFilter(aliceRecords[aliceId],
                                 aliceEncodingFieldName, N);
                         final BloomFilter bf2 = BloomFilterEncodingUtil.retrieveBloomFilter(bobRecords[bobId],
                                 bobEncodingFieldName, N);
                         if(PrivateSimilarityUtil.similarity(similarityMethodName,bf1,bf2, similarityThreshold)) {
-                            mathcedPairs.add(
-                                    new RecordIdPair(
-                                            String.valueOf(aliceRecords[aliceId].get(aliceUidFieldName)),
-                                            String.valueOf(bobRecords[bobId].get(bobUidFieldName))
-                                    )
-                            );
-                            matchedPairsCount++;
+                            result.addPair(
+                                    String.valueOf(aliceRecords[aliceId].get(aliceUidFieldName)),
+                                    String.valueOf(bobRecords[bobId].get(bobUidFieldName)));
+                            result.increaseMatchedPairsCount();
                         }
                         collisions[bobId] = -1;
                     }
                 }
             }
         }
-        System.out.println("");
+        System.out.format("\rCounting collisions with alice records...(100%%) " +
+                        "#Frequents Pairs=%d \t #Matched Pairs=%d. DONE\n",
+                result.getFrequentPairsCount(),result.getMatchedPairsCount());
+        final long stop = System.currentTimeMillis();
+        result.setFpsTime(stop-start);
 
-        return new HammingLSHBlockingResult(mathcedPairs,
-                matchedPairsCount, frequentPairsCount);
+        return result;
     }
 
     /**
@@ -261,6 +263,14 @@ public class HammingLSHBlocking {
         return keys;
     }
 
+    /**
+     * Add this hash to backet
+     *
+     * @param blockingGroupId blocking group id
+     * @param hash hash
+     * @param bobIndex index
+     * @param bobIdCount
+     */
     private void addToBucket(final int blockingGroupId ,
                              final BitSet hash,
                              final int bobIndex, final int bobIdCount) {
@@ -270,6 +280,37 @@ public class HammingLSHBlocking {
             ids.set(bobIndex);
             buckets[blockingGroupId].put(hash, ids);
         } else ids.set(bobIndex);
+    }
+
+    /**
+     * Setup blocking.
+     *
+     * @param aliceEncoding A-lice encoding.
+     * @param bobEncoding B-ob encoding.
+     * @throws BlockingException
+     */
+    private void setup(final BloomFilterEncoding aliceEncoding,
+                       final BloomFilterEncoding bobEncoding)
+            throws BlockingException {
+        final String schemeName = aliceEncoding.schemeName();
+        if(!schemeName.equals(bobEncoding.schemeName()))
+            throw new BlockingException("Encoding scheme names do not match.");
+        BloomFilterEncodingUtil.schemeNameSupported(schemeName);
+
+        aliceEncodingName = aliceEncoding.getEncodingSchema().getName();
+        bobEncodingName = bobEncoding.getEncodingSchema().getName();
+        if(aliceEncodingName.equals(bobEncodingName))
+            throw new BlockingException("Encodings share the same schema name. Must differ.");
+
+        aliceEncodingFieldName = aliceEncoding.getEncodingFieldName();
+        bobEncodingFieldName = bobEncoding.getEncodingFieldName();
+
+        int aliceN = aliceEncoding.getBFN();
+        int bobN = bobEncoding.getBFN();
+
+        if(aliceN != bobN) throw new BlockingException("Encodings total bloom filter length is different.");
+
+        N = aliceN;
     }
 
     /**
@@ -324,142 +365,5 @@ public class HammingLSHBlocking {
      */
     public String getBobEncodingFieldName() {
         return bobEncodingFieldName;
-    }
-
-    /**
-     * Setup blocking.
-     *
-     * @param aliceEncoding A-lice encoding.
-     * @param bobEncoding B-ob encoding.
-     * @throws BlockingException
-     */
-    private void setup(final BloomFilterEncoding aliceEncoding,
-                       final BloomFilterEncoding bobEncoding)
-            throws BlockingException {
-        final String schemeName = aliceEncoding.schemeName();
-        if(!schemeName.equals(bobEncoding.schemeName()))
-            throw new BlockingException("Encoding scheme names do not match.");
-        BloomFilterEncodingUtil.schemeNameSupported(schemeName);
-
-        aliceEncodingName = aliceEncoding.getEncodingSchema().getName();
-        bobEncodingName = bobEncoding.getEncodingSchema().getName();
-        if(aliceEncodingName.equals(bobEncodingName))
-            throw new BlockingException("Encodings share the same schema name. Must differ.");
-
-        aliceEncodingFieldName = aliceEncoding.getEncodingFieldName();
-        bobEncodingFieldName = bobEncoding.getEncodingFieldName();
-
-        int aliceN = aliceEncoding.getBFN();
-        int bobN = bobEncoding.getBFN();
-
-        if(aliceN != bobN) throw new BlockingException("Encodings total bloom filter length is different.");
-
-        N = aliceN;
-    }
-
-    public class HammingLSHBlockingResult {
-        private final List<RecordIdPair> matchedPairs;
-        private final int matchedPairsCount;
-        private final int frequentPairsCount;
-
-        /**
-         * Constructor
-         *
-         * @param matchedPairs matched pair list.
-         * @param matchedPairsCount matched pair count.
-         * @param frequentPairsCount frequent pair count.
-         */
-        public HammingLSHBlockingResult(final List<RecordIdPair> matchedPairs,
-                                        final int matchedPairsCount,
-                                        final int frequentPairsCount) {
-            this.matchedPairs = matchedPairs;
-            this.matchedPairsCount = matchedPairsCount;
-            this.frequentPairsCount = frequentPairsCount;
-        }
-
-        /**
-         * Returns matched pair list.
-         *
-         * @return matched pair list.
-         */
-        public List<RecordIdPair> getMatchedPairs() {
-            return matchedPairs;
-        }
-
-        /**
-         * Returns matched pairs count.
-         *
-         * @return matched pair count.
-         */
-        public int getMatchedPairsCount() {
-            return matchedPairsCount;
-        }
-
-        /**
-         * Returns frequent pair count.
-         *
-         * @return frequent pair count.
-         */
-        public int getFrequentPairsCount() {
-            return frequentPairsCount;
-        }
-    }
-
-
-    /**
-     * Hamming LSH Blocking Group class.
-     */
-    private class HammingLSHBlockingGroup {
-        private String id;
-        private Integer[] bits;
-
-        /**
-         * Constructor.
-         *
-         * @param id group id.
-         * @param K number of hashes.
-         * @param N length of bloom filter.
-         */
-        public HammingLSHBlockingGroup(final String id,final int K, final int N) {
-            assert K >= 1 && K < N;
-            this.id = id;
-            final List<Integer> bitList = new ArrayList<Integer>(N);
-            for (int i = 0; i < N; i++) bitList.add(i,i);
-            Collections.shuffle(bitList,new SecureRandom());
-            bits = bitList.subList(0,K).toArray(new Integer[K]);
-        }
-
-        /**
-         * Constructor.
-         *
-         * @param id group id.
-         * @param bits bits.
-         */
-        public HammingLSHBlockingGroup(final String id, final Integer[] bits) {
-            this.id = id;
-            this.bits = bits;
-        }
-
-        /**
-         * Hash the bloomfilter.
-         *
-         * @param bloomFilter <code>BloomFitler</code> instance.
-         * @return a bitset as the hash value of bf
-         */
-        public BitSet hash(final BloomFilter bloomFilter) {
-            final BitSet key = new BitSet(bits.length);
-            for (int i=0; i < bits.length ;i++)
-                key.set(i,bloomFilter.getBit(bits[i]));
-            return key;
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder sb = new StringBuilder(id);
-            for (Integer bit : bits) {
-                sb.append(" ").append(bit);
-            }
-            return sb.toString();
-        }
     }
 }

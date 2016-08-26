@@ -247,9 +247,6 @@ public class EncodingCommands implements CommandMarker {
             final GenericRecord[] encodedRecords = les.encodeRecords(records, encoding);
             final Schema encodingSchema = encoding.getEncodingSchema();
 
-            LOG.info(DatasetsUtil.prettyRecords(encodedRecords,encodingSchema));
-            LOG.info("\n");
-
             final Path[] datasetPaths = lds.createDirectories(name,DatasetsService.OTHERS_CAN_READ_PERMISSION);
 
             final Path encodingSchemaPath = datasetPaths[2];
@@ -274,7 +271,7 @@ public class EncodingCommands implements CommandMarker {
             final String avroStr,
             @CliOption(key = {"schema"}, mandatory = true, help = "Local schema avro file.")
             final String schemaStr,
-            @CliOption(key = {"name"}, mandatory = true, help = "Name of encoding.")
+            @CliOption(key = {"out_name"}, mandatory = true, help = "Name of encoding.")
             final String name,
             @CliOption(key = {"fields"}, mandatory = true, help = "Selected fields to be encoded")
             final String fieldsStr,
@@ -333,9 +330,6 @@ public class EncodingCommands implements CommandMarker {
 
             final GenericRecord[] encodedRecords = les.encodeRecords(records, encoding);
             final Schema encodingSchema = encoding.getEncodingSchema();
-
-            LOG.info(DatasetsUtil.prettyRecords(encodedRecords,encodingSchema));
-            LOG.info("\n");
 
             final Path[] datasetPaths = lds.createDirectories(name,DatasetsService.OTHERS_CAN_READ_PERMISSION);
 

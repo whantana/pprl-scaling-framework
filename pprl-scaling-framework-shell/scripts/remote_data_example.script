@@ -6,6 +6,7 @@
 # import dblp (already uploaded)
 import_dblp --xml hdfs://namenode-0:8020/user/ubuntu/dblp.xml --dataset_name dblp
 import_dblp --xml hdfs://namenode-0:8020/user/ubuntu/dblp.xml --reducers 4  --dataset_name dblp_4
+import_dblp --xml hdfs://namenode-0:8020/user/ubuntu/dblp.xml --reducers 8  --dataset_name dblp_8
 import_dblp --xml hdfs://namenode-0:8020/user/ubuntu/dblp.xml --reducers 12  --dataset_name dblp_12
 import_dblp --xml hdfs://namenode-0:8020/user/ubuntu/dblp.xml --reducers 20 --dataset_name dblp_20
 

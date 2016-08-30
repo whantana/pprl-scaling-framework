@@ -85,7 +85,8 @@ public class HammingLSHBlockingUtil {
 
     public static int optimalBlockingGroupCountIter(final double delta, final double pthetaK) {
         final int[] limits = optimalBlockingGroupCountLimits(delta,pthetaK);
-        final int C = frequentPairLimit(limits[0],pthetaK);
+        final int Lopt= limits[0];
+        final int C = frequentPairLimit(Lopt,pthetaK);
         int L=limits[0];
         for(; L < limits[1]; L++)
             if(cdf(L,pthetaK,C) < delta) break;

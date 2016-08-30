@@ -18,6 +18,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.junit.Assert.assertEquals;
 
@@ -25,18 +27,17 @@ public class BloomFilterPrivateSimilarityTest {
 
     private static Logger LOG = LoggerFactory.getLogger(BloomFilterPrivateSimilarityTest.class);
 
-//    final String[] ENCODING_NAMES = {
-//            "clk",
-//            "static_fbf","dynamic_fbf",
-//            "uniform_rbf_static_fbf","uniform_rbf_dynamic_fbf",
-//            "weighted_rbf_static_fbf","weighted_rbf_dynamic_fbf"
-//    };
-
     final String[] ENCODING_NAMES = {
-            "clk"
+            "clk",
+            "static_fbf","dynamic_fbf",
+            "uniform_rbf_static_fbf","uniform_rbf_dynamic_fbf",
+            "weighted_rbf_static_fbf","weighted_rbf_dynamic_fbf"
     };
 
+
     private static int N = 100;
+
+    private static Pattern VOTER_ID_PATTERN = Pattern.compile("[a|b]([0-9]+)_{0,1}[0-9]*");
 
 
     @Test
@@ -124,19 +125,50 @@ public class BloomFilterPrivateSimilarityTest {
                             fs,10,schemaVotersB,new Path("data/voters_b/" + encName + ".avro"));
             final BloomFilterEncoding encodingA = BloomFilterEncodingUtil.setupNewInstance(schemaVotersA);
             final BloomFilterEncoding encodingB = BloomFilterEncodingUtil.setupNewInstance(schemaVotersB);
-            compareRecords(encodingA,encodingB,recordsA,recordsB);
+            compareRecords(encodingA,encodingB,recordsA,recordsB,encName.contains("dynamic"));
         }
     }
 
     private void compareRecords(final BloomFilterEncoding encodingA, final BloomFilterEncoding encodingB,
-                                final GenericRecord[] encodedRecordsA, final GenericRecord[] encodedRecordsB) {
-        DescriptiveStatistics distances[][] = new DescriptiveStatistics[2][3];
+                                final GenericRecord[] encodedRecordsA, final GenericRecord[] encodedRecordsB,
+                                final boolean boostJaccard) throws IOException {
+        DescriptiveStatistics distances[][] = new DescriptiveStatistics[2][4];
         distances[0][0] = new DescriptiveStatistics();
         distances[1][0] = new DescriptiveStatistics();
         distances[0][1] = new DescriptiveStatistics();
         distances[1][1] = new DescriptiveStatistics();
         distances[0][2] = new DescriptiveStatistics();
         distances[1][2] = new DescriptiveStatistics();
+        distances[0][3] = new DescriptiveStatistics();
+        distances[1][3] = new DescriptiveStatistics();
+
+        for (GenericRecord encodedRecordB : encodedRecordsB) {
+            for (GenericRecord encodedRecordA : encodedRecordsA) {
+                int interCardinality = PrivateSimilarityUtil.interCardinality(
+                        encodingA.retrieveBloomFilter(encodedRecordA),
+                        encodingB.retrieveBloomFilter(encodedRecordB)
+                );
+
+                Matcher matcherA = VOTER_ID_PATTERN .matcher(String.valueOf(encodedRecordA.get("id")));
+                Matcher matcherB = VOTER_ID_PATTERN.matcher(String.valueOf(encodedRecordB.get("id")));
+                if(!matcherA.matches() || !matcherB.matches()) throw new IOException("Wrong id format.");
+
+                boolean shouldMatch = matcherA.group(1).equals(matcherB.group(1));
+                distances[shouldMatch ? 0 : 1][3].addValue(interCardinality);
+            }
+        }
+
+        final double jaccardThreshold = boostJaccard ? 0.7 : 0.6;
+        final double diceThreshold = jaccardThreshold + 0.1;
+        final int hammingThreshold = (int)Math.round(
+                distances[0][3].getMean() * ((1 - jaccardThreshold) / jaccardThreshold));
+
+        LOG.info(String.format("\nJaccard threshold : %f , Dice threhold : %f \n H threhold = %d for %d bits",
+                        jaccardThreshold,
+                        diceThreshold,
+                        hammingThreshold,
+                        encodingA.getBFN()));
+
         for (GenericRecord encodedRecordB : encodedRecordsB) {
             for (GenericRecord encodedRecordA : encodedRecordsA) {
                 double hamming = PrivateSimilarityUtil.hamming(
@@ -169,17 +201,20 @@ public class BloomFilterPrivateSimilarityTest {
                 );
                 assertEquals(dice,dice1,0.01);
 
-                boolean hammingMatch = hamming <= 100;
-                boolean jaccardMatch = jaccard >= 0.6;
-                boolean diceMatch = dice >= 0.6;
+                boolean hammingMatch = hamming <= hammingThreshold;
+                boolean jaccardMatch = jaccard >= jaccardThreshold;
+                boolean diceMatch = dice >= diceThreshold;
 
                 boolean matchesCompletely = hammingMatch && jaccardMatch && diceMatch;
                 boolean matchesPartialy = (hammingMatch || jaccardMatch || diceMatch) &&
                         (!hammingMatch || !jaccardMatch || !diceMatch);
                 boolean doesNotMatchAtAll = !(hammingMatch || jaccardMatch || diceMatch);
 
-                boolean shouldMatch = String.valueOf(encodedRecordA.get("id")).charAt(1) ==
-                        String.valueOf(encodedRecordB.get("id")).charAt(1);
+                Matcher matcherA = VOTER_ID_PATTERN .matcher(String.valueOf(encodedRecordA.get("id")));
+                Matcher matcherB = VOTER_ID_PATTERN.matcher(String.valueOf(encodedRecordB.get("id")));
+                if(!matcherA.matches() || !matcherB.matches()) throw new IOException("Wrong id format.");
+
+                boolean shouldMatch = matcherA.group(1).equals(matcherB.group(1));
                 boolean shouldNotMatch = !shouldMatch;
 
                 distances[shouldMatch ? 0 : 1][0].addValue(hamming);
@@ -217,20 +252,6 @@ public class BloomFilterPrivateSimilarityTest {
                 }
             }
         }
-        LOG.info("Matching Hamming stats : ");
-        LOG.info(toStatString(distances[0][0]));
-        LOG.info("Non-Matching Hamming stats : ");
-        LOG.info(toStatString(distances[1][0]));
-
-        LOG.info("Matching Jaccard stats : ");
-        LOG.info(toStatString(distances[0][1]));
-        LOG.info("Non-Matching Jaccard stats : ");
-        LOG.info(toStatString(distances[1][1]));
-
-        LOG.info("Matching Dice stats : ");
-        LOG.info(toStatString(distances[0][2]));
-        LOG.info("Non-Matching Dice stats : ");
-        LOG.info(toStatString(distances[1][2]));
     }
 
     private static String toStatString(DescriptiveStatistics stats) {

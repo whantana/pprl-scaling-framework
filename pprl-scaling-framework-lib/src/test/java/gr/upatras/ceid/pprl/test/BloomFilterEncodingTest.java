@@ -39,20 +39,11 @@ import static org.junit.Assert.assertTrue;
 public class BloomFilterEncodingTest {
     private static Logger LOG = LoggerFactory.getLogger(BloomFilterEncodingTest.class);
 
-    private static final int N = 1024;
-    private static final int Nsmall = 256;
-    private static final int K = 10;
+    private static final int N = 4096;
+    private static final int Nsmall = 1024;
+    private static final int K = 15;
     private static final int Q = 2;
     private FileSystem fs;
-
-    //    final String[] ENCODING_NAMES = {
-    //            "clk",
-    //            "static_fbf","dynamic_fbf",
-    //            "uniform_rbf_static_fbf","uniform_rbf_dynamic_fbf",
-    //            "weighted_rbf_static_fbf","weighted_rbf_dynamic_fbf"
-    //    };
-
-
 
     @Before
     public void setUp() throws URISyntaxException, IOException, DatasetException {
@@ -129,7 +120,7 @@ public class BloomFilterEncodingTest {
     @Test
     public void test2()
             throws DatasetException, BloomFilterEncodingException, IOException {
-        final String[] SELECTED_FIELDS = {"surname","name","address","city"};
+        final String[] SELECTED_FIELDS = {"surname","name","address"};
         final String[] REST_FIELDS = {"id"};
 
         int Narray[] = new int [SELECTED_FIELDS.length];
@@ -141,15 +132,15 @@ public class BloomFilterEncodingTest {
         final DatasetStatistics statistics = calcDatasetStatistics(fs,bobAvroPaths,bobSchemaPath,SELECTED_FIELDS);
 
         final double[] avgQGrams = new double[SELECTED_FIELDS.length];
-        final double[] weights = new double[SELECTED_FIELDS.length];
         for (int i = 0; i < SELECTED_FIELDS.length; i++) {
             avgQGrams[i] = statistics.getFieldStatistics().get(SELECTED_FIELDS[i]).getQgramCount(Q);
-            weights[i] = statistics.getFieldStatistics().get(SELECTED_FIELDS[i]).getNormalizedRange();
         }
+        final double[] weights = new double[] {0.25771,0.55718,0.18511};
+
 
         encodeOriginal(new CLKEncoding(N, K, Q), "clk",
                 fs, bobAvroPaths, bobSchemaPath, SELECTED_FIELDS, REST_FIELDS);
-        encodeOriginal(new FieldBloomFilterEncoding(N,SELECTED_FIELDS.length,K,Q),"static_fbf",
+        encodeOriginal(new FieldBloomFilterEncoding(Nsmall,SELECTED_FIELDS.length,K,Q),"static_fbf",
                 fs,bobAvroPaths,bobSchemaPath,SELECTED_FIELDS,REST_FIELDS);
         encodeOriginal(new FieldBloomFilterEncoding(avgQGrams,K,Q),"dynamic_fbf",
                 fs,bobAvroPaths,bobSchemaPath,SELECTED_FIELDS,REST_FIELDS);

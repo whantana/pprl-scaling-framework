@@ -17,11 +17,15 @@ public class HammingLSHBlockingResult {
     private long fpsTime;
     private int matchedPairsCount;
     private int frequentPairsCount;
+    private long bobBlockingSize;
+    private int trullyMatchedCount;
 
     public HammingLSHBlockingResult() {
         matchedPairs = new LinkedList<RecordIdPair>();
         matchedPairsCount = 0;
         frequentPairsCount = 0;
+        bobBlockingSize = 0;
+        trullyMatchedCount = 0;
     }
 
     /**
@@ -118,30 +122,12 @@ public class HammingLSHBlockingResult {
         return frequentPairsCount;
     }
 
-    /**
-     * Sets matched pairs count.
-     */
-    public void setMatchedPairsCount(int matchedPairsCount) {
-        this.matchedPairsCount = matchedPairsCount;
-    }
-
-    /**
-     * Sets frequent pairs count.
-     */
-    public void setFrequentPairsCount(int frequentPairsCount) {
-        this.frequentPairsCount = frequentPairsCount;
-    }
-
-    /**
-     * Sets matched pairs count.
-     */
     public void increaseMatchedPairsCount() {
         this.matchedPairsCount++;
     }
 
-    /**
-     * Sets frequent pairs count.
-     */
+    public void increaseTrullyMatchedCount() { this.trullyMatchedCount++; }
+
     public void increaseFrequentPairsCount() {
         this.frequentPairsCount++;
     }
@@ -160,6 +146,18 @@ public class HammingLSHBlockingResult {
 
     public void setFpsTime(long time) {
         fpsTime = time;
+    }
+
+    public long getBobBlockingSize() {
+        return bobBlockingSize;
+    }
+
+    public void setBobBlockingSize(long bobBlockingSize) {
+        this.bobBlockingSize = bobBlockingSize;
+    }
+
+    public int getTrullyMatchedCount() {
+        return trullyMatchedCount;
     }
 
     /**

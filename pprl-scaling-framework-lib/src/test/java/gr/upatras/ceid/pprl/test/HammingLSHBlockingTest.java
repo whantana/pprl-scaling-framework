@@ -24,11 +24,11 @@ import java.util.Arrays;
 public class HammingLSHBlockingTest {
     private static Logger LOG = LoggerFactory.getLogger(HammingLSHBlockingTest.class);
 
-    //    final String[] ENCODING_NAMES = {
+//    final String[] ENCODING_NAMES = {
 //            "clk",
-//            "static_fbf","dynamic_fbf",
-//            "uniform_rbf_static_fbf","uniform_rbf_dynamic_fbf",
-//            "weighted_rbf_static_fbf","weighted_rbf_dynamic_fbf"
+//            "fbf_s","fbf_d",
+//            "rbf_us","rbf_ud",
+//            "rbf_ws","rbf_wd"
 //    };
     final String[] ENCODING_NAMES = {
             "clk",

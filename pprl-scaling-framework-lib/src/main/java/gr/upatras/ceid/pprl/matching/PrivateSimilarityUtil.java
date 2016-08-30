@@ -193,13 +193,28 @@ public class PrivateSimilarityUtil {
             byte and = (byte) (0xff & (b1 & b2));
             for (int j = 0; j < 8; j++) {
                 if (((1 << j) & and) != 0) interCardinality++;
-                if (((1 << j) & b1) != 0)cardinalities[0]++;
-                if (((1 << j) & b2) != 0)cardinalities[1]++;
+                if (((1 << j) & b1) != 0) cardinalities[0]++;
+                if (((1 << j) & b2) != 0) cardinalities[1]++;
             }
         }
         return (double) 2*interCardinality / ((double) cardinalities[0] + cardinalities[1]);
     }
 
+    public static int interCardinality(BloomFilter bf1, BloomFilter bf2) {
+        int interCardinality = 0;
+        byte[] ba1 = bf1.getByteArray();
+        byte[] ba2 = bf2.getByteArray();
+        assert ba1.length == ba2.length;
+        for (int i = 0; i < ba1.length; i++) {
+            byte b1 = ba1[i];
+            byte b2 = ba2[i];
+            byte and = (byte) (0xff & (b1 & b2));
+            for (int j = 0; j < 8; j++) {
+                if (((1 << j) & and) != 0) interCardinality++;
+            }
+        }
+        return interCardinality;
+    }
 
         /**
          * Returns index of the vector in the frequency array.

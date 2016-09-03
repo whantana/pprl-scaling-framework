@@ -26,9 +26,12 @@ public class HammingLSHBlockingTest {
 
 //    final String[] ENCODING_NAMES = {
 //            "clk",
-//            "fbf_s","fbf_d",
-//            "rbf_us","rbf_ud",
-//            "rbf_ws","rbf_wd"
+//            "static_fbf",
+//            "dynamic_fbf",
+//            "uniform_rbf_static_fbf",
+//            "uniform_rbf_dynamic_fbf",
+//            "weighted_rbf_static_fbf",
+//            "weighted_rbf_dynamic_fbf"
 //    };
     final String[] ENCODING_NAMES = {
             "clk",
@@ -37,7 +40,7 @@ public class HammingLSHBlockingTest {
     private static final String SIMILARITY_METHOD_NAME = "hamming";
     private static final double SIMILAIRTY_THRESHOLD = 120;
     private static final int HAMMING_LSH_K = 30;
-    private static final double[] DELTAS = {0.01,0.005,0.001,0.0005};
+    private static final double[] DELTAS = {0.01,0.005};
 
 
     @Test
@@ -63,7 +66,6 @@ public class HammingLSHBlockingTest {
             for(int i = 0 ; i < DELTAS.length; i++) {
                 double delta = DELTAS[i];
                 final int[] limits = HammingLSHBlockingUtil.optimalBlockingGroupCountLimits(delta, pthetaK);
-                LOG.info("Limits = {}", Arrays.toString(limits));
                 final int Lopt = limits[0];
                 final int Lc = limits[1];
                 final short C = HammingLSHBlockingUtil.frequentPairLimit(Lopt, pthetaK);
@@ -76,9 +78,9 @@ public class HammingLSHBlockingTest {
 
                 final HammingLSHBlocking blocking = new HammingLSHBlocking(L, HAMMING_LSH_K, encodingA, encodingB);
 
-                blocking.initialize(recordsB);
+                blocking.runHLSH(recordsB, "id");
                 final HammingLSHBlockingResult result =
-                        blocking.runFPS(recordsA, "id", recordsB, "id", C, SIMILARITY_METHOD_NAME, SIMILAIRTY_THRESHOLD);
+                        blocking.runFPS(recordsA, "id", C, SIMILARITY_METHOD_NAME, SIMILAIRTY_THRESHOLD);
                 final Path blockingOutputPath = new Path("data/blocking_"+ i + "_" + encName + "_voters_a_voters_b.result");
                 LOG.info("Saving at : {}", blockingOutputPath);
                 HammingLSHBlockingResult.saveBlockingResult(FileSystem.get(new Configuration()), blockingOutputPath, result);

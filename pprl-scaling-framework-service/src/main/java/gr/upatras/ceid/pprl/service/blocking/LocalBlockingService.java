@@ -87,11 +87,11 @@ public class LocalBlockingService implements InitializingBean {
                                                             final String similarityMethodName,
                                                             final double similarityThreshold) throws BlockingException {
         try {
-            blocking.initialize(bobRecords);
-            return blocking.runFPS(aliceRecords, aliceUidFieldName,
-                    bobRecords, bobUidFieldName,
-                    C,
-                    similarityMethodName, similarityThreshold);
+            blocking.runHLSH(
+                    bobRecords, bobUidFieldName);
+            return blocking.runFPS(
+                    aliceRecords, aliceUidFieldName,
+                    C, similarityMethodName, similarityThreshold);
         } catch (BlockingException e) {
             LOG.error(e.getMessage(),e);
             throw e;

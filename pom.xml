@@ -75,7 +75,7 @@
 					<version>2.12.4</version>
 					<configuration>
 						<workingDirectory>${project.build.testOutputDirectory}</workingDirectory>
-						<argLine>-Xms1024m -Xmx2048m</argLine>
+						<argLine>-d64 -Xms6g -Xmx6g</argLine>
 						<excludes>
         					<exclude>**/*BenchmarkTest.java</exclude>
 						</excludes>

@@ -29,9 +29,12 @@ public class BloomFilterPrivateSimilarityTest {
 
     final String[] ENCODING_NAMES = {
             "clk",
-            "static_fbf","dynamic_fbf",
-            "uniform_rbf_static_fbf","uniform_rbf_dynamic_fbf",
-            "weighted_rbf_static_fbf","weighted_rbf_dynamic_fbf"
+            "static_fbf",
+            "dynamic_fbf",
+            "uniform_rbf_static_fbf",
+            "uniform_rbf_dynamic_fbf",
+            "weighted_rbf_static_fbf",
+            "weighted_rbf_dynamic_fbf"
     };
 
 
@@ -112,7 +115,7 @@ public class BloomFilterPrivateSimilarityTest {
     public void test4() throws IOException, DatasetException, BloomFilterEncodingException {
         final FileSystem fs = FileSystem.getLocal(new Configuration());
         for (String encName : ENCODING_NAMES) {
-            LOG.info("Working with " + encName );
+            LOG.info("\n\n\n\nWorking with " + encName );
             final Schema schemaVotersA =
                     DatasetsUtil.loadSchemaFromFSPath(fs,new Path("data/voters_a/" + encName + ".avsc"));
             final Schema schemaVotersB =
@@ -162,12 +165,6 @@ public class BloomFilterPrivateSimilarityTest {
         final double diceThreshold = jaccardThreshold + 0.1;
         final int hammingThreshold = (int)Math.round(
                 distances[0][3].getMean() * ((1 - jaccardThreshold) / jaccardThreshold));
-
-        LOG.info(String.format("\nJaccard threshold : %f , Dice threhold : %f \n H threhold = %d for %d bits",
-                        jaccardThreshold,
-                        diceThreshold,
-                        hammingThreshold,
-                        encodingA.getBFN()));
 
         for (GenericRecord encodedRecordB : encodedRecordsB) {
             for (GenericRecord encodedRecordA : encodedRecordsA) {
@@ -226,42 +223,51 @@ public class BloomFilterPrivateSimilarityTest {
                         String.valueOf(encodedRecordB.get("id")));
 
 
-                if(matchesPartialy && shouldMatch) {
-                    LOG.info("Pair : {} matches partialy {}.",pairString,
-                            String.format("hamming = %f , jaccard = %f dice = %f",hamming,jaccard,dice));
-                }
 
-                if(matchesPartialy && shouldNotMatch) {
-                    LOG.info("Pair : {} matches partialy while it should not {}.",pairString,
-                            String.format("hamming = %f , jaccard = %f dice = %f",hamming,jaccard,dice));
-                }
-
-                if(matchesCompletely && shouldNotMatch) {
-                    LOG.info("Pair : {} matches completely but it shouldn't. {}.",pairString,
-                            String.format("hamming = %f , jaccard = %f dice = %f",hamming,jaccard,dice));
-                    LOG.info("Encoded Record A : {}",DatasetsUtil.prettyRecord(encodedRecordA,encodingA.getEncodingSchema()));
-                    LOG.info("Encoded Record B : {}",DatasetsUtil.prettyRecord(encodedRecordB,encodingB.getEncodingSchema()));
-                }
-
-                if(doesNotMatchAtAll && shouldMatch) {
-                    LOG.info("Pair : {} does not match at all but it should. {}.",pairString,
-                            String.format("hamming = %f , jaccard = %f dice = %f",hamming,jaccard,dice));
-                    LOG.info("Encoded Record A : {}",DatasetsUtil.prettyRecord(encodedRecordA,encodingA.getEncodingSchema()));
-                    LOG.info("Encoded Record B : {}",DatasetsUtil.prettyRecord(encodedRecordB,encodingB.getEncodingSchema()));
-
-                }
+//                if(matchesPartialy && shouldMatch) {
+//                    LOG.info("Pair : {} matches partialy {}.",pairString,
+//                            String.format("hamming = %f , jaccard = %f dice = %f",hamming,jaccard,dice));
+//                }
+//
+//                if(matchesPartialy && shouldNotMatch) {
+//                    LOG.info("Pair : {} matches partialy while it should not {}.",pairString,
+//                            String.format("hamming = %f , jaccard = %f dice = %f",hamming,jaccard,dice));
+//                }
+//
+//                if(matchesCompletely && shouldNotMatch) {
+//                    LOG.info("Pair : {} matches completely but it shouldn't. {}.",pairString,
+//                            String.format("hamming = %f , jaccard = %f dice = %f",hamming,jaccard,dice));
+//                    LOG.info("Encoded Record A : {}",DatasetsUtil.prettyRecord(encodedRecordA,encodingA.getEncodingSchema()));
+//                    LOG.info("Encoded Record B : {}",DatasetsUtil.prettyRecord(encodedRecordB,encodingB.getEncodingSchema()));
+//                }
+//
+//                if(doesNotMatchAtAll && shouldMatch) {
+//                    LOG.info("Pair : {} does not match at all but it should. {}.",pairString,
+//                            String.format("hamming = %f , jaccard = %f dice = %f",hamming,jaccard,dice));
+//                    LOG.info("Encoded Record A : {}",DatasetsUtil.prettyRecord(encodedRecordA,encodingA.getEncodingSchema()));
+//                    LOG.info("Encoded Record B : {}",DatasetsUtil.prettyRecord(encodedRecordB,encodingB.getEncodingSchema()));
+//
+//                }
             }
         }
+
+        LOG.info("\n"+ toStatString(distances,0,"Hamming (TM)"));
+        LOG.info("\n" + toStatString(distances,1, "Jaccard (TM)"));
+        LOG.info("\n" + toStatString(distances,2, "Dice (TM)"));
+        LOG.info("\n" + toStatString(distances,3, "Common-1Bits-Count (TM)"));
+//        LOG.info("\n" + toStatString(distances[1][0], "Hamming (TN)"));
+//        LOG.info("\n" + toStatString(distances[1][1], "Jaccard (TN)"));
+//        LOG.info("\n" + toStatString(distances[1][2], "Dice (TN)"));
+//        LOG.info("\n"+ toStatString(distances[1][3],"Common-1Bits-Count (TN)"));
     }
 
-    private static String toStatString(DescriptiveStatistics stats) {
-        return String.format("\n" +
-                        "Min: %f, Max: %f \n " +
-                        "Avg: %f, Q25: %f ,Q50: %f,Q75: %f \n" +
-                        "Std.Dev : %f Var : %f",
-                stats.getMin(),stats.getMax(),
-                stats.getMean(),stats.getPercentile(25),stats.getPercentile(50),stats.getPercentile(75),
-                stats.getStandardDeviation(),stats.getVariance()
+    private static String toStatString(DescriptiveStatistics[][] stats,int idx,String name) {
+        return String.format(name + " Min: %f, Max: %f \t vs \t  Min: %f, Max: %f ",
+//                        "Avg: %f, Q25: %f ,Q50: %f,Q75: %f \n" +
+//                        "Std.Dev : %f Var : %f",
+                stats[0][idx].getMin(), stats[0][idx].getMax(),stats[1][idx].getMin(), stats[1][idx].getMax()
+//                stats.getMean(),stats.getPercentile(25),stats.getPercentile(50),stats.getPercentile(75),
+//                stats.getStandardDeviation(),stats.getVariance()
 
         );
     }

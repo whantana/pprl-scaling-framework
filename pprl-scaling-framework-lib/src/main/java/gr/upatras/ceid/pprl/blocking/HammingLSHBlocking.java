@@ -6,9 +6,11 @@ import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingUtil;
 import gr.upatras.ceid.pprl.matching.PrivateSimilarityUtil;
 import org.apache.avro.generic.GenericRecord;
 
-import java.util.Arrays;
+import java.security.SecureRandom;
 import java.util.BitSet;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,7 +22,8 @@ public class HammingLSHBlocking {
 
     private HammingLSHBlockingGroup[] blockingGroups;
 
-    private Map<BitSet,BitSet>[] buckets; // blocking buckets for bob records.
+    private Map<BitSet,LinkedList<char[]>>[] buckets; // blocking buckets for bob records.
+    private Map<String,GenericRecord> bobRecordsMap;
 
     private String aliceEncodingName;
     private String bobEncodingName;
@@ -155,31 +158,41 @@ public class HammingLSHBlocking {
      * @param bobRecords encoded bob records.
      * @throws BlockingException
      */
-    public void initialize(final GenericRecord[] bobRecords) throws BlockingException {
+    public void runHLSH(final GenericRecord[] bobRecords, final String bobUidFieldName) throws BlockingException {
         if(result == null) result = new HammingLSHBlockingResult();
         if(buckets == null) {
             buckets = new HashMap[L];
-            for (int i = 0; i < L; i++)
-                buckets[i] = new HashMap<BitSet,BitSet>();
+            for (int i = 0; i < L; i++) {
+                buckets[i] = new HashMap<BitSet, LinkedList<char[]>>();
+
+            }
         }
+        if(bobRecordsMap == null)
+            bobRecordsMap = new HashMap<String, GenericRecord>((int) (bobRecords.length / 0.75f + 1), 0.75f);
+
+        // get runtime
+        final Runtime rt = Runtime.getRuntime();
 
         // hash bob records into the buckets.
-        Runtime.getRuntime().totalMemory();
-        final long fmbb = Runtime.getRuntime().freeMemory();
+        System.gc();
+        final long umb = rt.totalMemory() - rt.freeMemory();
         final long start = System.currentTimeMillis();
         System.out.print("Blocking bob records...(0%)");
         for(int r=0; r < bobRecords.length; r++) {
             System.out.format("\rBlocking bob records...(%d%%)",
                     Math.round(100*((double)r/(double)bobRecords.length)));
+            final String bobId = String.valueOf(bobRecords[r].get(bobUidFieldName));
+            bobRecordsMap.put(bobId, bobRecords[r]);
             BitSet[] keys = hashRecord(bobRecords[r], bobEncodingFieldName);
             for(int l = 0 ; l < L ; l++)
-                addToBucket(l,keys[l],r,bobRecords.length );
+                addToBucket(l, keys[l], bobId);
         }
         final long stop = System.currentTimeMillis();
-        final long fmba = Runtime.getRuntime().freeMemory();
-        final long fmbd = fmbb - fmba;
-        System.out.println("\rBlocking bob records...(100%)");
-        result.setBobBlockingSize(fmbd);
+        System.gc();
+        final long uma = rt.totalMemory() - rt.freeMemory();
+        final long umd = uma - umb;
+        System.out.println("\rBlocking bob records...(100%). Size :" + umd/(1024*1024) + "MB.");
+        result.setBobBlockingSize(umd);
         result.setBobBlockingTime(stop-start);
     }
 
@@ -187,7 +200,6 @@ public class HammingLSHBlocking {
      * Run the FPS method.
      *
      * @param aliceRecords alice records.
-     * @param bobRecords bob records.
      * @param C collision limit ( if >= C a pair is frequent).
      * @param similarityMethodName private similarity method name (supported hamming,jaccard,dice).
      * @param similarityThreshold hamming threshold for matching.
@@ -196,8 +208,6 @@ public class HammingLSHBlocking {
      */
     public HammingLSHBlockingResult runFPS(final GenericRecord[] aliceRecords,
                                            final String aliceUidFieldName,
-                                           final GenericRecord[] bobRecords,
-                                           final String bobUidFieldName,
                                            final short C,
                                            final String similarityMethodName,
                                            final double similarityThreshold) throws BlockingException {
@@ -206,32 +216,33 @@ public class HammingLSHBlocking {
 
         // count collisions of Alice's bloom filters in bobs buckets
         final long start = System.currentTimeMillis();
-        final short[] collisions = new short[bobRecords.length];
+        final HashMap<String,Short> collisions = new HashMap<String,Short>((int)(bobRecordsMap.size()/ 0.75f + 1), 0.75f);
+        //final short[] collisions = new short[bobRecords.length];
         System.out.print("Counting collisions with alice records...(0%)");
         for(int aliceId=0; aliceId < aliceRecords.length; aliceId++) {
-            System.out.format("\rCounting collisions with alice records...(%d%%)",
-                    Math.round(100 * ((aliceId + 1) / (double) aliceRecords.length)));
+            System.out.format("\rCounting collisions with alice records...(%d%%). FPC : %d.",
+                    Math.round(100 * ((aliceId + 1) / (double) aliceRecords.length)),
+                    result.getFrequentPairsCount());
             final BitSet[] keys = hashRecord(aliceRecords[aliceId], aliceEncodingFieldName);
-            Arrays.fill(collisions, (short) 0);
+            collisions.clear();
             for (int l = 0; l < blockingGroups.length; l++) {
-                final BitSet bobIds = buckets[l].get(keys[l]);
+                final LinkedList<char[]> bobIds = buckets[l].get(keys[l]);
                 if(bobIds == null) continue;
-                for (int bobId = bobIds.nextSetBit(0); bobId != -1; bobId = bobIds.nextSetBit(bobId + 1) ) {
-                    collisions[bobId]++;
-                    if(collisions[bobId] == C) {
+                for(char[] bobId : bobIds) {
+                    final String bs = new String(bobId);
+                    short count = collisions.containsKey(bs) ? collisions.get(bs) : 0;
+                    count++;
+                    collisions.put(bs,count);
+                    if(count == C) {
+                        final String as = String.valueOf(aliceRecords[aliceId].get(aliceUidFieldName));
                         result.increaseFrequentPairsCount();
                         final BloomFilter bf1 = BloomFilterEncodingUtil.retrieveBloomFilter(aliceRecords[aliceId],
                                 aliceEncodingFieldName, N);
-                        final BloomFilter bf2 = BloomFilterEncodingUtil.retrieveBloomFilter(bobRecords[bobId],
+                        final BloomFilter bf2 = BloomFilterEncodingUtil.retrieveBloomFilter(bobRecordsMap.get(bs),
                                 bobEncodingFieldName, N);
-                        if (isTrullyMatchedPair(
-                                String.valueOf(aliceRecords[aliceId].get(aliceUidFieldName)),
-                                String.valueOf(bobRecords[bobId].get(bobUidFieldName))))
-                            result.increaseTrullyMatchedCount();
+                        if (isTrullyMatchedPair(as,bs)) result.increaseTrullyMatchedCount();
                         if(PrivateSimilarityUtil.similarity(similarityMethodName, bf1, bf2, similarityThreshold)) {
-                            result.addPair(
-                                    String.valueOf(aliceRecords[aliceId].get(aliceUidFieldName)),
-                                    String.valueOf(bobRecords[bobId].get(bobUidFieldName)));
+                            result.addPair(as, bs);
                             result.increaseMatchedPairsCount();
                         }
                     }
@@ -279,20 +290,18 @@ public class HammingLSHBlocking {
      *
      * @param blockingGroupId blocking group id
      * @param hash hash
-     * @param bobIndex index
-     * @param bobIdCount
+     * @param bobId bob id
      */
     private void addToBucket(final int blockingGroupId ,
                              final BitSet hash,
-                             final int bobIndex, final int bobIdCount) {
-        BitSet ids = buckets[blockingGroupId].get(hash);
+                             final String bobId) {
+        LinkedList<char[]> ids = buckets[blockingGroupId].get(hash);
         if(ids == null) {
-            ids = new BitSet(bobIdCount);
-            ids.set(bobIndex);
+            ids = new LinkedList<char[]>();
+            ids.add(bobId.toCharArray());
             buckets[blockingGroupId].put(hash, ids);
-        } else ids.set(bobIndex);
+        } else ids.add(bobId.toCharArray());
     }
-
     /**
      * Setup blocking.
      *

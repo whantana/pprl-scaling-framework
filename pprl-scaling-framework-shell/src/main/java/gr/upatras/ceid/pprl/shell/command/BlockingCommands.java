@@ -249,7 +249,7 @@ public class BlockingCommands implements CommandMarker {
             LOG.info("\tBlocking Scheme name : {}",blockingSchemeName);
             LOG.info("\tBlocking name : {}",blockingName);
 
-            if(blockingName.startsWith("HLSH_FPS_MR")) {
+            if(blockingSchemeName.startsWith("HLSH_FPS_MR")) {
                 final int L = CommandUtil.retrieveInt(hlshLStr,-1);
                 final int K = CommandUtil.retrieveInt(hlshKStr,-1);
                 final short C = CommandUtil.retrieveShort(hlshCStr, (short) -1);

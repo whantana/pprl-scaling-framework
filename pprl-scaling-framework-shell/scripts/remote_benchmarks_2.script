@@ -1,3 +1,7 @@
+#
+upload_local_data --avro data/voters_a/avro --schema data/voters_a/schema/voters_a.avsc --name voters_a
+upload_local_data --avro data/voters_b/avro --schema data/voters_b/schema/voters_b.avsc --name voters_b
+
 # CLK Encoding
 encode_data --name voters_a --fields name,surname,address --include id --scheme CLK --N 4096 --out_name clk_voters_a
 encode_data --name voters_b --fields name,surname,address --include id --scheme CLK --N 4096 --out_name clk_voters_b

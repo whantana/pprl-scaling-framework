@@ -139,7 +139,7 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
         job1.setOutputValueClass(TextArrayWritable.class);
         SequenceFileOutputFormat.setCompressOutput(job1,true);
         SequenceFileOutputFormat.setOutputCompressionType(job1,
-                SequenceFile.CompressionType.BLOCK);
+                SequenceFile.CompressionType.NONE);
         SequenceFileOutputFormat.setOutputPath(job1,bobBucketsPath);
 
         // run job 1

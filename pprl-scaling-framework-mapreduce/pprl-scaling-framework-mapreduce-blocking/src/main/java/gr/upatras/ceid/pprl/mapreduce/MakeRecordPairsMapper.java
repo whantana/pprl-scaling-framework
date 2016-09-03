@@ -53,6 +53,8 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
         context.nextKeyValue();
         final Schema s = context.getCurrentKey().datum().getSchema();
         setupMapper(s,context);
+        loadFrequentPairs(context, followsKeyValue);
+        System.out.println("This mapper is ready :)");
         try {
             do {
                 map(context.getCurrentKey(), context.getCurrentValue(), context);
@@ -96,8 +98,6 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
             uidFieldName = context.getConfiguration().get(CommonKeys.BOB_UID);
             followsKeyValue = false;
         } else throw new IllegalStateException("Unknown schema name : " + schema.getName());
-
-        loadFrequentPairs(context, followsKeyValue);
     }
 
     /**
@@ -127,14 +127,27 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
         final int capacity = (int) (actualCapacity / fillFactor + 1);
         frequentPairMap = new HashMap<String, ArrayList<byte[]>>(capacity, fillFactor);
 
+        final Runtime rt = Runtime.getRuntime();
+        final long umb = rt.totalMemory() - rt.freeMemory();
+        int i = 0;
         for (final Path path : frequentPairsPaths) {
+            final long uma = rt.totalMemory() - rt.freeMemory();
+            final long umd = uma - umb;
+            System.out.println(String.format("Loading frequent pairs %d%% : %d MB",
+                    ((i+1)/frequentPairsPaths.size()),umd/(1024*1024)));
             SequenceFile.Reader reader = new SequenceFile.Reader(conf, SequenceFile.Reader.file(path));
             Text key = new Text();
             Text value = new Text();
-            if (followKeyValue) while (reader.next(key, value)) populateFrequentPairMap(key, value);
-            else while (reader.next(value, key)) populateFrequentPairMap(key, value);
+            while (reader.next(key, value)) {
+                if (followKeyValue) populateFrequentPairMap(key, value);
+                else populateFrequentPairMap(value, key);
+            }
             reader.close();
+            i++;
         }
+        final long uma = rt.totalMemory() - rt.freeMemory();
+        final long umd = uma - umb;
+        System.out.println(String.format("Loaded frequent pairs 100%% : %d MB",umd/(1024*1024)));
     }
 
 

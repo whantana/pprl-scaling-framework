@@ -68,8 +68,8 @@ public class PrivateSimilarityReducer extends Reducer<TextPairWritable,AvroValue
         } catch (BloomFilterEncodingException e) {
             throw new InterruptedException(e.getMessage());
         }
-        similarityMethodName = context.getConfiguration().get(CommonKeys.SIMILARITY_METHOD_NAME,"hamming");
-        similarityThreshold = context.getConfiguration().getDouble(CommonKeys.SIMILARITY_THRESHOLD, 100);
+        similarityMethodName = "hamming";
+        similarityThreshold = context.getConfiguration().getDouble(CommonKeys.HAMMING_THRESHOLD, 100);
         matchedPairsCount = 0;
         noPairCount = 0;
         aliceRecordMissingCount = 0;

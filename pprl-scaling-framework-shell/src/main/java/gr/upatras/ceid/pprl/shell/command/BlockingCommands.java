@@ -2,8 +2,6 @@ package gr.upatras.ceid.pprl.shell.command;
 
 import gr.upatras.ceid.pprl.blocking.HammingLSHBlockingUtil;
 import gr.upatras.ceid.pprl.blocking.HammingLSHBlocking;
-import gr.upatras.ceid.pprl.blocking.HammingLSHBlockingResult;
-import gr.upatras.ceid.pprl.matching.PrivateSimilarityUtil;
 import gr.upatras.ceid.pprl.service.blocking.BlockingService;
 import gr.upatras.ceid.pprl.service.blocking.LocalBlockingService;
 import gr.upatras.ceid.pprl.service.datasets.DatasetsService;
@@ -47,7 +45,7 @@ public class BlockingCommands implements CommandMarker {
     private LocalBlockingService lbs;
 
 
-    @CliAvailabilityIndicator(value = {"list_supported_blocking_schemes"})
+    @CliAvailabilityIndicator(value = {"list_supported_blocking_schemes","get_optimal_hlsh_fps_params"})
     public boolean availability0() { return true; }
     @CliAvailabilityIndicator(value = {"block_encoded_local_data"})
     public boolean availability1() { return lbs != null && lds != null; }
@@ -69,12 +67,42 @@ public class BlockingCommands implements CommandMarker {
         return "DONE";
     }
 
+    @CliCommand(value = "get_optimal_hlsh_fps_params", help = "Return optimal HLSH/FPS Parameters for future blocking.")
+    public String command1(
+        @CliOption(key = {"theta"}, mandatory = true, help = "Hamming distance threshold.")
+        final String thetaStr,
+        @CliOption(key = {"delta"}, mandatory = true, help = "Hamming distance threshold.")
+        final String deltaStr,
+        @CliOption(key = {"size"}, mandatory = true, help = "Hamming distance threshold.")
+        final String sizeStr,
+        @CliOption(key = {"K"}, mandatory = true, help = "Hamming distance threshold.")
+        final String Kstr
+    ) {
+        final int theta = CommandUtil.retrieveInt(thetaStr,0);
+        final double delta = CommandUtil.retrieveDouble(deltaStr, 0);
+        final int S = CommandUtil.retrieveInt(sizeStr, 0);
+        final int K = CommandUtil.retrieveInt(Kstr, 0);
+
+        LOG.info("Hamming threshold : {}",theta);
+        LOG.info("Confidence factor : {}",delta);
+        LOG.info("Bloom-Filter size : {}",S);
+        LOG.info("HLSH Key size : {}",K);
+        LOG.info("\n");
+
+        final int[] params = HammingLSHBlockingUtil.optimalParameters(theta,S,delta,K);
+        LOG.info("Suggested Colission limit  : {}", params[0]);
+        LOG.info("Suggested Number of blocking tables : {}",params[1]);
+        LOG.info("Suggested Limits on number of blocking tables : {}",
+                Arrays.toString(new int[]{params[2],params[3]})
+        );
+        return "DONE";
+    }
     /**
      *  LOCAL BLOCKING COMMANDS
      */
 
     @CliCommand(value = "block_encoded_local_data", help = "Privately block records of local datasets.")
-    public String command1(
+    public String command2(
             @CliOption(key = {"alice_avro"}, mandatory = true, help = "Local encoded data avro files of Alice (comma separated) or including directory.")
             final String aliceAvroStr,
             @CliOption(key = {"alice_schema"}, mandatory = true, help = "Local encoded schema schema file of Alice.")
@@ -91,16 +119,14 @@ public class BlockingCommands implements CommandMarker {
             final String blockingSchemeName,
             @CliOption(key = {"blocking_output"}, mandatory = true, help = "Blocking output file (local file).")
             final String blockingOutput,
-            @CliOption(key = {"hlsh_L"}, mandatory = false, help = "(Optional) Number of blocking groups for HLSH blocking. Defaults to 32.")
+            @CliOption(key = {"hf_L"}, mandatory = true, help = "Number of blocking groups for HLSH blocking.")
             final String hlshLStr,
-            @CliOption(key = {"hlsh_K"}, mandatory = false, help = "(Optional) Number of hash values for HLSH blocking. Defaults to 5.")
+            @CliOption(key = {"hf_K"}, mandatory = true, help = "Number of hash values for HLSH blocking.")
             final String hlshKStr,
-            @CliOption(key = {"hlsh_C"}, mandatory = false, help = "(Optional) Number of collisions in HLSH blocking groups required to be considered frequent. Defaults to 2.")
+            @CliOption(key = {"hf_C"}, mandatory = true, help = "Number of collisions in HLSH blocking groups required to be considered frequent.")
             final String hlshCStr,
-            @CliOption(key = {"similarity_name"}, mandatory = false, help = "(Optional) Similarity method name. Defaults to \"hamming\".")
-            final String similarityMethodNameStr,
-            @CliOption(key = {"similarity_threshold"}, mandatory = false, help = "(Optional) Similarity threshold. Defaults to 100 for the hamming method, 0.7 for jaccard and 0.5 for dice.")
-            final String similarityThresholdStr
+            @CliOption(key = {"hf_theta"}, mandatory = true, help = "Hamming similarity threshold.")
+            final String hammingThreholdStr
     ) {
         try {
 
@@ -116,13 +142,6 @@ public class BlockingCommands implements CommandMarker {
             HammingLSHBlockingUtil.schemeNameSupported(blockingSchemeName);
             final Path blockingOutputPath = CommandUtil.retrievePath(blockingOutput);
 
-            final String similarityMethodName = CommandUtil.retrieveString(similarityMethodNameStr,"hamming");
-            PrivateSimilarityUtil.methodNameSupported(similarityMethodName);
-            final double similarityThreshold = CommandUtil.retrieveDouble(similarityThresholdStr,
-                    similarityMethodName.equals("hamming") ? 100.0 :
-                            similarityMethodName.equals("jaccard") ? 0.7 :
-                                    similarityMethodName.equals("dice") ? 0.5 : 0);
-
             LOG.info("Blocking local datasets : ");
             LOG.info("\tAlice avro data path(s): {}", Arrays.toString(aliceAvroPaths));
             LOG.info("\tAlice schema path : {}", aliceSchemaPath);
@@ -131,13 +150,13 @@ public class BlockingCommands implements CommandMarker {
             LOG.info("\tBob schema path : {}", bobSchemaPath);
             LOG.info("\tBob UID field name : {} ",bobUidFieldName);
             LOG.info("\tBlocking Scheme name : {}",blockingSchemeName);
-            LOG.info("\tSimilarity method name : {}",similarityMethodName);
-            LOG.info("\tSimilarity threshold : {}",similarityThreshold);
 
             if(blockingSchemeName.equals("HLSH_FPS")) {
-                final int L = CommandUtil.retrieveInt(hlshLStr,32);
-                final int K = CommandUtil.retrieveInt(hlshKStr,5);
-                final short C = CommandUtil.retrieveShort(hlshCStr, (short) 2);
+                final int L = CommandUtil.retrieveInt(hlshLStr,-1);
+                final int K = CommandUtil.retrieveInt(hlshKStr,-1);
+                final short C = CommandUtil.retrieveShort(hlshCStr, (short) -1);
+                final int hammingThreshold = CommandUtil.retrieveInt(hammingThreholdStr,-1);
+                LOG.info("\tHLSH Hamming threshold (theta) : {}",hammingThreshold);
                 LOG.info("\tHLSH Blocking Groups (L) : {}",L);
                 LOG.info("\tHLSH Blocking Hash Values (K) : {}",K);
                 LOG.info("\tFPS Collision Limit (C) : {}",C);
@@ -151,17 +170,17 @@ public class BlockingCommands implements CommandMarker {
 
                 final HammingLSHBlocking blocking = lbs.newHammingLSHBlockingInstance(L,K,aliceSchema,bobSchema);
 
-                final HammingLSHBlockingResult result = lbs.runFPSonHammingBlocking(
+                lbs.runFPSonHammingBlocking(
                         blocking,
                         aliceRecords, aliceUidFieldName,
                         bobRecords, bobUidFieldName,
-                        C,
-                        similarityMethodName, similarityThreshold
+                        C, hammingThreshold
                 );
-                LOG.info("\tFrequent Pairs found : {}", result.getFrequentPairsCount());
-                LOG.info("\tMatched Pairs found : {}", result.getMatchedPairsCount());
+
+                LOG.info("\tFrequent Pairs found : {}", blocking.getResult().getFrequentPairsCount());
+                LOG.info("\tMatched Pairs found : {}", blocking.getResult().getMatchedPairsCount());
                 LOG.info("\tBlocking output path : {}",blockingOutputPath);
-                lbs.saveResult(result,blockingOutputPath);
+                lbs.saveResult(blocking.getResult(),blockingOutputPath);
             } else throw new UnsupportedOperationException("\"" + blockingSchemeName + "\" is not implemented yet.");
 
             return "DONE";
@@ -175,7 +194,7 @@ public class BlockingCommands implements CommandMarker {
      *  HDFS BLOCKING COMMANDS
      */
     @CliCommand(value = "block_encoded_data", help = "Privately block records of HDFS datasets.")
-    public String command2(
+    public String command3(
             @CliOption(key = {"alice_name"}, mandatory = true, help = "Name of Alice encoded dataset on the HDFS site.")
             final String aliceName,
             @CliOption(key = {"alice_uid"}, mandatory = true, help = "UID field-name of the Alice encoded dataset.")
@@ -188,16 +207,14 @@ public class BlockingCommands implements CommandMarker {
             final String blockingSchemeName,
             @CliOption(key = {"reducers"}, mandatory = true, help = "Number of reduces per sub-task (comma-seperated).")
             final String reducersString,
-            @CliOption(key = {"hlsh_L"}, mandatory = false, help = "(Optional) Number of blocking groups for HLSH blocking. Defaults to 32.")
+            @CliOption(key = {"hf_L"}, mandatory = true, help = "Number of blocking groups for HLSH blocking. Defaults to 32.")
             final String hlshLStr,
-            @CliOption(key = {"hlsh_K"}, mandatory = false, help = "(Optional) Number of hash values for HLSH blocking. Defaults to 5.")
+            @CliOption(key = {"hf_K"}, mandatory = true, help = "Number of hash values for HLSH blocking. Defaults to 5.")
             final String hlshKStr,
-            @CliOption(key = {"hlsh_C"}, mandatory = false, help = "(Optional) Number of collisions in HLSH blocking groups required to be considered frequent. Defaults to 2.")
+            @CliOption(key = {"hf_C"}, mandatory = true, help = "Number of collisions in HLSH blocking groups required to be considered frequent. Defaults to 2.")
             final String hlshCStr,
-            @CliOption(key = {"similarity_name"}, mandatory = false, help = "(Optional) Similarity method name. Defaults to \"hamming\".")
-            final String similarityMethodNameStr,
-            @CliOption(key = {"similarity_threshold"}, mandatory = false, help = "(Optional) Similarity threshold. Defaults to 100 for the hamming method, 0.7 for jaccard and 0.5 for dice.")
-            final String similarityThresholdStr
+            @CliOption(key = {"hf_theta"}, mandatory = true, help = "Hamming Similarity threshold.")
+            final String hammingThreholdStr
     ) {
         try {
 
@@ -220,13 +237,6 @@ public class BlockingCommands implements CommandMarker {
                     (new SimpleDateFormat("yyyy.MM.dd.hh.mm")).format(new Date())
             );
 
-            final String similarityMethodName = CommandUtil.retrieveString(similarityMethodNameStr,"hamming");
-            PrivateSimilarityUtil.methodNameSupported(similarityMethodName);
-            final double similarityThreshold = CommandUtil.retrieveDouble(similarityThresholdStr,
-                    similarityMethodName.equals("hamming") ? 100.0 :
-                            similarityMethodName.equals("jaccard") ? 0.7 :
-                                    similarityMethodName.equals("dice") ? 0.5 : 0);
-
             LOG.info("Blocking HDFS datasets : ");
             LOG.info("\tAlice dataset name : {}", aliceName);
             LOG.info("\tAlice avro path : {}", aliceAvroPath);
@@ -238,79 +248,72 @@ public class BlockingCommands implements CommandMarker {
             LOG.info("\tBob UID field name : {} ",bobUidFieldName);
             LOG.info("\tBlocking Scheme name : {}",blockingSchemeName);
             LOG.info("\tBlocking name : {}",blockingName);
-            LOG.info("\tSimilarity method name : {}",similarityMethodName);
-            LOG.info("\tSimilarity threshold : {}",similarityThreshold);
 
-            switch (blockingSchemeName) {
-                case "HLSH_FPS_MR_v0": {
-                    final int L = CommandUtil.retrieveInt(hlshLStr, 32);
-                    final int K = CommandUtil.retrieveInt(hlshKStr, 5);
-                    final short C = CommandUtil.retrieveShort(hlshCStr, (short) 2);
-                    final int[] R = CommandUtil.retrieveInts(reducersString);
-                    if (R.length != 3)
-                        throw new IllegalArgumentException("This job consists of 3 sub-jobs and requires" +
-                                " to define exactly 3 reduer numbers.");
-                    LOG.info("\tHLSH Blocking Groups (L) : {}", L);
-                    LOG.info("\tHLSH Blocking Hash Values (K) : {}", K);
-                    LOG.info("\tCollision Limit (C) : {}", C);
-                    LOG.info("\tJob Reducers : {}", Arrays.toString(R));
-                    LOG.info("\n");
-                    bs.runHammingLSHBlockingToolRunner(
-                            aliceAvroPath, aliceSchemaPath, aliceUidFieldName,
-                            bobAvroPAth, bobSchemaPath, bobUidFieldName,
-                            blockingName,
-                            L, K, C,
-                            similarityMethodName, similarityThreshold,
-                            R[0], R[1], R[2]);
+            if(blockingName.startsWith("HLSH_FPS_MR")) {
+                final int L = CommandUtil.retrieveInt(hlshLStr,-1);
+                final int K = CommandUtil.retrieveInt(hlshKStr,-1);
+                final short C = CommandUtil.retrieveShort(hlshCStr, (short) -1);
+                final int hammingThreshold = CommandUtil.retrieveInt(hammingThreholdStr,-1);
+                LOG.info("\tHLSH Hamming threshold (theta) : {}",hammingThreshold);
+                LOG.info("\tHLSH Blocking Groups (L) : {}",L);
+                LOG.info("\tHLSH Blocking Hash Values (K) : {}",K);
+                LOG.info("\tFPS Collision Limit (C) : {}",C);
+                switch (blockingSchemeName) {
+                    case "HLSH_FPS_MR_v0": {
+                        final int[] R = CommandUtil.retrieveInts(reducersString);
+                        if (R.length != 3)
+                            throw new IllegalArgumentException("This job consists of 3 sub-jobs and requires" +
+                                    " to define exactly 3 reduer numbers.");
+                        LOG.info("\tJob Reducers : {}", Arrays.toString(R));
+                        LOG.info("\n");
+                        bs.runHammingLSHFPSBlockingV0ToolRuner(
+                                aliceAvroPath, aliceSchemaPath, aliceUidFieldName,
+                                bobAvroPAth, bobSchemaPath, bobUidFieldName,
+                                blockingName,
+                                L, K, C,
+                                hammingThreshold,
+                                R[0], R[1], R[2]);
 
-                    break;
+                        break;
+                    }
+                    case "HLSH_FPS_MR_v1": {
+                        final int[] R = CommandUtil.retrieveInts(reducersString);
+                        if (R.length != 3)
+                            throw new IllegalArgumentException("This job consists of 3 sub-jobs and requires" +
+                                    " to define exactly 3 reducer numbers.");
+                        LOG.info("\tJob Reducers : {}", Arrays.toString(R));
+                        LOG.info("\n");
+                        bs.runHammingLSHFPSBlockingV1ToolRuner(
+                                aliceAvroPath, aliceSchemaPath, aliceUidFieldName,
+                                bobAvroPAth, bobSchemaPath, bobUidFieldName,
+                                blockingName,
+                                L, K, C,
+                                hammingThreshold,
+                                R[0], R[1], R[2]);
+                        break;
+                    }
+                    case "HLSH_FPS_MR_v2": {
+                        final int[] R = CommandUtil.retrieveInts(reducersString);
+                        if (R.length != 2)
+                            throw new IllegalArgumentException("This job consists of 2 sub-jobs and requires" +
+                                    " to define exactly 2 reducer numbers.");
+                        LOG.info("\tHLSH Blocking Groups (L) : {}", L);
+                        LOG.info("\tHLSH Blocking Hash Values (K) : {}", K);
+                        LOG.info("\tFPS Collision Limit (C) : {}", C);
+                        LOG.info("\tJob Reducers : {}", Arrays.toString(R));
+                        LOG.info("\n");
+                        bs.runHammingLSHFPSBlockingV2ToolRuner(
+                                aliceAvroPath, aliceSchemaPath, aliceUidFieldName,
+                                bobAvroPAth, bobSchemaPath, bobUidFieldName,
+                                blockingName,
+                                L, K, C,
+                                hammingThreshold,
+                                R[0], R[1]);
+                        break;
+                    }
+                    default:
+                        throw new UnsupportedOperationException("\"" + blockingSchemeName + "\" is not implemented yet.");
                 }
-                case "HLSH_FPS_MR_v1": {
-                    final int L = CommandUtil.retrieveInt(hlshLStr, 32);
-                    final int K = CommandUtil.retrieveInt(hlshKStr, 5);
-                    final short C = CommandUtil.retrieveShort(hlshCStr, (short) 2);
-                    final int[] R = CommandUtil.retrieveInts(reducersString);
-                    if (R.length != 3)
-                        throw new IllegalArgumentException("This job consists of 3 sub-jobs and requires" +
-                                " to define exactly 3 reducer numbers.");
-                    LOG.info("\tHLSH Blocking Groups (L) : {}", L);
-                    LOG.info("\tHLSH Blocking Hash Values (K) : {}", K);
-                    LOG.info("\tFPS Collision Limit (C) : {}", C);
-                    LOG.info("\tJob Reducers : {}", Arrays.toString(R));
-                    LOG.info("\n");
-                    bs.runHammingLSHFPSBlockingToolRuner(
-                            aliceAvroPath, aliceSchemaPath, aliceUidFieldName,
-                            bobAvroPAth, bobSchemaPath, bobUidFieldName,
-                            blockingName,
-                            L, K, C,
-                            similarityMethodName, similarityThreshold,
-                            R[0], R[1], R[2]);
-                    break;
-                }
-                case "HLSH_FPS_MR_v2": {
-                    final int L = CommandUtil.retrieveInt(hlshLStr, 32);
-                    final int K = CommandUtil.retrieveInt(hlshKStr, 5);
-                    final short C = CommandUtil.retrieveShort(hlshCStr, (short) 2);
-                    final int[] R = CommandUtil.retrieveInts(reducersString);
-                    if (R.length != 2)
-                        throw new IllegalArgumentException("This job consists of 2 sub-jobs and requires" +
-                                " to define exactly 2 reducer numbers.");
-                    LOG.info("\tHLSH Blocking Groups (L) : {}", L);
-                    LOG.info("\tHLSH Blocking Hash Values (K) : {}", K);
-                    LOG.info("\tFPS Collision Limit (C) : {}", C);
-                    LOG.info("\tJob Reducers : {}", Arrays.toString(R));
-                    LOG.info("\n");
-                    bs.runHammingLSHFPSBlockingV1ToolRuner(
-                            aliceAvroPath, aliceSchemaPath, aliceUidFieldName,
-                            bobAvroPAth, bobSchemaPath, bobUidFieldName,
-                            blockingName,
-                            L, K, C,
-                            similarityMethodName, similarityThreshold,
-                            R[0], R[1]);
-                    break;
-                }
-                default:
-                    throw new UnsupportedOperationException("\"" + blockingSchemeName + "\" is not implemented yet.");
             }
 
             return "DONE";

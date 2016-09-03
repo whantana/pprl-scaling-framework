@@ -24,23 +24,19 @@ import java.util.Arrays;
 public class HammingLSHBlockingTest {
     private static Logger LOG = LoggerFactory.getLogger(HammingLSHBlockingTest.class);
 
-//    final String[] ENCODING_NAMES = {
-//            "clk",
-//            "static_fbf",
-//            "dynamic_fbf",
-//            "uniform_rbf_static_fbf",
-//            "uniform_rbf_dynamic_fbf",
-//            "weighted_rbf_static_fbf",
-//            "weighted_rbf_dynamic_fbf"
-//    };
     final String[] ENCODING_NAMES = {
-            "clk",
-    };
+                "clk",
+                "static_fbf",
+                "dynamic_fbf",
+                "uniform_rbf_static_fbf",
+                "uniform_rbf_dynamic_fbf",
+                "weighted_rbf_static_fbf",
+                "weighted_rbf_dynamic_fbf"
+        };
 
-    private static final String SIMILARITY_METHOD_NAME = "hamming";
-    private static final double SIMILAIRTY_THRESHOLD = 120;
+    private static final int HAMMING_THRESHOLD = 120;
     private static final int HAMMING_LSH_K = 30;
-    private static final double[] DELTAS = {0.01,0.005};
+    private static final double[] DELTAS = {0.01,0.001};
 
 
     @Test
@@ -60,27 +56,24 @@ public class HammingLSHBlockingTest {
             final GenericRecord[] recordsB = DatasetsUtil.loadAvroRecordsFromFSPaths(fs, encodingB.getEncodingSchema(),
                     new Path("data/voters_b/"+ encName +".avro"));
 
-            double ptheta = HammingLSHBlockingUtil.probOfBaseHashMatch((int)SIMILAIRTY_THRESHOLD,encodingA.getBFN());
-            double pthetaK = HammingLSHBlockingUtil.probHashMatch(ptheta,HAMMING_LSH_K);
 
             for(int i = 0 ; i < DELTAS.length; i++) {
                 double delta = DELTAS[i];
-                final int[] limits = HammingLSHBlockingUtil.optimalBlockingGroupCountLimits(delta, pthetaK);
-                final int Lopt = limits[0];
-                final int Lc = limits[1];
-                final short C = HammingLSHBlockingUtil.frequentPairLimit(Lopt, pthetaK);
-                final int L = HammingLSHBlockingUtil.optimalBlockingGroupCountIter(delta,pthetaK);
-                LOG.info("Pr[C < {} ]= {}",C,String.format("%.5f",HammingLSHBlockingUtil.cdf(Lopt,pthetaK,C)));
-                LOG.info("Pr[C < {} ]= {}",C,String.format("%.5f",HammingLSHBlockingUtil.cdf(L,pthetaK,C)));
-                LOG.info("Pr[C < {} ]= {}",C,String.format("%.5f",HammingLSHBlockingUtil.cdf(Lc,pthetaK,C)));
-                LOG.info("Hamming LSH/FPS with {}",
-                        String.format("[Lopt,Lc] = %s, L = %d , C = %d", Arrays.toString(limits), L, C));
+                final int[] fpsParams =
+                        HammingLSHBlockingUtil.optimalParameters(HAMMING_THRESHOLD,encodingA.getBFN(),delta,HAMMING_LSH_K);
+                final short C = (short) fpsParams[0];
+                final int L = fpsParams[1];
+                final int Lopt = fpsParams[2];
+                final int Lc = fpsParams[3];
+                LOG.info("Hamming LSH/FPS with {}", String.format("L = %d , C = %d , [Lopt,Lc] = %s, ",
+                        L, C,Arrays.toString(new int[]{Lopt,Lc})));
 
                 final HammingLSHBlocking blocking = new HammingLSHBlocking(L, HAMMING_LSH_K, encodingA, encodingB);
 
                 blocking.runHLSH(recordsB, "id");
-                final HammingLSHBlockingResult result =
-                        blocking.runFPS(recordsA, "id", C, SIMILARITY_METHOD_NAME, SIMILAIRTY_THRESHOLD);
+                blocking.runFPS(recordsA, "id", C, HAMMING_THRESHOLD);
+
+                final HammingLSHBlockingResult result = blocking.getResult();
                 final Path blockingOutputPath = new Path("data/blocking_"+ i + "_" + encName + "_voters_a_voters_b.result");
                 LOG.info("Saving at : {}", blockingOutputPath);
                 HammingLSHBlockingResult.saveBlockingResult(FileSystem.get(new Configuration()), blockingOutputPath, result);

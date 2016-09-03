@@ -6,11 +6,9 @@ import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingUtil;
 import gr.upatras.ceid.pprl.matching.PrivateSimilarityUtil;
 import org.apache.avro.generic.GenericRecord;
 
-import java.security.SecureRandom;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -35,7 +33,7 @@ public class HammingLSHBlocking {
     private int K; // number of keys
     private int L; // number of groups;
 
-    HammingLSHBlockingResult result; // resets with every initialization
+    HammingLSHBlockingResult result;
 
     /**
      * Constructor.
@@ -163,12 +161,12 @@ public class HammingLSHBlocking {
         if(buckets == null) {
             buckets = new HashMap[L];
             for (int i = 0; i < L; i++) {
-                buckets[i] = new HashMap<BitSet, LinkedList<char[]>>();
+                buckets[i] = new HashMap<>();
 
             }
         }
         if(bobRecordsMap == null)
-            bobRecordsMap = new HashMap<String, GenericRecord>((int) (bobRecords.length / 0.75f + 1), 0.75f);
+            bobRecordsMap = new HashMap<>((int) (bobRecords.length / 0.75f + 1), 0.75f);
 
         // get runtime
         final Runtime rt = Runtime.getRuntime();
@@ -201,28 +199,24 @@ public class HammingLSHBlocking {
      *
      * @param aliceRecords alice records.
      * @param C collision limit ( if >= C a pair is frequent).
-     * @param similarityMethodName private similarity method name (supported hamming,jaccard,dice).
-     * @param similarityThreshold hamming threshold for matching.
+     * @param hammingThreshold hamming threshold for matching.
      * @return Matched record pair list.
      * @throws BlockingException
      */
-    public HammingLSHBlockingResult runFPS(final GenericRecord[] aliceRecords,
-                                           final String aliceUidFieldName,
-                                           final short C,
-                                           final String similarityMethodName,
-                                           final double similarityThreshold) throws BlockingException {
+    public void runFPS(final GenericRecord[] aliceRecords,
+                       final String aliceUidFieldName,
+                       final short C,
+                       final int hammingThreshold) throws BlockingException {
 
         if(buckets == null) throw new BlockingException("Error at running FPS Bob's Blocking buckets not initialized");
 
         // count collisions of Alice's bloom filters in bobs buckets
         final long start = System.currentTimeMillis();
         final HashMap<String,Short> collisions = new HashMap<String,Short>((int)(bobRecordsMap.size()/ 0.75f + 1), 0.75f);
-        //final short[] collisions = new short[bobRecords.length];
         System.out.print("Counting collisions with alice records...(0%)");
         for(int aliceId=0; aliceId < aliceRecords.length; aliceId++) {
-            System.out.format("\rCounting collisions with alice records...(%d%%). FPC : %d.",
-                    Math.round(100 * ((aliceId + 1) / (double) aliceRecords.length)),
-                    result.getFrequentPairsCount());
+            System.out.format("\rCounting collisions with alice records...(%d%%).",
+                    Math.round(100 * ((aliceId + 1) / (double) aliceRecords.length)));
             final BitSet[] keys = hashRecord(aliceRecords[aliceId], aliceEncodingFieldName);
             collisions.clear();
             for (int l = 0; l < blockingGroups.length; l++) {
@@ -241,7 +235,7 @@ public class HammingLSHBlocking {
                         final BloomFilter bf2 = BloomFilterEncodingUtil.retrieveBloomFilter(bobRecordsMap.get(bs),
                                 bobEncodingFieldName, N);
                         if (isTrullyMatchedPair(as,bs)) result.increaseTrullyMatchedCount();
-                        if(PrivateSimilarityUtil.similarity(similarityMethodName, bf1, bf2, similarityThreshold)) {
+                        if(PrivateSimilarityUtil.similarity("hamming", bf1, bf2, hammingThreshold)) {
                             result.addPair(as, bs);
                             result.increaseMatchedPairsCount();
                         }
@@ -252,8 +246,6 @@ public class HammingLSHBlocking {
         System.out.format("\rCounting collisions with alice records...(100%%)");
         final long stop = System.currentTimeMillis();
         result.setFpsTime(stop-start);
-
-        return result;
     }
 
     /**
@@ -387,6 +379,23 @@ public class HammingLSHBlocking {
         return bobEncodingFieldName;
     }
 
+    /**
+     * Returns result.
+     * @return hamming result;
+     */
+    public HammingLSHBlockingResult getResult() {
+        if(result == null) return new HammingLSHBlockingResult();
+        return result;
+    }
+
+    /**
+     * Returns result.
+     *
+     * @return hamming result;
+     */
+    public void resetResult() {
+        result = new HammingLSHBlockingResult();
+    }
 
     /**
      * Only for the voters dataset benchmarkk.

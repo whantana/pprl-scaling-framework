@@ -40,7 +40,7 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
     public int run(String[] args) throws Exception {
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
-        if (args.length != 16) {
+        if (args.length != 15) {
             LOG.error("args.length= {}", args.length);
             for (int i = 0; i < args.length; i++) {
                 LOG.error("args[{}] = {}", i, args[i]);
@@ -51,7 +51,7 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
                     "<bob-buckets-path> <matched-pairs-path> <stats-path>" +
                     "<number-of-blocking-groups-L> <number-of-hashes-K> <frequent-pair-collision-limit-C> " +
                     "<number-of-reducers-job1> <number-of-reducers-job2> " +
-                    "<similarity-method-name> <similarity-threshold>");
+                    "<hamming-threshold>");
             throw new IllegalArgumentException("Invalid number of arguments.");
         }
 
@@ -69,8 +69,7 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
         final short C = Short.valueOf(args[11]);
         final int R1 = Integer.valueOf(args[12]);
         final int R2 = Integer.valueOf(args[13]);
-        final String similarityMethodName = args[14];
-        final double similarityThreshold = Double.valueOf(args[15]);
+        final double similarityThreshold = Double.valueOf(args[14]);
 
         if(K < 1)
             throw new IllegalArgumentException("Number of hashes K cannot be smaller than 1.");
@@ -96,9 +95,12 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
         conf.set(CommonKeys.BOB_UID,bobUidFieldName);
         conf.setInt(CommonKeys.BLOCKING_GROUP_COUNT, L);
         conf.setStrings(CommonKeys.BLOCKING_KEYS,blocking.groupsAsStrings());
-        conf.set(CommonKeys.SIMILARITY_METHOD_NAME,similarityMethodName);
-        conf.setDouble(CommonKeys.SIMILARITY_THRESHOLD,similarityThreshold);
+        conf.setDouble(CommonKeys.HAMMING_THRESHOLD,similarityThreshold);
         conf.setInt(CommonKeys.FREQUENT_PAIR_LIMIT, C);
+
+        conf.setInt("mapreduce.map.memory.mb", 1024);
+        conf.setInt("mapreduce.reduce.memory.mb", 1024);
+        conf.set("mapred.child.java.opts","-Xms820m -Xmx820m");
 
         // setup job1
         final String description1 = String.format("%s(" +

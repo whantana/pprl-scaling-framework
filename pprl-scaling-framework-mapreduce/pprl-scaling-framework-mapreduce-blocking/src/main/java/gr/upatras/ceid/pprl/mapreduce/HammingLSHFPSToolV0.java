@@ -43,7 +43,7 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
     public int run(String[] args) throws Exception {
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
-        if (args.length != 18) {
+        if (args.length != 17) {
             LOG.error("args.length= {}",args.length);
             for (int i = 0; i < args.length; i++) {
                 LOG.error("args[{}] = {}",i,args[i]);
@@ -54,7 +54,7 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
                     "<all-pairs-path> <frequent-pair-path> <matched-pairs-path> <stats-path>" +
                     "<number-of-blocking-groups-L> <number-of-hashes-K> <frequent-pair-collision-limit-C> " +
                     "<number-of-reducers-job1> <number-of-reducers-job2> <number-of-reducers-job3> " +
-                    "<similarity-method-name> <similarity-threshold>");
+                    "<hamming-threshold>");
             throw new IllegalArgumentException("Invalid number of arguments.");
         }
 
@@ -74,8 +74,7 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
         final int R1 = Integer.valueOf(args[13]);
         final int R2 = Integer.valueOf(args[14]);
         final int R3 = Integer.valueOf(args[15]);
-        final String similarityMethodName = args[16];
-        final double similarityThreshold = Double.valueOf(args[17]);
+        final int hammingThreshold = Integer.valueOf(args[16]);
 
         if(K < 1)
             throw new IllegalArgumentException("Number of hashes K cannot be smaller than 1.");
@@ -102,9 +101,12 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
         conf.set(CommonKeys.BOB_UID,bobUidFieldName);
 		conf.setInt(CommonKeys.BLOCKING_GROUP_COUNT, L);
         conf.setStrings(CommonKeys.BLOCKING_KEYS,blocking.groupsAsStrings());
-        conf.set(CommonKeys.SIMILARITY_METHOD_NAME,similarityMethodName);
-        conf.setDouble(CommonKeys.SIMILARITY_THRESHOLD,similarityThreshold);
+        conf.setInt(CommonKeys.HAMMING_THRESHOLD, hammingThreshold);
         conf.setInt(CommonKeys.FREQUENT_PAIR_LIMIT, C);
+
+        conf.setInt("mapreduce.map.memory.mb", 1024);
+        conf.setInt("mapreduce.reduce.memory.mb", 1024);
+        conf.set("mapred.child.java.opts","-Xms820m -Xmx820m");
 
         // setup job1
         final String description1 = String.format("%s(" +
@@ -159,11 +161,13 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
         removeSuccessFile(fs,allPairsPath);
         populateStatsWithCounters(job1.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME),stats,LOG);
 
-        // get important counters
+        // get important counters and add them to configuration
         final int aliceRecordCount = (int)job1.getCounters().findCounter(
                         CommonKeys.COUNTER_GROUP_NAME,CommonKeys.ALICE_RECORD_COUNT_COUNTER).getValue();
         final int bobRecordCount  = (int)job1.getCounters().findCounter(
                         CommonKeys.COUNTER_GROUP_NAME,CommonKeys.BOB_RECORD_COUNT_COUNTER).getValue();
+        conf.setInt(CommonKeys.ALICE_RECORD_COUNT_COUNTER, aliceRecordCount);
+        conf.setInt(CommonKeys.BOB_RECORD_COUNT_COUNTER, bobRecordCount);
 
         // setup job2
         final String description2 = String.format("%s(" +
@@ -215,8 +219,6 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
         populateStatsWithCounters(job2.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME), stats, LOG);
 
         // setup job3
-        conf.setInt(CommonKeys.ALICE_RECORD_COUNT_COUNTER, aliceRecordCount);
-        conf.setInt(CommonKeys.BOB_RECORD_COUNT_COUNTER, bobRecordCount);
         final String description3 = String.format("%s(" +
                         "alice-path : %s, alice-schema-path : %s, " +
                         "bob-path : %s, bob-schema-path : %s, " +
@@ -270,7 +272,8 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
 
 
         // all jobs are succesfull save counters to stats path
-        LOG.info("All jobs are succesfull. See \"{}\" for the matched pairs list.", matchedPairsPath);
+        LOG.info("All jobs are succesfull. Frequent pairs: \"{}\" , Matched pairs: \"{}\" .",
+                frequentPairsPath, matchedPairsPath);
         saveStats(fs, statsPath, stats);
         LOG.info("See \"{}\" for collected stats.", statsPath);
 

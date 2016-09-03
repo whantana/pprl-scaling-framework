@@ -54,10 +54,10 @@ public class HammingLSHFPSBlockingBenchmarkTest {
     private static String[] VOTER_DOCS = {
             "Voter ID", "Surname", "Name", "Address", "City"
     };
-    private static String[][] DATASET_NAMES = {
-//            {"voters_a","voters_b"},
-            {"big_voters_a", "big_voters_b"}
-    };
+    private static String[] DATASET_NAMES =
+            {"voters_a", "voters_b"};
+
+
     private static Pattern VOTER_ID_PATTERN = Pattern.compile("[a|b]([0-9]+)_{0,1}[0-9]*");
 
 
@@ -77,44 +77,44 @@ public class HammingLSHFPSBlockingBenchmarkTest {
     private static int ENCODING_Q = 2;
 
     private final String[] ENCODING_NAMES = {
-			// "clk",
-			// "fbf_s", 
-			// "fbf_d",
-			// "rbf_us", 
-			// "rbf_ud",
-			// "rbf_ws", 
-			"rbf_wd"
+            "clk",
+            "fbf_s",
+            "fbf_d",
+            "rbf_us",
+            "rbf_ud",
+            "rbf_ws",
+            "rbf_wd"
     };
 
-    private static final String HAMMING_SIMILARITY_METHOD_NAME = "hamming";
     private static final int HAMMING_LSH_K = 30;
     private static final double[] HAMMING_DELTAS = {0.01, 0.005, 0.001, 0.0005, 0.0001};
 
+    @Test
     public void test00() throws IOException, DatasetException {
         LOG.info("CSV to avro");
         Schema schemaVotersA = DatasetsUtil.avroSchema(
                 "voters_a", "Voters Registration", "pprl.datasets",
                 VOTER_HEADER, VOTER_TYPES, VOTER_DOCS);
+        final Path pa = DatasetsUtil.csv2avro(fs, schemaVotersA, DATASET_NAMES[0],
+                new Path(fs.getWorkingDirectory(), "data/benchmarks"),
+                new Path(fs.getWorkingDirectory(), "data/benchmarks/" + DATASET_NAMES[0] + ".csv"));
+        LOG.info("Saved at path {} ", pa);
 
         Schema schemaVotersB = DatasetsUtil.avroSchema(
                 "voters_b", "Voters Registration", "pprl.datasets",
                 VOTER_HEADER, VOTER_TYPES, VOTER_DOCS);
-        for (String[] name : DATASET_NAMES) {
-            for (int i : new int[]{0, 1}) {
-                final Path p = DatasetsUtil.csv2avro(fs, i == 0 ? schemaVotersA : schemaVotersB, name[i],
-                        new Path(fs.getWorkingDirectory(), "data/benchmarks"),
-                        new Path(fs.getWorkingDirectory(), "data/benchmarks/" + name[i] + ".csv"));
-                LOG.info("Saved at path {} ", p);
-            }
-        }
+        final Path pb = DatasetsUtil.csv2avro(fs, schemaVotersB, DATASET_NAMES[1],
+                new Path(fs.getWorkingDirectory(), "data/benchmarks"),
+                new Path(fs.getWorkingDirectory(), "data/benchmarks/" + DATASET_NAMES[1] + ".csv"));
+        LOG.info("Saved at path {} ", pb);
     }
 
+    @Test
     public void test01() throws IOException, DatasetException {
         LOG.info("Sample and Stats");
-        String[] datasetNames = {"big_voters_a", "big_voters_b"};
         final Path[][] paths = new Path[][]{
-                DatasetsUtil.retrieveDatasetDirectories(fs, datasetNames[0], new Path("data/benchmarks")),
-                DatasetsUtil.retrieveDatasetDirectories(fs, datasetNames[1], new Path("data/benchmarks"))
+                DatasetsUtil.retrieveDatasetDirectories(fs, DATASET_NAMES[0], new Path("data/benchmarks")),
+                DatasetsUtil.retrieveDatasetDirectories(fs, DATASET_NAMES[1], new Path("data/benchmarks"))
         };
         final Schema[] schemas = new Schema[]{
                 DatasetsUtil.loadSchemaFromFSPath(fs, DatasetsUtil.getSchemaPath(fs, paths[0][2])),
@@ -140,14 +140,14 @@ public class HammingLSHFPSBlockingBenchmarkTest {
 
         LOG.info(DatasetStatistics.prettyStats(STATS));
     }
-
-
+    @Test
     public void test02() throws IOException, DatasetException, BloomFilterEncodingException, BlockingException {
+        LOG.info("Encoding datasets");
         final int fieldCount = SELECTED_FIELDS.length;
         // load records and schema
         final Path[][] paths = new Path[][]{
-                DatasetsUtil.retrieveDatasetDirectories(fs, DATASET_NAMES[0][0], new Path("data/benchmarks")),
-                DatasetsUtil.retrieveDatasetDirectories(fs, DATASET_NAMES[0][1], new Path("data/benchmarks"))
+                DatasetsUtil.retrieveDatasetDirectories(fs, DATASET_NAMES[0], new Path("data/benchmarks")),
+                DatasetsUtil.retrieveDatasetDirectories(fs, DATASET_NAMES[1], new Path("data/benchmarks"))
         };
         final Schema[] schemas = new Schema[]{
                 DatasetsUtil.loadSchemaFromFSPath(fs, DatasetsUtil.getSchemaPath(fs, paths[0][2])),
@@ -225,17 +225,18 @@ public class HammingLSHFPSBlockingBenchmarkTest {
                     ENC_SAMPLES[i][r] = encodings[i].encodeRecord(record);
                     r++;
                 }
+                LOG.info("Encoding : {} , {} ",encodingName,DATASET_NAMES[i] );
                 DatasetsUtil.saveSchemaToFSPath(fs, encodings[i].getEncodingSchema(),
-                        new Path("data/benchmarks/" + encodingName + "_" + DATASET_NAMES[0][i] + ".avsc"));
+                        new Path("data/benchmarks/" + encodingName + "_" + DATASET_NAMES[i] + ".avsc"));
                 DatasetsUtil.saveAvroRecordsToFSPath(fs, ENC_SAMPLES[i], encodings[i].getEncodingSchema(),
-                        new Path("data/benchmarks"), encodingName + "_" + DATASET_NAMES[0][i], 1);
+                        new Path("data/benchmarks"), encodingName + "_" + DATASET_NAMES[i], 1);
             }
         }
     }
 
     @Test
     public void test03() throws IOException, DatasetException, BloomFilterEncodingException, BlockingException {
-        final String BENCHMARK_HEADER = "enc_type,S,threshold,delta,K,Lopt,L,Lc,C,bsize,bt,fpst,tt,fpc,mpc,bm\n";
+        final String BENCHMARK_HEADER = "enc_type,S,threshold,ptheta,pthetaK,delta,K,Lopt,Lc,L,C,bsize,bt,fpst,tt,fpc,mpc,bm\n";
         final StringBuilder BENCHMARK_REPORT_BUILDER = new StringBuilder(BENCHMARK_HEADER);
         GenericRecord[][] ENC_SAMPLES = {
                 new GenericRecord[100000],
@@ -246,12 +247,12 @@ public class HammingLSHFPSBlockingBenchmarkTest {
             System.gc();
             // avro paths
             final Path[] avroPaths = {
-                new Path("data/benchmarks",encodingName + "_" + DATASET_NAMES[0][0] + ".avro"),
-                new Path("data/benchmarks",encodingName + "_" + DATASET_NAMES[0][1] + ".avro")
+                    new Path("data/benchmarks",encodingName + "_" + DATASET_NAMES[0] + ".avro"),
+                    new Path("data/benchmarks",encodingName + "_" + DATASET_NAMES[1] + ".avro")
             };
             final Path[] schemaPaths = {
-                new Path("data/benchmarks",encodingName + "_" + DATASET_NAMES[0][0] + ".avsc"),
-                new Path("data/benchmarks",encodingName + "_" + DATASET_NAMES[0][1] + ".avsc")
+                    new Path("data/benchmarks",encodingName + "_" + DATASET_NAMES[0] + ".avsc"),
+                    new Path("data/benchmarks",encodingName + "_" + DATASET_NAMES[1] + ".avsc")
             };
 
             final Schema[] schemas = new Schema[]{
@@ -292,30 +293,34 @@ public class HammingLSHFPSBlockingBenchmarkTest {
                 }
             }
             int hammingThrehold = (int) trullyMatchedPairHD.getMax();
-            double ptheta = HammingLSHBlockingUtil.probOfBaseHashMatch(hammingThrehold, S);
             int K = (encodingName.contains("d")) ? 20 : HAMMING_LSH_K;
 
-            EXPERIMENT_REPORT_BUILDER.append(hammingThrehold).append(',');
+            double ptheta = HammingLSHBlockingUtil.probOfBaseHashMatch(hammingThrehold, S);
 
             double pthetaK = HammingLSHBlockingUtil.probHashMatch(ptheta,K);
+            EXPERIMENT_REPORT_BUILDER
+                    .append(hammingThrehold).append(',')
+                    .append(String.format("%.2f", ptheta)).append(',')
+                    .append(String.format("%.2f", pthetaK)).append(',');
             final String reportSoFar = EXPERIMENT_REPORT_BUILDER.toString();
             for (double delta : HAMMING_DELTAS) {
                 final StringBuilder hfpsBuilder = new StringBuilder(reportSoFar);
-                final int[] limits = HammingLSHBlockingUtil.optimalBlockingGroupCountLimits(delta, pthetaK);
-                final int Lopt = limits[0];
-                final int Lc = limits[1];
-                final short C = HammingLSHBlockingUtil.frequentPairLimit(Lopt, pthetaK);
-                final int L = HammingLSHBlockingUtil.optimalBlockingGroupCountIter(delta, pthetaK);
+                final int[] FPS_OPT_PARAMS = HammingLSHBlockingUtil.optimalParameters(hammingThrehold,S,delta,K);
+                final short C = (short) FPS_OPT_PARAMS[0];
+                final int L = FPS_OPT_PARAMS[1];
                 hfpsBuilder
                         .append((delta <= 0.0005) ? String.format("%.4f", delta) : delta).append(',')
                         .append(K).append(',')
+                        .append(FPS_OPT_PARAMS[2]).append(',')
+                        .append(FPS_OPT_PARAMS[3]).append(',')
                         .append(L).append(',')
                         .append(C).append(',');
 
                 final HammingLSHBlocking blocking = new HammingLSHBlocking(L, K, encodings[0], encodings[1]);
                 LOG.info(hfpsBuilder.toString());
-                blocking.runHLSH(ENC_SAMPLES[1], "id");
-                final HammingLSHBlockingResult result = blocking.runFPS(ENC_SAMPLES[0], "id", C, HAMMING_SIMILARITY_METHOD_NAME, hammingThrehold);
+//                blocking.runHLSH(ENC_SAMPLES[1], "id");
+//                blocking.runFPS(ENC_SAMPLES[0], "id", C, hammingThrehold);
+                final HammingLSHBlockingResult result = blocking.getResult();
                 hfpsBuilder
                         .append(result.getBobBlockingSize()).append(',')
                         .append(result.getBobBlockingTime()).append(',')
@@ -331,5 +336,4 @@ public class HammingLSHFPSBlockingBenchmarkTest {
         }
         LOG.info("\n\n\n\n\n\n"+ BENCHMARK_REPORT_BUILDER.toString());
     }
-
 }

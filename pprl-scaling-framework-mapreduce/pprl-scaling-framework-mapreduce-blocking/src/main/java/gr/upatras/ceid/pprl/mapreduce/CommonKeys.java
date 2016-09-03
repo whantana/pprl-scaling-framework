@@ -24,8 +24,7 @@ public class CommonKeys {
     public static final String ALICE_UID = "alice.uid.field.name";
     public static final String BOB_UID = "bob.uid.field.name";
     public static final String BLOCKING_KEYS = "blocking.keys";
-    public static final String SIMILARITY_METHOD_NAME = "similarity.method.name";
-    public static final String SIMILARITY_THRESHOLD = "similarity.threshold";
+    public static final String HAMMING_THRESHOLD = "hamming.threshold";
     public static final String BUCKET_INITIAL_CAPACITY = "blocking.bucket.capacity";
     public static final String BOB_DATA_PATH = "bob.avro.path";
 }

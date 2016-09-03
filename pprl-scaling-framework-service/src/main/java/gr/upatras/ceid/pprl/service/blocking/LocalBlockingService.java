@@ -75,23 +75,19 @@ public class LocalBlockingService implements InitializingBean {
      * @param bobRecords bob encoded records.
      * @param bobUidFieldName bob UID field name.
      * @param C collision limit.
-     * @param similarityMethodName similarity method name.
-     * @param similarityThreshold similarity threshold.
-     * @return a <code>HammingLSHBlockingResult</code> instance.
+     * @param hammingThreshold similarity threshold.
      * @throws BlockingException
      */
-    public HammingLSHBlockingResult runFPSonHammingBlocking(HammingLSHBlocking blocking,
-                                                            final GenericRecord[] aliceRecords, final String aliceUidFieldName,
-                                                            final GenericRecord[] bobRecords, final String bobUidFieldName,
-                                                            final short C,
-                                                            final String similarityMethodName,
-                                                            final double similarityThreshold) throws BlockingException {
+    public void runFPSonHammingBlocking(HammingLSHBlocking blocking,
+                                        final GenericRecord[] aliceRecords, final String aliceUidFieldName,
+                                        final GenericRecord[] bobRecords, final String bobUidFieldName,
+                                        final short C,
+                                        final int hammingThreshold) throws BlockingException {
         try {
             blocking.runHLSH(
                     bobRecords, bobUidFieldName);
-            return blocking.runFPS(
-                    aliceRecords, aliceUidFieldName,
-                    C, similarityMethodName, similarityThreshold);
+            blocking.runFPS(
+                    aliceRecords, aliceUidFieldName, C, hammingThreshold);
         } catch (BlockingException e) {
             LOG.error(e.getMessage(),e);
             throw e;

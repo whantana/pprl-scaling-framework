@@ -8,7 +8,7 @@
        http://www.springframework.org/schema/hadoop http://www.springframework.org/schema/hadoop/spring-hadoop.xsd">
 
     <!-- Tool Runner configuration -->
-    <hdp:tool-runner id="hammingLshBlockingToolRunner"
+    <hdp:tool-runner id="hammingLshFpsBlockingV0ToolRunner"
                      configuration-ref="hadoopConfiguration"
                      jar="file://${app.repo}/pprl-scaling-framework-mapreduce-blocking-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.HammingLSHFPSToolV0"
@@ -17,7 +17,7 @@
 						   file://${app.repo}/avro-mapred-${avro.version}-hadoop2.jar,
                            file://${app.repo}/pprl-scaling-framework-lib-${build.version}.jar"/>
 
-    <hdp:tool-runner id="hammingLshFpsBlockingToolRunner"
+    <hdp:tool-runner id="hammingLshFpsBlockingV1ToolRunner"
                      configuration-ref="hadoopConfiguration"
                      jar="file://${app.repo}/pprl-scaling-framework-mapreduce-blocking-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.HammingLSHFPSToolV1"
@@ -26,7 +26,7 @@
 						   file://${app.repo}/avro-mapred-${avro.version}-hadoop2.jar,
                            file://${app.repo}/pprl-scaling-framework-lib-${build.version}.jar"/>
 
-    <hdp:tool-runner id="hammingLshFpsBlockingV1ToolRunner"
+    <hdp:tool-runner id="hammingLshFpsBlockingV2ToolRunner"
                      configuration-ref="hadoopConfiguration"
                      jar="file://${app.repo}/pprl-scaling-framework-mapreduce-blocking-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.HammingLSHFPSToolV2"

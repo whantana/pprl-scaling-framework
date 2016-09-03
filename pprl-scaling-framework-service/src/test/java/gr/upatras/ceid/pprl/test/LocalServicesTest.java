@@ -2,7 +2,6 @@ package gr.upatras.ceid.pprl.test;
 
 import gr.upatras.ceid.pprl.blocking.BlockingException;
 import gr.upatras.ceid.pprl.blocking.HammingLSHBlocking;
-import gr.upatras.ceid.pprl.blocking.HammingLSHBlockingResult;
 import gr.upatras.ceid.pprl.datasets.DatasetException;
 import gr.upatras.ceid.pprl.datasets.DatasetStatistics;
 import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
@@ -72,8 +71,7 @@ public class LocalServicesTest {
     private static final int HLSH_BLOCKING_K = 5;
     private static final short HLSH_BLOCKING_C = 5;
 
-    private static final String SIMILARITY_METHOD_NAME = "hamming";
-    private static final double SIMILARITY_THRESHOLD = 100;
+    private static final int HAMMING_THRESHOLD = 100;
 
 
     private static final Path[] datasetsBase;
@@ -351,13 +349,13 @@ public class LocalServicesTest {
             HammingLSHBlocking blocking = bs.newHammingLSHBlockingInstance(HLSH_BLOCKING_L,HLSH_BLOCKING_K,
                     aliceEncodingSchema, bobEncodingSchema
             );
-            HammingLSHBlockingResult result = bs.runFPSonHammingBlocking(blocking,
+            bs.runFPSonHammingBlocking(blocking,
                     aliceEncodedRecords, aliceUidFieldName,
                     bobEncodedRecords, bobUidFieldName,
-                    HLSH_BLOCKING_C, SIMILARITY_METHOD_NAME, SIMILARITY_THRESHOLD);
+                    HLSH_BLOCKING_C, HAMMING_THRESHOLD);
 
             final Path blockingOutputPath = new Path(dataRepo,"blocking_" + encName + "voters_a_voters_b.pairs");
-            bs.saveResult(result,blockingOutputPath);
+            bs.saveResult(blocking.getResult(),blockingOutputPath);
         }
     }
 

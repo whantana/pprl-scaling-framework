@@ -72,8 +72,7 @@ public class ServicesTest extends AbstractMapReduceTests {
     private static final int HLSH_BLOCKING_K = 5;
     private static final short HLSH_BLOCKING_C = 5;
 
-    private static final String SIMILARITY_METHOD_NAME = "hamming";
-    private static final double SIMILARITY_THRESHOLD = 100;
+    private static final int HAMMING_THRESHOLD = 100;
 
 
     private static final Path[] datasetsBase;
@@ -542,13 +541,13 @@ public class ServicesTest extends AbstractMapReduceTests {
                    aliceName,bobName
            );
 
-           bs.runHammingLSHBlockingToolRunner(
-                   aliceAvroPath,aliceSchemaPath,aliceUidFieldName,
-                   bobAvroPath,bobSchemaPath,bobUidFieldName,
+           bs.runHammingLSHFPSBlockingV0ToolRuner(
+                   aliceAvroPath, aliceSchemaPath, aliceUidFieldName,
+                   bobAvroPath, bobSchemaPath, bobUidFieldName,
                    blockingName1,
-                   HLSH_BLOCKING_L,HLSH_BLOCKING_K,HLSH_BLOCKING_C,
-                   SIMILARITY_METHOD_NAME,SIMILARITY_THRESHOLD,
-                   4,4,4
+                   HLSH_BLOCKING_L, HLSH_BLOCKING_K, HLSH_BLOCKING_C,
+                   HAMMING_THRESHOLD,
+                   4, 4, 4
            );
 
             final String blockingName2 = String.format("blocking.%s.%s.%s.%s",
@@ -557,13 +556,13 @@ public class ServicesTest extends AbstractMapReduceTests {
                     aliceName,bobName
             );
 
-            bs.runHammingLSHFPSBlockingToolRuner(
-                    aliceAvroPath,aliceSchemaPath,aliceUidFieldName,
-                    bobAvroPath,bobSchemaPath,bobUidFieldName,
+            bs.runHammingLSHFPSBlockingV1ToolRuner(
+                    aliceAvroPath, aliceSchemaPath, aliceUidFieldName,
+                    bobAvroPath, bobSchemaPath, bobUidFieldName,
                     blockingName2,
-                    HLSH_BLOCKING_L,HLSH_BLOCKING_K,HLSH_BLOCKING_C,
-                    SIMILARITY_METHOD_NAME,SIMILARITY_THRESHOLD,
-                    4,4,4
+                    HLSH_BLOCKING_L, HLSH_BLOCKING_K, HLSH_BLOCKING_C,
+                    HAMMING_THRESHOLD,
+                    4, 4, 4
             );
 
 
@@ -572,13 +571,13 @@ public class ServicesTest extends AbstractMapReduceTests {
                     (new SimpleDateFormat("yyyy.MM.dd.hh.mm")).format(new Date()),
                     aliceName,bobName
             );
-            bs.runHammingLSHFPSBlockingV1ToolRuner(
-                    aliceAvroPath,aliceSchemaPath,aliceUidFieldName,
-                    bobAvroPath,bobSchemaPath,bobUidFieldName,
+            bs.runHammingLSHFPSBlockingV2ToolRuner(
+                    aliceAvroPath, aliceSchemaPath, aliceUidFieldName,
+                    bobAvroPath, bobSchemaPath, bobUidFieldName,
                     blockingName3,
-                    HLSH_BLOCKING_L,HLSH_BLOCKING_K,HLSH_BLOCKING_C,
-                    SIMILARITY_METHOD_NAME,SIMILARITY_THRESHOLD,
-                    4,4
+                    HLSH_BLOCKING_L, HLSH_BLOCKING_K, HLSH_BLOCKING_C,
+                    HAMMING_THRESHOLD,
+                    4, 4
             );
 
         }

@@ -55,8 +55,10 @@ public class HammingLSHBlockingResult {
             throws IOException {
         final FSDataOutputStream fsdos = fs.create(outputPath, true);
         fsdos.writeBytes("Bob buckets generation time :" + timeToStr(result.getBobBlockingTime()) + "\n" );
+        fsdos.writeBytes("Bob buckets size in bytes :" + result.getBobBlockingSize() + "\n" );
         fsdos.writeBytes("FPS execution time :" + timeToStr(result.getFpsTime()) + "\n" );
         fsdos.writeBytes("Frequent Pairs : " + result.getFrequentPairsCount() + "\n");
+        fsdos.writeBytes("Trully matched Pairs : " + result.getTrullyMatchedCount() + "\n");
         fsdos.writeBytes("Matched Pairs : " + result.getMatchedPairsCount() + "\n");
         fsdos.writeBytes("Pairs:\n");
 

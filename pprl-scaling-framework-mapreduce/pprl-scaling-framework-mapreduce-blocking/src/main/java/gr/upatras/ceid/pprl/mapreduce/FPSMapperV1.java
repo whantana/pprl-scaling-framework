@@ -38,7 +38,7 @@ public class FPSMapperV1 extends Mapper<AvroKey<GenericRecord>,NullWritable,Text
     private String bobEncodingFieldName;
     private String bobUidFieldName;
     private Map<String,Integer> bobId2IndexMap;
-    private Map<BitSet,BitSet>[] bobBuckets;
+    private Map<BitSet,BitSet>[] bobBuckets;        // TODO change this buckets
     private short[] counters;
 
     private HammingLSHBlocking blocking;
@@ -50,8 +50,7 @@ public class FPSMapperV1 extends Mapper<AvroKey<GenericRecord>,NullWritable,Text
     private long matchedPairCount;
     private short C;
     private int N;
-    private double similarityThreshold;
-    private String similarityMethodName;
+    private int hammingThreshold;
 
     @Override
     protected void map(AvroKey<GenericRecord> key, NullWritable value, Context context)
@@ -75,7 +74,7 @@ public class FPSMapperV1 extends Mapper<AvroKey<GenericRecord>,NullWritable,Text
                             encodingFieldName,N);
                     final BloomFilter bf2 = BloomFilterEncodingUtil.retrieveBloomFilter(bobRecord,
                             bobEncodingFieldName,N);
-                    if(PrivateSimilarityUtil.similarity(similarityMethodName, bf1, bf2, similarityThreshold)) {
+                    if(PrivateSimilarityUtil.similarity("hamming", bf1, bf2, hammingThreshold)) {
                         final String bobId = String.valueOf(bobRecord.get(bobUidFieldName));
                         context.write(new Text(aliceId),new Text(bobId));
                         matchedPairCount++;
@@ -150,8 +149,7 @@ public class FPSMapperV1 extends Mapper<AvroKey<GenericRecord>,NullWritable,Text
             C = (short) context.getConfiguration().getInt(CommonKeys.FREQUENT_PAIR_LIMIT, -1);
             if(C < 0) throw new InterruptedException("C is not set.");
             N = aliceEncoding.getBFN();
-            similarityMethodName = context.getConfiguration().get(CommonKeys.SIMILARITY_METHOD_NAME,"hamming");
-            similarityThreshold = context.getConfiguration().getDouble(CommonKeys.SIMILARITY_THRESHOLD, 100);
+            hammingThreshold = context.getConfiguration().getInt(CommonKeys.HAMMING_THRESHOLD, 100);
             loadBobRecords(context);
             loadBobBuckets(context);
             initCounters(context);

@@ -28,10 +28,9 @@ import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.increaseFrequentPairCoun
 import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.increaseRecordCounter;
 
 /**
- * FPS Mapper class.
+ * FPS Mapper class (v2).
  */
-public class FPSMapper extends Mapper<AvroKey<GenericRecord>,NullWritable,Text,Text> {
-
+public class FPSMapperV2 extends Mapper<AvroKey<GenericRecord>,NullWritable,AvroKey<GenericRecord>,Text> {
     private Map<BitSet,ArrayList<byte[]>>[] bobBuckets;
     private Map<String,Short> counters;
 
@@ -46,9 +45,8 @@ public class FPSMapper extends Mapper<AvroKey<GenericRecord>,NullWritable,Text,T
     @Override
     protected void map(AvroKey<GenericRecord> key, NullWritable value, Context context)
             throws IOException, InterruptedException {
-        final Text aliceId = new Text(String.valueOf(key.datum().get(uidFieldName)));
         final BitSet[] keys = blocking.hashRecord(key.datum(), encodingFieldName);
-        if(!counters.isEmpty())counters.clear();
+        if(!counters.isEmpty()) counters.clear();
         for (int i = 0; i < keys.length; i++) {
             ArrayList<byte[]> bobIds = bobBuckets[i].get(keys[i]);
             if(bobIds == null) continue;
@@ -56,7 +54,7 @@ public class FPSMapper extends Mapper<AvroKey<GenericRecord>,NullWritable,Text,T
                 boolean isFrequent = increaseFPSCount(bobId);
                 if(isFrequent) {
                     frequentPairsCount++;
-                    context.write(aliceId, new Text(bobId));
+                    context.write(key, new Text(bobId));
                 }
             }
         }
@@ -97,14 +95,9 @@ public class FPSMapper extends Mapper<AvroKey<GenericRecord>,NullWritable,Text,T
             return false;
         }
         short count = counters.get(str);
-        if(count < 0) return false;
-        if(count + 1 == C) {
-            counters.put(str,(short)-1);
-            return true;
-        }
         count++;
         counters.put(str,count);
-        return false;
+        return count == C;
     }
 
     /**
@@ -177,7 +170,7 @@ public class FPSMapper extends Mapper<AvroKey<GenericRecord>,NullWritable,Text,T
         final SortedSet<Path> bucketPaths = new TreeSet<Path>();
         for(final URI uri : context.getCacheFiles()) {
             if(!uri.toString().endsWith("jar"))
-            bucketPaths.add(new Path(uri));
+                bucketPaths.add(new Path(uri));
         }
 
         for (Path bucketPath : bucketPaths) {

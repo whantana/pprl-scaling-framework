@@ -194,7 +194,7 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
         AvroKeyInputFormat.setInputPaths(job2, alicePath);
         AvroJob.setInputKeySchema(job2, aliceEncodingSchema);
         job2.setInputFormatClass(AvroKeyInputFormat.class);
-        job2.setMapperClass(FPSMapper.class);
+        job2.setMapperClass(FPSMapperV1.class);
         job2.setMapOutputKeyClass(Text.class);
         job2.setMapOutputValueClass(Text.class);
 

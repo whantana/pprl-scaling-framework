@@ -16,6 +16,7 @@ public class HammingLSHBlockingUtil {
         SCHEME_NAMES.add("HLSH_FPS_MR_v0");
         SCHEME_NAMES.add("HLSH_FPS_MR_v1");
         SCHEME_NAMES.add("HLSH_FPS_MR_v2");
+        SCHEME_NAMES.add("HLSH_FPS_MR_v3");
     }
 
     /**

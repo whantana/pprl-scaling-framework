@@ -306,12 +306,25 @@ public class BlockingCommands implements CommandMarker {
                         if (R.length != 2)
                             throw new IllegalArgumentException("This job consists of 2 sub-jobs and requires" +
                                     " to define exactly 2 reducer numbers.");
-                        LOG.info("\tHLSH Blocking Groups (L) : {}", L);
-                        LOG.info("\tHLSH Blocking Hash Values (K) : {}", K);
-                        LOG.info("\tFPS Collision Limit (C) : {}", C);
                         LOG.info("\tJob Reducers : {}", Arrays.toString(R));
                         LOG.info("\n");
                         bs.runHammingLSHFPSBlockingV2ToolRuner(
+                                aliceAvroPath, aliceSchemaPath, aliceUidFieldName,
+                                bobAvroPAth, bobSchemaPath, bobUidFieldName,
+                                blockingName,
+                                L, K, C,
+                                hammingThreshold,
+                                R[0], R[1],seed);
+                        break;
+                    }
+                    case "HLSH_FPS_MR_v3": {
+                        final int[] R = CommandUtil.retrieveInts(reducersString);
+                        if (R.length != 2)
+                            throw new IllegalArgumentException("This job consists of 2 sub-jobs and requires" +
+                                    " to define exactly 2 reducer numbers.");
+                        LOG.info("\tJob Reducers : {}", Arrays.toString(R));
+                        LOG.info("\n");
+                        bs.runHammingLSHFPSBlockingV3ToolRuner(
                                 aliceAvroPath, aliceSchemaPath, aliceUidFieldName,
                                 bobAvroPAth, bobSchemaPath, bobUidFieldName,
                                 blockingName,

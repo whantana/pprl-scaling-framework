@@ -14,9 +14,11 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,11 +28,11 @@ import java.util.TreeMap;
 import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.*;
 
 /**
- * Hamming LSH-FPS v2 tool class.
+ * Hamming LSH-FPS v3 tool class.
  */
-public class HammingLSHFPSToolV2 extends Configured implements Tool {
+public class HammingLSHFPSToolV3 extends Configured implements Tool {
 
-    private static final Logger LOG = LoggerFactory.getLogger(HammingLSHFPSToolV2.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HammingLSHFPSToolV3.class);
 
     private static final String JOB_1_DESCRIPTION = "Generate Bob Blocking buckets";
     private static final String JOB_2_DESCRIPTION = "Find Matched Pairs (FPS).";
@@ -43,7 +45,7 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
             for (int i = 0; i < args.length; i++) {
                 LOG.error("args[{}] = {}", i, args[i]);
             }
-            LOG.error("Usage: HammingLSHFPSToolV2 " +
+            LOG.error("Usage: HammingLSHFPSToolV3 " +
                     "<alice-avro-path> <alice-schema-path> <alice-uid-field-name> " +
                     "<bob-avro-path> <bob-schema-path> <bob-uid-field-name> " +
                     "<bob-buckets-path> <matched-pairs-path> <stats-path>" +
@@ -114,7 +116,7 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
                 L, K, R1);
         LOG.info("Running.1 : {}",description1);
         final Job job1 = Job.getInstance(conf);
-        job1.setJarByClass(HammingLSHFPSToolV2.class);
+        job1.setJarByClass(HammingLSHFPSToolV3.class);
         job1.setJobName(description1);
         job1.setNumReduceTasks(R1);
         job1.setSpeculativeExecution(false);
@@ -153,6 +155,7 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
         removeSuccessFile(fs,bobBucketsPath);
         populateStatsWithCounters(job1.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME), stats, LOG);
 
+
         // get important stats for the next job
         final int[] minMaxAvg = getMinMaxAvgBlockingKeyCounts(job1.getCounters(), L, R1);
         final int minKeyCount = minMaxAvg[0];
@@ -163,6 +166,7 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
         conf.set(CommonKeys.BOB_DATA_PATH, bobPath.toUri().toString());
         conf.setInt(CommonKeys.BOB_RECORD_COUNT_COUNTER, bobRecordCount);
         conf.setInt(CommonKeys.BUCKET_INITIAL_CAPACITY,maxKeyCount);
+
 
         // setup job2
         final String description2 = String.format("%s(" +
@@ -177,7 +181,7 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
                 L, K, C);
         LOG.info("Running.2 : {}",description2);
         final Job job2 = Job.getInstance(conf);
-        job2.setJarByClass(HammingLSHFPSToolV2.class);
+        job2.setJarByClass(HammingLSHFPSToolV3.class);
         job2.setJobName(description2);
         job2.setNumReduceTasks(R2);
         job2.setSpeculativeExecution(false);
@@ -188,12 +192,12 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
         AvroKeyInputFormat.setInputPaths(job2, alicePath);
         AvroJob.setInputKeySchema(job2, aliceEncodingSchema);
         job2.setInputFormatClass(AvroKeyInputFormat.class);
-        job2.setMapperClass(FPSMapperV2.class);
-        AvroJob.setMapOutputKeySchema(job2, aliceEncodingSchema);
+        job2.setMapperClass(FPSMapperV3.class);
+        job2.setMapOutputKeyClass(Text.class);
         job2.setMapOutputValueClass(Text.class);
 
         // setup output
-        job2.setReducerClass(PrivateSimilarityReducerV2.class);
+        job2.setReducerClass(Reducer.class);
         job2.setOutputFormatClass(SequenceFileOutputFormat.class);
         job2.setOutputKeyClass(Text.class);
         job2.setOutputValueClass(Text.class);
@@ -220,5 +224,16 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
         LOG.info("See \"{}\" for collected stats.", statsPath);
 
         return 0;
+    }
+
+    /**
+     * Main
+     *
+     * @param args input args
+     * @throws Exception
+     */
+    public static void main(String[] args) throws Exception {
+        int res = ToolRunner.run(new HammingLSHFPSToolV0(), args);
+        System.exit(res);
     }
 }

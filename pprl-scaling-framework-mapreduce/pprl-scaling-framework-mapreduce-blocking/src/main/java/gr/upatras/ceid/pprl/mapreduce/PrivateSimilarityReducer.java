@@ -36,18 +36,12 @@ public class PrivateSimilarityReducer extends Reducer<TextPairWritable,AvroValue
 
     private long matchedPairsCount;
 
-    private long noPairCount;
-    private long aliceRecordMissingCount;
-    private long bobRecordMissingCount;
-
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         final String aliceSchemaString = context.getConfiguration().get(CommonKeys.ALICE_SCHEMA);
         if (aliceSchemaString == null) throw new IllegalStateException("Alice schema not set.");
         final String bobSchemaString = context.getConfiguration().get(CommonKeys.BOB_SCHEMA);
         if (bobSchemaString == null) throw new IllegalStateException("Bob schema not set.");
-        final String[] blockingKeys = context.getConfiguration().getStrings(CommonKeys.BLOCKING_KEYS, null);
-        if (blockingKeys == null) throw new IllegalStateException("Blocking keys not set.");
         aliceUidFieldname = context.getConfiguration().get(CommonKeys.ALICE_UID);
         if (aliceUidFieldname == null) throw new IllegalStateException("Alice uid not set.");
         bobUidFieldname = context.getConfiguration().get(CommonKeys.BOB_UID);
@@ -71,9 +65,6 @@ public class PrivateSimilarityReducer extends Reducer<TextPairWritable,AvroValue
         similarityMethodName = "hamming";
         similarityThreshold = (double) context.getConfiguration().getInt(CommonKeys.HAMMING_THRESHOLD, 100);
         matchedPairsCount = 0;
-        noPairCount = 0;
-        aliceRecordMissingCount = 0;
-        bobRecordMissingCount = 0;
     }
 
     @Override
@@ -90,13 +81,10 @@ public class PrivateSimilarityReducer extends Reducer<TextPairWritable,AvroValue
                 bobRecord = new GenericData.Record((GenericData.Record)record,true);
         }
 
-        if(aliceRecord == null && bobRecord == null) throw new InterruptedException("We cant have both records as null.");
-        else if(aliceRecord == null || bobRecord == null) {
-            noPairCount++;
-            if(aliceRecord == null) aliceRecordMissingCount++;
-            else bobRecordMissingCount++;
-            return;
-        }
+        if(aliceRecord == null || bobRecord == null)
+            throw new InterruptedException("Missing record from pair." +
+                    " alice found ? " +  (aliceRecord != null) +
+                    " bob found ? " + (bobRecord != null));
 
         final BloomFilter aliceBf = BloomFilterEncodingUtil.retrieveBloomFilter(aliceRecord,
                 aliceEncodingFieldName, N);
@@ -118,9 +106,6 @@ public class PrivateSimilarityReducer extends Reducer<TextPairWritable,AvroValue
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
         increaseMatchedPairsCounter(context, matchedPairsCount);
-        increaseNoPairCounter(context,noPairCount);
-        increaseAliceRecordMissingCounter(context, aliceRecordMissingCount);
-        increaseBobRecordMissingCounter(context, bobRecordMissingCount);
     }
 }
 

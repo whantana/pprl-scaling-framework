@@ -2,12 +2,12 @@ package gr.upatras.ceid.pprl.blocking;
 
 import gr.upatras.ceid.pprl.encoding.BloomFilter;
 
-import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Hamming LSH Blocking Group class.
@@ -40,13 +40,12 @@ class HammingLSHBlockingGroup {
      * @param N length of bloom filter.
      * @param seed for getting same HLSH hashing.
      */
-    public HammingLSHBlockingGroup(final String id, final int K, final int N,final int seed) {
+    public HammingLSHBlockingGroup(final String id, final int K, final int N,final long seed) {
         assert K >= 1 && K < N;
         this.id = id;
         final List<Integer> bitList = new ArrayList<Integer>(N);
         for (int i = 0; i < N; i++) bitList.add(i,i);
-        Collections.shuffle(bitList,
-                new SecureRandom(ByteBuffer.allocate(4).putInt(seed).array()));
+        Collections.shuffle(bitList,new Random(seed));
         bits = bitList.subList(0,K).toArray(new Integer[K]);
     }
 

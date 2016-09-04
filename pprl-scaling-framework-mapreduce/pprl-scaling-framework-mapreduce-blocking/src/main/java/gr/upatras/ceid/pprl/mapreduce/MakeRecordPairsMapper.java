@@ -54,7 +54,6 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
         final Schema s = context.getCurrentKey().datum().getSchema();
         setupMapper(s,context);
         loadFrequentPairs(context, followsKeyValue);
-        System.out.println("This mapper is ready :)");
         try {
             do {
                 map(context.getCurrentKey(), context.getCurrentValue(), context);
@@ -94,11 +93,9 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
         if(schema.getName().equals(aliceEncodingName)){
             uidFieldName = context.getConfiguration().get(CommonKeys.ALICE_UID);
             followsKeyValue = true;
-            System.out.println("Works on alice's dataset");
         } else if(schema.getName().equals(bobEncodingName)){
             uidFieldName = context.getConfiguration().get(CommonKeys.BOB_UID);
             followsKeyValue = false;
-            System.out.println("Works on bob's dataset");
         } else throw new IllegalStateException("Unknown schema name : " + schema.getName());
     }
 

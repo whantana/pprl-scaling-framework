@@ -159,7 +159,7 @@ public class CommonUtil {
      */
     public static void increaseMatchedPairsCounter(Reducer.Context context, long value) {
         context.getCounter(CommonKeys.COUNTER_GROUP_NAME,
-                        CommonKeys.MATCHED_PAIR_COUNTER).increment(value);
+                CommonKeys.MATCHED_PAIR_COUNTER).increment(value);
     }
 
     /**
@@ -170,7 +170,7 @@ public class CommonUtil {
      */
     public static void increaseMatchedPairsCounter(Mapper.Context context, long value) {
         context.getCounter(CommonKeys.COUNTER_GROUP_NAME,
-                        CommonKeys.MATCHED_PAIR_COUNTER).increment(value);
+                CommonKeys.MATCHED_PAIR_COUNTER).increment(value);
     }
 
     /**
@@ -181,7 +181,7 @@ public class CommonUtil {
      */
     public static void increaseNoPairCounter(Reducer.Context context, long value) {
         context.getCounter(CommonKeys.COUNTER_GROUP_NAME,
-                        CommonKeys.NO_PAIR_COUNTER).increment(value);
+                CommonKeys.NO_PAIR_COUNTER).increment(value);
     }
 
     /**
@@ -220,19 +220,19 @@ public class CommonUtil {
     }
 
     /**
-     * Add all frequent pair files to cache.
+     * Add all containing files files to cache.
      * @param job job.
      * @param fs file system.
-     * @param frequentPairsPath frequent pairs path (parent).
+     * @param parentPath a paraint path.
      * @throws IOException
      */
-    public static void addContainingPathsToCache(final Job job, final FileSystem fs, final Path frequentPairsPath)
+    public static void addContainingPathsToCache(final Job job, final FileSystem fs, final Path parentPath)
             throws IOException {
-        if(fs.isFile(frequentPairsPath)) {
-            job.addCacheFile(fs.makeQualified(frequentPairsPath).toUri());
+        if(fs.isFile(parentPath)) {
+            job.addCacheFile(fs.makeQualified(parentPath).toUri());
             return;
         }
-        RemoteIterator<LocatedFileStatus> iterator = fs.listFiles(frequentPairsPath, false);
+        RemoteIterator<LocatedFileStatus> iterator = fs.listFiles(parentPath, false);
         while(iterator.hasNext()) {
             LocatedFileStatus lfs = iterator.next();
             if (lfs.isFile()) job.addCacheFile(fs.makeQualified(lfs.getPath()).toUri());
@@ -250,6 +250,4 @@ public class CommonUtil {
         final Path p = new Path(path,"_SUCCESS");
         if (fs.exists(p)) fs.delete(p, false);
     }
-
-
 }

@@ -7,14 +7,11 @@ import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingException;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingUtil;
 import gr.upatras.ceid.pprl.matching.PrivateSimilarityUtil;
 import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroKey;
-import org.apache.avro.mapred.AvroValue;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
@@ -31,9 +28,6 @@ import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.*;
 public class PrivateSimilarityReducerV2 extends Reducer<AvroKey<GenericRecord>,Text,Text,Text> {
     private double similarityThreshold;
     private String similarityMethodName;
-
-    private Schema aliceEncodingSchema;
-    private Schema bobEncodingSchema;
 
     private GenericRecord[] bobRecords;
     private Map<String,Integer> bobId2IndexMap;
@@ -62,12 +56,10 @@ public class PrivateSimilarityReducerV2 extends Reducer<AvroKey<GenericRecord>,T
             BloomFilterEncoding aliceEncoding = BloomFilterEncodingUtil.setupNewInstance(
                     ((new Schema.Parser()).parse(aliceSchemaString)));
             aliceEncodingFieldName = aliceEncoding.getEncodingFieldName();
-            aliceEncodingSchema = aliceEncoding.getEncodingSchema();
 
             BloomFilterEncoding bobEncoding = BloomFilterEncodingUtil.setupNewInstance(
                     ((new Schema.Parser()).parse(bobSchemaString)));
             bobEncodingFieldName = bobEncoding.getEncodingFieldName();
-            bobEncodingSchema = bobEncoding.getEncodingSchema();
             if(bobEncoding.getBFN() != aliceEncoding.getBFN())
                 throw new IllegalStateException("Encoding schemes dont have same bloom filter size.");
             N = aliceEncoding.getBFN();
@@ -77,6 +69,11 @@ public class PrivateSimilarityReducerV2 extends Reducer<AvroKey<GenericRecord>,T
         similarityMethodName = "hamming";
         similarityThreshold = (double) context.getConfiguration().getInt(CommonKeys.HAMMING_THRESHOLD, 100);
         matchedPairsCount = 0;
+        try {
+            loadBobRecords(context);
+        } catch (URISyntaxException e) {
+            throw new InterruptedException(e.getMessage());
+        }
     }
 
     @Override
@@ -113,7 +110,7 @@ public class PrivateSimilarityReducerV2 extends Reducer<AvroKey<GenericRecord>,T
      * @param context context
      * @throws IOException
      */
-    private void loadBobRecords(Mapper.Context context) throws URISyntaxException, IOException {
+    private void loadBobRecords(Reducer.Context context) throws URISyntaxException, IOException {
         final String bobSchemaString = context.getConfiguration().get(CommonKeys.BOB_SCHEMA);
         if (bobSchemaString == null) throw new IllegalStateException("Bob schema not set.");
         final Schema bobSchema = (new Schema.Parser()).parse(bobSchemaString);

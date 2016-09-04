@@ -69,7 +69,7 @@ public class PrivateSimilarityReducer extends Reducer<TextPairWritable,AvroValue
             throw new InterruptedException(e.getMessage());
         }
         similarityMethodName = "hamming";
-        similarityThreshold = context.getConfiguration().getDouble(CommonKeys.HAMMING_THRESHOLD, 100);
+        similarityThreshold = (double) context.getConfiguration().getInt(CommonKeys.HAMMING_THRESHOLD, 100);
         matchedPairsCount = 0;
         noPairCount = 0;
         aliceRecordMissingCount = 0;

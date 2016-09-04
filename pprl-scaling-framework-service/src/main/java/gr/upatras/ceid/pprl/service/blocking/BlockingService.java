@@ -134,7 +134,7 @@ public class BlockingService implements InitializingBean {
                                                     final String bobUidFieldName,
                                                     final String blockingName,
                                                     final int L, final int K, final short C,
-                                                    final double hammingSimilarity,
+                                                    final int hammingSimilarity,
                                                     final int R1, final int R2, final int R3,
                                                     final int seed)
             throws Exception {

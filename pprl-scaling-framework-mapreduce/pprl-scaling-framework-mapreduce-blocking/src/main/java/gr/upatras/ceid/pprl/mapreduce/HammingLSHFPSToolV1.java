@@ -102,7 +102,7 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
         conf.set(CommonKeys.BOB_UID,bobUidFieldName);
         conf.setInt(CommonKeys.BLOCKING_GROUP_COUNT, L);
         conf.setStrings(CommonKeys.BLOCKING_KEYS,blocking.groupsAsStrings());
-        conf.setDouble(CommonKeys.HAMMING_THRESHOLD, hammingThreshold);
+        conf.setInt(CommonKeys.HAMMING_THRESHOLD, hammingThreshold);
         conf.setInt(CommonKeys.FREQUENT_PAIR_LIMIT, C);
 
         conf.setInt("mapreduce.map.memory.mb", 1024);

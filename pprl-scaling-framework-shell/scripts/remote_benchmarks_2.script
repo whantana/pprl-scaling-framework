@@ -1,15 +1,15 @@
 # Upload voters
-# upload_local_data --avro data/voters_a_10/avro --schema data/voters_a_10/schema/voters_a_10.avsc --dataset_name voters_a_10
-# upload_local_data --avro data/voters_b_9/avro --schema data/voters_b_9/schema/voters_b_9.avsc --dataset_name voters_b_9
-# upload_local_data --avro data/voters_a_19/avro --schema data/voters_a_19/schema/voters_a_19.avsc --dataset_name voters_a_19
-# upload_local_data --avro data/voters_b_19/avro --schema data/voters_b_19/schema/voters_b_19.avsc --dataset_name voters_b_19
+upload_local_data --avro data/voters_a_10/avro --schema data/voters_a_10/schema/voters_a_10.avsc --dataset_name voters_a_10
+upload_local_data --avro data/voters_b_9/avro --schema data/voters_b_9/schema/voters_b_9.avsc --dataset_name voters_b_9
+upload_local_data --avro data/voters_a_19/avro --schema data/voters_a_19/schema/voters_a_19.avsc --dataset_name voters_a_19
+upload_local_data --avro data/voters_b_19/avro --schema data/voters_b_19/schema/voters_b_19.avsc --dataset_name voters_b_19
 
 
 # CLK Encoding
-# encode_data --name voters_a_10 --fields name,surname,address --include id --scheme CLK --N 4096 --out_name clk_voters_a_10
-# encode_data --name voters_b_9 --fields name,surname,address --include id --scheme CLK --N 4096 --out_name clk_voters_b_9
-# encode_data --name voters_a_19 --fields name,surname,address --include id --scheme CLK --N 4096 --out_name clk_voters_a_19
-# encode_data --name voters_b_19 --fields name,surname,address --include id --scheme CLK --N 4096 --out_name clk_voters_b_19
+encode_data --name voters_a_10 --fields name,surname,address --include id --scheme CLK --N 4096 --out_name clk_voters_a_10
+encode_data --name voters_b_9 --fields name,surname,address --include id --scheme CLK --N 4096 --out_name clk_voters_b_9
+encode_data --name voters_a_19 --fields name,surname,address --include id --scheme CLK --N 4096 --out_name clk_voters_a_19
+encode_data --name voters_b_19 --fields name,surname,address --include id --scheme CLK --N 4096 --out_name clk_voters_b_19
 
 
 # Get optional HLSH/FPS

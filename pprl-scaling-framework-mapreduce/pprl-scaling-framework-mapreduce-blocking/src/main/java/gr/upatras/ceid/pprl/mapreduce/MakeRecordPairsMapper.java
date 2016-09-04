@@ -133,10 +133,8 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
         final long umb = rt.totalMemory() - rt.freeMemory();
         int i = 0;
         for (final Path path : frequentPairsPaths) {
-            final long uma = rt.totalMemory() - rt.freeMemory();
-            final long umd = uma - umb;
-            System.out.println(String.format("Loading frequent pairs %d%% : %d MB",
-                    ((i+1)/frequentPairsPaths.size())*100,umd/(1024*1024)));
+            System.out.println(String.format("Loading frequent pairs %d%%.",
+                    ((i+1)/frequentPairsPaths.size())*100));
             SequenceFile.Reader reader = new SequenceFile.Reader(conf, SequenceFile.Reader.file(path));
             Text key = new Text();
             Text value = new Text();
@@ -149,7 +147,7 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
         }
         final long uma = rt.totalMemory() - rt.freeMemory();
         final long umd = uma - umb;
-        System.out.println(String.format("Loaded frequent pairs 100%% : %d MB",umd/(1024*1024)));
+        System.out.println(String.format("Loaded frequent pairs 100%%. Size estimate %d MB",umd/(1024*1024)));
     }
 
 

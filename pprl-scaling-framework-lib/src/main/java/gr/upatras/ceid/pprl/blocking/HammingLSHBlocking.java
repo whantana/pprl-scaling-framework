@@ -106,7 +106,7 @@ public class HammingLSHBlocking {
             this.K = K;
             blockingGroups = new HammingLSHBlockingGroup[L];
             for (int i = 0; i < L; i++)
-                blockingGroups[i] = new HammingLSHBlockingGroup(String.format("Block#%d", i), K, N,seed);
+                blockingGroups[i] = new HammingLSHBlockingGroup(String.format("Block#%d", i), K, N,(i+1)*seed);
         }
 
         /**
@@ -139,7 +139,7 @@ public class HammingLSHBlocking {
             this.K = K;
             blockingGroups = new HammingLSHBlockingGroup[L];
             for (int i = 0; i < L; i++)
-                blockingGroups[i] = new HammingLSHBlockingGroup(String.format("Block#%d", i), K, N, seed);
+                blockingGroups[i] = new HammingLSHBlockingGroup(String.format("Block#%d", i), K, N,(i+1)*seed);
         }
 
     /**

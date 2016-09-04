@@ -1,17 +1,25 @@
 # Upload voters
-upload_local_data --avro data/voters_a_10/avro --schema data/voters_a_10/schema/voters_a_10.avsc --dataset_name voters_a
-upload_local_data --avro data/voters_b_9/avro --schema data/voters_b_9/schema/voters_b_9.avsc --dataset_name voters_b
+# upload_local_data --avro data/voters_a_10/avro --schema data/voters_a_10/schema/voters_a_10.avsc --dataset_name voters_a
+# upload_local_data --avro data/voters_b_9/avro --schema data/voters_b_9/schema/voters_b_9.avsc --dataset_name voters_b
+
+upload_local_data --avro data/voters_a_19/avro --schema data/voters_a_19/schema/voters_a_19.avsc --dataset_name voters_a_19
+upload_local_data --avro data/voters_b_19/avro --schema data/voters_b_19/schema/voters_b_19.avsc --dataset_name voters_b_19
+
 
 # CLK Encoding
-encode_data --name voters_a --fields name,surname,address --include id --scheme CLK --N 4096 --out_name clk_voters_a
-encode_data --name voters_b --fields name,surname,address --include id --scheme CLK --N 4096 --out_name clk_voters_b
+# encode_data --name voters_a --fields name,surname,address --include id --scheme CLK --N 4096 --out_name clk_voters_a
+# encode_data --name voters_b --fields name,surname,address --include id --scheme CLK --N 4096 --out_name clk_voters_b
+encode_data --name voters_a_19 --fields name,surname,address --include id --scheme CLK --N 4096 --out_name clk_voters_a_19
+encode_data --name voters_b_19 --fields name,surname,address --include id --scheme CLK --N 4096 --out_name clk_voters_b_19
+
 
 # Get optional HLSH/FPS
-get_optimal_hlsh_fps_params --theta 180 --delta 0.01 --size 4096 --K 30
+# get_optimal_hlsh_fps_params --theta 180 --delta 0.01 --size 4096 --K 30
 
-block_encoded_data --alice_name clk_voters_a --alice_uid id --bob_name clk_voters_b --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 19,19,19 --hf_L 29 --hf_K 30 --hf_C 2 --hf_theta 180
+# Block HLSH/FPS
+# block_encoded_data --alice_name clk_voters_a --alice_uid id --bob_name clk_voters_b --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 19,19,19 --hf_L 29 --hf_K 30 --hf_C 2 --hf_theta 180
 
 
 
-# block_encoded_data --alice_name clk_voters_a --alice_uid id --bob_name clk_voters_b --bob_uid id --blocking_scheme HLSH_FPS_MR_v1 --reducers 19,19,19 --hf_L 29 --hf_K 30 --hf_C 2 --hf_theta 180
+block_encoded_data --alice_name clk_voters_a_19 --alice_uid id --bob_name clk_voters_b_19 --bob_uid id --blocking_scheme HLSH_FPS_MR_v1 --reducers 19,19,19 --hf_L 29 --hf_K 30 --hf_C 2 --hf_theta 180
 # block_encoded_data --alice_name clk_voters_a --alice_uid id --bob_name clk_voters_b --bob_uid id --blocking_scheme HLSH_FPS_MR_v2 --reducers 19 --hf_L 29 --hf_K 30 --hf_C 2 --hf_theta 180

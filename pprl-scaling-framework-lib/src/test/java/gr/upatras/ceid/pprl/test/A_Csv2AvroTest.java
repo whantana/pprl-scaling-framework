@@ -106,13 +106,16 @@ public class A_Csv2AvroTest {
                 "voters_b", "Voters Registration", "pprl.datasets",
                 VOTER_HEADER,VOTER_TYPES,VOTER_DOCS);
         final FileSystem fs = FileSystem.getLocal(new Configuration());
-        final Path pA = DatasetsUtil.csv2avro(fs,schemaVotersA,"voters_a",
-                new Path(fs.getWorkingDirectory(),"data"),
-                new Path(fs.getWorkingDirectory(), "data/voters_a/csv/voters_a.csv"),4);
-        LOG.info("Saved at path {} ", pA);
-        final Path pB = DatasetsUtil.csv2avro(fs,schemaVotersB,"voters_b",
-                new Path(fs.getWorkingDirectory(),"data"),
-                new Path(fs.getWorkingDirectory(), "data/voters_b/csv/voters_b.csv"),4);
-        LOG.info("Saved at path {} ", pB);
+		final int[][] partitions = new int[][]{{19,19},{10,9},{9,10},{1,1}};
+		for(int[] pt : partitions) {
+        	final Path pA = DatasetsUtil.csv2avro(fs,schemaVotersA,"voters_a"+ "_" + pt[0],
+                	new Path(fs.getWorkingDirectory(),"data"),
+                	new Path(fs.getWorkingDirectory(), "data/voters_a/csv/voters_a.csv"),pt[0]);
+        	LOG.info("Saved at path {} ", pA);
+        	final Path pB = DatasetsUtil.csv2avro(fs,schemaVotersB,"voters_b" + "_" + pt[1],
+                	new Path(fs.getWorkingDirectory(),"data"),
+                	new Path(fs.getWorkingDirectory(), "data/voters_b/csv/voters_b.csv"),pt[1]);
+        	LOG.info("Saved at path {} ", pB);
+		}
     }
 }

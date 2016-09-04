@@ -3,5 +3,6 @@ pprlrc
 .idea
 target
 build
+*.crc
 *.shell.log
 .DS_Store

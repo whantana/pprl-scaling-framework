@@ -120,7 +120,7 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
         job1.setJarByClass(HammingLSHFPSToolV1.class);
         job1.setJobName(description1);
         job1.setNumReduceTasks(R1);
-        job1.setSpeculativeExecution(true);
+        job1.setSpeculativeExecution(false);
 
         // setup input & Mappers
         AvroKeyInputFormat.setInputPaths(job1, bobPath);
@@ -182,7 +182,7 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
         job2.setJarByClass(HammingLSHFPSToolV1.class);
         job2.setJobName(description2);
         job2.setNumReduceTasks(R2);
-        job2.setSpeculativeExecution(true);
+        job2.setSpeculativeExecution(false);
 
         // setup  cache
         addContainingPathsToCache(job2, fs, bobBucketsPath);
@@ -239,7 +239,7 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
         job3.setJarByClass(HammingLSHFPSToolV1.class);
         job3.setJobName(description3);
         job3.setNumReduceTasks(R3);
-        job3.setSpeculativeExecution(true);
+        job3.setSpeculativeExecution(false);
 
         // setup  cache
         addContainingPathsToCache(job3, fs, frequentPairsPath);

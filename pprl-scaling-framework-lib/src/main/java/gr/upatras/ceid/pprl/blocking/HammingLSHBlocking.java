@@ -88,6 +88,61 @@ public class HammingLSHBlocking {
     }
 
     /**
+         * Constructor.
+         *
+         * @param L number of blocking groups.
+         * @param K number of hash functions.
+         * @param seed a seed byte for hlsh hashing.
+         * @param aliceEncoding alice encoding.
+         * @param bobEncoding bob encoding.
+         * @throws BlockingException
+         */
+        public HammingLSHBlocking(final int L, final int K, final int seed,
+                                  final BloomFilterEncoding aliceEncoding,
+                                  final BloomFilterEncoding bobEncoding)
+                throws BlockingException {
+            setup(aliceEncoding, bobEncoding);
+            this.L = L;
+            this.K = K;
+            blockingGroups = new HammingLSHBlockingGroup[L];
+            for (int i = 0; i < L; i++)
+                blockingGroups[i] = new HammingLSHBlockingGroup(String.format("Block#%d", i), K, N,seed);
+        }
+
+        /**
+         * Constructor
+         *
+         * @param L number of blocking groups.
+         * @param K number of hash functions.
+         * @param N number of bits in bloom filter encoding.
+         * @param seed a seed byte for hlsh hashing.
+         * @param aliceEncodingName  alice encoding schema name.
+         * @param aliceEncodingFieldName alice encoding field name.
+         * @param bobEncodingName bob encoding schema name.
+         * @param bobEncodingFieldName bob encoding field name.
+         * @throws BlockingException
+         */
+        public HammingLSHBlocking(final int L, final int K,
+                                  final int N,
+                                  final int seed,
+                                  final String aliceEncodingName,
+                                  final String aliceEncodingFieldName,
+                                  final String bobEncodingName,
+                                  final String bobEncodingFieldName)
+                throws BlockingException {
+            this.aliceEncodingName = aliceEncodingName;
+            this.bobEncodingName = bobEncodingName;
+            this.aliceEncodingFieldName = aliceEncodingFieldName;
+            this.bobEncodingFieldName = bobEncodingFieldName;
+            this.N = N;
+            this.L = L;
+            this.K = K;
+            blockingGroups = new HammingLSHBlockingGroup[L];
+            for (int i = 0; i < L; i++)
+                blockingGroups[i] = new HammingLSHBlockingGroup(String.format("Block#%d", i), K, N, seed);
+        }
+
+    /**
      * Constructor.
      *
      * @param blockingKeys string representation of blocking keys.
@@ -406,6 +461,5 @@ public class HammingLSHBlocking {
         Matcher matcherB = VOTER_ID_PATTERN.matcher(idB);
         if(!matcherA.matches() || !matcherB.matches()) throw new IllegalArgumentException("Wrong id format.");
         return matcherA.group(1).equals(matcherB.group(1));
-
     }
 }

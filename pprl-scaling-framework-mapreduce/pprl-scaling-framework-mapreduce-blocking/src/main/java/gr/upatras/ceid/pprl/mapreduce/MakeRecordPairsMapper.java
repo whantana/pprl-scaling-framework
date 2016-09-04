@@ -134,7 +134,7 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
         int i = 0;
         for (final Path path : frequentPairsPaths) {
             System.out.println(String.format("Loading frequent pairs %d%%.",
-                    ((i+1)/(double)frequentPairsPaths.size())*100));
+                    Math.round(((i+1)/(double)frequentPairsPaths.size())*100)));
             SequenceFile.Reader reader = new SequenceFile.Reader(conf, SequenceFile.Reader.file(path));
             Text key = new Text();
             Text value = new Text();

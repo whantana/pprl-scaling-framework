@@ -126,7 +126,10 @@ public class BlockingCommands implements CommandMarker {
             @CliOption(key = {"hf_C"}, mandatory = true, help = "Number of collisions in HLSH blocking groups required to be considered frequent.")
             final String hlshCStr,
             @CliOption(key = {"hf_theta"}, mandatory = true, help = "Hamming similarity threshold.")
-            final String hammingThreholdStr
+            final String hammingThreholdStr,
+            @CliOption(key = {"hf_seed"}, mandatory = false, help = "(Optional). A seed for reproducing HLSH hashing.")
+            final String seedStr
+
     ) {
         try {
 
@@ -156,6 +159,8 @@ public class BlockingCommands implements CommandMarker {
                 final int K = CommandUtil.retrieveInt(hlshKStr,-1);
                 final short C = CommandUtil.retrieveShort(hlshCStr, (short) -1);
                 final int hammingThreshold = CommandUtil.retrieveInt(hammingThreholdStr,-1);
+                final int seed = CommandUtil.retrieveInt(seedStr,-1);
+                if(seed >= 0) LOG.info("\tHLSH seed for random keys : {}",seed);
                 LOG.info("\tHLSH Hamming threshold (theta) : {}",hammingThreshold);
                 LOG.info("\tHLSH Blocking Groups (L) : {}",L);
                 LOG.info("\tHLSH Blocking Hash Values (K) : {}",K);
@@ -168,7 +173,7 @@ public class BlockingCommands implements CommandMarker {
                 final Schema bobSchema = lds.loadSchema(bobSchemaPath);
                 final GenericRecord[] bobRecords = lds.loadDatasetRecords(bobAvroPaths,bobSchema);
 
-                final HammingLSHBlocking blocking = lbs.newHammingLSHBlockingInstance(L,K,aliceSchema,bobSchema);
+                final HammingLSHBlocking blocking = lbs.newHammingLSHBlockingInstance(L,K,aliceSchema,bobSchema,seed);
 
                 lbs.runFPSonHammingBlocking(
                         blocking,
@@ -214,7 +219,9 @@ public class BlockingCommands implements CommandMarker {
             @CliOption(key = {"hf_C"}, mandatory = true, help = "Number of collisions in HLSH blocking groups required to be considered frequent. Defaults to 2.")
             final String hlshCStr,
             @CliOption(key = {"hf_theta"}, mandatory = true, help = "Hamming Similarity threshold.")
-            final String hammingThreholdStr
+            final String hammingThreholdStr,
+            @CliOption(key = {"hf_seed"}, mandatory = false, help = "(Optional). A seed for reproducing HLSH hashing.")
+            final String seedStr
     ) {
         try {
 
@@ -258,6 +265,8 @@ public class BlockingCommands implements CommandMarker {
                 LOG.info("\tHLSH Blocking Groups (L) : {}",L);
                 LOG.info("\tHLSH Blocking Hash Values (K) : {}",K);
                 LOG.info("\tFPS Collision Limit (C) : {}",C);
+                final int seed = CommandUtil.retrieveInt(seedStr,-1);
+                if(seed >= 0) LOG.info("\tHLSH seed for random keys : {}",seed);
                 switch (blockingSchemeName) {
                     case "HLSH_FPS_MR_v0": {
                         final int[] R = CommandUtil.retrieveInts(reducersString);
@@ -272,7 +281,7 @@ public class BlockingCommands implements CommandMarker {
                                 blockingName,
                                 L, K, C,
                                 hammingThreshold,
-                                R[0], R[1], R[2]);
+                                R[0], R[1], R[2],seed);
 
                         break;
                     }
@@ -289,7 +298,7 @@ public class BlockingCommands implements CommandMarker {
                                 blockingName,
                                 L, K, C,
                                 hammingThreshold,
-                                R[0], R[1], R[2]);
+                                R[0], R[1], R[2],seed);
                         break;
                     }
                     case "HLSH_FPS_MR_v2": {
@@ -308,7 +317,7 @@ public class BlockingCommands implements CommandMarker {
                                 blockingName,
                                 L, K, C,
                                 hammingThreshold,
-                                R[0], R[1]);
+                                R[0], R[1],seed);
                         break;
                     }
                     default:

@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 @Service
 public class LocalBlockingService implements InitializingBean {
@@ -44,23 +45,26 @@ public class LocalBlockingService implements InitializingBean {
      * @param K Number of hash values.
      * @param aliceSchema alice encoding schema.
      * @param bobSchema bob encoding schema.
+     * @param seed seed for hlsh hashing, wont be used if negative
      * @return new instance of the <code>HammingLSHBlocking </code>.
      * @throws BloomFilterEncodingException
      * @throws BlockingException
      */
     public HammingLSHBlocking newHammingLSHBlockingInstance(final int L, final int K,
                                                             final Schema aliceSchema,
-                                                            final Schema bobSchema)
+                                                            final Schema bobSchema, final int seed)
             throws BloomFilterEncodingException, BlockingException {
 
         try {
-            return new HammingLSHBlocking(L, K,
+            if(seed < 0)
+                return new HammingLSHBlocking(L, K,
                     BloomFilterEncodingUtil.setupNewInstance(aliceSchema),
                     BloomFilterEncodingUtil.setupNewInstance(bobSchema));
-        } catch (BloomFilterEncodingException e) {
-            LOG.error(e.getMessage(),e);
-            throw e;
-        } catch (BlockingException e) {
+            else
+                return new HammingLSHBlocking(L, K, seed,
+                    BloomFilterEncodingUtil.setupNewInstance(aliceSchema),
+                    BloomFilterEncodingUtil.setupNewInstance(bobSchema));
+        } catch (BloomFilterEncodingException | BlockingException e) {
             LOG.error(e.getMessage(),e);
             throw e;
         }

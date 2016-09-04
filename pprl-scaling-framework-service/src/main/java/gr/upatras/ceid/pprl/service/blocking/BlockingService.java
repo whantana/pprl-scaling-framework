@@ -59,6 +59,7 @@ public class BlockingService implements InitializingBean {
      * @param R1 Number of reducers for first job.
      * @param R2 Number of reducers for second job.
      * @param R3 Number of reducers for third job.
+     * @param seed seed for hlsh hashing, wont be used if negative
      * @throws Exception
      */
     public void runHammingLSHFPSBlockingV0ToolRuner(final Path aliceAvroPath, final Path aliceSchemaPath,
@@ -68,7 +69,8 @@ public class BlockingService implements InitializingBean {
                                                     final String blockingName,
                                                     final int L, final int K, final short C,
                                                     final int hammingSimilarity,
-                                                    final int R1, final int R2, final int R3)
+                                                    final int R1, final int R2, final int R3,
+                                                    final int seed)
             throws Exception {
         try {
             final Path blockingPath = new Path(basePath,blockingName);
@@ -95,6 +97,7 @@ public class BlockingService implements InitializingBean {
             argsList.add(String.valueOf(R2));
             argsList.add(String.valueOf(R3));
             argsList.add(String.valueOf(hammingSimilarity));
+            argsList.add(String.valueOf(seed));
             String[] args = new String[argsList.size()];
             args = argsList.toArray(args);
             hammingLshFpsBlockingV0ToolRunner.setArguments(args);
@@ -122,6 +125,7 @@ public class BlockingService implements InitializingBean {
      * @param R1 Number of reducers for first job.
      * @param R2 Number of reducers for second job.
      * @param R3 Number of reducers for third job.
+     * @param seed seed for hlsh hashing, wont be used if negative
      * @throws Exception
      */
     public void runHammingLSHFPSBlockingV1ToolRuner(final Path aliceAvroPath, final Path aliceSchemaPath,
@@ -131,7 +135,8 @@ public class BlockingService implements InitializingBean {
                                                     final String blockingName,
                                                     final int L, final int K, final short C,
                                                     final double hammingSimilarity,
-                                                    final int R1, final int R2, final int R3)
+                                                    final int R1, final int R2, final int R3,
+                                                    final int seed)
             throws Exception {
         try {
             final Path blockingPath = new Path(basePath,blockingName);
@@ -158,6 +163,7 @@ public class BlockingService implements InitializingBean {
             argsList.add(String.valueOf(R2));
             argsList.add(String.valueOf(R3));
             argsList.add(String.valueOf(hammingSimilarity));
+            argsList.add(String.valueOf(seed));
             String[] args = new String[argsList.size()];
             args = argsList.toArray(args);
             hammingLshFpsBlockingV1ToolRunner.setArguments(args);
@@ -184,6 +190,7 @@ public class BlockingService implements InitializingBean {
      * @param hammingThreshold similarity threshold.
      * @param R1 Number of reducers for first job.
      * @param R2 Number of reducers for second job.
+     * @param seed seed for hlsh hashing, wont be used if negative
      * @throws Exception
      */
     public void runHammingLSHFPSBlockingV2ToolRuner(final Path aliceAvroPath, final Path aliceSchemaPath,
@@ -193,7 +200,8 @@ public class BlockingService implements InitializingBean {
                                                     final String blockingName,
                                                     final int L, final int K, final short C,
                                                     final int hammingThreshold,
-                                                    final int R1, final int R2) throws Exception {
+                                                    final int R1, final int R2,
+                                                    final int seed) throws Exception {
         try {
             final Path blockingPath = new Path(basePath,blockingName);
             hdfs.mkdirs(blockingPath);
@@ -216,6 +224,7 @@ public class BlockingService implements InitializingBean {
             argsList.add(String.valueOf(R1));
             argsList.add(String.valueOf(R2));
             argsList.add(String.valueOf(hammingThreshold));
+            argsList.add(String.valueOf(seed));
             String[] args = new String[argsList.size()];
             args = argsList.toArray(args);
             hammingLshFpsBlockingV2ToolRunner.setArguments(args);

@@ -40,7 +40,7 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
     public int run(String[] args) throws Exception {
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
-        if (args.length != 15) {
+        if (args.length != 16) {
             LOG.error("args.length= {}", args.length);
             for (int i = 0; i < args.length; i++) {
                 LOG.error("args[{}] = {}", i, args[i]);
@@ -51,7 +51,7 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
                     "<bob-buckets-path> <matched-pairs-path> <stats-path>" +
                     "<number-of-blocking-groups-L> <number-of-hashes-K> <frequent-pair-collision-limit-C> " +
                     "<number-of-reducers-job1> <number-of-reducers-job2> " +
-                    "<hamming-threshold>");
+                    "<hamming-threshold> <seed>");
             throw new IllegalArgumentException("Invalid number of arguments.");
         }
 
@@ -69,7 +69,8 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
         final short C = Short.valueOf(args[11]);
         final int R1 = Integer.valueOf(args[12]);
         final int R2 = Integer.valueOf(args[13]);
-        final double similarityThreshold = Double.valueOf(args[14]);
+        final int hammingThrehold = Integer.valueOf(args[14]);
+        final int seed = Integer.valueOf(args[15]);
 
         if(K < 1)
             throw new IllegalArgumentException("Number of hashes K cannot be smaller than 1.");
@@ -85,7 +86,9 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
         final BloomFilterEncoding aliceEncoding = BloomFilterEncodingUtil.setupNewInstance(aliceEncodingSchema);
         final Schema bobEncodingSchema = DatasetsUtil.loadSchemaFromFSPath(fs, bobSchemaPath);
         final BloomFilterEncoding bobEncoding = BloomFilterEncodingUtil.setupNewInstance(bobEncodingSchema);
-        final HammingLSHBlocking blocking = new HammingLSHBlocking(L,K,aliceEncoding,bobEncoding);
+        final HammingLSHBlocking blocking = (seed >= 0 ) ?
+                new HammingLSHBlocking(L,K,seed,aliceEncoding,bobEncoding) :
+                new HammingLSHBlocking(L,K,aliceEncoding,bobEncoding);
         final Map<String,Long> stats = new TreeMap<>();
 
 
@@ -95,7 +98,7 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
         conf.set(CommonKeys.BOB_UID,bobUidFieldName);
         conf.setInt(CommonKeys.BLOCKING_GROUP_COUNT, L);
         conf.setStrings(CommonKeys.BLOCKING_KEYS,blocking.groupsAsStrings());
-        conf.setDouble(CommonKeys.HAMMING_THRESHOLD,similarityThreshold);
+        conf.setDouble(CommonKeys.HAMMING_THRESHOLD,hammingThrehold);
         conf.setInt(CommonKeys.FREQUENT_PAIR_LIMIT, C);
 
         conf.setInt("mapreduce.map.memory.mb", 1024);

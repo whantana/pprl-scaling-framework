@@ -347,8 +347,7 @@ public class LocalServicesTest {
             final String bobUidFieldName = uidFieldNames[2];
 
             HammingLSHBlocking blocking = bs.newHammingLSHBlockingInstance(HLSH_BLOCKING_L,HLSH_BLOCKING_K,
-                    aliceEncodingSchema, bobEncodingSchema
-            );
+                    aliceEncodingSchema, bobEncodingSchema,-1);
             bs.runFPSonHammingBlocking(blocking,
                     aliceEncodedRecords, aliceUidFieldName,
                     bobEncodedRecords, bobUidFieldName,

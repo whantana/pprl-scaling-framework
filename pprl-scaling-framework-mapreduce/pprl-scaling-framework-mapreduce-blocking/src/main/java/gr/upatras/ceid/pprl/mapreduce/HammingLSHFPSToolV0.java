@@ -43,7 +43,7 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
     public int run(String[] args) throws Exception {
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
-        if (args.length != 17) {
+        if (args.length != 18) {
             LOG.error("args.length= {}",args.length);
             for (int i = 0; i < args.length; i++) {
                 LOG.error("args[{}] = {}",i,args[i]);
@@ -54,7 +54,7 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
                     "<all-pairs-path> <frequent-pair-path> <matched-pairs-path> <stats-path>" +
                     "<number-of-blocking-groups-L> <number-of-hashes-K> <frequent-pair-collision-limit-C> " +
                     "<number-of-reducers-job1> <number-of-reducers-job2> <number-of-reducers-job3> " +
-                    "<hamming-threshold>");
+                    "<hamming-threshold> <hlsh_seed>");
             throw new IllegalArgumentException("Invalid number of arguments.");
         }
 
@@ -75,6 +75,7 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
         final int R2 = Integer.valueOf(args[14]);
         final int R3 = Integer.valueOf(args[15]);
         final int hammingThreshold = Integer.valueOf(args[16]);
+        final int seed = Integer.valueOf(args[17]);
 
         if(K < 1)
             throw new IllegalArgumentException("Number of hashes K cannot be smaller than 1.");
@@ -91,7 +92,9 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
         final Schema bobEncodingSchema = DatasetsUtil.loadSchemaFromFSPath(fs, bobSchemaPath);
         final Schema unionSchema = Schema.createUnion(Lists.newArrayList(aliceEncodingSchema, bobEncodingSchema));
         final BloomFilterEncoding bobEncoding = BloomFilterEncodingUtil.setupNewInstance(bobEncodingSchema);
-        final HammingLSHBlocking blocking = new HammingLSHBlocking(L,K,aliceEncoding,bobEncoding);
+        final HammingLSHBlocking blocking = (seed >= 0 ) ?
+                new HammingLSHBlocking(L,K,seed,aliceEncoding,bobEncoding) :
+                new HammingLSHBlocking(L,K,aliceEncoding,bobEncoding);
         final Map<String,Long> stats = new TreeMap<>();
 
 

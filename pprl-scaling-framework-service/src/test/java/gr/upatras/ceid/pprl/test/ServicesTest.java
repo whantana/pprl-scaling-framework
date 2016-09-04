@@ -547,7 +547,7 @@ public class ServicesTest extends AbstractMapReduceTests {
                    blockingName1,
                    HLSH_BLOCKING_L, HLSH_BLOCKING_K, HLSH_BLOCKING_C,
                    HAMMING_THRESHOLD,
-                   4, 4, 4
+                   4, 4, 4,420
            );
 
             final String blockingName2 = String.format("blocking.%s.%s.%s.%s",
@@ -562,7 +562,7 @@ public class ServicesTest extends AbstractMapReduceTests {
                     blockingName2,
                     HLSH_BLOCKING_L, HLSH_BLOCKING_K, HLSH_BLOCKING_C,
                     HAMMING_THRESHOLD,
-                    4, 4, 4
+                    4, 4, 4,420
             );
 
 
@@ -577,7 +577,7 @@ public class ServicesTest extends AbstractMapReduceTests {
                     blockingName3,
                     HLSH_BLOCKING_L, HLSH_BLOCKING_K, HLSH_BLOCKING_C,
                     HAMMING_THRESHOLD,
-                    4, 4
+                    4, 4,420
             );
 
         }

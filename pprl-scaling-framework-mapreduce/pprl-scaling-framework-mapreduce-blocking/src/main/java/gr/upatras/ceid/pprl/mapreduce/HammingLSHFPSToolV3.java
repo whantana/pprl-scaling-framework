@@ -103,7 +103,7 @@ public class HammingLSHFPSToolV3 extends Configured implements Tool {
 
         conf.setInt("mapreduce.map.memory.mb", 1024);
         conf.setInt("mapreduce.reduce.memory.mb", 1024);
-        conf.set("mapred.child.java.opts","-Xms820m -Xmx820m");
+        conf.set("mapred.child.java.opts","-Xms256m -Xmx820m");
 
         // setup job1
         final String description1 = String.format("%s(" +

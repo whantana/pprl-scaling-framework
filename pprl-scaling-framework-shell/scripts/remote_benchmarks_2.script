@@ -1,11 +1,11 @@
 # Upload voters
-upload_local_data --avro data/voters_a_19/avro --schema data/voters_a_19/schema/voters_a_19.avsc --dataset_name voters_a_19
-upload_local_data --avro data/voters_b_19/avro --schema data/voters_b_19/schema/voters_b_19.avsc --dataset_name voters_b_19
+upload_local_data --avro data/voters_a_9/avro --schema data/voters_a_9/schema/voters_a_9.avsc --dataset_name voters_a_9
+upload_local_data --avro data/voters_b_9/avro --schema data/voters_b_9/schema/voters_b_9.avsc --dataset_name voters_b_9
 
 
 # CLK Encoding
-encode_data --name voters_a_19 --fields name,surname,address --include id --scheme CLK --N 4096 --out_name clk_voters_a_19
-encode_data --name voters_b_19 --fields name,surname,address --include id --scheme CLK --N 4096 --out_name clk_voters_b_19
+encode_data --name voters_a_9 --fields name,surname,address --include id --scheme CLK --N 4096 --out_name clk_voters_a_9
+encode_data --name voters_b_9 --fields name,surname,address --include id --scheme CLK --N 4096 --out_name clk_voters_b_9
 
 
 # Get optional HLSH/FPS
@@ -16,51 +16,63 @@ get_optimal_hlsh_fps_params --theta 180 --delta 0.0005 --size 4096 --K 30
 get_optimal_hlsh_fps_params --theta 180 --delta 0.00001 --size 4096 --K 30
 
 # Block HLSH/FPS (delta 0.01)
-block_encoded_data --alice_name clk_voters_a_19 --alice_uid id --bob_name clk_voters_b_19 --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 19,19,19 --hf_L 29 --hf_K 30 --hf_C 2 --hf_theta 180 --hf_seed 420
-block_encoded_data --alice_name clk_voters_a_19 --alice_uid id --bob_name clk_voters_b_19 --bob_uid id --blocking_scheme HLSH_FPS_MR_v1 --reducers 19,19,19 --hf_L 29 --hf_K 30 --hf_C 2 --hf_theta 180 --hf_seed 420
-block_encoded_data --alice_name clk_voters_a_19 --alice_uid id --bob_name clk_voters_b_19 --bob_uid id --blocking_scheme HLSH_FPS_MR_v2 --reducers 19,19    --hf_L 29 --hf_K 30 --hf_C 2 --hf_theta 180 --hf_seed 420
-block_encoded_data --alice_name clk_voters_a_19 --alice_uid id --bob_name clk_voters_b_19 --bob_uid id --blocking_scheme HLSH_FPS_MR_v3 --reducers 19,19    --hf_L 29 --hf_K 30 --hf_C 2 --hf_theta 180 --hf_seed 420
+block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 18,18,18 --hf_L 29 --hf_K 30 --hf_C 2 --hf_theta 180 --hf_seed 420
+! sleep 10
+block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v1 --reducers 18,18,18 --hf_L 29 --hf_K 30 --hf_C 2 --hf_theta 180 --hf_seed 420
+! sleep 10
+block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v2 --reducers 18,18    --hf_L 29 --hf_K 30 --hf_C 2 --hf_theta 180 --hf_seed 420
+! sleep 10
+block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v3 --reducers 18,18    --hf_L 29 --hf_K 30 --hf_C 2 --hf_theta 180 --hf_seed 420
 ! hadoop fs -du -h pprl/block* > sizes_on_disk_0
 ! hadoop fs -rm -R pprl/block*/*_pairs
 ! hadoop fs -rm -R pprl/block*/buckets
 
+
 # Block HLSH/FPS (delta 0.005)
-# block_encoded_data --alice_name clk_voters_a_19 --alice_uid id --bob_name clk_voters_b_19 --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 19,19,19 --hf_L 39 --hf_K 30 --hf_C 3 --hf_theta 180 --hf_seed 421
-# block_encoded_data --alice_name clk_voters_a_19 --alice_uid id --bob_name clk_voters_b_19 --bob_uid id --blocking_scheme HLSH_FPS_MR_v1 --reducers 19,19,19 --hf_L 39 --hf_K 30 --hf_C 3 --hf_theta 180 --hf_seed 421
-# block_encoded_data --alice_name clk_voters_a_19 --alice_uid id --bob_name clk_voters_b_19 --bob_uid id --blocking_scheme HLSH_FPS_MR_v2 --reducers 19,19    --hf_L 39 --hf_K 30 --hf_C 3 --hf_theta 180 --hf_seed 421
-# block_encoded_data --alice_name clk_voters_a_19 --alice_uid id --bob_name clk_voters_b_19 --bob_uid id --blocking_scheme HLSH_FPS_MR_v3 --reducers 19,19    --hf_L 39 --hf_K 30 --hf_C 3 --hf_theta 180 --hf_seed 421
-# ! hadoop fs -du -h pprl/block* > sizes_on_disk_1
-# ! hadoop fs -rm -R pprl/block*/*_pairs
-# ! hadoop fs -rm -R pprl/block*/buckets
+block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 18,18,18 --hf_L 39 --hf_K 30 --hf_C 3 --hf_theta 180 --hf_seed 421
+block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v1 --reducers 18,18,18 --hf_L 39 --hf_K 30 --hf_C 3 --hf_theta 180 --hf_seed 421
+block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v2 --reducers 18,18    --hf_L 39 --hf_K 30 --hf_C 3 --hf_theta 180 --hf_seed 421
+block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v3 --reducers 18,18    --hf_L 39 --hf_K 30 --hf_C 3 --hf_theta 180 --hf_seed 421
+! hadoop fs -du -h pprl/block* > sizes_on_disk_1
+! hadoop fs -rm -R pprl/block*/*_pairs
+! hadoop fs -rm -R pprl/block*/buckets
+! sleep 60
+
 
 # Block HLSH/FPS (delta 0.001)
-# block_encoded_data --alice_name clk_voters_a_19 --alice_uid id --bob_name clk_voters_b_19 --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 19,19,19 --hf_L 52 --hf_K 30 --hf_C 4 --hf_theta 180 --hf_seed 422
-# block_encoded_data --alice_name clk_voters_a_19 --alice_uid id --bob_name clk_voters_b_19 --bob_uid id --blocking_scheme HLSH_FPS_MR_v1 --reducers 19,19,19 --hf_L 52 --hf_K 30 --hf_C 4 --hf_theta 180 --hf_seed 422
-# block_encoded_data --alice_name clk_voters_a_19 --alice_uid id --bob_name clk_voters_b_19 --bob_uid id --blocking_scheme HLSH_FPS_MR_v2 --reducers 19,19    --hf_L 52 --hf_K 30 --hf_C 4 --hf_theta 180 --hf_seed 422
-# block_encoded_data --alice_name clk_voters_a_19 --alice_uid id --bob_name clk_voters_b_19 --bob_uid id --blocking_scheme HLSH_FPS_MR_v3 --reducers 19,19    --hf_L 52 --hf_K 30 --hf_C 4 --hf_theta 180 --hf_seed 422
-# ! hadoop fs -du -h pprl/block* > sizes_on_disk_2
-# ! hadoop fs -rm -R pprl/block*/*_pairs
-# ! hadoop fs -rm -R pprl/block*/buckets
+block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 18,18,18 --hf_L 52 --hf_K 30 --hf_C 4 --hf_theta 180 --hf_seed 422
+block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v1 --reducers 18,18,18 --hf_L 52 --hf_K 30 --hf_C 4 --hf_theta 180 --hf_seed 422
+block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v2 --reducers 18,18    --hf_L 52 --hf_K 30 --hf_C 4 --hf_theta 180 --hf_seed 422
+block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v3 --reducers 18,18    --hf_L 52 --hf_K 30 --hf_C 4 --hf_theta 180 --hf_seed 422
+! hadoop fs -du -h pprl/block* > sizes_on_disk_2
+! hadoop fs -rm -R pprl/block*/*_pairs
+! hadoop fs -rm -R pprl/block*/buckets
+! sleep 60
+
 
 
 # Block HLSH/FPS (delta 0.0005)
-# block_encoded_data --alice_name clk_voters_a_19 --alice_uid id --bob_name clk_voters_b_19 --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 19,19,19 --hf_L 61 --hf_K 30 --hf_C 5 --hf_theta 180 --hf_seed 423
-# block_encoded_data --alice_name clk_voters_a_19 --alice_uid id --bob_name clk_voters_b_19 --bob_uid id --blocking_scheme HLSH_FPS_MR_v1 --reducers 19,19,19 --hf_L 61 --hf_K 30 --hf_C 5 --hf_theta 180 --hf_seed 423
-# block_encoded_data --alice_name clk_voters_a_19 --alice_uid id --bob_name clk_voters_b_19 --bob_uid id --blocking_scheme HLSH_FPS_MR_v2 --reducers 19,19    --hf_L 61 --hf_K 30 --hf_C 5 --hf_theta 180 --hf_seed 423
-# block_encoded_data --alice_name clk_voters_a_19 --alice_uid id --bob_name clk_voters_b_19 --bob_uid id --blocking_scheme HLSH_FPS_MR_v3 --reducers 19,19    --hf_L 61 --hf_K 30 --hf_C 5 --hf_theta 180 --hf_seed 423
-# ! hadoop fs -du -h pprl/block* > sizes_on_disk_3
-# ! hadoop fs -rm -R pprl/block*/*_pairs
-# ! hadoop fs -rm -R pprl/block*/buckets
+block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 18,18,18 --hf_L 61 --hf_K 30 --hf_C 5 --hf_theta 180 --hf_seed 423
+block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v1 --reducers 18,18,18 --hf_L 61 --hf_K 30 --hf_C 5 --hf_theta 180 --hf_seed 423
+block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v2 --reducers 18,18    --hf_L 61 --hf_K 30 --hf_C 5 --hf_theta 180 --hf_seed 423
+block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v3 --reducers 18,18    --hf_L 61 --hf_K 30 --hf_C 5 --hf_theta 180 --hf_seed 423
+! hadoop fs -du -h pprl/block* > sizes_on_disk_3
+! hadoop fs -rm -R pprl/block*/*_pairs
+! hadoop fs -rm -R pprl/block*/buckets
+! sleep 60
+
 
 
 # Block HLSH/FPS (delta 0.0001)
-# block_encoded_data --alice_name clk_voters_a_10 --alice_uid id --bob_name clk_voters_b_19 --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 19,19,19 --hf_L 74 --hf_K 30 --hf_C 6 --hf_theta 180 --hf_seed 424
-# block_encoded_data --alice_name clk_voters_a_19 --alice_uid id --bob_name clk_voters_b_19 --bob_uid id --blocking_scheme HLSH_FPS_MR_v1 --reducers 19,19,19 --hf_L 74 --hf_K 30 --hf_C 6 --hf_theta 180 --hf_seed 424
-# block_encoded_data --alice_name clk_voters_a_19 --alice_uid id --bob_name clk_voters_b_19 --bob_uid id --blocking_scheme HLSH_FPS_MR_v2 --reducers 19,19    --hf_L 74 --hf_K 30 --hf_C 6 --hf_theta 180 --hf_seed 424
-# block_encoded_data --alice_name clk_voters_a_19 --alice_uid id --bob_name clk_voters_b_19 --bob_uid id --blocking_scheme HLSH_FPS_MR_v3 --reducers 19,19    --hf_L 74 --hf_K 30 --hf_C 6 --hf_theta 180 --hf_seed 424
-# ! hadoop fs -du -h pprl/block* > sizes_on_disk_4
-# ! hadoop fs -rm -R pprl/block*/*_pairs
-# ! hadoop fs -rm -R pprl/block*/buckets
+block_encoded_data --alice_name clk_voters_a_10 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 18,18,18 --hf_L 74 --hf_K 30 --hf_C 6 --hf_theta 180 --hf_seed 424
+block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v1 --reducers 18,18,18 --hf_L 74 --hf_K 30 --hf_C 6 --hf_theta 180 --hf_seed 424
+block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v2 --reducers 18,18    --hf_L 74 --hf_K 30 --hf_C 6 --hf_theta 180 --hf_seed 424
+block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v3 --reducers 18,18    --hf_L 74 --hf_K 30 --hf_C 6 --hf_theta 180 --hf_seed 424
+! hadoop fs -du -h pprl/block* > sizes_on_disk_4
+! hadoop fs -rm -R pprl/block*/*_pairs
+! hadoop fs -rm -R pprl/block*/buckets
+! sleep 60
+
 
 
 

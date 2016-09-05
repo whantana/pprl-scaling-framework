@@ -106,7 +106,7 @@ public class A_Csv2AvroTest {
                 "voters_b", "Voters Registration", "pprl.datasets",
                 VOTER_HEADER,VOTER_TYPES,VOTER_DOCS);
         final FileSystem fs = FileSystem.getLocal(new Configuration());
-		final int[][] partitions = new int[][]{{19,19},{10,9},{9,10},{1,1}};
+		final int[][] partitions = new int[][]{{1,1},{9,9}};
 		for(int[] pt : partitions) {
         	final Path pA = DatasetsUtil.csv2avro(fs,schemaVotersA,"voters_a"+ "_" + pt[0],
                 	new Path(fs.getWorkingDirectory(),"data"),

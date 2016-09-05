@@ -1,4 +1,4 @@
-conf.set("mapred.child.java.opts","-Xms256m -Xmx820m");package gr.upatras.ceid.pprl.mapreduce;
+package gr.upatras.ceid.pprl.mapreduce;
 
 import avro.shaded.com.google.common.collect.Lists;
 import gr.upatras.ceid.pprl.blocking.HammingLSHBlocking;

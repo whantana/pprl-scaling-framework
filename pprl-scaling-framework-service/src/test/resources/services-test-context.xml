@@ -14,17 +14,17 @@
                      jar="file://${build.test.dir}/pprl-scaling-framework-mapreduce-datasets-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.DblpToAvroTool"
                      close-fs="false"
-                     libs="file://${build.test.dir}/classmexer-0.0.3.jar,
-                           file://${build.test.dir}/avro-${avro.version}.jar,
-                           file://${build.test.dir}/avro-mapred-${avro.version}-hadoop2.jar"/>
+                     libs="file://${build.test.dir}/avro-${avro.version}.jar,
+                           file://${build.test.dir}/avro-mapred-${avro.version}-hadoop2.jar,
+                           file://${build.test.dir}/classmexer-0.0.3.jar"/>
 
     <hdp:tool-runner id="qGramCountingToolRunner"
                      jar="file://${build.test.dir}/pprl-scaling-framework-mapreduce-datasets-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.QGramCountingTool"
                      close-fs="false"
-                     libs="file://${build.test.dir}/classmexer-0.0.3.jar,
-                           file://${build.test.dir}/avro-${avro.version}.jar,
+                     libs="file://${build.test.dir}/avro-${avro.version}.jar,
                            file://${build.test.dir}/avro-mapred-${avro.version}-hadoop2.jar,
+                           file://${build.test.dir}/classmexer-0.0.3.jar,
                            file://${build.test.dir}/pprl-scaling-framework-lib-${build.version}.jar"/>
 
 
@@ -32,64 +32,64 @@
                      jar="file://${build.test.dir}/pprl-scaling-framework-mapreduce-datasets-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.SortAvroTool"
                      close-fs="false"
-                     libs="file://${build.test.dir}/classmexer-0.0.3.jar,
-                           file://${build.test.dir}/avro-${avro.version}.jar,
+                     libs="file://${build.test.dir}/avro-${avro.version}.jar,
                            file://${build.test.dir}/avro-mapred-${avro.version}-hadoop2.jar,
+                           file://${build.test.dir}/classmexer-0.0.3.jar,
                            file://${build.test.dir}/pprl-scaling-framework-lib-${build.version}.jar"/>
 
     <hdp:tool-runner id="encodeDatasetToolRunner"
                      jar="file://${build.test.dir}/pprl-scaling-framework-mapreduce-encoding-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.EncodingTool"
                      close-fs="false"
-                     libs="file://${build.test.dir}/classmexer-0.0.3.jar,
-                           file://${build.test.dir}/avro-${avro.version}.jar,
+                     libs="file://${build.test.dir}/avro-${avro.version}.jar,
                            file://${build.test.dir}/avro-mapred-${avro.version}-hadoop2.jar,
+                           file://${build.test.dir}/classmexer-0.0.3.jar,
                            file://${build.test.dir}/pprl-scaling-framework-lib-${build.version}.jar"/>
 
     <hdp:tool-runner id="exhaustiveRecordPairSimilarityToolRunner"
                      jar="file://${build.test.dir}/pprl-scaling-framework-mapreduce-matching-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.ExhaustiveRecordPairSimilarityTool"
                      close-fs="false"
-                     libs="file://${build.test.dir}/classmexer-0.0.3.jar,
-                           file://${build.test.dir}/avro-${avro.version}.jar,
+                     libs="file://${build.test.dir}/avro-${avro.version}.jar,
                            file://${build.test.dir}/avro-mapred-${avro.version}-hadoop2.jar,
                            file://${build.test.dir}/java-string-similarity-${string.similarity.version}.jar,
+                           file://${build.test.dir}/classmexer-0.0.3.jar,
                            file://${build.test.dir}/pprl-scaling-framework-lib-${build.version}.jar"/>
 
     <hdp:tool-runner id="hammingLshFpsBlockingV0ToolRunner"
                      jar="file://${build.test.dir}/pprl-scaling-framework-mapreduce-blocking-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.HammingLSHFPSToolV0"
                      close-fs="false"
-                     libs="file://${build.test.dir}/classmexer-0.0.3.jar,
-                           file://${build.test.dir}/avro-${avro.version}.jar,
+                     libs="file://${build.test.dir}/avro-${avro.version}.jar,
 						   file://${build.test.dir}/avro-mapred-${avro.version}-hadoop2.jar,
+						   file://${build.test.dir}/classmexer-0.0.3.jar,
                            file://${build.test.dir}/pprl-scaling-framework-lib-${build.version}.jar"/>
 
     <hdp:tool-runner id="hammingLshFpsBlockingV1ToolRunner"
                      jar="file://${build.test.dir}/pprl-scaling-framework-mapreduce-blocking-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.HammingLSHFPSToolV1"
                      close-fs="false"
-                     libs="file://${build.test.dir}/classmexer-0.0.3.jar,
-                           file://${build.test.dir}/avro-${avro.version}.jar,
+                     libs="file://${build.test.dir}/avro-${avro.version}.jar,
 						   file://${build.test.dir}/avro-mapred-${avro.version}-hadoop2.jar,
+						   file://${build.test.dir}/classmexer-0.0.3.jar,
                            file://${build.test.dir}/pprl-scaling-framework-lib-${build.version}.jar"/>
 
     <hdp:tool-runner id="hammingLshFpsBlockingV2ToolRunner"
                      jar="file://${build.test.dir}/pprl-scaling-framework-mapreduce-blocking-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.HammingLSHFPSToolV2"
                      close-fs="false"
-                     libs="file://${build.test.dir}/classmexer-0.0.3.jar,
-                           file://${build.test.dir}/avro-${avro.version}.jar,
+                     libs="file://${build.test.dir}/avro-${avro.version}.jar,
 						   file://${build.test.dir}/avro-mapred-${avro.version}-hadoop2.jar,
+						   file://${build.test.dir}/classmexer-0.0.3.jar,
                            file://${build.test.dir}/pprl-scaling-framework-lib-${build.version}.jar"/>
 
     <hdp:tool-runner id="hammingLshFpsBlockingV3ToolRunner"
                      jar="file://${build.test.dir}/pprl-scaling-framework-mapreduce-blocking-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.HammingLSHFPSToolV3"
                      close-fs="false"
-                     libs="file://${build.test.dir}/classmexer-0.0.3.jar,
-                           file://${build.test.dir}/avro-${avro.version}.jar,
+                     libs="file://${build.test.dir}/avro-${avro.version}.jar,
 						   file://${build.test.dir}/avro-mapred-${avro.version}-hadoop2.jar,
+						   file://${build.test.dir}/classmexer-0.0.3.jar,
                            file://${build.test.dir}/pprl-scaling-framework-lib-${build.version}.jar"/>
 
     <hdp:configuration id="hadoopConfiguration"/>

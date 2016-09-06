@@ -13,9 +13,9 @@
                      jar="file://${app.repo}/pprl-scaling-framework-mapreduce-blocking-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.HammingLSHFPSToolV0"
                      close-fs="false"
-                     libs="file://${app.repo}/classmexer-0.0.3.jar,
-                           file://${app.repo}/avro-${avro.version}.jar,
+                     libs="file://${app.repo}/avro-${avro.version}.jar,
 						   file://${app.repo}/avro-mapred-${avro.version}-hadoop2.jar,
+						   file://${app.repo}/classmexer-0.0.3.jar
                            file://${app.repo}/pprl-scaling-framework-lib-${build.version}.jar"/>
 
     <hdp:tool-runner id="hammingLshFpsBlockingV1ToolRunner"
@@ -23,9 +23,9 @@
                      jar="file://${app.repo}/pprl-scaling-framework-mapreduce-blocking-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.HammingLSHFPSToolV1"
                      close-fs="false"
-                     libs="file://${app.repo}/classmexer-0.0.3.jar,
-                           file://${app.repo}/avro-${avro.version}.jar,
+                     libs="file://${app.repo}/avro-${avro.version}.jar,
 						   file://${app.repo}/avro-mapred-${avro.version}-hadoop2.jar,
+						   file://${app.repo}/classmexer-0.0.3.jar,
                            file://${app.repo}/pprl-scaling-framework-lib-${build.version}.jar"/>
 
     <hdp:tool-runner id="hammingLshFpsBlockingV2ToolRunner"
@@ -33,9 +33,9 @@
                      jar="file://${app.repo}/pprl-scaling-framework-mapreduce-blocking-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.HammingLSHFPSToolV2"
                      close-fs="false"
-                     libs="file://${app.repo}/classmexer-0.0.3.jar,
-                           file://${app.repo}/avro-${avro.version}.jar,
+                     libs="file://${app.repo}/avro-${avro.version}.jar,
 						   file://${app.repo}/avro-mapred-${avro.version}-hadoop2.jar,
+						   file://${app.repo}/classmexer-0.0.3.jar,
                            file://${app.repo}/pprl-scaling-framework-lib-${build.version}.jar"/>
 
     <hdp:tool-runner id="hammingLshFpsBlockingV3ToolRunner"
@@ -43,9 +43,9 @@
                      jar="file://${app.repo}/pprl-scaling-framework-mapreduce-blocking-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.HammingLSHFPSToolV3"
                      close-fs="false"
-                     libs="file://${app.repo}/classmexer-0.0.3.jar,
-                           file://${app.repo}/avro-${avro.version}.jar,
+                     libs="file://${app.repo}/avro-${avro.version}.jar,
 						   file://${app.repo}/avro-mapred-${avro.version}-hadoop2.jar,
+						   file://${app.repo}/classmexer-0.0.3.jar,
                            file://${app.repo}/pprl-scaling-framework-lib-${build.version}.jar"/>
 
     <!-- component scan on service package-->

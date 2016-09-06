@@ -51,39 +51,43 @@ public class CommonUtil {
      */
     static void saveStats(final FileSystem fs, final Path statsPath, final Map<String,Long> stats)
             throws IOException {
-        final FSDataOutputStream fsdos = fs.create(statsPath, true);
-        for(Map.Entry<String,Long> entry : stats.entrySet())
-            fsdos.writeBytes(String.format("%s=%d\n",entry.getKey(),entry.getValue()));
+        final FSDataOutputStream fsdos = fs.exists(statsPath) ?
+                fs.append(statsPath) :
+                fs.create(statsPath,true);
+        fsdos.writeBytes("\n");
+        for (Map.Entry<String, Long> entry : stats.entrySet())
+            fsdos.writeBytes(String.format("%s=%d\n", entry.getKey(), entry.getValue()));
         fsdos.close();
+        stats.clear();
     }
 
     /**
-      * Populate stats with counters.
-      *
+     * Populate stats with counters.
+     *
      * @param job a map reduce job
-      * @param stats stats map.
-      * @param LOG a log instance for logging.
-      */
-     static void populateStats(final String header,
-                               final Job job,
-                               final Map<String, Long> stats, final Logger LOG) throws IOException {
-         final String key = header.split(". ")[0];
-         for(Counter counter : job.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME)) {
-             final String name = counter.getDisplayName();
-             if(name.contains("blockingkeys.at")) continue;;
-             final long value = counter.getValue();
-             stats.put(key +"_" + name, value);
-         }
-         final Counter totalWrittenBytesCounter =
-                 job.getCounters().findCounter("HDFS",FileSystemCounter.BYTES_WRITTEN);
-         if(totalWrittenBytesCounter != null)
-             stats.put(key + "_total.hdfs.written.bytes", totalWrittenBytesCounter.getValue());
+     * @param stats stats map.
+     * @param LOG a log instance for logging.
+     */
+    static void populateStats(final String header,
+                              final Job job,
+                              final Map<String, Long> stats, final Logger LOG) throws IOException {
+        final String key = header.split(". ")[0];
+        for(Counter counter : job.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME)) {
+            final String name = counter.getDisplayName();
+            if(name.contains("blockingkeys.at")) continue;;
+            final long value = counter.getValue();
+            stats.put(key +"_" + name, value);
+        }
+        final Counter totalWrittenBytesCounter =
+                job.getCounters().findCounter("HDFS",FileSystemCounter.BYTES_WRITTEN);
+        if(totalWrittenBytesCounter != null)
+            stats.put(key + "_total.hdfs.written.bytes", totalWrittenBytesCounter.getValue());
 
-         try {
-             final long duration = job.getFinishTime() - job.getStartTime();
-             stats.put(key + "_job.duration",duration);
-         } catch (InterruptedException e) { throw new IOException(e.getMessage());}
-     }
+        try {
+            final long duration = job.getFinishTime() - job.getStartTime();
+            stats.put(key + "_job.duration",duration);
+        } catch (InterruptedException e) { throw new IOException(e.getMessage());}
+    }
 
     /**
      * Returns the min/max/avg blocking counts from the counters

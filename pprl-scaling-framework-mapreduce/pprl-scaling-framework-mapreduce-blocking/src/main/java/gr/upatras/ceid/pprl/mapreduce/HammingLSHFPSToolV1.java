@@ -149,14 +149,16 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
         final boolean job1Success = job1.waitForCompletion(true);
         if(!job1Success) {
             LOG.error("Job \"{}\" not successful",JOB_1_DESCRIPTION);
-            fs.delete(statsPath.getParent(),true);
+            final Path parentPath = statsPath.getParent();
+            final Path renamedPath = new Path(parentPath.getParent(),"FAILED_" + parentPath.getName());
+            fs.rename(parentPath, renamedPath);
             return 1;
         }
 
         // cleanup and stats
         removeSuccessFile(fs,bobBucketsPath);
         populateStats(JOB_1_DESCRIPTION, job1, stats, LOG);
-
+        saveStats(fs, statsPath, stats);
 
         // get important stats for the next job
         final int[] minMaxAvg = getMinMaxAvgBlockingKeyCounts(job1.getCounters(), L, R1);
@@ -210,13 +212,16 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
         final boolean job2success = job2.waitForCompletion(true);
         if(!job2success) {
             LOG.error("Job \"{}\" not successful",JOB_2_DESCRIPTION);
-            fs.delete(statsPath.getParent(),true);
+            final Path parentPath = statsPath.getParent();
+            final Path renamedPath = new Path(parentPath.getParent(),"FAILED_" + parentPath.getName());
+            fs.rename(parentPath, renamedPath);
             return 1;
         }
 
         // cleanup and stats
         removeSuccessFile(fs,frequentPairsPath);
         populateStats(JOB_2_DESCRIPTION, job2, stats, LOG);
+        saveStats(fs, statsPath, stats);
 
         // get important stats for the next job
         final int aliceRecordCount = (int)job2.getCounters().findCounter(
@@ -273,18 +278,19 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
         final boolean job3Success = job3.waitForCompletion(true);
         if(!job3Success) {
             LOG.error("Job \"{}\" not successful",JOB_3_DESCRIPTION);
-            fs.delete(statsPath.getParent(),true);
+            final Path parentPath = statsPath.getParent();
+            final Path renamedPath = new Path(parentPath.getParent(),"FAILED_" + parentPath.getName());
+            fs.rename(parentPath, renamedPath);
             return 1;
         }
 
         // cleanup and stats
         removeSuccessFile(fs,matchedPairsPath);
         populateStats(JOB_3_DESCRIPTION, job3, stats, LOG);
-
+        saveStats(fs, statsPath, stats);
 
         // all jobs are succesfull save counters to stats path
         LOG.info("All jobs are succesfull. See \"{}\" for the matched pairs list.", matchedPairsPath);
-        saveStats(fs, statsPath, stats);
         LOG.info("See \"{}\" for collected stats.", statsPath);
 
         return 0;

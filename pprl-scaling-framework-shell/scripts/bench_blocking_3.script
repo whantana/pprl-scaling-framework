@@ -1,0 +1,33 @@
+# block_encoded_data --alice_name clk_huge_voters_a_9 --alice_uid id --bob_name clk_huge_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 18,18,18 --hf_L 52 --hf_K 30 --hf_C 4 --hf_theta 180 --hf_seed 422
+# block_encoded_data --alice_name clk_huge_voters_a_9 --alice_uid id --bob_name clk_huge_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v1 --reducers 18,18,18 --hf_L 52 --hf_K 30 --hf_C 4 --hf_theta 180 --hf_seed 422
+# block_encoded_data --alice_name clk_huge_voters_a_9 --alice_uid id --bob_name clk_huge_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v2 --reducers 18,18    --hf_L 52 --hf_K 30 --hf_C 4 --hf_theta 180 --hf_seed 422
+# block_encoded_data --alice_name clk_huge_voters_a_9 --alice_uid id --bob_name clk_huge_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v3 --reducers 18,18    --hf_L 52 --hf_K 30 --hf_C 4 --hf_theta 180 --hf_seed 422
+# ! hadoop fs -rm -R pprl/block*/all_pairs
+# ! hadoop fs -rm -R pprl/block*/frequent_pairs
+# ! hadoop fs -rm -R pprl/block*/matched_pairs
+# ! hadoop fs -rm -R pprl/block*/buckets
+# block_encoded_data --alice_name clk_huge_voters_a_9 --alice_uid id --bob_name clk_huge_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 18,18,18 --hf_L 74 --hf_K 30 --hf_C 6 --hf_theta 180 --hf_seed 424
+# block_encoded_data --alice_name clk_huge_voters_a_9 --alice_uid id --bob_name clk_huge_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v1 --reducers 18,18,18 --hf_L 74 --hf_K 30 --hf_C 6 --hf_theta 180 --hf_seed 424
+# block_encoded_data --alice_name clk_huge_voters_a_9 --alice_uid id --bob_name clk_huge_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v2 --reducers 18,18    --hf_L 74 --hf_K 30 --hf_C 6 --hf_theta 180 --hf_seed 424
+# block_encoded_data --alice_name clk_huge_voters_a_9 --alice_uid id --bob_name clk_huge_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v3 --reducers 18,18    --hf_L 74 --hf_K 30 --hf_C 6 --hf_theta 180 --hf_seed 424
+# ! hadoop fs -rm -R pprl/block*/all_pairs
+# ! hadoop fs -rm -R pprl/block*/frequent_pairs
+# ! hadoop fs -rm -R pprl/block*/matched_pairs
+# ! hadoop fs -rm -R pprl/block*/buckets
+# block_encoded_data --alice_name clk_huge_voters_a_9 --alice_uid id --bob_name clk_huge_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 18,18,18 --hf_L 91 --hf_K 30 --hf_C 7 --hf_theta 180 --hf_seed 424
+# block_encoded_data --alice_name clk_huge_voters_a_9 --alice_uid id --bob_name clk_huge_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v1 --reducers 18,18,18 --hf_L 91 --hf_K 30 --hf_C 7 --hf_theta 180 --hf_seed 424
+# block_encoded_data --alice_name clk_huge_voters_a_9 --alice_uid id --bob_name clk_huge_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v2 --reducers 18,18    --hf_L 91 --hf_K 30 --hf_C 7 --hf_theta 180 --hf_seed 424
+# block_encoded_data --alice_name clk_huge_voters_a_9 --alice_uid id --bob_name clk_huge_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v3 --reducers 18,18    --hf_L 91 --hf_K 30 --hf_C 7 --hf_theta 180 --hf_seed 424
+# ! hadoop fs -rm -R pprl/block*/all_pairs
+# ! hadoop fs -rm -R pprl/block*/frequent_pairs
+# ! hadoop fs -rm -R pprl/block*/matched_pairs
+# ! hadoop fs -rm -R pprl/block*/buckets
+# block_encoded_data --alice_name clk_huge_voters_a_9 --alice_uid id --bob_name clk_huge_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 18,18,18 --hf_L 114 --hf_K 30 --hf_C 9 --hf_theta 180 --hf_seed 424
+# block_encoded_data --alice_name clk_huge_voters_a_9 --alice_uid id --bob_name clk_huge_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v1 --reducers 18,18,18 --hf_L 114 --hf_K 30 --hf_C 9 --hf_theta 180 --hf_seed 424
+# block_encoded_data --alice_name clk_huge_voters_a_9 --alice_uid id --bob_name clk_huge_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v2 --reducers 18,18    --hf_L 114 --hf_K 30 --hf_C 9 --hf_theta 180 --hf_seed 424
+# block_encoded_data --alice_name clk_huge_voters_a_9 --alice_uid id --bob_name clk_huge_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v3 --reducers 18,18    --hf_L 144 --hf_K 30 --hf_C 9 --hf_theta 180 --hf_seed 424
+# ! hadoop fs -rm -R pprl/block*/all_pairs
+# ! hadoop fs -rm -R pprl/block*/frequent_pairs
+# ! hadoop fs -rm -R pprl/block*/matched_pairs
+# ! hadoop fs -rm -R pprl/block*/buckets
+

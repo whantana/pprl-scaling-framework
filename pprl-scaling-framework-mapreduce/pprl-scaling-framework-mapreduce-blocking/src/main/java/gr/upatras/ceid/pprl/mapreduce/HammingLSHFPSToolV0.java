@@ -153,13 +153,16 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
         final boolean job1Success = job1.waitForCompletion(true);
         if(!job1Success) {
             LOG.error("Job \"{}\" not successful",JOB_1_DESCRIPTION);
-            fs.delete(statsPath.getParent(),true);
+            final Path parentPath = statsPath.getParent();
+            final Path renamedPath = new Path(parentPath.getParent(),"FAILED_" + parentPath.getName());
+            fs.rename(parentPath, renamedPath);
             return 1;
         }
 
         // cleanup and stats
         removeSuccessFile(fs,allPairsPath);
         populateStats(JOB_1_DESCRIPTION, job1, stats, LOG);
+        saveStats(fs, statsPath, stats);
 
         // get important counters and add them to configuration
         final int aliceRecordCount = (int)job1.getCounters().findCounter(
@@ -211,7 +214,10 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
         final boolean job2Success = job2.waitForCompletion(true);
         if(!job2Success) {
             LOG.error("Job \"{}\" not successful",JOB_2_DESCRIPTION);
-                        fs.delete(statsPath.getParent(),true);             return 1;
+            final Path parentPath = statsPath.getParent();
+            final Path renamedPath = new Path(parentPath.getParent(),"FAILED_" + parentPath.getName());
+            fs.rename(parentPath, renamedPath);
+            return 1;
         }
 
         // get important counters and add them to configuration
@@ -222,6 +228,7 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
         // cleanup and stats
         removeSuccessFile(fs, frequentPairsPath);
         populateStats(JOB_2_DESCRIPTION, job2, stats, LOG);
+        saveStats(fs, statsPath, stats);
 
         // setup job3
         conf.setInt("mapreduce.map.memory.mb", 2048);
@@ -273,20 +280,20 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
         final boolean job3Success = job3.waitForCompletion(true);
         if(!job3Success) {
             LOG.error("Job \"{}\" not successful",JOB_3_DESCRIPTION);
-            fs.delete(statsPath.getParent(),true); //TODO Rename failed tasks dont delete them
-                                                   // TODO dump stats everytime we populate
+            final Path parentPath = statsPath.getParent();
+            final Path renamedPath = new Path(parentPath.getParent(),"FAILED_" + parentPath.getName());
+            fs.rename(parentPath,renamedPath);
             return 1;
         }
 
         // cleanup and stats
         removeSuccessFile(fs,matchedPairsPath);
         populateStats(JOB_3_DESCRIPTION, job3, stats, LOG);
-
+        saveStats(fs, statsPath, stats);
 
         // all jobs are succesfull save counters to stats path
         LOG.info("All jobs are succesfull. Frequent pairs: \"{}\" , Matched pairs: \"{}\" .",
                 frequentPairsPath, matchedPairsPath);
-        saveStats(fs, statsPath, stats);
         LOG.info("See \"{}\" for collected stats.", statsPath);
 
         return 0;

@@ -141,10 +141,6 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
         System.out.format("Loading frequent pair paths...(%d/%d)\n",
                 i, frequentPairsPaths.size());
 
-
-        Runtime rt = Runtime.getRuntime();
-        long umb = rt.totalMemory() - rt.freeMemory();
-
         for (final Path path : frequentPairsPaths) {
             SequenceFile.Reader reader = new SequenceFile.Reader(conf, SequenceFile.Reader.file(path));
             Text key = new Text();
@@ -157,10 +153,9 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
             System.out.format("Loading frequent pair paths...(%d/%d)\n", i, frequentPairsPaths.size());
             i++;
         }
-        long uma = rt.totalMemory() - rt.freeMemory();
-        long frequentPairBytes = uma - umb;
-        //long frequentPairBytes = MemoryUtil.deepMemoryUsageOf(frequentPairMap);
-        //System.out.println("Frequent pairs memory footprint : " + frequentPairBytes/(1024*1024) + " MB");
+
+        long frequentPairBytes = MemoryUtil.deepMemoryUsageOf(frequentPairMap);
+        System.out.println("Frequent pairs memory footprint : " + frequentPairBytes/(1024*1024) + " MB");
         increaseTotalByteCounter(context, frequentPairBytes);
     }
 

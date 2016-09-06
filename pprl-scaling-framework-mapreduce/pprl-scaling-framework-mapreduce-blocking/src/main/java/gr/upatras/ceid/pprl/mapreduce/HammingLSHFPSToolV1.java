@@ -222,10 +222,13 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
         final int aliceRecordCount = (int)job2.getCounters().findCounter(
                 CommonKeys.COUNTER_GROUP_NAME,CommonKeys.ALICE_RECORD_COUNT_COUNTER).getValue();
         conf.setInt(CommonKeys.ALICE_RECORD_COUNT_COUNTER, aliceRecordCount);
+        final int frequentPairCount = (int) job2.getCounters().findCounter(
+                        CommonKeys.COUNTER_GROUP_NAME,CommonKeys.FREQUENT_PAIR_COUNTER).getValue();
+        conf.setInt(CommonKeys.FREQUENT_PAIR_COUNTER,frequentPairCount);
 
         // setup job3
         conf.setInt("mapreduce.map.memory.mb", 2048);
-        conf.set("mapred.map.java.opts","-Xms1000m -Xmx1800m");
+        conf.set("mapred.map.java.opts","-Xms1800m -Xmx1800m");
         conf.setInt("mapreduce.reduce.memory.mb", 1024);
         conf.set("mapred.reduce.java.opts","-Xms800m -Xmx800m");
 

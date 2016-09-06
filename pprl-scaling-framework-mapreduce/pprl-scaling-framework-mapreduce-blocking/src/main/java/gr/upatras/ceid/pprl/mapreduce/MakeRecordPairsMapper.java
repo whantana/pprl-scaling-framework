@@ -30,6 +30,9 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
 
     private String aliceEncodingName;
     private String bobEncodingName;
+    private int aliceRecordCount;
+    private int bobRecordCount;
+    private int frequentPairCount;
     private Map<String,ArrayList<byte[]>> frequentPairMap;
     private String uidFieldName;
     private boolean followsKeyValue;
@@ -114,6 +117,10 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
             throws IOException {
         final Configuration conf = context.getConfiguration();
 
+        aliceRecordCount = conf.getInt(CommonKeys.ALICE_RECORD_COUNT_COUNTER, -1);
+        bobRecordCount = conf.getInt(CommonKeys.BOB_RECORD_COUNT_COUNTER, -1);
+        frequentPairCount = conf.getInt(CommonKeys.FREQUENT_PAIR_COUNTER,-1);
+
         // get pair paths
         final SortedSet<Path> frequentPairsPaths = new TreeSet<Path>();
         for (final URI uri : context.getCacheFiles()) {
@@ -122,8 +129,6 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
         }
 
         // construct map , estimate map capacity
-        final int aliceRecordCount = conf.getInt(CommonKeys.ALICE_RECORD_COUNT_COUNTER, 16);
-        final int bobRecordCount = conf.getInt(CommonKeys.BOB_RECORD_COUNT_COUNTER, 16);
         final int actualCapacity = followKeyValue ? aliceRecordCount : bobRecordCount;
         final float fillFactor = 0.75f;
         final int capacity = (int) (actualCapacity / fillFactor + 1);
@@ -159,7 +164,10 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
     public void populateFrequentPairMap(final Text key,final Text value) {
         ArrayList<byte[]> list = frequentPairMap.get(key.toString());
         if(list == null) {
-            list = new ArrayList<byte[]>();
+            int initialCapacity = (followsKeyValue) ?
+                    frequentPairCount/aliceRecordCount :
+                    frequentPairCount/bobRecordCount;
+            list = new ArrayList<byte[]>(initialCapacity);
             list.add(Arrays.copyOf(value.getBytes(), value.getLength()));
             frequentPairMap.put(key.toString(), list);
         } else list.add(Arrays.copyOf(value.getBytes(), value.getLength()));

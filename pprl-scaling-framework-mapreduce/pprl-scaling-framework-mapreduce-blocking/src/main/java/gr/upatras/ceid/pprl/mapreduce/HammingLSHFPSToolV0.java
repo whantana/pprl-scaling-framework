@@ -214,8 +214,13 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
                         fs.delete(statsPath.getParent(),true);             return 1;
         }
 
+        // get important counters and add them to configuration
+        final int frequentPairCount = (int) job2.getCounters().findCounter(
+                CommonKeys.COUNTER_GROUP_NAME,CommonKeys.FREQUENT_PAIR_COUNTER).getValue();
+        conf.setInt(CommonKeys.FREQUENT_PAIR_COUNTER,frequentPairCount);
+
         // cleanup and stats
-        removeSuccessFile(fs,frequentPairsPath);
+        removeSuccessFile(fs, frequentPairsPath);
         populateStats(JOB_2_DESCRIPTION, job2, stats, LOG);
 
         // setup job3

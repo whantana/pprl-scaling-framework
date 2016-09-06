@@ -14,7 +14,7 @@
                      jar="file://${app.repo}/pprl-scaling-framework-mapreduce-encoding-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.EncodingTool"
                      close-fs="false"
-                     libs="file://${app.repo}/classmexer-0.0.3.jar,
+                     libs="file://${app.repo}/classmexer-0.0.3.jar#classmexer.jar,
                            file://${app.repo}/avro-${avro.version}.jar,
 						   file://${app.repo}/avro-mapred-${avro.version}-hadoop2.jar,
                            file://${app.repo}/pprl-scaling-framework-lib-${build.version}.jar"/>

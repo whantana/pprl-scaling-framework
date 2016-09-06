@@ -128,7 +128,10 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
         final float fillFactor = 0.75f;
         final int capacity = (int) (actualCapacity / fillFactor + 1);
         frequentPairMap = new HashMap<String, ArrayList<byte[]>>(capacity, fillFactor);
-        System.out.println("Loading frequent paths...");
+        System.out.format("Loading frequent paths...(0/%d)\n",frequentPairsPaths.size());
+        int i = 1;
+        System.out.format("Loading frequent paths...(%d/%d)\n",
+                i, frequentPairsPaths.size());
         for (final Path path : frequentPairsPaths) {
             SequenceFile.Reader reader = new SequenceFile.Reader(conf, SequenceFile.Reader.file(path));
             Text key = new Text();
@@ -138,6 +141,9 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
                 else populateFrequentPairMap(value, key);
             }
             reader.close();
+            System.out.format("Loading frequent paths...(%d/%d) . Size so far :\n",
+                    i, MemoryUtil.deepMemoryUsageOf(frequentPairMap));
+            i++;
         }
         long frequentPairBytes = MemoryUtil.deepMemoryUsageOf(frequentPairMap);
         System.out.println("Frequent pairs memory footprint : " + frequentPairBytes/(1024*1024) + " MB");

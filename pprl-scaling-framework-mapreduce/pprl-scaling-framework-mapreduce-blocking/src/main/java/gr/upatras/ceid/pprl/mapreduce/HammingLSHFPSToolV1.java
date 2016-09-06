@@ -163,12 +163,13 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
         final int minKeyCount = minMaxAvg[0];
         final int maxKeyCount = minMaxAvg[1];
         final int avgKeyCount = minMaxAvg[2];
+        conf.setInt(CommonKeys.BUCKET_INITIAL_CAPACITY,maxKeyCount);
         final int bobRecordCount  = (int)job1.getCounters().findCounter(
                 CommonKeys.COUNTER_GROUP_NAME,CommonKeys.BOB_RECORD_COUNT_COUNTER).getValue();
+        conf.setInt(CommonKeys.BOB_RECORD_COUNT_COUNTER, bobRecordCount);
+
 
         // setup job2
-        conf.setInt(CommonKeys.BOB_RECORD_COUNT_COUNTER, bobRecordCount);
-        conf.setInt(CommonKeys.BUCKET_INITIAL_CAPACITY,maxKeyCount);
         final String description2 = String.format("%s(" +
                         "alice-path : %s, alice-schema-path : %s, " +
                         "bob-buckets-path : %s, frequent-pairs-path : %s, " +
@@ -217,15 +218,17 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
         removeSuccessFile(fs,frequentPairsPath);
         populateStats(JOB_2_DESCRIPTION, job2, stats, LOG);
 
-
-
         // get important stats for the next job
         final int aliceRecordCount = (int)job2.getCounters().findCounter(
                 CommonKeys.COUNTER_GROUP_NAME,CommonKeys.ALICE_RECORD_COUNT_COUNTER).getValue();
+        conf.setInt(CommonKeys.ALICE_RECORD_COUNT_COUNTER, aliceRecordCount);
 
         // setup job3
-        conf.setInt(CommonKeys.ALICE_RECORD_COUNT_COUNTER, aliceRecordCount);
-        conf.setInt(CommonKeys.BOB_RECORD_COUNT_COUNTER, bobRecordCount);
+        conf.setInt("mapreduce.map.memory.mb", 2048);
+        conf.set("mapred.map.java.opts","-Xms1000m -Xmx1800m");
+        conf.setInt("mapreduce.reduce.memory.mb", 1024);
+        conf.set("mapred.reduce.java.opts","-Xms800m -Xmx800m");
+
         final String description3 = String.format("%s(" +
                         "alice-path : %s, alice-schema-path : %s," +
                         "bob-path : %s, bob-schema-path : %s," +

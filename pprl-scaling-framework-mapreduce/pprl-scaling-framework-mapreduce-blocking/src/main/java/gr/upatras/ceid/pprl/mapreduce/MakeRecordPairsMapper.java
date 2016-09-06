@@ -141,8 +141,8 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
                 else populateFrequentPairMap(value, key);
             }
             reader.close();
-            System.out.format("Loading frequent paths...(%d/%d) . Size so far :\n",
-                    i, MemoryUtil.deepMemoryUsageOf(frequentPairMap));
+            System.out.format("Loading frequent paths...(%d/%d) . Size so far : %d\n",
+                    i, frequentPairsPaths.size(),MemoryUtil.deepMemoryUsageOf(frequentPairMap));
             i++;
         }
         long frequentPairBytes = MemoryUtil.deepMemoryUsageOf(frequentPairMap);

@@ -219,6 +219,11 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
         populateStats(JOB_2_DESCRIPTION, job2, stats, LOG);
 
         // setup job3
+        conf.setInt("mapreduce.map.memory.mb", 2048);
+        conf.set("mapred.map.java.opts","-Xms1000m -Xmx1800m");
+        conf.setInt("mapreduce.reduce.memory.mb", 1024);
+        conf.set("mapred.reduce.java.opts","-Xms800m -Xmx800m");
+
         final String description3 = String.format("%s(" +
                         "alice-path : %s, alice-schema-path : %s, " +
                         "bob-path : %s, bob-schema-path : %s, " +

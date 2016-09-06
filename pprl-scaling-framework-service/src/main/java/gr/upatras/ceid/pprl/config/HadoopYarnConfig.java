@@ -52,7 +52,7 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
         config.withProperties()
                 .property("mapreduce.map.memory.mb", "1024")
                 .property("mapreduce.reduce.memory.mb", "1024")
-                .property("mapred.child.java.opts","-javaagent:./classmexer-0.0.3.jar -Xms800m -Xmx900m");
+                .property("mapred.child.java.opts","-javaagent:./libjars/classmexer-0.0.3.jar -Xms800m -Xmx900m");
 
 
         if(isDefined(namenodeHost)) {

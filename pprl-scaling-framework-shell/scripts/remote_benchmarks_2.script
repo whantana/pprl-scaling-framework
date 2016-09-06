@@ -61,7 +61,7 @@ block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_vot
 
 
 # Block HLSH/FPS (delta 0.0001)
-block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 18,18,18 --hf_L 74 --hf_K 30 --hf_C 6 --hf_theta 180 --hf_seed 424
+# block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 18,18,18 --hf_L 74 --hf_K 30 --hf_C 6 --hf_theta 180 --hf_seed 424
 # block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v1 --reducers 18,18,18 --hf_L 74 --hf_K 30 --hf_C 6 --hf_theta 180 --hf_seed 424
 # block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v2 --reducers 18,18    --hf_L 74 --hf_K 30 --hf_C 6 --hf_theta 180 --hf_seed 424
 # block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v3 --reducers 18,18    --hf_L 74 --hf_K 30 --hf_C 6 --hf_theta 180 --hf_seed 424

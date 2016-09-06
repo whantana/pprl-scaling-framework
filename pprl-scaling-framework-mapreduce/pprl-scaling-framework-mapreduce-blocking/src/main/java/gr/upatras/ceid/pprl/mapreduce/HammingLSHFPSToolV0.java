@@ -273,7 +273,8 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
         final boolean job3Success = job3.waitForCompletion(true);
         if(!job3Success) {
             LOG.error("Job \"{}\" not successful",JOB_3_DESCRIPTION);
-            fs.delete(statsPath.getParent(),true);
+            fs.delete(statsPath.getParent(),true); //TODO Rename failed tasks dont delete them
+                                                   // TODO dump stats everytime we populate
             return 1;
         }
 

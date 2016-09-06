@@ -122,7 +122,7 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
         frequentPairCount = conf.getInt(CommonKeys.FREQUENT_PAIR_COUNTER,-1);
         System.out.println("Frequent pair count : " + frequentPairCount);
         System.out.println("Frequent pair per alice record : " + frequentPairCount/aliceRecordCount);
-        System.out.println("Frequent pair per bob record : " + frequentPairCount/aliceRecordCount);
+        System.out.println("Frequent pair per bob record : " + frequentPairCount/bobRecordCount);
 
         // get pair paths
         final SortedSet<Path> frequentPairsPaths = new TreeSet<Path>();
@@ -140,6 +140,11 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
         int i = 1;
         System.out.format("Loading frequent pair paths...(%d/%d)\n",
                 i, frequentPairsPaths.size());
+
+
+        Runtime rt = Runtime.getRuntime();
+        long umb = rt.totalMemory() - rt.freeMemory();
+
         for (final Path path : frequentPairsPaths) {
             SequenceFile.Reader reader = new SequenceFile.Reader(conf, SequenceFile.Reader.file(path));
             Text key = new Text();
@@ -152,8 +157,10 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
             System.out.format("Loading frequent pair paths...(%d/%d)\n", i, frequentPairsPaths.size());
             i++;
         }
-        long frequentPairBytes = MemoryUtil.deepMemoryUsageOf(frequentPairMap);
-        System.out.println("Frequent pairs memory footprint : " + frequentPairBytes/(1024*1024) + " MB");
+        long uma = rt.totalMemory() - rt.freeMemory();
+        long frequentPairBytes = uma - umb;
+        //long frequentPairBytes = MemoryUtil.deepMemoryUsageOf(frequentPairMap);
+        //System.out.println("Frequent pairs memory footprint : " + frequentPairBytes/(1024*1024) + " MB");
         increaseTotalByteCounter(context, frequentPairBytes);
     }
 

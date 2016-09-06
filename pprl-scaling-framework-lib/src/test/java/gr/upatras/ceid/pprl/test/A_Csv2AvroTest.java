@@ -101,17 +101,21 @@ public class A_Csv2AvroTest {
         final FileSystem fs = FileSystem.getLocal(new Configuration());
         final int partitions = 9;
         final String[] voters = new String[]{"voters_a","voters_b"};
-        final String[] sizes = new String[]{"","big","huge"};
-        for(String s : sizes) {
+//        final String[] sizes = new String[]{"big","huge"};
+//        for(String s : sizes) {
             for(String v : voters) {
                 Schema schema = DatasetsUtil.avroSchema(
                                 v, "Voters Registration", "pprl.datasets",
                                 VOTER_HEADER,VOTER_TYPES,VOTER_DOCS);
-                final Path p = DatasetsUtil.csv2avro(fs,schema,s+"_"+v+"_"+9,
-                        new Path(fs.getWorkingDirectory(),"data"),
-                        new Path(fs.getWorkingDirectory(), "data/"+s+"_"+v+"/csv/"+s+"_"+v+".csv"),9);
+//                final Path p = DatasetsUtil.csv2avro(fs,schema,s+"_"+v+"_"+partitions,
+//                        new Path(fs.getWorkingDirectory(),"data"),
+//                        new Path(fs.getWorkingDirectory(), "data/"+s+"_"+v+"/csv/"+s+"_"+v+".csv"),partitions);
+                                final Path p = DatasetsUtil.csv2avro(fs,schema,v+"_"+partitions,
+                                        new Path(fs.getWorkingDirectory(),"data"),
+                                        new Path(fs.getWorkingDirectory(), "data/"+v+"/csv/"+v+".csv"),partitions);
+
                 LOG.info("Saved at path {} ", p);
-            }
+//            }
         }
     }
 }

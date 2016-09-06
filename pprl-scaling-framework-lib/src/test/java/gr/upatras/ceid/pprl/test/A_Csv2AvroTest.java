@@ -98,24 +98,20 @@ public class A_Csv2AvroTest {
 
     @Test
     public void test4() throws IOException, DatasetException {
-        Schema schemaVotersA = DatasetsUtil.avroSchema(
-                "voters_a", "Voters Registration", "pprl.datasets",
-                VOTER_HEADER,VOTER_TYPES,VOTER_DOCS);
-
-        Schema schemaVotersB = DatasetsUtil.avroSchema(
-                "voters_b", "Voters Registration", "pprl.datasets",
-                VOTER_HEADER,VOTER_TYPES,VOTER_DOCS);
         final FileSystem fs = FileSystem.getLocal(new Configuration());
-		final int[][] partitions = new int[][]{{1,1},{9,9}};
-		for(int[] pt : partitions) {
-        	final Path pA = DatasetsUtil.csv2avro(fs,schemaVotersA,"voters_a"+ "_" + pt[0],
-                	new Path(fs.getWorkingDirectory(),"data"),
-                	new Path(fs.getWorkingDirectory(), "data/voters_a/csv/voters_a.csv"),pt[0]);
-        	LOG.info("Saved at path {} ", pA);
-        	final Path pB = DatasetsUtil.csv2avro(fs,schemaVotersB,"voters_b" + "_" + pt[1],
-                	new Path(fs.getWorkingDirectory(),"data"),
-                	new Path(fs.getWorkingDirectory(), "data/voters_b/csv/voters_b.csv"),pt[1]);
-        	LOG.info("Saved at path {} ", pB);
-		}
+        final int partitions = 9;
+        final String[] voters = new String[]{"voters_a","voters_b"};
+        final String[] sizes = new String[]{"","big","huge"};
+        for(String s : sizes) {
+            for(String v : voters) {
+                Schema schema = DatasetsUtil.avroSchema(
+                                v, "Voters Registration", "pprl.datasets",
+                                VOTER_HEADER,VOTER_TYPES,VOTER_DOCS);
+                final Path p = DatasetsUtil.csv2avro(fs,schema,s+"_"+v+"_"+9,
+                        new Path(fs.getWorkingDirectory(),"data"),
+                        new Path(fs.getWorkingDirectory(), "data/"+s+"_"+v+"/csv/"+s+"_"+v+".csv"),9);
+                LOG.info("Saved at path {} ", p);
+            }
+        }
     }
 }

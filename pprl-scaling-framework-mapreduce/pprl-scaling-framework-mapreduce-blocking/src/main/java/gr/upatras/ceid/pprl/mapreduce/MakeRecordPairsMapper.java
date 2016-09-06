@@ -120,6 +120,9 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
         aliceRecordCount = conf.getInt(CommonKeys.ALICE_RECORD_COUNT_COUNTER, -1);
         bobRecordCount = conf.getInt(CommonKeys.BOB_RECORD_COUNT_COUNTER, -1);
         frequentPairCount = conf.getInt(CommonKeys.FREQUENT_PAIR_COUNTER,-1);
+        System.out.println("Frequent pair count : " + frequentPairCount);
+        System.out.println("Frequent pair per alice record : " + frequentPairCount/aliceRecordCount);
+        System.out.println("Frequent pair per bob record : " + frequentPairCount/aliceRecordCount);
 
         // get pair paths
         final SortedSet<Path> frequentPairsPaths = new TreeSet<Path>();
@@ -133,9 +136,9 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
         final float fillFactor = 0.75f;
         final int capacity = (int) (actualCapacity / fillFactor + 1);
         frequentPairMap = new HashMap<String, ArrayList<byte[]>>(capacity, fillFactor);
-        System.out.format("Loading frequent paths...(0/%d)\n",frequentPairsPaths.size());
+        System.out.format("Loading frequent pair paths...(0/%d)\n",frequentPairsPaths.size());
         int i = 1;
-        System.out.format("Loading frequent paths...(%d/%d)\n",
+        System.out.format("Loading frequent pair paths...(%d/%d)\n",
                 i, frequentPairsPaths.size());
         for (final Path path : frequentPairsPaths) {
             SequenceFile.Reader reader = new SequenceFile.Reader(conf, SequenceFile.Reader.file(path));
@@ -146,8 +149,7 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
                 else populateFrequentPairMap(value, key);
             }
             reader.close();
-            System.out.format("Loading frequent paths...(%d/%d) . Size so far : %d\n",
-                    i, frequentPairsPaths.size(),MemoryUtil.deepMemoryUsageOf(frequentPairMap));
+            System.out.format("Loading frequent pair paths...(%d/%d)\n", i, frequentPairsPaths.size());
             i++;
         }
         long frequentPairBytes = MemoryUtil.deepMemoryUsageOf(frequentPairMap);

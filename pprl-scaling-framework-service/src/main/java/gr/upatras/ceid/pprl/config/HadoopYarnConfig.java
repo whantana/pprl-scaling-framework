@@ -47,7 +47,7 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
             }
         }
         config.withProperties()
-                .property("mapreduce.job.user.classpath.first","true");
+                .property("mapreduce.user.classpath.first", "true");
 
         config.withProperties()
                 .property("mapreduce.map.memory.mb", "1024")

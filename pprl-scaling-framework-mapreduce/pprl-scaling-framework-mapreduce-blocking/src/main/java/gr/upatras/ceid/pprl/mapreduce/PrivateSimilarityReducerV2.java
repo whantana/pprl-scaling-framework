@@ -141,7 +141,7 @@ public class PrivateSimilarityReducerV2 extends Reducer<AvroKey<GenericRecord>,T
         }
         long bobRecordsBytes = MemoryUtil.deepMemoryUsageOf(bobRecords) +
                 MemoryUtil.deepMemoryUsageOf(bobId2IndexMap);
+        System.out.println("Bob records memory footprint : " + bobRecordsBytes/(1024*1024) + " MB");
         increaseTotalByteCounter(context, bobRecordsBytes);
-        setTotalBytePerTaskCounter(context,bobRecordsBytes);
     }
 }

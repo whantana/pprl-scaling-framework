@@ -198,8 +198,8 @@ public class FPSMapperV3 extends Mapper<AvroKey<GenericRecord>,NullWritable,Text
 
         long bobRecordsBytes = MemoryUtil.deepMemoryUsageOf(bobRecords) +
                 MemoryUtil.deepMemoryUsageOf(bobId2IndexMap);
+        System.out.println("Bob records memory footprint : " + bobRecordsBytes/(1024*1024) + " MB");
         increaseTotalByteCounter(context, bobRecordsBytes);
-        setTotalBytePerTaskCounter(context,bobRecordsBytes);
     }
 
     /**
@@ -236,6 +236,9 @@ public class FPSMapperV3 extends Mapper<AvroKey<GenericRecord>,NullWritable,Text
             }
             reader.close();
         }
+        long bobBucketsBytes = MemoryUtil.deepMemoryUsageOf(bobBuckets);
+        System.out.println("Bob buckets memory footprint : " + bobBucketsBytes/(1024*1024) + " MB");
+        increaseTotalByteCounter(context, bobBucketsBytes);
     }
 
     /**

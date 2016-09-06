@@ -148,7 +148,7 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
         }
         // cleanup and stats
         removeSuccessFile(fs,bobBucketsPath);
-        populateStats(JOB_2_DESCRIPTION,job1, stats, LOG);
+        populateStats(JOB_1_DESCRIPTION,job1, stats, LOG);
 
         // get important stats for the next job
         final int[] minMaxAvg = getMinMaxAvgBlockingKeyCounts(job1.getCounters(), L, R1);

@@ -51,7 +51,7 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
                 .property("mapreduce.job.user.classpath.first", "true")
                 .property("mapreduce.map.memory.mb", "1024")
                 .property("mapreduce.reduce.memory.mb", "1024")
-                .property("mapred.child.java.opts", "-javaagent:./classmexer-0.0.3.jar -Xms800m -Xmx900m");
+                .property("mapred.child.java.opts", "-javaagent:./classmexer-0.0.3.jar -Xms900m -Xmx900m");
 
         if(isDefined(namenodeHost)) {
             final String fsUri = String.format("hdfs://%s:8020", namenodeHost);

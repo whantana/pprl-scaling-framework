@@ -66,17 +66,23 @@ public class CommonUtil {
                                final Job job,
                                final Map<String, Long> stats, final Logger LOG) throws IOException {
          final String key = header.split(". ")[0];
-         LOG.info("{}",header);
-         LOG.info("Counters : ");
          for(Counter counter : job.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME)) {
              final String name = counter.getDisplayName();
+             if(name.contains("blockingkeys.at")) continue;;
              final long value = counter.getValue();
-             LOG.info("\t{} : {}",name,value);
              stats.put(key +"_" + name, value);
          }
          final Counter totalWrittenBytesCounter =
                  job.getCounters().findCounter(
                          org.apache.hadoop.mapreduce.FileSystemCounter.BYTES_WRITTEN);
+
+         try {
+             final long duration = job.getFinishTime() - job.getStartTime();
+             stats.put(key + "job.duration",duration);
+         } catch (InterruptedException e) { throw new IOException(e.getMessage());}
+
+         stats.put(key + "_total.written.bytes",
+                 totalWrittenBytesCounter.getValue());
      }
 
     /**
@@ -215,32 +221,6 @@ public class CommonUtil {
                 CommonKeys.COUNTER_GROUP_NAME,
                 CommonKeys.TOTAL_BYTES_ON_PPRL).increment(value);
     }
-
-    /**
-     * Increase total byte counters
-     *
-     * @param context <code>Context</code> instance.
-     * @param value value to increase.
-     */
-    public static void setTotalBytePerTaskCounter(final Mapper.Context context, final long value) {
-        context.getCounter(
-                CommonKeys.COUNTER_GROUP_NAME,
-                CommonKeys.TOTAL_BYTES_ON_PPRL_PER_TASK).setValue(value);
-    }
-
-    /**
-     * Increase total byte counters.
-     *
-     * @param context <code>Context</code> instance.
-     * @param value value to increase.
-     */
-    public static void setTotalBytePerTaskCounter(final Reducer.Context context, final long value) {
-        context.getCounter(
-                CommonKeys.COUNTER_GROUP_NAME,
-                CommonKeys.TOTAL_BYTES_ON_PPRL_PER_TASK).setValue(value);
-    }
-
-
 
     /**
      * Add all containing files files to cache.

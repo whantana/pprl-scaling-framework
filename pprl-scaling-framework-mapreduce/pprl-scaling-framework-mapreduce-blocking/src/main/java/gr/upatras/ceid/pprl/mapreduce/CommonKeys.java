@@ -18,7 +18,6 @@ public class CommonKeys {
     public static final String ALICE_RECORD_COUNT_COUNTER = "record.count.A";
     public static final String BOB_RECORD_COUNT_COUNTER = "record.count.B";
     public static final String TOTAL_BYTES_ON_PPRL = "mem.total.bytes";
-    public static final String TOTAL_BYTES_ON_PPRL_PER_TASK = "mem.total.bytes.task";
 
     public static final String ALICE_SCHEMA = "alice.encoding.schema";
     public static final String BOB_SCHEMA = "bob.encoding.schema";

@@ -16,8 +16,8 @@ get_optimal_hlsh_fps_params --theta 180 --delta 0.0005 --size 4096 --K 30
 get_optimal_hlsh_fps_params --theta 180 --delta 0.00001 --size 4096 --K 30
 
 # Block HLSH/FPS (delta 0.01)
-# block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 18,18,18 --hf_L 29 --hf_K 30 --hf_C 2 --hf_theta 180 --hf_seed 420
-# block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v1 --reducers 18,18,18 --hf_L 29 --hf_K 30 --hf_C 2 --hf_theta 180 --hf_seed 420
+block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 18,18,18 --hf_L 29 --hf_K 30 --hf_C 2 --hf_theta 180 --hf_seed 420
+block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v1 --reducers 18,18,18 --hf_L 29 --hf_K 30 --hf_C 2 --hf_theta 180 --hf_seed 420
 block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v2 --reducers 18,18    --hf_L 29 --hf_K 30 --hf_C 2 --hf_theta 180 --hf_seed 420
 block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v3 --reducers 18,18    --hf_L 29 --hf_K 30 --hf_C 2 --hf_theta 180 --hf_seed 420
 ! hadoop fs -rm -R pprl/block*/all_pairs
@@ -29,52 +29,41 @@ block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_vot
 # Block HLSH/FPS (delta 0.005)
 # block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 18,18,18 --hf_L 39 --hf_K 30 --hf_C 3 --hf_theta 180 --hf_seed 421
 # block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v1 --reducers 18,18,18 --hf_L 39 --hf_K 30 --hf_C 3 --hf_theta 180 --hf_seed 421
-block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v2 --reducers 18,18    --hf_L 39 --hf_K 30 --hf_C 3 --hf_theta 180 --hf_seed 421
-block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v3 --reducers 18,18    --hf_L 39 --hf_K 30 --hf_C 3 --hf_theta 180 --hf_seed 421
-! hadoop fs -rm -R pprl/block*/all_pairs
-! hadoop fs -rm -R pprl/block*/frequent_pairs
-! hadoop fs -rm -R pprl/block*/matched_pairs
-! hadoop fs -rm -R pprl/block*/buckets
-
-
+# block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v2 --reducers 18,18    --hf_L 39 --hf_K 30 --hf_C 3 --hf_theta 180 --hf_seed 421
+# block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v3 --reducers 18,18    --hf_L 39 --hf_K 30 --hf_C 3 --hf_theta 180 --hf_seed 421
+# ! hadoop fs -rm -R pprl/block*/all_pairs
+# ! hadoop fs -rm -R pprl/block*/frequent_pairs
+# ! hadoop fs -rm -R pprl/block*/matched_pairs
+# ! hadoop fs -rm -R pprl/block*/buckets
 
 
 # Block HLSH/FPS (delta 0.001)
 # block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 18,18,18 --hf_L 52 --hf_K 30 --hf_C 4 --hf_theta 180 --hf_seed 422
-# ! sleep 10
 # block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v1 --reducers 18,18,18 --hf_L 52 --hf_K 30 --hf_C 4 --hf_theta 180 --hf_seed 422
-# ! sleep 10
-block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v2 --reducers 18,18    --hf_L 52 --hf_K 30 --hf_C 4 --hf_theta 180 --hf_seed 422
-! sleep 10
-block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v3 --reducers 18,18    --hf_L 52 --hf_K 30 --hf_C 4 --hf_theta 180 --hf_seed 422
-! hadoop fs -rm -R pprl/block*/all_pairs
-! hadoop fs -rm -R pprl/block*/frequent_pairs
-! hadoop fs -rm -R pprl/block*/matched_pairs
-! hadoop fs -rm -R pprl/block*/buckets
+# block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v2 --reducers 18,18    --hf_L 52 --hf_K 30 --hf_C 4 --hf_theta 180 --hf_seed 422
+# block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v3 --reducers 18,18    --hf_L 52 --hf_K 30 --hf_C 4 --hf_theta 180 --hf_seed 422
+# ! hadoop fs -rm -R pprl/block*/all_pairs
+# ! hadoop fs -rm -R pprl/block*/frequent_pairs
+# ! hadoop fs -rm -R pprl/block*/matched_pairs
+# ! hadoop fs -rm -R pprl/block*/buckets
 
 
 # Block HLSH/FPS (delta 0.0005)
 # block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 18,18,18 --hf_L 61 --hf_K 30 --hf_C 5 --hf_theta 180 --hf_seed 423
-# ! sleep 10
 # block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v1 --reducers 18,18,18 --hf_L 61 --hf_K 30 --hf_C 5 --hf_theta 180 --hf_seed 423
-# ! sleep 10
-block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v2 --reducers 18,18    --hf_L 61 --hf_K 30 --hf_C 5 --hf_theta 180 --hf_seed 423
-! sleep 10
-block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v3 --reducers 18,18    --hf_L 61 --hf_K 30 --hf_C 5 --hf_theta 180 --hf_seed 423
-! hadoop fs -rm -R pprl/block*/all_pairs
-! hadoop fs -rm -R pprl/block*/frequent_pairs
-! hadoop fs -rm -R pprl/block*/matched_pairs
-! hadoop fs -rm -R pprl/block*/buckets
+# block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v2 --reducers 18,18    --hf_L 61 --hf_K 30 --hf_C 5 --hf_theta 180 --hf_seed 423
+# block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v3 --reducers 18,18    --hf_L 61 --hf_K 30 --hf_C 5 --hf_theta 180 --hf_seed 423
+# ! hadoop fs -rm -R pprl/block*/all_pairs
+# ! hadoop fs -rm -R pprl/block*/frequent_pairs
+# ! hadoop fs -rm -R pprl/block*/matched_pairs
+# ! hadoop fs -rm -R pprl/block*/buckets
 
 
 
 # Block HLSH/FPS (delta 0.0001)
-# block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 18,18,18 --hf_L 74 --hf_K 30 --hf_C 6 --hf_theta 180 --hf_seed 424
-# ! sleep 10
-# block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v1 --reducers 18,18,18 --hf_L 74 --hf_K 30 --hf_C 6 --hf_theta 180 --hf_seed 424
-# ! sleep 10
+block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v0 --reducers 18,18,18 --hf_L 74 --hf_K 30 --hf_C 6 --hf_theta 180 --hf_seed 424
+block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v1 --reducers 18,18,18 --hf_L 74 --hf_K 30 --hf_C 6 --hf_theta 180 --hf_seed 424
 block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v2 --reducers 18,18    --hf_L 74 --hf_K 30 --hf_C 6 --hf_theta 180 --hf_seed 424
-! sleep 10
 block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_voters_b_9 --bob_uid id --blocking_scheme HLSH_FPS_MR_v3 --reducers 18,18    --hf_L 74 --hf_K 30 --hf_C 6 --hf_theta 180 --hf_seed 424
 ! hadoop fs -rm -R pprl/block*/all_pairs
 ! hadoop fs -rm -R pprl/block*/frequent_pairs

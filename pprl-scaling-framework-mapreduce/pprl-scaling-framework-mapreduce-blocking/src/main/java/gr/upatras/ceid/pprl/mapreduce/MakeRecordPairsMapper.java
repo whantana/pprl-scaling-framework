@@ -22,7 +22,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.increaseTotalByteCounter;
-import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.setTotalBytePerTaskCounter;
 
 /**
  * Make Record pairs Mapper.
@@ -141,8 +140,8 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
             reader.close();
         }
         long frequentPairBytes = MemoryUtil.deepMemoryUsageOf(frequentPairMap);
+        System.out.println("Frequent pairs memory footprint : " + frequentPairBytes/(1024*1024) + " MB");
         increaseTotalByteCounter(context, frequentPairBytes);
-        setTotalBytePerTaskCounter(context,frequentPairBytes);
     }
 
 

@@ -3,23 +3,23 @@
 # ------------------
 
 #  describe a local schema
-describe_local_data --schema data/voters_b/schema/voters_b.avsc
+describe_local_data --schema data/voters_b_9/schema/voters_b_9.avsc
 
 #  sample & save sample
-sample_local_data --avro data/voters_b/avro --schema data/voters_b/schema/voters_b.avsc --size 10 --out_name sample_voters_b_10
+sample_local_data --avro data/voters_b_9/avro --schema data/voters_b_9/schema/voters_b_9.avsc --size 10 --out_name sample_voters_b_9_10
 
 #  sort sample by name  
-sort_local_data --avro sample_voters_b_10/avro --schema sample_voters_b_10/schema/sample_voters_b_10.avsc --sort_by surname
+sort_local_data --avro sample_voters_b_9_10/avro --schema sample_voters_b_9_10/schema/sample_voters_b_9_10.avsc --sort_by surname
 
 #  calc stats 
-calc_local_data_stats --avro data/voters_b/avro --schema data/voters_b/schema/voters_b.avsc --fields name,surname,address --p 0.000000001 --out_name voters_b_stats
+calc_local_data_stats --avro data/voters_b_9/avro --schema data/voters_b_9/schema/voters_b_9.avsc --fields name,surname,address --p 0.000000001 --out_name voters_b_9_stats
 
-#  encode voters_b and voters_a
-encode_local_data --avro data/voters_b/avro --schema data/voters_b/schema/voters_b.avsc --fields name,surname,address --scheme CLK --include id --N 4096 --out_name clk_voters_b
-encode_local_data_by_schema --avro data/voters_a/avro --schema data/voters_a/schema/voters_a.avsc --fields name,surname,address --encoding_schema clk_voters_b/schema/clk_voters_b.avsc --mapping name,surname,address --include id --out_name clk_voters_a
+#  encode voters_b_9 and voters_a_9
+encode_local_data --avro data/voters_b_9/avro --schema data/voters_b_9/schema/voters_b_9.avsc --fields name,surname,address --scheme CLK --include id --N 4096 --out_name clk_voters_b_9
+encode_local_data_by_schema --avro data/voters_a_9/avro --schema data/voters_a_9/schema/voters_a_9.avsc --fields name,surname,address --encoding_schema clk_voters_b_9/schema/clk_voters_b_9.avsc --mapping name,surname,address --include id --out_name clk_voters_a_9
 
 #  get suggested HLSH/FPS parameters for hamming distance threshold 180 bits.
 get_optimal_hlsh_fps_params --theta 180 --delta 0.01 --size 4096 --K 30
 
 # block encoded data
-block_encoded_local_data --alice_avro clk_voters_a/avro --alice_schema clk_voters_a/schema/clk_voters_a.avsc --alice_uid id --bob_avro clk_voters_b/avro --bob_schema clk_voters_b/schema/clk_voters_b.avsc  --bob_uid id --blocking_scheme HLSH_FPS --hf_L 29 --hf_K 30 --hf_C 2 --hf_theta 180 --blocking_output clk_blocking_voters
+block_encoded_local_data --alice_avro clk_voters_a_9/avro --alice_schema clk_voters_a_9/schema/clk_voters_a_9.avsc --alice_uid id --bob_avro clk_voters_b_9/avro --bob_schema clk_voters_b_9/schema/clk_voters_b_9.avsc  --bob_uid id --blocking_scheme HLSH_FPS --hf_L 29 --hf_K 30 --hf_C 2 --hf_theta 180 --blocking_output clk_blocking_voters

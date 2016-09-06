@@ -183,6 +183,8 @@ public class FPSMapperV3 extends Mapper<AvroKey<GenericRecord>,NullWritable,Text
         final FileSystem fs = FileSystem.get(context.getConfiguration());
         final DatasetsUtil.DatasetRecordReader reader =
                 new DatasetsUtil.DatasetRecordReader(fs,bobSchema,bobAvroPath);
+
+        System.out.println("Loading bob records...");
         int i = 0;
         bobRecords = new GenericRecord[bobRecordCount];
         bobId2IndexMap = new HashMap<String, Integer>((int)(bobRecordCount/0.75f + 1),0.75f);
@@ -226,6 +228,7 @@ public class FPSMapperV3 extends Mapper<AvroKey<GenericRecord>,NullWritable,Text
             bucketPaths.add(new Path(uri));
         }
 
+        System.out.println("Loading bob buckets...");
         for (Path bucketPath : bucketPaths) {
             SequenceFile.Reader reader = new SequenceFile.Reader(conf, SequenceFile.Reader.file(bucketPath));
             BlockingKeyWritable key = new BlockingKeyWritable();

@@ -127,6 +127,7 @@ public class PrivateSimilarityReducerV2 extends Reducer<AvroKey<GenericRecord>,T
         final FileSystem fs = FileSystem.get(context.getConfiguration());
         final DatasetsUtil.DatasetRecordReader reader =
                 new DatasetsUtil.DatasetRecordReader(fs,bobSchema,bobAvroPath);
+        System.out.println("Loading bob records...");
         int i = 0;
         bobRecords = new GenericRecord[bobRecordCount];
         bobId2IndexMap = new HashMap<String, Integer>((int)(bobRecordCount/0.75f + 1),0.75f);

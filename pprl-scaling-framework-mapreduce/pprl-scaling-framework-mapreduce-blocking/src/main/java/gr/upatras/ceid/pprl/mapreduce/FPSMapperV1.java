@@ -173,6 +173,7 @@ public class FPSMapperV1 extends Mapper<AvroKey<GenericRecord>,NullWritable,Text
             bucketPaths.add(new Path(uri));
         }
 
+        System.out.println("Loading bob buckets...");
         for (Path bucketPath : bucketPaths) {
             SequenceFile.Reader reader = new SequenceFile.Reader(conf, SequenceFile.Reader.file(bucketPath));
             BlockingKeyWritable key = new BlockingKeyWritable();

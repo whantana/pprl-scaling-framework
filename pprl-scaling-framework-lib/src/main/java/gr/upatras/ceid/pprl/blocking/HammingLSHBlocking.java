@@ -1,5 +1,6 @@
 package gr.upatras.ceid.pprl.blocking;
 
+import com.javamex.classmexer.MemoryUtil;
 import gr.upatras.ceid.pprl.encoding.BloomFilter;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingUtil;
@@ -223,12 +224,7 @@ public class HammingLSHBlocking {
         if(bobRecordsMap == null)
             bobRecordsMap = new HashMap<>((int) (bobRecords.length / 0.75f + 1), 0.75f);
 
-        // get runtime
-        final Runtime rt = Runtime.getRuntime();
-
         // hash bob records into the buckets.
-        System.gc();
-        final long umb = rt.totalMemory() - rt.freeMemory();
         final long start = System.currentTimeMillis();
         System.out.print("Blocking bob records...(0%)");
         for(int r=0; r < bobRecords.length; r++) {
@@ -241,11 +237,9 @@ public class HammingLSHBlocking {
                 addToBucket(l, keys[l], bobId);
         }
         final long stop = System.currentTimeMillis();
-        System.gc();
-        final long uma = rt.totalMemory() - rt.freeMemory();
-        final long umd = uma - umb;
-        System.out.println("\rBlocking bob records...(100%). Size :" + umd/(1024*1024) + "MB.");
-        result.setBobBlockingSize(umd);
+        long bucketsSize =  MemoryUtil.deepMemoryUsageOf(buckets);
+        System.out.println("\rBlocking bob records...(100%). Size :" + bucketsSize/(1024*1024) + "MB.");
+        result.setBobBlockingSize(bucketsSize);
         result.setBobBlockingTime(stop-start);
     }
 

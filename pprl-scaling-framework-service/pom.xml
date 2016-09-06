@@ -122,8 +122,8 @@
                     <include>**/build.properties</include>
                 </includes>
             </resource>
-			<resource>
-				<directory>src/main/resources/</directory>
+            <resource>
+                <directory>src/main/resources/</directory>
                 <filtering>false</filtering>
             </resource>
         </resources>
@@ -210,6 +210,13 @@
                                     <groupId>info.debatty</groupId>
                                     <artifactId>java-string-similarity</artifactId>
                                     <version>${string.similarity.version}</version>
+                                    <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>com.javamex.classmexer</groupId>
+                                    <artifactId>classmexer</artifactId>
+                                    <version>0.0.3</version>
+                                    <type>jar</type>
                                     <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
                                 </artifactItem>
                             </artifactItems>

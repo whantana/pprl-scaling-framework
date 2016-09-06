@@ -99,9 +99,6 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
         conf.setInt(CommonKeys.HAMMING_THRESHOLD,hammingThrehold);
         conf.setInt(CommonKeys.FREQUENT_PAIR_LIMIT, C);
 
-        conf.setInt("mapreduce.map.memory.mb", 1024);
-        conf.setInt("mapreduce.reduce.memory.mb", 1024);
-        conf.set("mapred.child.java.opts","-Xms256m -Xmx820m");
 
         // setup job1
         final String description1 = String.format("%s(" +

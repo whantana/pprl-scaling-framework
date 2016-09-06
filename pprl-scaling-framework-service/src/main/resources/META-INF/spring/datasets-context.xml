@@ -14,7 +14,8 @@
                      jar="file://${app.repo}/pprl-scaling-framework-mapreduce-datasets-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.DblpToAvroTool"
                      close-fs="false"
-                     libs="file://${app.repo}/avro-${avro.version}.jar,
+                     libs="file://${app.repo}/classmexer-0.0.3.jar,
+                           file://${app.repo}/avro-${avro.version}.jar,
                            file://${app.repo}/avro-mapred-${avro.version}-hadoop2.jar"/>
 
     <hdp:tool-runner id="qGramCountingToolRunner"
@@ -22,7 +23,8 @@
                      jar="file://${app.repo}/pprl-scaling-framework-mapreduce-datasets-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.QGramCountingTool"
                      close-fs="false"
-                     libs="file://${app.repo}/avro-${avro.version}.jar,
+                     libs="file://${app.repo}/classmexer-0.0.3.jar,
+                           file://${app.repo}/avro-${avro.version}.jar,
                            file://${app.repo}/avro-mapred-${avro.version}-hadoop2.jar,
                            file://${app.repo}/pprl-scaling-framework-lib-${build.version}.jar"/>
 
@@ -31,7 +33,8 @@
                      jar="file://${app.repo}/pprl-scaling-framework-mapreduce-datasets-${build.version}.jar"
                      tool-class="gr.upatras.ceid.pprl.mapreduce.SortAvroTool"
                      close-fs="false"
-                     libs="file://${app.repo}/avro-${avro.version}.jar,
+                     libs="file://${app.repo}/classmexer-0.0.3.jar,
+                           file://${app.repo}/avro-${avro.version}.jar,
                            file://${app.repo}/avro-mapred-${avro.version}-hadoop2.jar,
                            file://${app.repo}/pprl-scaling-framework-lib-${build.version}.jar"/>
 

@@ -97,7 +97,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>appassembler-maven-plugin</artifactId>
-                <version>1.2.2</version>
+                <version>1.10</version>
                 <configuration>
                     <repositoryLayout>flat</repositoryLayout>
                     <configurationSourceDirectory>src/main/config</configurationSourceDirectory>
@@ -118,6 +118,9 @@
                                     <systemProperty>jobhistory.host=$PPRL_JOBHISTORY_HOST</systemProperty>
                                     <systemProperty>pprl.shell.log.dir=$BASEDIR/logs</systemProperty>
                                 </systemProperties>
+                                <extraArguments>
+                                    <extraArgument>-javaagent:@REPO@/classmexer-0.0.3.jar</extraArgument>
+                                </extraArguments>
                             </jvmSettings>
                         </program>
                     </programs>

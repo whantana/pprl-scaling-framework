@@ -81,7 +81,7 @@ public class CommonUtil {
 
          try {
              final long duration = job.getFinishTime() - job.getStartTime();
-             stats.put(key + "job.duration",duration);
+             stats.put(key + "_job.duration",duration);
          } catch (InterruptedException e) { throw new IOException(e.getMessage());}
      }
 

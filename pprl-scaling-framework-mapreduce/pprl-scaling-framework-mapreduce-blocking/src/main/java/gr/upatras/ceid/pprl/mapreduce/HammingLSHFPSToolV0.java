@@ -16,7 +16,6 @@ import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.ShortWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
@@ -221,7 +220,7 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
 
         // setup job3
         conf.setInt("mapreduce.map.memory.mb", 2048);
-        conf.set("mapreduce.map.java.opts","-javaagent:./classmexer-0.0.3.jar -Xms1000m -Xmx1800m");
+        conf.set("mapreduce.map.java.opts","-javaagent:./classmexer-0.0.3.jar -Xms1800m -Xmx1800m");
         conf.setInt("mapreduce.reduce.memory.mb", 1024);
         conf.set("mapreduce.reduce.java.opts","-javaagent:./classmexer-0.0.3.jar -Xms800m -Xmx800m");
 

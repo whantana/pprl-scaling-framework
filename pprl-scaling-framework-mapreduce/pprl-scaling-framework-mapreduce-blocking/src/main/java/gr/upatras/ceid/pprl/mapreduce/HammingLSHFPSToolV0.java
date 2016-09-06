@@ -153,6 +153,7 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
         final boolean job1Success = job1.waitForCompletion(true);
         if(!job1Success) {
             LOG.error("Job \"{}\" not successful",JOB_1_DESCRIPTION);
+            fs.delete(statsPath.getParent(),true);
             return 1;
         }
 
@@ -203,14 +204,14 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
         job2.setOutputValueClass(Text.class);
         SequenceFileOutputFormat.setCompressOutput(job2,true);
         SequenceFileOutputFormat.setOutputCompressionType(job2,
-                SequenceFile.CompressionType.BLOCK);
+                SequenceFile.CompressionType.NONE);
         SequenceFileOutputFormat.setOutputPath(job2,frequentPairsPath);
 
         // run job 2
         final boolean job2Success = job2.waitForCompletion(true);
         if(!job2Success) {
             LOG.error("Job \"{}\" not successful",JOB_2_DESCRIPTION);
-            return 1;
+                        fs.delete(statsPath.getParent(),true);             return 1;
         }
 
         // cleanup and stats
@@ -255,13 +256,14 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
         job3.setOutputValueClass(Text.class);
         SequenceFileOutputFormat.setCompressOutput(job3,true);
         SequenceFileOutputFormat.setOutputCompressionType(job3,
-                SequenceFile.CompressionType.BLOCK);
+                SequenceFile.CompressionType.NONE);
         SequenceFileOutputFormat.setOutputPath(job3,matchedPairsPath);
 
         // run job 3
         final boolean job3Success = job3.waitForCompletion(true);
         if(!job3Success) {
             LOG.error("Job \"{}\" not successful",JOB_3_DESCRIPTION);
+            fs.delete(statsPath.getParent(),true);
             return 1;
         }
 

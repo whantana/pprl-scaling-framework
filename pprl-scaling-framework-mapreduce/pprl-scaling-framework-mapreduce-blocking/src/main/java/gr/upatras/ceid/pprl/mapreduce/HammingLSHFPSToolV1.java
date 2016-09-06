@@ -35,9 +35,9 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
 
     private static final Logger LOG = LoggerFactory.getLogger(HammingLSHFPSToolV1.class);
 
-    private static final String JOB_1_DESCRIPTION = "Generate Bob Blocking buckets";
-    private static final String JOB_2_DESCRIPTION = "Find Frequent Pairs (FPS).";
-    private static final String JOB_3_DESCRIPTION = "Find Matched Pairs.";
+    private static final String JOB_1_DESCRIPTION = "V1J1. Generate Bob Blocking buckets";
+    private static final String JOB_2_DESCRIPTION = "V1J2. Find Frequent Pairs (FPS).";
+    private static final String JOB_3_DESCRIPTION = "V1J3. Find Matched Pairs.";
 
     public int run(String[] args) throws Exception {
         final Configuration conf = getConf();
@@ -142,7 +142,7 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
         job1.setOutputValueClass(TextArrayWritable.class);
         SequenceFileOutputFormat.setCompressOutput(job1,true);
         SequenceFileOutputFormat.setOutputCompressionType(job1,
-                SequenceFile.CompressionType.NONE);
+                SequenceFile.CompressionType.BLOCK);
         SequenceFileOutputFormat.setOutputPath(job1,bobBucketsPath);
 
         // run job 1
@@ -154,7 +154,7 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
 
         // cleanup and stats
         removeSuccessFile(fs,bobBucketsPath);
-        populateStatsWithCounters(job1.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME),stats,LOG);
+        populateStats(JOB_1_DESCRIPTION, job1, stats, LOG);
 
 
         // get important stats for the next job
@@ -201,7 +201,7 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
         job2.setOutputValueClass(Text.class);
         SequenceFileOutputFormat.setCompressOutput(job2,true);
         SequenceFileOutputFormat.setOutputCompressionType(job2,
-                SequenceFile.CompressionType.NONE);
+                SequenceFile.CompressionType.BLOCK);
         SequenceFileOutputFormat.setOutputPath(job2,frequentPairsPath);
 
         // run job 2
@@ -213,8 +213,8 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
 
         // cleanup and stats
         removeSuccessFile(fs,frequentPairsPath);
-        populateStatsWithCounters(
-                job2.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME),stats,LOG);
+        populateStats(JOB_2_DESCRIPTION, job2, stats, LOG);
+
 
 
         // get important stats for the next job
@@ -258,7 +258,7 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
         job3.setOutputValueClass(Text.class);
         SequenceFileOutputFormat.setCompressOutput(job3,true);
         SequenceFileOutputFormat.setOutputCompressionType(job3,
-                SequenceFile.CompressionType.NONE);
+                SequenceFile.CompressionType.BLOCK);
         SequenceFileOutputFormat.setOutputPath(job3,matchedPairsPath);
 
         // run job 3
@@ -270,8 +270,7 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
 
         // cleanup and stats
         removeSuccessFile(fs,matchedPairsPath);
-        populateStatsWithCounters(
-                job3.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME), stats, LOG);
+        populateStats(JOB_3_DESCRIPTION, job3, stats, LOG);
 
 
         // all jobs are succesfull save counters to stats path

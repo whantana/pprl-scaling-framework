@@ -1,5 +1,6 @@
 package gr.upatras.ceid.pprl.mapreduce;
 
+import com.javamex.classmexer.MemoryUtil;
 import gr.upatras.ceid.pprl.blocking.HammingLSHBlocking;
 import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import gr.upatras.ceid.pprl.encoding.BloomFilter;
@@ -86,10 +87,13 @@ public class FPSMapperV3 extends Mapper<AvroKey<GenericRecord>,NullWritable,Text
 
     @Override
     public void run(Context context) throws IOException, InterruptedException {
-        setupRecordAndBlocking(context);
+        setupBlocking(context);
         context.nextKeyValue();
         final Schema s = context.getCurrentKey().datum().getSchema();
         setupMapper(s,context);
+        loadBobRecords(context);
+        loadBobBuckets(context);
+        initCounters(context);
         long recordCount = 0;
         frequentPairsCount = 0;
         try {
@@ -132,7 +136,7 @@ public class FPSMapperV3 extends Mapper<AvroKey<GenericRecord>,NullWritable,Text
      * @param context context.
      * @throws InterruptedException
      */
-    private void setupRecordAndBlocking(final Context context) throws InterruptedException {
+    private void setupBlocking(final Context context) throws InterruptedException {
         try {
             final String aliceSchemaString = context.getConfiguration().get(CommonKeys.ALICE_SCHEMA);
             if (aliceSchemaString == null) throw new IllegalStateException("Alice schema not set.");
@@ -149,9 +153,6 @@ public class FPSMapperV3 extends Mapper<AvroKey<GenericRecord>,NullWritable,Text
             if(C < 0) throw new InterruptedException("C is not set.");
             N = aliceEncoding.getBFN();
             hammingThreshold = context.getConfiguration().getInt(CommonKeys.HAMMING_THRESHOLD, 100);
-            loadBobRecords(context);
-            loadBobBuckets(context);
-            initCounters(context);
         } catch (Exception e) {throw new InterruptedException(e.getMessage());}
     }
 
@@ -161,21 +162,23 @@ public class FPSMapperV3 extends Mapper<AvroKey<GenericRecord>,NullWritable,Text
      * @param context context
      * @throws IOException
      */
-    private void loadBobRecords(Context context) throws URISyntaxException, IOException {
+    private void loadBobRecords(Context context) throws IOException {
         final String bobSchemaString = context.getConfiguration().get(CommonKeys.BOB_SCHEMA);
         if (bobSchemaString == null) throw new IllegalStateException("Bob schema not set.");
         final Schema bobSchema = (new Schema.Parser()).parse(bobSchemaString);
         final String bobAvroPathUri = context.getConfiguration().get(CommonKeys.BOB_DATA_PATH,null);
         if (bobAvroPathUri == null) throw new IllegalStateException("Bob avro path not set.");
-        final Path bobAvroPath = new Path(new URI(bobAvroPathUri));
-
+        final Path bobAvroPath;
+        try {
+            bobAvroPath = new Path(new URI(bobAvroPathUri));
+        } catch (URISyntaxException e) {throw new IOException(e.getMessage());}
 
         final int bobRecordCount = context.getConfiguration().getInt(CommonKeys.BOB_RECORD_COUNT_COUNTER, -1);
         if(bobRecordCount < 0) throw new IllegalStateException("Bob record count not set.");
 
         bobEncodingFieldName = blocking.getBobEncodingFieldName();
         String bobUidFieldName = context.getConfiguration().get(CommonKeys.BOB_UID, null);
-        if (bobUidFieldName == null) throw new IllegalStateException("Bob uidnot set.");
+        if (bobUidFieldName == null) throw new IllegalStateException("Bob uid not set.");
 
         final FileSystem fs = FileSystem.get(context.getConfiguration());
         final DatasetsUtil.DatasetRecordReader reader =
@@ -192,6 +195,11 @@ public class FPSMapperV3 extends Mapper<AvroKey<GenericRecord>,NullWritable,Text
         } finally {
             reader.close();
         }
+
+        long bobRecordsBytes = MemoryUtil.deepMemoryUsageOf(bobRecords) +
+                MemoryUtil.deepMemoryUsageOf(bobId2IndexMap);
+        increaseTotalByteCounter(context, bobRecordsBytes);
+        setTotalBytePerTaskCounter(context,bobRecordsBytes);
     }
 
     /**

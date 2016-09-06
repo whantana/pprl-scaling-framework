@@ -56,22 +56,28 @@ public class CommonUtil {
     }
 
     /**
-     * Populate stats with counters.
-     *
-     * @param counterGroup a counter group
-     * @param stats stats map.
-     * @param LOG a log instance for logging.
-     */
-    static void populateStatsWithCounters(final CounterGroup counterGroup,
-                                          final Map<String,Long> stats, final Logger LOG) {
-        LOG.info("Counters : ");
-        for(Counter counter : counterGroup) {
-            final String name = counter.getDisplayName();
-            final long value = counter.getValue();
-            LOG.info("\t{} : {}",name,value);
-            stats.put(name, value);
-        }
-    }
+      * Populate stats with counters.
+      *
+     * @param job a map reduce job
+      * @param stats stats map.
+      * @param LOG a log instance for logging.
+      */
+     static void populateStats(final String header,
+                               final Job job,
+                               final Map<String, Long> stats, final Logger LOG) throws IOException {
+         final String key = header.split(". ")[0];
+         LOG.info("{}",header);
+         LOG.info("Counters : ");
+         for(Counter counter : job.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME)) {
+             final String name = counter.getDisplayName();
+             final long value = counter.getValue();
+             LOG.info("\t{} : {}",name,value);
+             stats.put(key +"_" + name, value);
+         }
+         final Counter totalWrittenBytesCounter =
+                 job.getCounters().findCounter(
+                         org.apache.hadoop.mapreduce.FileSystemCounter.BYTES_WRITTEN);
+     }
 
     /**
      * Returns the min/max/avg blocking counts from the counters
@@ -174,39 +180,6 @@ public class CommonUtil {
     }
 
     /**
-     * Increase no pair counter.
-     *
-     * @param context <code>Context</code> instance.
-     * @param value value to increase.
-     */
-    public static void increaseNoPairCounter(Reducer.Context context, long value) {
-        context.getCounter(CommonKeys.COUNTER_GROUP_NAME,
-                CommonKeys.NO_PAIR_COUNTER).increment(value);
-    }
-
-    /**
-     * Increase missing alice record.
-     *
-     * @param context <code>Context</code> instance.
-     * @param value value to increase.
-     */
-    public static void increaseAliceRecordMissingCounter(Reducer.Context context, long value) {
-        context.getCounter(CommonKeys.COUNTER_GROUP_NAME,
-                CommonKeys.ALICE_RECORD_MISSING_COUNTER).increment(value);
-    }
-
-    /**
-     * Increase missing bob record.
-     *
-     * @param context <code>Context</code> instance.
-     * @param value value to increase.
-     */
-    public static void increaseBobRecordMissingCounter(Reducer.Context context, long value) {
-        context.getCounter(CommonKeys.COUNTER_GROUP_NAME,
-                CommonKeys.BOB_RECORD_MISSING_COUNTER).increment(value);
-    }
-
-    /**
      * Increase the dataset total record counter.
      *
      * @param context <code>Context</code> instance.
@@ -218,6 +191,56 @@ public class CommonUtil {
                 CommonKeys.COUNTER_GROUP_NAME,
                 String.format("%s.%c",CommonKeys.RECORD_COUNT_COUNTER,dataset)).increment(value);
     }
+
+    /**
+     * Increase total byte counters
+     *
+     * @param context <code>Context</code> instance.
+     * @param value value to increase.
+     */
+    public static void increaseTotalByteCounter(final Mapper.Context context, final long value) {
+        context.getCounter(
+                CommonKeys.COUNTER_GROUP_NAME,
+                CommonKeys.TOTAL_BYTES_ON_PPRL).increment(value);
+    }
+
+    /**
+     * Increase total byte counters.
+     *
+     * @param context <code>Context</code> instance.
+     * @param value value to increase.
+     */
+    public static void increaseTotalByteCounter(final Reducer.Context context, final long value) {
+        context.getCounter(
+                CommonKeys.COUNTER_GROUP_NAME,
+                CommonKeys.TOTAL_BYTES_ON_PPRL).increment(value);
+    }
+
+    /**
+     * Increase total byte counters
+     *
+     * @param context <code>Context</code> instance.
+     * @param value value to increase.
+     */
+    public static void setTotalBytePerTaskCounter(final Mapper.Context context, final long value) {
+        context.getCounter(
+                CommonKeys.COUNTER_GROUP_NAME,
+                CommonKeys.TOTAL_BYTES_ON_PPRL_PER_TASK).setValue(value);
+    }
+
+    /**
+     * Increase total byte counters.
+     *
+     * @param context <code>Context</code> instance.
+     * @param value value to increase.
+     */
+    public static void setTotalBytePerTaskCounter(final Reducer.Context context, final long value) {
+        context.getCounter(
+                CommonKeys.COUNTER_GROUP_NAME,
+                CommonKeys.TOTAL_BYTES_ON_PPRL_PER_TASK).setValue(value);
+    }
+
+
 
     /**
      * Add all containing files files to cache.

@@ -1,5 +1,6 @@
 package gr.upatras.ceid.pprl.mapreduce;
 
+import com.javamex.classmexer.MemoryUtil;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroKey;
@@ -19,6 +20,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+
+import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.increaseTotalByteCounter;
+import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.setTotalBytePerTaskCounter;
 
 /**
  * Make Record pairs Mapper.
@@ -126,9 +130,6 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
         final int capacity = (int) (actualCapacity / fillFactor + 1);
         frequentPairMap = new HashMap<String, ArrayList<byte[]>>(capacity, fillFactor);
 
-        final Runtime rt = Runtime.getRuntime();
-        final long umb = rt.totalMemory() - rt.freeMemory();
-        int i = 0;
         for (final Path path : frequentPairsPaths) {
             SequenceFile.Reader reader = new SequenceFile.Reader(conf, SequenceFile.Reader.file(path));
             Text key = new Text();
@@ -138,10 +139,10 @@ public class MakeRecordPairsMapper extends Mapper<AvroKey<GenericRecord>,NullWri
                 else populateFrequentPairMap(value, key);
             }
             reader.close();
-            i++;
         }
-        final long uma = rt.totalMemory() - rt.freeMemory();
-        final long umd = uma - umb;
+        long frequentPairBytes = MemoryUtil.deepMemoryUsageOf(frequentPairMap);
+        increaseTotalByteCounter(context, frequentPairBytes);
+        setTotalBytePerTaskCounter(context,frequentPairBytes);
     }
 
 

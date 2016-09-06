@@ -1,5 +1,6 @@
 package gr.upatras.ceid.pprl.mapreduce;
 
+import com.javamex.classmexer.MemoryUtil;
 import gr.upatras.ceid.pprl.datasets.DatasetsUtil;
 import gr.upatras.ceid.pprl.encoding.BloomFilter;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
@@ -69,11 +70,7 @@ public class PrivateSimilarityReducerV2 extends Reducer<AvroKey<GenericRecord>,T
         similarityMethodName = "hamming";
         similarityThreshold = (double) context.getConfiguration().getInt(CommonKeys.HAMMING_THRESHOLD, 100);
         matchedPairsCount = 0;
-        try {
-            loadBobRecords(context);
-        } catch (URISyntaxException e) {
-            throw new InterruptedException(e.getMessage());
-        }
+        loadBobRecords(context);
     }
 
     @Override
@@ -110,13 +107,16 @@ public class PrivateSimilarityReducerV2 extends Reducer<AvroKey<GenericRecord>,T
      * @param context context
      * @throws IOException
      */
-    private void loadBobRecords(Reducer.Context context) throws URISyntaxException, IOException {
+    private void loadBobRecords(Reducer.Context context) throws IOException {
         final String bobSchemaString = context.getConfiguration().get(CommonKeys.BOB_SCHEMA);
         if (bobSchemaString == null) throw new IllegalStateException("Bob schema not set.");
         final Schema bobSchema = (new Schema.Parser()).parse(bobSchemaString);
         final String bobAvroPathUri = context.getConfiguration().get(CommonKeys.BOB_DATA_PATH,null);
         if (bobAvroPathUri == null) throw new IllegalStateException("Bob avro path not set.");
-        final Path bobAvroPath = new Path(new URI(bobAvroPathUri));
+        final Path bobAvroPath;
+        try {
+            bobAvroPath = new Path(new URI(bobAvroPathUri));
+        } catch (URISyntaxException e) {throw new IOException(e.getMessage());}
 
         final int bobRecordCount = context.getConfiguration().getInt(CommonKeys.BOB_RECORD_COUNT_COUNTER, -1);
         if(bobRecordCount < 0) throw new IllegalStateException("Bob record count not set.");
@@ -139,5 +139,9 @@ public class PrivateSimilarityReducerV2 extends Reducer<AvroKey<GenericRecord>,T
         } finally {
             reader.close();
         }
+        long bobRecordsBytes = MemoryUtil.deepMemoryUsageOf(bobRecords) +
+                MemoryUtil.deepMemoryUsageOf(bobId2IndexMap);
+        increaseTotalByteCounter(context, bobRecordsBytes);
+        setTotalBytePerTaskCounter(context,bobRecordsBytes);
     }
 }

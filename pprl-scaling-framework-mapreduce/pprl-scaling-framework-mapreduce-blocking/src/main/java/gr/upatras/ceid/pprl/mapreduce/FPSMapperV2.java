@@ -1,5 +1,6 @@
 package gr.upatras.ceid.pprl.mapreduce;
 
+import com.javamex.classmexer.MemoryUtil;
 import gr.upatras.ceid.pprl.blocking.HammingLSHBlocking;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncoding;
 import gr.upatras.ceid.pprl.encoding.BloomFilterEncodingUtil;
@@ -24,8 +25,7 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.increaseFrequentPairCounter;
-import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.increaseRecordCounter;
+import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.*;
 
 /**
  * FPS Mapper class (v2).
@@ -66,6 +66,8 @@ public class FPSMapperV2 extends Mapper<AvroKey<GenericRecord>,NullWritable,Avro
         context.nextKeyValue();
         final Schema s = context.getCurrentKey().datum().getSchema();
         setupMapper(s,context);
+        loadBobBuckets(context);
+        initCounters(context);
         long recordCount = 0;
         frequentPairsCount = 0;
         try {
@@ -139,8 +141,6 @@ public class FPSMapperV2 extends Mapper<AvroKey<GenericRecord>,NullWritable,Avro
             BloomFilterEncoding bobEncoding = BloomFilterEncodingUtil.setupNewInstance(
                     ((new Schema.Parser()).parse(bobSchemaString)));
             blocking = new HammingLSHBlocking(blockingKeys, aliceEncoding, bobEncoding);
-            loadbobBuckets(context);
-            initCounters(context);
             C = (short) context.getConfiguration().getInt(CommonKeys.FREQUENT_PAIR_LIMIT, -1);
             if(C < 0) throw new InterruptedException("C is not set.");
         } catch (Exception e) {throw new InterruptedException(e.getMessage());}
@@ -153,7 +153,7 @@ public class FPSMapperV2 extends Mapper<AvroKey<GenericRecord>,NullWritable,Avro
      * @param context context
      * @throws IOException
      */
-    private void loadbobBuckets(final Context context)
+    private void loadBobBuckets(final Context context)
             throws IOException {
         final Configuration conf = context.getConfiguration();
 
@@ -183,6 +183,9 @@ public class FPSMapperV2 extends Mapper<AvroKey<GenericRecord>,NullWritable,Avro
             }
             reader.close();
         }
+        long bobBucketsBytes = MemoryUtil.deepMemoryUsageOf(bobBuckets);
+        increaseTotalByteCounter(context, bobBucketsBytes);
+        setTotalBytePerTaskCounter(context,bobBucketsBytes);
     }
 
     /**

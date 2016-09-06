@@ -8,9 +8,11 @@ import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.CounterGroup;
 import org.apache.hadoop.mapreduce.Counters;
+import org.apache.hadoop.mapreduce.FileSystemCounter;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.counters.FileSystemCounterGroup;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -73,16 +75,14 @@ public class CommonUtil {
              stats.put(key +"_" + name, value);
          }
          final Counter totalWrittenBytesCounter =
-                 job.getCounters().findCounter(
-                         org.apache.hadoop.mapreduce.FileSystemCounter.BYTES_WRITTEN);
+                 job.getCounters().findCounter("HDFS",FileSystemCounter.BYTES_WRITTEN);
+         if(totalWrittenBytesCounter != null)
+             stats.put(key + "_total.hdfs.written.bytes", totalWrittenBytesCounter.getValue());
 
          try {
              final long duration = job.getFinishTime() - job.getStartTime();
              stats.put(key + "job.duration",duration);
          } catch (InterruptedException e) { throw new IOException(e.getMessage());}
-
-         stats.put(key + "_total.written.bytes",
-                 totalWrittenBytesCounter.getValue());
      }
 
     /**

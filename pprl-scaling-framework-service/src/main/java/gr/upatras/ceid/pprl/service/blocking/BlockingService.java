@@ -76,9 +76,11 @@ public class BlockingService implements InitializingBean {
 
         StringBuilder sb = new StringBuilder();
         final String header = "C,L,K,version,time_1,time_2,time_3,hbw_1,hbw_2,hbw_3,mf_1,mf_2,mf_3,tpc,fpc,mpc";
-        sb.append("--Source paths-----------------------\n");
+        sb.append("--Source paths found-----------------\n");
+        int i = 1;
         for(Path path : blockingStatsPaths) {
-            sb.append("\t").append(path.toString()).append("\n");
+            sb.append(i).append(". ").append(path.toUri()).append("\n");
+            i++;
         }
         sb.append("--Stats (csv)------------------------\n");
         sb.append(header).append("\n");
@@ -95,6 +97,8 @@ public class BlockingService implements InitializingBean {
             assert pathNameParts[3].split("_").length == 4;
             prefixBuilder
                     .append(pathNameParts[3].split("_")[3]).append(",");
+            final Path statsPath = new Path(path,"stats");
+            if(!hdfs.exists(statsPath) || !hdfs.isFile(statsPath)) continue;
             final String benchmarkString = CommonUtil.loadBenchmarkStats(hdfs,path);
             sb.append(prefixBuilder.toString()).append(benchmarkString).append("\n");
         }

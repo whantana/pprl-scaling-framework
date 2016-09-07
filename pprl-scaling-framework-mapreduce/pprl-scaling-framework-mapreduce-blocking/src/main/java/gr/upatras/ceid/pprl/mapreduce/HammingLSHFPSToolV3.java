@@ -113,7 +113,7 @@ public class HammingLSHFPSToolV3 extends Configured implements Tool {
                 shortenUrl(bobPath.toString()), shortenUrl(bobSchemaPath.toString()),
                 shortenUrl(bobBucketsPath.toString()),
                 L, K, R1);
-        LOG.info("Running.1 : {} : {}",memProfile2,description1);
+        LOG.info("Running.1 : {} : {}",memProfile1,description1);
         final Job job1 = Job.getInstance(conf);
         job1.setJarByClass(HammingLSHFPSToolV3.class);
         job1.setJobName(description1);

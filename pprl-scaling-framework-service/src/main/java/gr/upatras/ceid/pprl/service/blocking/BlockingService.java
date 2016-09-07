@@ -99,7 +99,7 @@ public class BlockingService implements InitializingBean {
                     .append(pathNameParts[3].split("_")[3]).append(",");
             final Path statsPath = new Path(path,"stats");
             if(!hdfs.exists(statsPath) || !hdfs.isFile(statsPath)) continue;
-            final String benchmarkString = CommonUtil.loadBenchmarkStats(hdfs,path);
+            final String benchmarkString = CommonUtil.loadBenchmarkStats(hdfs,statsPath);
             sb.append(prefixBuilder.toString()).append(benchmarkString).append("\n");
         }
         return sb.toString();

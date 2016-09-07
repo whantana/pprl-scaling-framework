@@ -301,7 +301,7 @@ public class BlockingCommands implements CommandMarker {
     }
 
 
-    @CliCommand(value = "retrieve_blocking_benchmarks", help = "Privately block records of HDFS datasets.")
+    @CliCommand(value = "retrieve_blocking_benchmarks", help = "Retrieve blocking benchmark stats from HDFS.")
     public String command4(
             @CliOption(key = {"alice_name"}, mandatory = true, help = "Name of Alice encoded dataset on the HDFS site.")
             final String aliceName,

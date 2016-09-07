@@ -61,7 +61,7 @@ public class BlockingService implements InitializingBean {
 
 
         final SortedSet<Path> blockingStatsPaths = new TreeSet<Path>();
-        RemoteIterator<LocatedFileStatus> iterator = hdfs.listFiles(basePath, false);
+        RemoteIterator<LocatedFileStatus> iterator = hdfs.listLocatedStatus(basePath);
         while(iterator.hasNext()) {
             LocatedFileStatus lfs = iterator.next();
             if (lfs.isDirectory() && lfs.getPath().getName().startsWith(

@@ -1,7 +1,10 @@
 package gr.upatras.ceid.pprl.service.blocking;
 
+import gr.upatras.ceid.pprl.mapreduce.CommonUtil;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -9,12 +12,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.hadoop.mapreduce.ToolRunner;
 import org.springframework.stereotype.Service;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 @Service
 public class BlockingService implements InitializingBean {
@@ -49,6 +55,52 @@ public class BlockingService implements InitializingBean {
     @Autowired
     private ToolRunner hammingLshFpsBlockingV3ToolRunner; // Runner of Hamming LSH/FPS BLocking Tool v2
 
+    public String retrieveBenchmarkStats(final String aliceName,
+                                         final String bobName) throws IOException {
+
+
+
+        final SortedSet<Path> blockingStatsPaths = new TreeSet<Path>();
+        RemoteIterator<LocatedFileStatus> iterator = hdfs.listFiles(basePath, false);
+        while(iterator.hasNext()) {
+            LocatedFileStatus lfs = iterator.next();
+            if (lfs.isDirectory() && lfs.getPath().getName().startsWith(
+                    String.format("blocking.%s.%s", aliceName,bobName))) {
+                blockingStatsPaths.add(lfs.getPath());
+            }
+        }
+
+        if(blockingStatsPaths.isEmpty())
+            return String.format("No blocking benchmarks found for datasets [%s,%s]",aliceName,bobName);
+
+
+        StringBuilder sb = new StringBuilder();
+        final String header = "C,L,K,version,time_1,time_2,time_3,hbw_1,hbw_2,hbw_3,mf_1,mf_2,mf_3,tpc,fpc,mpc";
+        sb.append("--Source paths-----------------------\n");
+        for(Path path : blockingStatsPaths) {
+            sb.append("\t").append(path.toString()).append("\n");
+        }
+        sb.append("--Stats (csv)------------------------\n");
+        sb.append(header).append("\n");
+
+        for(Path path : blockingStatsPaths) {
+            StringBuilder prefixBuilder = new StringBuilder();
+            final String pathName = path.getName();
+            final String[] pathNameParts = pathName.split(".");
+            assert pathNameParts[4].split("_").length == 6;
+            prefixBuilder
+                    .append(pathNameParts[4].split("_")[1]).append(",")
+                    .append(pathNameParts[4].split("_")[3]).append(",")
+                    .append(pathNameParts[4].split("_")[5]).append(",");
+            assert pathNameParts[3].split("_").length == 4;
+            prefixBuilder
+                    .append(pathNameParts[3].split("_")[3]).append(",");
+            final String benchmarkString = CommonUtil.loadBenchmarkStats(hdfs,path);
+            sb.append(prefixBuilder.toString()).append(benchmarkString).append("\n");
+        }
+        return sb.toString();
+    }
+
     public void runHammingLSHFPSBlockingToolRunner(final String blockingSchemeName,
                                                    final String aliceName,
                                                    final Path aliceAvroPath, final Path aliceSchemaPath,
@@ -63,9 +115,9 @@ public class BlockingService implements InitializingBean {
                                                    final int seed
                                                    ) throws Exception {
         final String blockingName = String.format("blocking.%s.%s.%s.%s.%s",
-                blockingSchemeName.toLowerCase(),
-                String.format("C=%d_L=%d_K=%d",C,L,K),
                 aliceName,bobName,
+                blockingSchemeName.toLowerCase(),
+                String.format("C_%d_L_%d_K_%d",C,L,K),
                 (new SimpleDateFormat("yyyy.MM.dd.hh.mm")).format(new Date())
         );
         final Path blockingPath = new Path(basePath,blockingName);
@@ -139,26 +191,25 @@ public class BlockingService implements InitializingBean {
         argsList.add(String.valueOf(seed));
         String[] args = new String[argsList.size()];
         args = argsList.toArray(args);
-        System.out.println(Arrays.toString(args));
-//        switch(blockingSchemeName) {
-//            case "HLSH_FPS_MR_v0":
-//                hammingLshFpsBlockingV0ToolRunner.setArguments(args);
-//                hammingLshFpsBlockingV0ToolRunner.call();
-//                break;
-//            case "HLSH_FPS_MR_v1":
-//                hammingLshFpsBlockingV1ToolRunner.setArguments(args);
-//                hammingLshFpsBlockingV1ToolRunner.call();
-//                break;
-//            case "HLSH_FPS_MR_v2":
-//                hammingLshFpsBlockingV2ToolRunner.setArguments(args);
-//                hammingLshFpsBlockingV2ToolRunner.call();
-//                break;
-//            case "HLSH_FPS_MR_v3":
-//                hammingLshFpsBlockingV3ToolRunner.setArguments(args);
-//                hammingLshFpsBlockingV3ToolRunner.call();
-//                break;
-//            default:
-//                throw new Exception("Unsuppored blocking name scheme : " + blockingSchemeName);
-//        }
+        switch(blockingSchemeName) {
+            case "HLSH_FPS_MR_v0":
+                hammingLshFpsBlockingV0ToolRunner.setArguments(args);
+                hammingLshFpsBlockingV0ToolRunner.call();
+                break;
+            case "HLSH_FPS_MR_v1":
+                hammingLshFpsBlockingV1ToolRunner.setArguments(args);
+                hammingLshFpsBlockingV1ToolRunner.call();
+                break;
+            case "HLSH_FPS_MR_v2":
+                hammingLshFpsBlockingV2ToolRunner.setArguments(args);
+                hammingLshFpsBlockingV2ToolRunner.call();
+                break;
+            case "HLSH_FPS_MR_v3":
+                hammingLshFpsBlockingV3ToolRunner.setArguments(args);
+                hammingLshFpsBlockingV3ToolRunner.call();
+                break;
+            default:
+                throw new Exception("Unsuppored blocking name scheme : " + blockingSchemeName);
+        }
     }
 }

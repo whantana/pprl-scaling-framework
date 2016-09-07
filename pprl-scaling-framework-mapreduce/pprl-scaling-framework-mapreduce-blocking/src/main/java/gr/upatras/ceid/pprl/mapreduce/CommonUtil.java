@@ -1,5 +1,6 @@
 package gr.upatras.ceid.pprl.mapreduce;
 
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
@@ -15,7 +16,10 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.counters.FileSystemCounterGroup;
 import org.slf4j.Logger;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -54,12 +58,74 @@ public class CommonUtil {
         final FSDataOutputStream fsdos = fs.exists(statsPath) ?
                 fs.append(statsPath) :
                 fs.create(statsPath,true);
-        fsdos.writeBytes("\n");
         for (Map.Entry<String, Long> entry : stats.entrySet())
             fsdos.writeBytes(String.format("%s=%d\n", entry.getKey(), entry.getValue()));
         fsdos.close();
         stats.clear();
     }
+
+    /**
+     * Load stats from HDFS stats files.
+     *
+     */
+    public static String loadBenchmarkStats(final FileSystem fs, final Path statsPath)
+            throws IOException {
+        BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(statsPath)));
+        final long[] jobTime = new long[3];
+        Arrays.fill(jobTime,0);
+        final long[] jobDiskFootprint = new long[3];
+        Arrays.fill(jobDiskFootprint,0);
+        final long[] jobMemFootprint = new long[3];
+        Arrays.fill(jobMemFootprint,0);
+        long totalPairCount = 0;
+        long frequentPairCount = 0;
+        long matchedPairCount = 0;
+        try {
+            String line;
+            int job;
+            line=br.readLine();
+            while (line != null){
+                if(line.startsWith("V")) {
+                    final String[] parts = line.split("_");
+                    job = Integer.valueOf(parts[0].substring(3));
+                    final String key = parts[1].split("=")[0];
+                    final int value = Integer.valueOf(parts[1].split("=")[1]);
+                    switch (key) {
+                        case "job.duration":
+                            jobTime[job-1] = value;
+                            break;
+                        case "total.hdfs.written.bytes":
+                            jobDiskFootprint[job-1] = value;
+                            break;
+                        case "mem.total.bytes":
+                            jobMemFootprint[job-1] = value;
+                            break;
+                        case "total.pair.count":
+                            totalPairCount = value;
+                            break;
+                        case "frequent.pairs.count":
+                            frequentPairCount = value;
+                            break;
+                        case "matched.pairs.count":
+                            matchedPairCount = value;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                line = br.readLine();
+            }
+        } finally {
+            br.close();
+        }
+        return String.format("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
+                jobTime[0],jobTime[1],jobTime[2],
+                jobDiskFootprint[0],jobDiskFootprint[1],jobDiskFootprint[2],
+                jobMemFootprint[0],jobMemFootprint[1],jobMemFootprint[2],
+                totalPairCount,frequentPairCount,matchedPairCount
+                );
+    }
+
 
     /**
      * Populate stats with counters.
@@ -74,7 +140,7 @@ public class CommonUtil {
         final String key = header.split(". ")[0];
         for(Counter counter : job.getCounters().getGroup(CommonKeys.COUNTER_GROUP_NAME)) {
             final String name = counter.getDisplayName();
-            if(name.contains("blockingkeys.at")) continue;;
+            if(name.contains("blockingkeys.at")) continue;
             final long value = counter.getValue();
             stats.put(key +"_" + name, value);
         }

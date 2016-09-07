@@ -51,8 +51,8 @@ public class BlockingCommands implements CommandMarker {
     public boolean availability1() { return lbs != null && lds != null; }
     @CliAvailabilityIndicator(value = {"block_encoded_data"})
     public boolean availability3() { return ds != null && bs != null; }
-//    @CliAvailabilityIndicator(value = {"retrieve_blocking_benchmarks"})
-//    public boolean availability4() { return ds != null; }
+    @CliAvailabilityIndicator(value = {"retrieve_blocking_benchmarks"})
+    public boolean availability4() { return ds != null && bs != null; }
 
 
     /**
@@ -72,14 +72,14 @@ public class BlockingCommands implements CommandMarker {
 
     @CliCommand(value = "get_optimal_hlsh_fps_params", help = "Return optimal HLSH/FPS Parameters for future blocking.")
     public String command1(
-        @CliOption(key = {"theta"}, mandatory = true, help = "Hamming distance threshold.")
-        final String thetaStr,
-        @CliOption(key = {"delta"}, mandatory = true, help = "Hamming distance threshold.")
-        final String deltaStr,
-        @CliOption(key = {"size"}, mandatory = true, help = "Hamming distance threshold.")
-        final String sizeStr,
-        @CliOption(key = {"K"}, mandatory = true, help = "Hamming distance threshold.")
-        final String Kstr
+            @CliOption(key = {"theta"}, mandatory = true, help = "Hamming distance threshold.")
+            final String thetaStr,
+            @CliOption(key = {"delta"}, mandatory = true, help = "Hamming distance threshold.")
+            final String deltaStr,
+            @CliOption(key = {"size"}, mandatory = true, help = "Hamming distance threshold.")
+            final String sizeStr,
+            @CliOption(key = {"K"}, mandatory = true, help = "Hamming distance threshold.")
+            final String Kstr
     ) {
         final int theta = CommandUtil.retrieveInt(thetaStr,0);
         final double delta = CommandUtil.retrieveDouble(deltaStr, 0);
@@ -215,7 +215,7 @@ public class BlockingCommands implements CommandMarker {
             final String blockingSchemeName,
             @CliOption(key = {"reducers"}, mandatory = true, help = "Number of reduces per sub-task (comma-seperated).")
             final String reducersString,
-            @CliOption(key = {"mem_prof"}, mandatory = true, help = "Memory Profiles per sub-task (Mappers/Reducers) (HI or LO)(comma-seperated).")
+            @CliOption(key = {"mem_profile"}, mandatory = true, help = "Memory Profiles per sub-task (MP1/RP1,...,) (HI or LO)(comma-seperated).")
             final String memProfilesStr,
             @CliOption(key = {"hf_L"}, mandatory = true, help = "Number of blocking groups for HLSH blocking. Defaults to 32.")
             final String hlshLStr,
@@ -244,8 +244,8 @@ public class BlockingCommands implements CommandMarker {
 
             HammingLSHBlockingUtil.schemeNameSupported(blockingSchemeName);
             final String blockingName = String.format("blocking.%s.%s.%s.%s",
-					blockingSchemeName.toLowerCase(),
-					aliceName,bobName,
+                    blockingSchemeName.toLowerCase(),
+                    aliceName,bobName,
                     (new SimpleDateFormat("yyyy.MM.dd.hh.mm")).format(new Date())
             );
 
@@ -294,6 +294,30 @@ public class BlockingCommands implements CommandMarker {
                         seed
                 );
             }
+            return "DONE";
+        } catch (Exception e) {
+            return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();
+        }
+    }
+
+
+    @CliCommand(value = "retrieve_blocking_benchmarks", help = "Privately block records of HDFS datasets.")
+    public String command4(
+            @CliOption(key = {"alice_name"}, mandatory = true, help = "Name of Alice encoded dataset on the HDFS site.")
+            final String aliceName,
+            @CliOption(key = {"bob_name"}, mandatory = true, help = "Name of Bob encoded dataset on the HDFS site.")
+            final String bobName
+    ) {
+        try{
+            LOG.info("Blocking HDFS datasets : ");
+            LOG.info("\tAlice dataset name : {}", aliceName);
+            LOG.info("\tBob dataset path : {}", bobName);
+            LOG.info("\n");
+
+            final String report = bs.retrieveBenchmarkStats(aliceName,bobName);
+
+            LOG.info(report);
+
             return "DONE";
         } catch (Exception e) {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();

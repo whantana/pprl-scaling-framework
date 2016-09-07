@@ -2,6 +2,7 @@ package gr.upatras.ceid.pprl.mapreduce;
 
 import org.apache.hadoop.conf.Configuration;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -13,21 +14,25 @@ public class MemProfileUtil {
 
     public static Map<String,String> mapOpts;
     static {
+        mapOpts = new HashMap<String,String>();
         mapOpts.put(PROFILES[0],"-javaagent:./classmexer-0.0.3.jar -Xms800m -Xmx800m");
         mapOpts.put(PROFILES[1],"-javaagent:./classmexer-0.0.3.jar -Xms1800m -Xmx1800m");
     }
     public static Map<String,String> reduceOpts;
     static {
+        reduceOpts = new HashMap<String,String>();
         reduceOpts.put(PROFILES[0],"-javaagent:./classmexer-0.0.3.jar -Xms800m -Xmx800m");
         reduceOpts.put(PROFILES[1],"-javaagent:./classmexer-0.0.3.jar -Xms1800m -Xmx1800m");
     }
     public static Map<String,Integer> mapMegaBytes;
     static {
+        mapMegaBytes = new HashMap<String,Integer>();
         mapMegaBytes.put(PROFILES[0],1024);
         mapMegaBytes.put(PROFILES[1],2048);
     }
     public static Map<String,Integer> reduceMegaBytes;
     static {
+        reduceMegaBytes = new HashMap<String,Integer>();
         reduceMegaBytes.put(PROFILES[0],1024);
         reduceMegaBytes.put(PROFILES[1],2048);
     }

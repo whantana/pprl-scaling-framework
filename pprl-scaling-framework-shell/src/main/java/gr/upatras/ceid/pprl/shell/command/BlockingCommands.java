@@ -51,6 +51,9 @@ public class BlockingCommands implements CommandMarker {
     public boolean availability1() { return lbs != null && lds != null; }
     @CliAvailabilityIndicator(value = {"block_encoded_data"})
     public boolean availability3() { return ds != null && bs != null; }
+//    @CliAvailabilityIndicator(value = {"retrieve_blocking_benchmarks"})
+//    public boolean availability4() { return ds != null; }
+
 
     /**
      *  COMMON BLOCKING COMMANDS
@@ -212,6 +215,8 @@ public class BlockingCommands implements CommandMarker {
             final String blockingSchemeName,
             @CliOption(key = {"reducers"}, mandatory = true, help = "Number of reduces per sub-task (comma-seperated).")
             final String reducersString,
+            @CliOption(key = {"mem_prof"}, mandatory = true, help = "Memory Profiles per sub-task (Mappers/Reducers) (HI or LO)(comma-seperated).")
+            final String memProfilesStr,
             @CliOption(key = {"hf_L"}, mandatory = true, help = "Number of blocking groups for HLSH blocking. Defaults to 32.")
             final String hlshLStr,
             @CliOption(key = {"hf_K"}, mandatory = true, help = "Number of hash values for HLSH blocking. Defaults to 5.")
@@ -257,87 +262,38 @@ public class BlockingCommands implements CommandMarker {
             LOG.info("\tBlocking name : {}",blockingName);
 
             if(blockingSchemeName.startsWith("HLSH_FPS_MR")) {
-                final int L = CommandUtil.retrieveInt(hlshLStr,-1);
-                final int K = CommandUtil.retrieveInt(hlshKStr,-1);
+                final int L = CommandUtil.retrieveInt(hlshLStr, -1);
+                final int K = CommandUtil.retrieveInt(hlshKStr, -1);
                 final short C = CommandUtil.retrieveShort(hlshCStr, (short) -1);
-                final int hammingThreshold = CommandUtil.retrieveInt(hammingThreholdStr,-1);
-                LOG.info("\tHLSH Hamming threshold (theta) : {}",hammingThreshold);
-                LOG.info("\tHLSH Blocking Groups (L) : {}",L);
-                LOG.info("\tHLSH Blocking Hash Values (K) : {}",K);
-                LOG.info("\tFPS Collision Limit (C) : {}",C);
-                final int seed = CommandUtil.retrieveInt(seedStr,-1);
-                if(seed >= 0) LOG.info("\tHLSH seed for random keys : {}",seed);
-                switch (blockingSchemeName) {
-                    case "HLSH_FPS_MR_v0": {
-                        final int[] R = CommandUtil.retrieveInts(reducersString);
-                        if (R.length != 3)
-                            throw new IllegalArgumentException("This job consists of 3 sub-jobs and requires" +
-                                    " to define exactly 3 reduer numbers.");
-                        LOG.info("\tJob Reducers : {}", Arrays.toString(R));
-                        LOG.info("\n");
-                        bs.runHammingLSHFPSBlockingV0ToolRuner(
-                                aliceAvroPath, aliceSchemaPath, aliceUidFieldName,
-                                bobAvroPAth, bobSchemaPath, bobUidFieldName,
-                                blockingName,
-                                L, K, C,
-                                hammingThreshold,
-                                R[0], R[1], R[2],seed);
-
-                        break;
-                    }
-                    case "HLSH_FPS_MR_v1": {
-                        final int[] R = CommandUtil.retrieveInts(reducersString);
-                        if (R.length != 3)
-                            throw new IllegalArgumentException("This job consists of 3 sub-jobs and requires" +
-                                    " to define exactly 3 reducer numbers.");
-                        LOG.info("\tJob Reducers : {}", Arrays.toString(R));
-                        LOG.info("\n");
-                        bs.runHammingLSHFPSBlockingV1ToolRuner(
-                                aliceAvroPath, aliceSchemaPath, aliceUidFieldName,
-                                bobAvroPAth, bobSchemaPath, bobUidFieldName,
-                                blockingName,
-                                L, K, C,
-                                hammingThreshold,
-                                R[0], R[1], R[2],seed);
-                        break;
-                    }
-                    case "HLSH_FPS_MR_v2": {
-                        final int[] R = CommandUtil.retrieveInts(reducersString);
-                        if (R.length != 2)
-                            throw new IllegalArgumentException("This job consists of 2 sub-jobs and requires" +
-                                    " to define exactly 2 reducer numbers.");
-                        LOG.info("\tJob Reducers : {}", Arrays.toString(R));
-                        LOG.info("\n");
-                        bs.runHammingLSHFPSBlockingV2ToolRuner(
-                                aliceAvroPath, aliceSchemaPath, aliceUidFieldName,
-                                bobAvroPAth, bobSchemaPath, bobUidFieldName,
-                                blockingName,
-                                L, K, C,
-                                hammingThreshold,
-                                R[0], R[1],seed);
-                        break;
-                    }
-                    case "HLSH_FPS_MR_v3": {
-                        final int[] R = CommandUtil.retrieveInts(reducersString);
-                        if (R.length != 2)
-                            throw new IllegalArgumentException("This job consists of 2 sub-jobs and requires" +
-                                    " to define exactly 2 reducer numbers.");
-                        LOG.info("\tJob Reducers : {}", Arrays.toString(R));
-                        LOG.info("\n");
-                        bs.runHammingLSHFPSBlockingV3ToolRuner(
-                                aliceAvroPath, aliceSchemaPath, aliceUidFieldName,
-                                bobAvroPAth, bobSchemaPath, bobUidFieldName,
-                                blockingName,
-                                L, K, C,
-                                hammingThreshold,
-                                R[0], R[1],seed);
-                        break;
-                    }
-                    default:
-                        throw new UnsupportedOperationException("\"" + blockingSchemeName + "\" is not implemented yet.");
-                }
+                final int hammingThreshold = CommandUtil.retrieveInt(hammingThreholdStr, -1);
+                LOG.info("\tHLSH Hamming threshold (theta) : {}", hammingThreshold);
+                LOG.info("\tHLSH Blocking Groups (L) : {}", L);
+                LOG.info("\tHLSH Blocking Hash Values (K) : {}", K);
+                LOG.info("\tFPS Collision Limit (C) : {}", C);
+                final int seed = CommandUtil.retrieveInt(seedStr, -1);
+                if (seed >= 0) LOG.info("\tHLSH seed for random keys : {}", seed);
+                final int[] inputR = CommandUtil.retrieveInts(reducersString);
+                final int[] R = new int[3];
+                Arrays.fill(R, 0);
+                System.arraycopy(inputR, 0, R, 0, inputR.length);
+                LOG.info("\tJob Reducers : {}", Arrays.toString(R));
+                final String[] inputMemProfiles = CommandUtil.retrieveStrings(memProfilesStr);
+                final String[] memProfiles = new String[3];
+                Arrays.fill(memProfiles,"");
+                System.arraycopy(inputMemProfiles,0,memProfiles,0,inputMemProfiles.length);
+                LOG.info("\tJob Mem.Profiles  : {}", Arrays.toString(memProfiles));
+                LOG.info("\n");
+                bs.runHammingLSHFPSBlockingToolRunner(
+                        blockingSchemeName,
+                        aliceName, aliceAvroPath, aliceSchemaPath, aliceUidFieldName,
+                        bobName, bobAvroPAth, bobSchemaPath, bobUidFieldName,
+                        hammingThreshold,
+                        C, L, K,
+                        R[0], R[1], R[2],
+                        memProfiles[0],memProfiles[1],memProfiles[2],
+                        seed
+                );
             }
-
             return "DONE";
         } catch (Exception e) {
             return "Error. " + e.getClass().getSimpleName() + " : " + e.getMessage();

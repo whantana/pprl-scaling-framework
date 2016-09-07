@@ -42,7 +42,7 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
     public int run(String[] args) throws Exception {
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
-        if (args.length != 18) {
+        if (args.length != 20) {
             LOG.error("args.length= {}",args.length);
             for (int i = 0; i < args.length; i++) {
                 LOG.error("args[{}] = {}",i,args[i]);
@@ -52,7 +52,8 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
                     "<bob-avro-path> <bob-schema-path> <bob-uid-field-name> " +
                     "<bob-buckets-path> <frequent-pair-path> <matched-pairs-path> <stats-path>" +
                     "<number-of-blocking-groups-L> <number-of-hashes-K> <frequent-pair-collision-limit-C> " +
-                    "<number-of-reducers-job1> <number-of-reducers-job2> <number-of-reducers-job3> " +
+                    "<number-of-reducers-job1> <number-of-reducers-job3> " +
+                    "<mem-profile-1> <mem-profile-2> <mem-profile-3> " +
                     "<hamming-threshold> <hlsh_seed>");
             throw new IllegalArgumentException("Invalid number of arguments.");
         }
@@ -71,10 +72,12 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
         final int K = Integer.valueOf(args[11]);
         final short C = Short.valueOf(args[12]);
         final int R1 = Integer.valueOf(args[13]);
-        final int R2 = Integer.valueOf(args[14]);
-        final int R3 = Integer.valueOf(args[15]);
-        final int hammingThreshold = Integer.valueOf(args[16]);
-        final int seed = Integer.valueOf(args[17]);
+        final int R3 = Integer.valueOf(args[14]);
+        final String memProfile1 = args[15];
+        final String memProfile2 = args[16];
+        final String memProfile3 = args[17];
+        final int hammingThreshold = Integer.valueOf(args[18]);
+        final int seed = Integer.valueOf(args[19]);
 
         if(K < 1)
             throw new IllegalArgumentException("Number of hashes K cannot be smaller than 1.");
@@ -106,6 +109,7 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
         conf.setInt(CommonKeys.FREQUENT_PAIR_LIMIT, C);
 
         // setup job1
+        MemProfileUtil.setMemProfile(memProfile1,conf);
         final String description1 = String.format("%s(" +
                         "bob-path : %s, bob-schema-path : %s, " +
                         "bob-buckets-path : %s, " +
@@ -172,6 +176,7 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
 
 
         // setup job2
+        MemProfileUtil.setMemProfile(memProfile2,conf);
         final String description2 = String.format("%s(" +
                         "alice-path : %s, alice-schema-path : %s, " +
                         "bob-buckets-path : %s, frequent-pairs-path : %s, " +
@@ -184,7 +189,7 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
         final Job job2 = Job.getInstance(conf);
         job2.setJarByClass(HammingLSHFPSToolV1.class);
         job2.setJobName(description2);
-        job2.setNumReduceTasks(R2);
+        job2.setNumReduceTasks(0);
         job2.setSpeculativeExecution(false);
 
         // setup  cache
@@ -199,7 +204,6 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
         job2.setMapOutputValueClass(Text.class);
 
         // setup output
-        job2.setReducerClass(Reducer.class);
         job2.setOutputFormatClass(SequenceFileOutputFormat.class);
         job2.setOutputKeyClass(Text.class);
         job2.setOutputValueClass(Text.class);
@@ -232,11 +236,7 @@ public class HammingLSHFPSToolV1 extends Configured implements Tool {
         conf.setInt(CommonKeys.FREQUENT_PAIR_COUNTER,frequentPairCount);
 
         // setup job3
-        conf.setInt("mapreduce.map.memory.mb", 2048);
-        conf.set("mapred.map.java.opts","-Xms1800m -Xmx1800m");
-        conf.setInt("mapreduce.reduce.memory.mb", 1024);
-        conf.set("mapred.reduce.java.opts","-Xms800m -Xmx800m");
-
+        MemProfileUtil.setMemProfile(memProfile3,conf);
         final String description3 = String.format("%s(" +
                         "alice-path : %s, alice-schema-path : %s," +
                         "bob-path : %s, bob-schema-path : %s," +

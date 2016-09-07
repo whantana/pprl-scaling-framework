@@ -92,4 +92,6 @@ public class HadoopYarnConfig extends SpringHadoopConfigurerAdapter {
     private static boolean isDefined ( final String str){
         return str != null && !str.isEmpty();
     }
+
+    // TODO 2. Collect stats with a command
 }

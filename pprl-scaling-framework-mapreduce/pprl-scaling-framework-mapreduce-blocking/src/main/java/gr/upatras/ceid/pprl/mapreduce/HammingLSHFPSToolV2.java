@@ -38,7 +38,7 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
     public int run(String[] args) throws Exception {
         final Configuration conf = getConf();
         args = new GenericOptionsParser(conf, args).getRemainingArgs();
-        if (args.length != 16) {
+        if (args.length != 18) {
             LOG.error("args.length= {}", args.length);
             for (int i = 0; i < args.length; i++) {
                 LOG.error("args[{}] = {}", i, args[i]);
@@ -49,6 +49,7 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
                     "<bob-buckets-path> <matched-pairs-path> <stats-path>" +
                     "<number-of-blocking-groups-L> <number-of-hashes-K> <frequent-pair-collision-limit-C> " +
                     "<number-of-reducers-job1> <number-of-reducers-job2> " +
+                    "<mem-profile-1> <mem-profile-2>" +
                     "<hamming-threshold> <seed>");
             throw new IllegalArgumentException("Invalid number of arguments.");
         }
@@ -67,8 +68,10 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
         final short C = Short.valueOf(args[11]);
         final int R1 = Integer.valueOf(args[12]);
         final int R2 = Integer.valueOf(args[13]);
-        final int hammingThrehold = Integer.valueOf(args[14]);
-        final int seed = Integer.valueOf(args[15]);
+        final String memProfile1 = args[14];
+        final String memProfile2 = args[15];
+        final int hammingThrehold = Integer.valueOf(args[16]);
+        final int seed = Integer.valueOf(args[17]);
 
         if(K < 1)
             throw new IllegalArgumentException("Number of hashes K cannot be smaller than 1.");
@@ -101,6 +104,7 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
 
 
         // setup job1
+        MemProfileUtil.setMemProfile(memProfile1,conf);
         final String description1 = String.format("%s(" +
                         "bob-path : %s, bob-schema-path : %s, " +
                         "bob-buckets-path : %s, " +
@@ -167,6 +171,7 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
         conf.setInt(CommonKeys.BUCKET_INITIAL_CAPACITY,maxKeyCount);
 
         // setup job2
+        MemProfileUtil.setMemProfile(memProfile2,conf);
         final String description2 = String.format("%s(" +
                         "alice-path : %s, alice-schema-path : %s, " +
                         "bob-path : %s, bob-schema-path : %s," +

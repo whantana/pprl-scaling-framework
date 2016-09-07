@@ -10,7 +10,7 @@ import java.util.Map;
  */
 public class MemProfileUtil {
 
-    public static String[] PROFILES = {"LO","HI"};
+    private static String[] PROFILES = {"LO","HI"};
 
     public static Map<String,String> mapOpts;
     static {
@@ -40,7 +40,7 @@ public class MemProfileUtil {
     public static void setMemProfile(final String jobProfile , final Configuration conf) {
         if(!jobProfile.contains("/") || jobProfile.split("/").length != 2)
             throw new IllegalArgumentException("Uknnown profiles : " + jobProfile);
-        setMemProfile(jobProfile.split(",")[0],jobProfile.split(",")[1],conf);
+        setMemProfile(jobProfile.split("/")[0],jobProfile.split("/")[1],conf);
     }
 
     public static void setMemProfile(final String mapProfile,final String reduceProfile, final Configuration conf) {

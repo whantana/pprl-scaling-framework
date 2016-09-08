@@ -85,7 +85,8 @@ public class BlockingService implements InitializingBean {
             for (Path path : blockingStatsPaths) {
                 StringBuilder prefixBuilder = new StringBuilder();
                 final String pathName = path.getName();
-                final String[] pathNameParts = pathName.split(".");
+                final String[] pathNameParts = pathName.split("\\.");
+                assert pathNameParts.length == 10;
                 assert pathNameParts[4].split("_").length == 6;
                 prefixBuilder
                         .append(pathNameParts[4].split("_")[1]).append(",")

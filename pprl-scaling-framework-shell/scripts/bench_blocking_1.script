@@ -31,3 +31,5 @@ block_encoded_data --alice_name clk_voters_a_9 --alice_uid id --bob_name clk_vot
 ! hadoop fs -rm -R pprl/block*/matched_pairs
 ! hadoop fs -rm -R pprl/block*/buckets
 
+retrieve_blocking_benchmarks --alice_name clk_voters_a_9 --bob_name clk_voters_b_9
+

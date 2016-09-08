@@ -80,6 +80,7 @@ public class BlockingService implements InitializingBean {
             }
             sb.append("--Stats (csv)------------------------\n");
             sb.append(header).append("\n");
+            System.out.println(sb.toString());
 
             for (Path path : blockingStatsPaths) {
                 StringBuilder prefixBuilder = new StringBuilder();

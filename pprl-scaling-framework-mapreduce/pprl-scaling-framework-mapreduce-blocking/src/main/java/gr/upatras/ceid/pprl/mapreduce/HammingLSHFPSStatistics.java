@@ -99,7 +99,7 @@ public class HammingLSHFPSStatistics {
                         case "mem.total.bytes":
                             jobMemFootprint[job-1] = value;
                             break;
-                        case "total.pairs.count:
+                        case "total.pairs.count":
                             totalPairCount = value;
                             break;
                         case "frequent.pairs.count":

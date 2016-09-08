@@ -24,9 +24,6 @@ import org.apache.hadoop.util.ToolRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-import java.util.TreeMap;
-
 import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.*;
 
 /**
@@ -35,10 +32,13 @@ import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.*;
 public class HammingLSHFPSToolV0 extends Configured implements Tool {
 
     private static final Logger LOG = LoggerFactory.getLogger(HammingLSHFPSToolV0.class);
-
-    private static final String JOB_1_DESCRIPTION = "V0J1. Generate Total Pairs.";
-    private static final String JOB_2_DESCRIPTION = "V0J2. Find Frequent Pairs.";
-    private static final String JOB_3_DESCRIPTION = "V0J3. Find Matched Pairs.";
+    private static final String VERSION = "V0";
+    private static final String JOB_1 = VERSION + "J1";
+    private static final String JOB_2 = VERSION + "J2";
+    private static final String JOB_3 = VERSION + "J3";
+    private static final String JOB_1_DESCRIPTION = JOB_1 + ". Generate Total Pairs.";
+    private static final String JOB_2_DESCRIPTION = JOB_2 + ". Find Frequent Pairs.";
+    private static final String JOB_3_DESCRIPTION = JOB_3 + ". Find Matched Pairs.";
 
     public int run(String[] args) throws Exception {
         final Configuration conf = getConf();
@@ -99,8 +99,7 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
         final HammingLSHBlocking blocking = (seed >= 0 ) ?
                 new HammingLSHBlocking(L,K,seed,aliceEncoding,bobEncoding) :
                 new HammingLSHBlocking(L,K,aliceEncoding,bobEncoding);
-        final Map<String,Long> stats = new TreeMap<>();
-
+        final HammingLSHFPSStatistics stats = new HammingLSHFPSStatistics();
 
         conf.set(CommonKeys.ALICE_SCHEMA,aliceEncodingSchema.toString());
         conf.set(CommonKeys.ALICE_UID,aliceUidFieldName);
@@ -166,8 +165,8 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
 
         // cleanup and stats
         removeSuccessFile(fs,allPairsPath);
-        populateStats(JOB_1_DESCRIPTION, job1, stats, LOG);
-        saveStats(fs, statsPath, stats);
+        stats.populateStats(JOB_1, job1);
+        stats.saveAndClearStats(fs, statsPath);
 
         // get important counters and add them to configuration
         final int aliceRecordCount = (int)job1.getCounters().findCounter(
@@ -233,8 +232,8 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
 
         // cleanup and stats
         removeSuccessFile(fs, frequentPairsPath);
-        populateStats(JOB_2_DESCRIPTION, job2, stats, LOG);
-        saveStats(fs, statsPath, stats);
+        stats.populateStats(JOB_2, job2);
+        stats.saveAndClearStats(fs, statsPath);
 
         // setup job3
         MemProfileUtil.setMemProfile(memProfile3,conf);
@@ -290,8 +289,8 @@ public class HammingLSHFPSToolV0 extends Configured implements Tool {
 
         // cleanup and stats
         removeSuccessFile(fs,matchedPairsPath);
-        populateStats(JOB_3_DESCRIPTION, job3, stats, LOG);
-        saveStats(fs, statsPath, stats);
+        stats.populateStats(JOB_3, job3);
+        stats.saveAndClearStats(fs, statsPath);
 
         // all jobs are succesfull save counters to stats path
         LOG.info("All jobs are succesfull. Frequent pairs: \"{}\" , Matched pairs: \"{}\" .",

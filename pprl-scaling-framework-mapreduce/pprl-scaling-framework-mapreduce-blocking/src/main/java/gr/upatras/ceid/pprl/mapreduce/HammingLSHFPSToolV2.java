@@ -20,9 +20,6 @@ import org.apache.hadoop.util.Tool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-import java.util.TreeMap;
-
 import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.*;
 
 /**
@@ -31,9 +28,11 @@ import static gr.upatras.ceid.pprl.mapreduce.CommonUtil.*;
 public class HammingLSHFPSToolV2 extends Configured implements Tool {
 
     private static final Logger LOG = LoggerFactory.getLogger(HammingLSHFPSToolV2.class);
-
-    private static final String JOB_1_DESCRIPTION = "V2J1. Generate Bob Blocking buckets";
-    private static final String JOB_2_DESCRIPTION = "V2J2. Find Matched Pairs (FPS).";
+    private static final String VERSION = "V2";
+    private static final String JOB_1 = VERSION + "J1";
+    private static final String JOB_2 = VERSION + "J2";
+    private static final String JOB_1_DESCRIPTION = JOB_1 + ". Generate Bob Blocking buckets";
+    private static final String JOB_2_DESCRIPTION = JOB_2 + ". Find Matched Pairs.";
 
     public int run(String[] args) throws Exception {
         final Configuration conf = getConf();
@@ -90,7 +89,7 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
         final HammingLSHBlocking blocking = (seed >= 0 ) ?
                 new HammingLSHBlocking(L,K,seed,aliceEncoding,bobEncoding) :
                 new HammingLSHBlocking(L,K,aliceEncoding,bobEncoding);
-        final Map<String,Long> stats = new TreeMap<>();
+        final HammingLSHFPSStatistics stats = new HammingLSHFPSStatistics();
 
 
         conf.set(CommonKeys.ALICE_SCHEMA,aliceEncodingSchema.toString());
@@ -156,8 +155,8 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
 
         // cleanup and stats
         removeSuccessFile(fs,bobBucketsPath);
-        populateStats(JOB_1_DESCRIPTION,job1, stats, LOG);
-        saveStats(fs, statsPath, stats);
+        stats.populateStats(JOB_1, job1);
+        stats.saveAndClearStats(fs, statsPath);
 
         // get important stats for the next job
         final int[] minMaxAvg = getMinMaxAvgBlockingKeyCounts(job1.getCounters(), L, R1);
@@ -221,8 +220,9 @@ public class HammingLSHFPSToolV2 extends Configured implements Tool {
 
         // cleanup and stats
         removeSuccessFile(fs,matchedPairsPath);
-        populateStats(JOB_2_DESCRIPTION,job2, stats, LOG);
-        saveStats(fs, statsPath, stats);
+        stats.populateStats(JOB_2, job2);
+        stats.saveAndClearStats(fs, statsPath);
+
 
         // all jobs are succesfull save counters to stats path
         LOG.info("All jobs are succesfull. See \"{}\" for the matched pairs list.", matchedPairsPath);

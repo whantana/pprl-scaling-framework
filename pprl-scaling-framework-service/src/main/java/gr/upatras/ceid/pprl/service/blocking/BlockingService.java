@@ -1,6 +1,6 @@
 package gr.upatras.ceid.pprl.service.blocking;
 
-import gr.upatras.ceid.pprl.mapreduce.CommonUtil;
+import gr.upatras.ceid.pprl.mapreduce.HammingLSHFPSStatistics;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
@@ -12,11 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.hadoop.mapreduce.ToolRunner;
 import org.springframework.stereotype.Service;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.SortedSet;
@@ -99,7 +97,7 @@ public class BlockingService implements InitializingBean {
                     .append(pathNameParts[3].split("_")[3]).append(",");
             final Path statsPath = new Path(path,"stats");
             if(!hdfs.exists(statsPath) || !hdfs.isFile(statsPath)) continue;
-            final String benchmarkString = CommonUtil.loadBenchmarkStats(hdfs,statsPath);
+            final String benchmarkString = HammingLSHFPSStatistics.loadAsBenchmarkAsStringCSV(hdfs, statsPath);
             sb.append(prefixBuilder.toString()).append(benchmarkString).append("\n");
         }
         return sb.toString();

@@ -88,7 +88,7 @@ public class HammingLSHFPSStatistics {
                     final String[] parts = line.split("_");
                     job = Integer.valueOf(parts[0].substring(3));
                     final String key = parts[1].split("=")[0];
-                    final int value = Integer.valueOf(parts[1].split("=")[1]);
+                    final long value = Long.valueOf(parts[1].split("=")[1]);
                     switch (key) {
                         case "job.duration":
                             jobTime[job-1] = value;

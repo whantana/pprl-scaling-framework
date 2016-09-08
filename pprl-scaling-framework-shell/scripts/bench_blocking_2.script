@@ -30,4 +30,3 @@ block_encoded_data --alice_name clk_big_voters_a_9 --alice_uid id --bob_name clk
 ! hadoop fs -rm -R pprl/block*/frequent_pairs
 ! hadoop fs -rm -R pprl/block*/matched_pairs
 ! hadoop fs -rm -R pprl/block*/buckets
-

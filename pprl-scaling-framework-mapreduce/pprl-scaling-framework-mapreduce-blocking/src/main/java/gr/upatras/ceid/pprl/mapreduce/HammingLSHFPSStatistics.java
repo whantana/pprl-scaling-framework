@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * A Hamming LSHH/FPS Staticstics Util
+ * A Hamming LSHH/FPS Staticstics
  */
 public class HammingLSHFPSStatistics {
 

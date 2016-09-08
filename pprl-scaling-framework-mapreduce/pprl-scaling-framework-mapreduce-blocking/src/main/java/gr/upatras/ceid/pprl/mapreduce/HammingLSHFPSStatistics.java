@@ -53,7 +53,7 @@ public class HammingLSHFPSStatistics {
             stats.put(key +"_" + name, value);
         }
         final Counter totalWrittenBytesCounter =
-                job.getCounters().findCounter("HDFS", FileSystemCounter.BYTES_WRITTEN);
+                job.getCounters().findCounter("FILE", FileSystemCounter.BYTES_WRITTEN);
         if(totalWrittenBytesCounter != null)
             stats.put(key + "_total.hdfs.written.bytes", totalWrittenBytesCounter.getValue());
 

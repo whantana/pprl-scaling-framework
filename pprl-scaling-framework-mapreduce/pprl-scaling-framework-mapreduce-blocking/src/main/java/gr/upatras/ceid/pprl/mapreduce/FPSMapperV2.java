@@ -165,14 +165,16 @@ public class FPSMapperV2 extends Mapper<AvroKey<GenericRecord>,NullWritable,Avro
         for(int i=0 ; i < blocking.getL() ; i++)
             bobBuckets[i] = new HashMap<BitSet, ArrayList<byte[]>>(capacity,fillFactor);
 
-
-
         final SortedSet<Path> bucketPaths = new TreeSet<Path>();
         for(final URI uri : context.getCacheFiles()) {
             if(!uri.toString().endsWith("jar"))
-                bucketPaths.add(new Path(uri));
+            bucketPaths.add(new Path(uri));
         }
+
         System.out.println("Loading bob buckets...");
+        int i = 1;
+        System.out.format("Loading bob buckets...(%d/%d)\n",
+                i, bucketPaths.size());
         for (Path bucketPath : bucketPaths) {
             SequenceFile.Reader reader = new SequenceFile.Reader(conf, SequenceFile.Reader.file(bucketPath));
             BlockingKeyWritable key = new BlockingKeyWritable();
@@ -182,6 +184,8 @@ public class FPSMapperV2 extends Mapper<AvroKey<GenericRecord>,NullWritable,Avro
                     populateBobBuckets(key.blockingGroupId, key.hash,bobId);
             }
             reader.close();
+            i++;
+            System.out.format("Loading bob buckets...(%d/%d)\n", i, bucketPaths.size());
         }
         long bobBucketsBytes = MemoryUtil.deepMemoryUsageOf(bobBuckets);
         System.out.println("Bob buckets memory footprint : " + bobBucketsBytes/(1024*1024) + " MB");

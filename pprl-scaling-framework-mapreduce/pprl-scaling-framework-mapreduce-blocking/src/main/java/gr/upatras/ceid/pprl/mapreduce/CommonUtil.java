@@ -1,5 +1,6 @@
 package gr.upatras.ceid.pprl.mapreduce;
 
+import gr.upatras.ceid.pprl.blocking.HammingLSHBlocking;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -19,7 +20,9 @@ import org.slf4j.Logger;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

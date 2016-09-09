@@ -1,4 +1,3 @@
-
 package gr.upatras.ceid.pprl.benchmarks;
 
 import gr.upatras.ceid.pprl.blocking.BlockingException;
@@ -78,11 +77,11 @@ public class HammingLSHFPSBlockingBenchmarkTest {
     private final String[] ENCODING_NAMES = {
             "clk",
             "fbf_s",
-//            "fbf_d",
+			"fbf_d",
             "rbf_us",
-//            "rbf_ud",
+			"rbf_ud",
             "rbf_ws",
-//            "rbf_wd"
+			"rbf_wd"
     };
 
     private static final int HAMMING_LSH_K = 30;
@@ -292,7 +291,7 @@ public class HammingLSHFPSBlockingBenchmarkTest {
                 }
             }
             int hammingThrehold = (int) trullyMatchedPairHD.getMax();
-            int K = (encodingName.contains("d")) ? 20 : HAMMING_LSH_K;
+            int K = HAMMING_LSH_K;
 
             double ptheta = HammingLSHBlockingUtil.probOfBaseHashMatch(hammingThrehold, S);
 
@@ -317,8 +316,8 @@ public class HammingLSHFPSBlockingBenchmarkTest {
 
                 final HammingLSHBlocking blocking = new HammingLSHBlocking(L, K, encodings[0], encodings[1]);
                 LOG.info(hfpsBuilder.toString());
-                blocking.runHLSH(ENC_SAMPLES[1], "id");
-                blocking.runFPS(ENC_SAMPLES[0], "id", C, hammingThrehold);
+                // blocking.runHLSH(ENC_SAMPLES[1], "id");
+                // blocking.runFPS(ENC_SAMPLES[0], "id", C, hammingThrehold);
                 final HammingLSHBlockingResult result = blocking.getResult();
                 hfpsBuilder
                         .append(result.getBobBlockingSize()).append(',')

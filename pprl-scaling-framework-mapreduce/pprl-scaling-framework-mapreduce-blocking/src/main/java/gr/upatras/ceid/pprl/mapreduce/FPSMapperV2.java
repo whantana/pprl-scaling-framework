@@ -184,8 +184,8 @@ public class FPSMapperV2 extends Mapper<AvroKey<GenericRecord>,NullWritable,Avro
                     populateBobBuckets(key.blockingGroupId, key.hash,bobId);
             }
             reader.close();
-            i++;
             System.out.format("Loading bob buckets...(%d/%d)\n", i, bucketPaths.size());
+            i++;
         }
         long bobBucketsBytes = MemoryUtil.deepMemoryUsageOf(bobBuckets);
         System.out.println("Bob buckets memory footprint : " + bobBucketsBytes/(1024*1024) + " MB");

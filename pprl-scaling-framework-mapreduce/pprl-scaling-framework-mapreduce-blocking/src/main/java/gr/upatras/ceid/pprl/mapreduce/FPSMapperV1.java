@@ -187,7 +187,7 @@ public class FPSMapperV1 extends Mapper<AvroKey<GenericRecord>,NullWritable,Text
 			System.out.format("Loading bob buckets...(%d/%d)\n", i, bucketPaths.size());
             i++;
         }
-        long bobBucketsBytes = MemoryUtil.deepMemoryUsageOf(bobBuckets);
+        long bobBucketsBytes = MemoryUtil.deepMemoryUsageOfAll(Arrays.asList(bobBuckets));
         System.out.println("Bob buckets memory footprint : " + bobBucketsBytes/(1024*1024) + " MB");
         increaseTotalByteCounter(context, bobBucketsBytes);
     }

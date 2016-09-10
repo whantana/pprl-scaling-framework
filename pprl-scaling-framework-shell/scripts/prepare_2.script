@@ -18,6 +18,13 @@ encode_data --name huge_voters_b_9 --fields name,surname,address --include id --
 
 # Get optional HLSH/FPS parameters
 get_optimal_hlsh_fps_params --theta 180 --delta 0.001 --size 4096 --K 30
+# C=4 , L=52, K = 30
+
 get_optimal_hlsh_fps_params --theta 180 --delta 0.0001 --size 4096 --K 30
+# C=6 , L=74, K = 30
+
 get_optimal_hlsh_fps_params --theta 180 --delta 0.00001 --size 4096 --K 30
+# C=7 , L=91, K = 30 
+
 get_optimal_hlsh_fps_params --theta 180 --delta 0.000001 --size 4096 --K 30
+# C=8 , L=114, K = 30

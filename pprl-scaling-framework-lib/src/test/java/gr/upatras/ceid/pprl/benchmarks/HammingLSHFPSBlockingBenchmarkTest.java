@@ -25,6 +25,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -74,18 +76,29 @@ public class HammingLSHFPSBlockingBenchmarkTest {
     private static int ENCODING_FBF_N = 1024;
     private static int ENCODING_Q = 2;
 
-    private final String[] ENCODING_NAMES = {
+    private static final String[] ENCODING_NAMES = {
             "clk",
             "fbf_s",
-			"fbf_d",
+            "fbf_d",
             "rbf_us",
-			"rbf_ud",
+            "rbf_ud",
             "rbf_ws",
-			"rbf_wd"
+            "rbf_wd"
     };
 
+    private static final Map<String,DescriptiveStatistics> HAMMING_STATS = new HashMap();
+    private static final Map<String,DescriptiveStatistics> JACCARD_STATS = new HashMap();
+    private static final Map<String,DescriptiveStatistics> DICE_STATS = new HashMap();
+    static {
+        for(String name : ENCODING_NAMES) {
+            HAMMING_STATS.put(name,new DescriptiveStatistics());
+            JACCARD_STATS.put(name,new DescriptiveStatistics());
+            DICE_STATS.put(name,new DescriptiveStatistics());
+        }
+    }
+
     private static final int HAMMING_LSH_K = 30;
-    private static final double[] HAMMING_DELTAS = {0.01, 0.005, 0.001, 0.0005, 0.0001};
+    private static final double[] HAMMING_DELTAS = {0.005, 0.001, 0.0005, 0.0001, 0.00005};
 
     @Test
     public void test00() throws IOException, DatasetException {
@@ -138,6 +151,7 @@ public class HammingLSHFPSBlockingBenchmarkTest {
 
         LOG.info(DatasetStatistics.prettyStats(STATS));
     }
+
     @Test
     public void test02() throws IOException, DatasetException, BloomFilterEncodingException, BlockingException {
         LOG.info("Encoding datasets");
@@ -229,6 +243,7 @@ public class HammingLSHFPSBlockingBenchmarkTest {
                 DatasetsUtil.saveAvroRecordsToFSPath(fs, ENC_SAMPLES[i], encodings[i].getEncodingSchema(),
                         new Path("data/benchmarks"), encodingName + "_" + DATASET_NAMES[i], 1);
             }
+
         }
     }
 
@@ -236,11 +251,15 @@ public class HammingLSHFPSBlockingBenchmarkTest {
     public void test03() throws IOException, DatasetException, BloomFilterEncodingException, BlockingException {
         final String BENCHMARK_HEADER = "enc_type,S,threshold,ptheta,pthetaK,delta,K,Lopt,Lc,L,C,bsize,bt,fpst,tt,fpc,mpc,bm\n";
         final StringBuilder BENCHMARK_REPORT_BUILDER = new StringBuilder(BENCHMARK_HEADER);
-        GenericRecord[][] ENC_SAMPLES = {
-                new GenericRecord[100000],
-                new GenericRecord[10000]
+        String[] ENCODING_NAMES = {
+                "clk",
+                "fbf_s",
+                "fbf_d",
+                "rbf_us",
+                "rbf_ud",
+                "rbf_ws",
+                "rbf_wd"
         };
-
         for (String encodingName : ENCODING_NAMES) {
             System.gc();
             // avro paths
@@ -257,6 +276,8 @@ public class HammingLSHFPSBlockingBenchmarkTest {
                     DatasetsUtil.loadSchemaFromFSPath(fs,schemaPaths[0]),
                     DatasetsUtil.loadSchemaFromFSPath(fs,schemaPaths[1])
             };
+
+            GenericRecord[][] ENC_SAMPLES = new GenericRecord[2][];
             ENC_SAMPLES[0] = DatasetsUtil.loadAvroRecordsFromFSPaths(fs, schemas[0], avroPaths[0]);
             ENC_SAMPLES[1] = DatasetsUtil.loadAvroRecordsFromFSPaths(fs, schemas[1], avroPaths[1]);
 
@@ -269,10 +290,6 @@ public class HammingLSHFPSBlockingBenchmarkTest {
             EXPERIMENT_REPORT_BUILDER.append(encodingName).append(',');
             EXPERIMENT_REPORT_BUILDER.append(S).append(',');
 
-            // Profile hamming distance and select hamming threshold max of trully matched distances
-            DescriptiveStatistics trullyMatchedPairHD = new DescriptiveStatistics();
-            DescriptiveStatistics trullyNonMatchedPairHD = new DescriptiveStatistics();
-
             for (int rb = 0; rb < 100; rb++) {
                 for (int ra = 0; ra < 1000; ra++) {
                     final GenericRecord encodedRecordA = ENC_SAMPLES[0][ra];
@@ -284,14 +301,58 @@ public class HammingLSHFPSBlockingBenchmarkTest {
                             encodings[0].retrieveBloomFilter(encodedRecordA),
                             encodings[1].retrieveBloomFilter(encodedRecordB)
                     );
-                    if (matcherA.group(1).equals(matcherB.group(1)))
-                        trullyMatchedPairHD.addValue(hamming);
-                    else
-                        trullyNonMatchedPairHD.addValue(hamming);
+                    double jaccard = PrivateSimilarityUtil.jaccard(
+                            encodings[0].retrieveBloomFilter(encodedRecordA),
+                            encodings[1].retrieveBloomFilter(encodedRecordB)
+                    );
+                    double dice = PrivateSimilarityUtil.dice(
+                            encodings[0].retrieveBloomFilter(encodedRecordA),
+                            encodings[1].retrieveBloomFilter(encodedRecordB)
+                    );
+
+                    if (matcherA.group(1).equals(matcherB.group(1))) {
+                        HAMMING_STATS.get(encodingName).addValue(hamming);
+                        JACCARD_STATS.get(encodingName).addValue(jaccard);
+                        DICE_STATS.get(encodingName).addValue(dice);
+                    }
+
                 }
             }
-            int hammingThrehold = (int) trullyMatchedPairHD.getMax();
-            int K = HAMMING_LSH_K;
+
+            LOG.info(String.format(
+                    "\nHamming Distance :\n MIN=%d Q25=%d Q50=%d Q75=%d MAX=%d\n Std.Dev=%.2f Var=%.2f",
+                    (int) HAMMING_STATS.get(encodingName).getMin(),
+                    (int) HAMMING_STATS.get(encodingName).getPercentile(25),
+                    (int) HAMMING_STATS.get(encodingName).getPercentile(50),
+                    (int) HAMMING_STATS.get(encodingName).getPercentile(75),
+                    (int) HAMMING_STATS.get(encodingName).getMax(),
+                    HAMMING_STATS.get(encodingName).getStandardDeviation(),
+                    HAMMING_STATS.get(encodingName).getVariance()));
+
+            LOG.info(String.format(
+                    "\nJaccard Coefficient :\n MIN=%.3f Q25=%.3f Q50=%.3f Q75=%.3f MAX=%.3f\n Std.Dev=%.2f Var=%.2f",
+                    JACCARD_STATS.get(encodingName).getMin(),
+                    JACCARD_STATS.get(encodingName).getPercentile(25),
+                    JACCARD_STATS.get(encodingName).getPercentile(50),
+                    JACCARD_STATS.get(encodingName).getPercentile(75),
+                    JACCARD_STATS.get(encodingName).getMax(),
+                    JACCARD_STATS.get(encodingName).getStandardDeviation(),
+                    JACCARD_STATS.get(encodingName).getVariance()));
+
+            LOG.info(String.format(
+                    "\nDice Coefficient :\n MIN=%.3f Q25=%.3f Q50=%.3f Q75=%.3f MAX=%.3f\n Std.Dev=%.2f Var=%.2f",
+                    DICE_STATS.get(encodingName).getMin(),
+                    DICE_STATS.get(encodingName).getPercentile(25),
+                    DICE_STATS.get(encodingName).getPercentile(50),
+                    DICE_STATS.get(encodingName).getPercentile(75),
+                    DICE_STATS.get(encodingName).getMax(),
+                    DICE_STATS.get(encodingName).getStandardDeviation(),
+                    DICE_STATS.get(encodingName).getVariance()));
+
+
+
+            int hammingThrehold = (int) HAMMING_STATS.get(encodingName).getMax();
+            int K = encodingName.contains("d") ? HAMMING_LSH_K/3 : HAMMING_LSH_K;
 
             double ptheta = HammingLSHBlockingUtil.probOfBaseHashMatch(hammingThrehold, S);
 
@@ -315,9 +376,8 @@ public class HammingLSHFPSBlockingBenchmarkTest {
                         .append(C).append(',');
 
                 final HammingLSHBlocking blocking = new HammingLSHBlocking(L, K, encodings[0], encodings[1]);
-                LOG.info(hfpsBuilder.toString());
-                // blocking.runHLSH(ENC_SAMPLES[1], "id");
-                // blocking.runFPS(ENC_SAMPLES[0], "id", C, hammingThrehold);
+                blocking.runHLSH(ENC_SAMPLES[1], "id");
+                blocking.runFPS(ENC_SAMPLES[0], "id", C, hammingThrehold);
                 final HammingLSHBlockingResult result = blocking.getResult();
                 hfpsBuilder
                         .append(result.getBobBlockingSize()).append(',')
@@ -328,7 +388,6 @@ public class HammingLSHFPSBlockingBenchmarkTest {
                         .append(result.getMatchedPairsCount()).append(',')
                         .append(result.getTrullyMatchedCount());
                 hfpsBuilder.append('\n');
-                LOG.info(hfpsBuilder.toString());
                 BENCHMARK_REPORT_BUILDER.append(hfpsBuilder.toString());
             }
         }

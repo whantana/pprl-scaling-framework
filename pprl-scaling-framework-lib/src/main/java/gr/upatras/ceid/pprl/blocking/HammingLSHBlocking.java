@@ -226,7 +226,7 @@ public class HammingLSHBlocking {
 
         // hash bob records into the buckets.
         final long start = System.currentTimeMillis();
-        System.out.print("Blocking bob records...(0%)");
+//        System.out.print("Blocking bob records...(0%)");
         for(int r=0; r < bobRecords.length; r++) {
 //            System.out.format("\rBlocking bob records...(%d%%)",
 //                    Math.round(100*((double)r/(double)bobRecords.length)));
@@ -262,7 +262,7 @@ public class HammingLSHBlocking {
         // count collisions of Alice's bloom filters in bobs buckets
         final long start = System.currentTimeMillis();
         final HashMap<String,Short> collisions = new HashMap<String,Short>((int)(bobRecordsMap.size()/ 0.75f + 1), 0.75f);
-        System.out.print("Counting collisions with alice records...(0%)");
+//        System.out.print("Counting collisions with alice records...(0%)");
         for(int aliceId=0; aliceId < aliceRecords.length; aliceId++) {
   //          System.out.format("\rCounting collisions with alice records...(%d%%).",
     //                Math.round(100 * ((aliceId + 1) / (double) aliceRecords.length)));

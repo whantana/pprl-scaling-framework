@@ -251,12 +251,12 @@ public class HammingLSHFPSBlockingBenchmarkTest {
         final String BENCHMARK_HEADER = "enc_type,S,threshold,ptheta,pthetaK,delta,K,Lopt,Lc,L,C,bsize,bt,fpst,tt,fpc,mpc,bm\n";
         final StringBuilder BENCHMARK_REPORT_BUILDER = new StringBuilder(BENCHMARK_HEADER);
         String[] ENCODING_NAMES = {
-				// "clk",
-				// "fbf_s",
-				// "fbf_d",
-				// "rbf_us",
-				// "rbf_ud",
-                //"rbf_ws",
+                "clk",
+                "fbf_s",
+                "fbf_d",
+                "rbf_us",
+                "rbf_ud",
+                "rbf_ws",
                 "rbf_wd"
         };
         for (String encodingName : ENCODING_NAMES) {
@@ -282,10 +282,6 @@ public class HammingLSHFPSBlockingBenchmarkTest {
                     BloomFilterEncodingUtil.setupNewInstance(schemas[0]),
                     BloomFilterEncodingUtil.setupNewInstance(schemas[1])
             };
-            int S = encodings[0].getBFN();
-            final StringBuilder EXPERIMENT_REPORT_BUILDER = new StringBuilder();
-            EXPERIMENT_REPORT_BUILDER.append(encodingName).append(',');
-            EXPERIMENT_REPORT_BUILDER.append(S).append(',');
 
             for (int rb = 0; rb < 100; rb++) {
                 for (int ra = 0; ra < 1000; ra++) {
@@ -298,70 +294,77 @@ public class HammingLSHFPSBlockingBenchmarkTest {
                             encodings[0].retrieveBloomFilter(encodedRecordA),
                             encodings[1].retrieveBloomFilter(encodedRecordB)
                     );
-
                     if (matcherA.group(1).equals(matcherB.group(1))) {
                         HAMMING_STATS.get(encodingName).addValue(hamming);
                     }
-
                 }
             }
 
             LOG.info(String.format("%s : Hamming Distance Stats : MIN=%d AVG=%d MAX=%d Std.Dev=%.2f",
-					encodingName,
+                    encodingName,
                     (int) HAMMING_STATS.get(encodingName).getMin(),
-					(int) HAMMING_STATS.get(encodingName).getMean(),
+                    (int) HAMMING_STATS.get(encodingName).getMean(),
                     (int) HAMMING_STATS.get(encodingName).getMax(),
                     HAMMING_STATS.get(encodingName).getStandardDeviation()));
 
-            int hammingThrehold = (int) HAMMING_STATS.get(encodingName).getMax();
-            double ptheta = HammingLSHBlockingUtil.probOfBaseHashMatch(hammingThrehold, S);
-            int K = HAMMING_LSH_K;
-			double pthetaK = 0;
-			if(encodingName.contains("d")) {
-				K = 1;
-				pthetaK = HammingLSHBlockingUtil.probHashMatch(ptheta,K);
-				while(pthetaK > 0.1998) {
-					K++;
-					pthetaK = HammingLSHBlockingUtil.probHashMatch(ptheta,K);
-				}
-			} else pthetaK = HammingLSHBlockingUtil.probHashMatch(ptheta,K);
-
-            EXPERIMENT_REPORT_BUILDER
-                    .append(hammingThrehold).append(',')
-                    .append(String.format("%.2f", ptheta)).append(',')
-                    .append(String.format("%.2f", pthetaK)).append(',');
-            final String reportSoFar = EXPERIMENT_REPORT_BUILDER.toString();
-            for (double delta : HAMMING_DELTAS) {
-                final StringBuilder hfpsBuilder = new StringBuilder(reportSoFar);
-                final int[] FPS_OPT_PARAMS = HammingLSHBlockingUtil.optimalParameters(hammingThrehold,S,delta,K);
-                final short C = (short) FPS_OPT_PARAMS[0];
-                final int L = FPS_OPT_PARAMS[1];
-                hfpsBuilder
-                        .append((delta <= 0.0005) ? String.format("%.4f", delta) : delta).append(',')
-                        .append(K).append(',')
-                        .append(FPS_OPT_PARAMS[2]).append(',')
-                        .append(FPS_OPT_PARAMS[3]).append(',')
-                        .append(L).append(',')
-                        .append(C).append(',');
-
-                final HammingLSHBlocking blocking = new HammingLSHBlocking(L, K, encodings[0], encodings[1]);
-                blocking.runHLSH(ENC_SAMPLES[1], "id");
-                blocking.runFPS(ENC_SAMPLES[0], "id", C, hammingThrehold);
-                final HammingLSHBlockingResult result = blocking.getResult();
-                hfpsBuilder
-                        .append(result.getBobBlockingSize()).append(',')
-                        .append(result.getBobBlockingTime()).append(',')
-                        .append(result.getFpsTime()).append(',')
-                        .append(result.getBobBlockingTime() + result.getFpsTime()).append(",")
-                        .append(result.getFrequentPairsCount()).append(',')
-                        .append(result.getMatchedPairsCount()).append(',')
-                        .append(result.getTrullyMatchedCount());
-                
-				hfpsBuilder.append('\n');
-				LOG.info("{}",hfpsBuilder.toString());
-                BENCHMARK_REPORT_BUILDER.append(hfpsBuilder.toString());
-			}
+            int hammingThrehold = (int) (encodingName.contains("d") ?
+                    Math.round((double)encodings[0].getBFN()*0.1d) :
+                    HAMMING_STATS.get(encodingName).getMax());
+            BENCHMARK_REPORT_BUILDER.append(runBenchmark(encodingName,ENC_SAMPLES, encodings, hammingThrehold));
         }
         LOG.info("\n\n\n\n\n\n"+ BENCHMARK_REPORT_BUILDER.toString());
+    }
+
+
+
+    private String runBenchmark(final String encodingName,
+                                final GenericRecord[][] ENC_SAMPLES,
+                                final BloomFilterEncoding[] encodings,
+                                final int hammingThreshold) throws BlockingException {
+        int S = encodings[0].getBFN();
+        final StringBuilder EXPERIMENT_REPORT_BUILDER = new StringBuilder();
+        final StringBuilder COMMON_REPORT_BUILDER = new StringBuilder();
+        COMMON_REPORT_BUILDER.append(encodingName).append(',');
+        COMMON_REPORT_BUILDER.append(S).append(',');
+
+        double ptheta = HammingLSHBlockingUtil.probOfBaseHashMatch(hammingThreshold, S);
+        int K = HAMMING_LSH_K;
+        double pthetaK = HammingLSHBlockingUtil.probHashMatch(ptheta,K);
+
+        COMMON_REPORT_BUILDER
+                .append(hammingThreshold).append(',')
+                .append(String.format("%.2f", ptheta)).append(',')
+                .append(String.format("%.2f", pthetaK)).append(',');
+        final String reportSoFar = COMMON_REPORT_BUILDER.toString();
+        for (double delta : HAMMING_DELTAS) {
+            final StringBuilder hfpsBuilder = new StringBuilder(reportSoFar);
+            final int[] FPS_OPT_PARAMS = HammingLSHBlockingUtil.optimalParameters(hammingThreshold,S,delta,K);
+            final short C = (short) FPS_OPT_PARAMS[0];
+            final int L = FPS_OPT_PARAMS[1];
+            hfpsBuilder
+                    .append((delta <= 0.0005) ? String.format("%.5f", delta) : delta).append(',')
+                    .append(K).append(',')
+                    .append(FPS_OPT_PARAMS[2]).append(',')
+                    .append(FPS_OPT_PARAMS[3]).append(',')
+                    .append(L).append(',')
+                    .append(C).append(',');
+
+            final HammingLSHBlocking blocking = new HammingLSHBlocking(L, K, encodings[0], encodings[1]);
+            blocking.runHLSH(ENC_SAMPLES[1], "id");
+            blocking.runFPS(ENC_SAMPLES[0], "id", C, hammingThreshold);
+            final HammingLSHBlockingResult result = blocking.getResult();
+            hfpsBuilder
+                    .append(result.getBobBlockingSize()).append(',')
+                    .append(result.getBobBlockingTime()).append(',')
+                    .append(result.getFpsTime()).append(',')
+                    .append(result.getBobBlockingTime() + result.getFpsTime()).append(",")
+                    .append(result.getFrequentPairsCount()).append(',')
+                    .append(result.getMatchedPairsCount()).append(',')
+                    .append(result.getTrullyMatchedCount());
+
+            hfpsBuilder.append('\n');
+            EXPERIMENT_REPORT_BUILDER.append(hfpsBuilder.toString());
+        }
+        return EXPERIMENT_REPORT_BUILDER.toString();
     }
 }

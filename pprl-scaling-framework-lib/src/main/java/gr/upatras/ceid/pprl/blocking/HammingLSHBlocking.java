@@ -228,8 +228,8 @@ public class HammingLSHBlocking {
         final long start = System.currentTimeMillis();
         System.out.print("Blocking bob records...(0%)");
         for(int r=0; r < bobRecords.length; r++) {
-            System.out.format("\rBlocking bob records...(%d%%)",
-                    Math.round(100*((double)r/(double)bobRecords.length)));
+//            System.out.format("\rBlocking bob records...(%d%%)",
+//                    Math.round(100*((double)r/(double)bobRecords.length)));
             final String bobId = String.valueOf(bobRecords[r].get(bobUidFieldName));
             bobRecordsMap.put(bobId, bobRecords[r]);
             BitSet[] keys = hashRecord(bobRecords[r], bobEncodingFieldName);
@@ -238,7 +238,7 @@ public class HammingLSHBlocking {
         }
         final long stop = System.currentTimeMillis();
         long bucketsSize =  MemoryUtil.deepMemoryUsageOf(buckets);
-        System.out.println("\rBlocking bob records...(100%). Size :" + bucketsSize/(1024*1024) + "MB.");
+//        System.out.println("\rBlocking bob records...(100%). Size :" + bucketsSize/(1024*1024) + "MB.");
         result.setBobBlockingSize(bucketsSize);
         result.setBobBlockingTime(stop-start);
     }
@@ -264,8 +264,8 @@ public class HammingLSHBlocking {
         final HashMap<String,Short> collisions = new HashMap<String,Short>((int)(bobRecordsMap.size()/ 0.75f + 1), 0.75f);
         System.out.print("Counting collisions with alice records...(0%)");
         for(int aliceId=0; aliceId < aliceRecords.length; aliceId++) {
-            System.out.format("\rCounting collisions with alice records...(%d%%).",
-                    Math.round(100 * ((aliceId + 1) / (double) aliceRecords.length)));
+  //          System.out.format("\rCounting collisions with alice records...(%d%%).",
+    //                Math.round(100 * ((aliceId + 1) / (double) aliceRecords.length)));
             final BitSet[] keys = hashRecord(aliceRecords[aliceId], aliceEncodingFieldName);
             collisions.clear();
             for (int l = 0; l < blockingGroups.length; l++) {
@@ -292,7 +292,7 @@ public class HammingLSHBlocking {
                 }
             }
         }
-        System.out.format("\rCounting collisions with alice records...(100%%)");
+//        System.out.format("\rCounting collisions with alice records...(100%%)");
         final long stop = System.currentTimeMillis();
         result.setFpsTime(stop-start);
     }

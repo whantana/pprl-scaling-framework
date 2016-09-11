@@ -345,8 +345,8 @@ public class HammingLSHFPSBlockingBenchmarkTest {
                         .append(C).append(',');
 
                 final HammingLSHBlocking blocking = new HammingLSHBlocking(L, K, encodings[0], encodings[1]);
-                blocking.runHLSH(ENC_SAMPLES[1], "id");
-                blocking.runFPS(ENC_SAMPLES[0], "id", C, hammingThrehold);
+//                blocking.runHLSH(ENC_SAMPLES[1], "id");
+//                blocking.runFPS(ENC_SAMPLES[0], "id", C, hammingThrehold);
                 final HammingLSHBlockingResult result = blocking.getResult();
                 hfpsBuilder
                         .append(result.getBobBlockingSize()).append(',')
@@ -356,8 +356,9 @@ public class HammingLSHFPSBlockingBenchmarkTest {
                         .append(result.getFrequentPairsCount()).append(',')
                         .append(result.getMatchedPairsCount()).append(',')
                         .append(result.getTrullyMatchedCount());
-                hfpsBuilder.append('\n');
-				LOG.info("{}",hfspBuilder.toString());
+                
+				hfpsBuilder.append('\n');
+				LOG.info("{}",hfpsBuilder.toString());
                 BENCHMARK_REPORT_BUILDER.append(hfpsBuilder.toString());
 			}
         }

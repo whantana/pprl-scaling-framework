@@ -254,11 +254,11 @@ public class HammingLSHFPSBlockingBenchmarkTest {
         String[] ENCODING_NAMES = {
                 "clk",
                 "fbf_s",
-                // "fbf_d",
+				"fbf_d",
                 "rbf_us",
-                // "rbf_ud",
+                "rbf_ud",
                 "rbf_ws",
-                // "rbf_wd"
+                "rbf_wd"
         };
         for (String encodingName : ENCODING_NAMES) {
             final Path[] avroPaths = {
@@ -374,8 +374,8 @@ public class HammingLSHFPSBlockingBenchmarkTest {
                         .append(C).append(',');
 
                 final HammingLSHBlocking blocking = new HammingLSHBlocking(L, K, encodings[0], encodings[1]);
-                blocking.runHLSH(ENC_SAMPLES[1], "id");
-                blocking.runFPS(ENC_SAMPLES[0], "id", C, hammingThrehold);
+//                blocking.runHLSH(ENC_SAMPLES[1], "id");
+//                blocking.runFPS(ENC_SAMPLES[0], "id", C, hammingThrehold);
                 final HammingLSHBlockingResult result = blocking.getResult();
                 hfpsBuilder
                         .append(result.getBobBlockingSize()).append(',')

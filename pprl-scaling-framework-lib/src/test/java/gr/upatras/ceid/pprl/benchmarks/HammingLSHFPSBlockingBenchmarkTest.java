@@ -251,12 +251,12 @@ public class HammingLSHFPSBlockingBenchmarkTest {
         final String BENCHMARK_HEADER = "enc_type,S,threshold,ptheta,pthetaK,delta,K,Lopt,Lc,L,C,bsize,bt,fpst,tt,fpc,mpc,bm\n";
         final StringBuilder BENCHMARK_REPORT_BUILDER = new StringBuilder(BENCHMARK_HEADER);
         String[] ENCODING_NAMES = {
-				//                 "clk",
-				//                 "fbf_s",
+				// "clk",
+				// "fbf_s",
 				// "fbf_d",
-				//                 "rbf_us",
-				//                 "rbf_ud",
-                "rbf_ws",
+				// "rbf_us",
+				// "rbf_ud",
+                //"rbf_ws",
                 "rbf_wd"
         };
         for (String encodingName : ENCODING_NAMES) {

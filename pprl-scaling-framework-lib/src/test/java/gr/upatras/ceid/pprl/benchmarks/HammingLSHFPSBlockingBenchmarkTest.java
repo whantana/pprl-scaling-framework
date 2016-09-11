@@ -254,11 +254,11 @@ public class HammingLSHFPSBlockingBenchmarkTest {
         String[] ENCODING_NAMES = {
                 "clk",
                 "fbf_s",
-                "fbf_d",
+                // "fbf_d",
                 "rbf_us",
-                "rbf_ud",
+                // "rbf_ud",
                 "rbf_ws",
-                "rbf_wd"
+                // "rbf_wd"
         };
         for (String encodingName : ENCODING_NAMES) {
             final Path[] avroPaths = {

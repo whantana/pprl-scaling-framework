@@ -299,62 +299,34 @@ public class HammingLSHFPSBlockingBenchmarkTest {
                             encodings[0].retrieveBloomFilter(encodedRecordA),
                             encodings[1].retrieveBloomFilter(encodedRecordB)
                     );
-                    double jaccard = PrivateSimilarityUtil.jaccard(
-                            encodings[0].retrieveBloomFilter(encodedRecordA),
-                            encodings[1].retrieveBloomFilter(encodedRecordB)
-                    );
-                    double dice = PrivateSimilarityUtil.dice(
-                            encodings[0].retrieveBloomFilter(encodedRecordA),
-                            encodings[1].retrieveBloomFilter(encodedRecordB)
-                    );
 
                     if (matcherA.group(1).equals(matcherB.group(1))) {
                         HAMMING_STATS.get(encodingName).addValue(hamming);
-                        JACCARD_STATS.get(encodingName).addValue(jaccard);
-                        DICE_STATS.get(encodingName).addValue(dice);
                     }
 
                 }
             }
 
-            LOG.info(String.format(
-                    "\nHamming Distance :\n MIN=%d Q25=%d Q50=%d Q75=%d MAX=%d\n Std.Dev=%.2f Var=%.2f",
+            LOG.info(String.format("%s : Hamming Distance Stats : MIN=%d AVG=%d MAX=%d Std.Dev=%.2f",
+					encodingName,
                     (int) HAMMING_STATS.get(encodingName).getMin(),
-                    (int) HAMMING_STATS.get(encodingName).getPercentile(25),
-                    (int) HAMMING_STATS.get(encodingName).getPercentile(50),
-                    (int) HAMMING_STATS.get(encodingName).getPercentile(75),
+					(int) HAMMING_STATS.get(encodingName).getMean(),
                     (int) HAMMING_STATS.get(encodingName).getMax(),
-                    HAMMING_STATS.get(encodingName).getStandardDeviation(),
-                    HAMMING_STATS.get(encodingName).getVariance()));
-
-            LOG.info(String.format(
-                    "\nJaccard Coefficient :\n MIN=%.3f Q25=%.3f Q50=%.3f Q75=%.3f MAX=%.3f\n Std.Dev=%.2f Var=%.2f",
-                    JACCARD_STATS.get(encodingName).getMin(),
-                    JACCARD_STATS.get(encodingName).getPercentile(25),
-                    JACCARD_STATS.get(encodingName).getPercentile(50),
-                    JACCARD_STATS.get(encodingName).getPercentile(75),
-                    JACCARD_STATS.get(encodingName).getMax(),
-                    JACCARD_STATS.get(encodingName).getStandardDeviation(),
-                    JACCARD_STATS.get(encodingName).getVariance()));
-
-            LOG.info(String.format(
-                    "\nDice Coefficient :\n MIN=%.3f Q25=%.3f Q50=%.3f Q75=%.3f MAX=%.3f\n Std.Dev=%.2f Var=%.2f",
-                    DICE_STATS.get(encodingName).getMin(),
-                    DICE_STATS.get(encodingName).getPercentile(25),
-                    DICE_STATS.get(encodingName).getPercentile(50),
-                    DICE_STATS.get(encodingName).getPercentile(75),
-                    DICE_STATS.get(encodingName).getMax(),
-                    DICE_STATS.get(encodingName).getStandardDeviation(),
-                    DICE_STATS.get(encodingName).getVariance()));
-
-
+                    HAMMING_STATS.get(encodingName).getStandardDeviation()));
 
             int hammingThrehold = (int) HAMMING_STATS.get(encodingName).getMax();
-            int K = encodingName.contains("d") ? HAMMING_LSH_K/3 : HAMMING_LSH_K;
-
             double ptheta = HammingLSHBlockingUtil.probOfBaseHashMatch(hammingThrehold, S);
+            int K = HAMMING_LSH_K;
+			double pthetaK = 0;
+			if(encodingName.contains("d")) {
+				K = 1;
+				pthetaK = HammingLSHBlockingUtil.probHashMatch(ptheta,K);
+				while(pthetaK > 0.1998) {
+					K++;
+					pthetaK = HammingLSHBlockingUtil.probHashMatch(ptheta,K);
+				}
+			} else pthetaK = HammingLSHBlockingUtil.probHashMatch(ptheta,K);
 
-            double pthetaK = HammingLSHBlockingUtil.probHashMatch(ptheta,K);
             EXPERIMENT_REPORT_BUILDER
                     .append(hammingThrehold).append(',')
                     .append(String.format("%.2f", ptheta)).append(',')
@@ -374,8 +346,8 @@ public class HammingLSHFPSBlockingBenchmarkTest {
                         .append(C).append(',');
 
                 final HammingLSHBlocking blocking = new HammingLSHBlocking(L, K, encodings[0], encodings[1]);
-//                blocking.runHLSH(ENC_SAMPLES[1], "id");
-//                blocking.runFPS(ENC_SAMPLES[0], "id", C, hammingThrehold);
+               blocking.runHLSH(ENC_SAMPLES[1], "id");
+               blocking.runFPS(ENC_SAMPLES[0], "id", C, hammingThrehold);
                 final HammingLSHBlockingResult result = blocking.getResult();
                 hfpsBuilder
                         .append(result.getBobBlockingSize()).append(',')

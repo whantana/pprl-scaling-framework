@@ -83,7 +83,7 @@
                     <version>2.12.4</version>
                     <configuration>
                         <workingDirectory>${project.build.testOutputDirectory}</workingDirectory>
-                        <argLine>-javaagent:${project.build.testOutputDirectory}/classmexer-0.0.3.jar -d64 -Xms512m -Xmx2g</argLine>
+                        <argLine>-javaagent:${project.build.testOutputDirectory}/classmexer-0.0.3.jar -Xms1024m -Xmx1024m</argLine>
                         <excludes>
                             <exclude>**/*BenchmarkTest.java</exclude>
                         </excludes>

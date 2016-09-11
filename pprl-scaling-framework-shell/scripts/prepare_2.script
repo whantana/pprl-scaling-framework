@@ -27,4 +27,4 @@ get_optimal_hlsh_fps_params --theta 180 --delta 0.00001 --size 4096 --K 30
 # C=7 , L=91, K = 30 
 
 get_optimal_hlsh_fps_params --theta 180 --delta 0.000001 --size 4096 --K 30
-# C=8 , L=114, K = 30
+# C=9 , L=114, K = 30

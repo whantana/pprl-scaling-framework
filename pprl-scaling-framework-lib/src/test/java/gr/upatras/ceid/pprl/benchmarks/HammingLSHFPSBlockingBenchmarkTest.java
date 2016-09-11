@@ -341,8 +341,8 @@ public class HammingLSHFPSBlockingBenchmarkTest {
                     .append(C).append(',');
 
             final HammingLSHBlocking blocking = new HammingLSHBlocking(L, K, encodings[0], encodings[1]);
-            blocking.runHLSH(ENC_SAMPLES[1], "id");
-            blocking.runFPS(ENC_SAMPLES[0], "id", C, hammingThreshold);
+//            blocking.runHLSH(ENC_SAMPLES[1], "id");
+//            blocking.runFPS(ENC_SAMPLES[0], "id", C, hammingThreshold);
             final HammingLSHBlockingResult result = blocking.getResult();
             hfpsBuilder
                     .append(result.getBobBlockingSize()).append(',')

@@ -328,7 +328,7 @@ public class HammingLSHFPSBlockingBenchmarkTest {
         COMMON_REPORT_BUILDER.append(S).append(',');
 
         double ptheta = HammingLSHBlockingUtil.probOfBaseHashMatch(hammingThreshold, S);
-        int K = HAMMING_LSH_K;
+        int K = (encodingName.contains("d") ? HAMMING_LSH_K/2 : HAMMING_LSH_K;
         double pthetaK = HammingLSHBlockingUtil.probHashMatch(ptheta,K);
 
         COMMON_REPORT_BUILDER

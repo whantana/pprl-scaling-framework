@@ -250,15 +250,6 @@ public class HammingLSHFPSBlockingBenchmarkTest {
     public void test03() throws IOException, DatasetException, BloomFilterEncodingException, BlockingException {
         final String BENCHMARK_HEADER = "enc_type,S,threshold,ptheta,pthetaK,delta,K,Lopt,Lc,L,C,bsize,bt,fpst,tt,fpc,mpc,bm\n";
         final StringBuilder BENCHMARK_REPORT_BUILDER = new StringBuilder(BENCHMARK_HEADER);
-        String[] ENCODING_NAMES = {
-                "clk",
-                "fbf_s",
-                "fbf_d",
-                "rbf_us",
-                "rbf_ud",
-                "rbf_ws",
-                "rbf_wd"
-        };
         for (String encodingName : ENCODING_NAMES) {
             final Path[] avroPaths = {
                     new Path("data/benchmarks",encodingName + "_" + DATASET_NAMES[0] + ".avro"),

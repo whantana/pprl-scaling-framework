@@ -183,7 +183,6 @@ public class HammingLSHFPSBlockingBenchmarkTest {
         }
 
         for (String encodingName : ENCODING_NAMES) {
-            System.gc();
             BloomFilterEncoding[] encodings = new BloomFilterEncoding[2];
 
             // encoding schema a
@@ -346,8 +345,8 @@ public class HammingLSHFPSBlockingBenchmarkTest {
                         .append(C).append(',');
 
                 final HammingLSHBlocking blocking = new HammingLSHBlocking(L, K, encodings[0], encodings[1]);
-               blocking.runHLSH(ENC_SAMPLES[1], "id");
-               blocking.runFPS(ENC_SAMPLES[0], "id", C, hammingThrehold);
+                blocking.runHLSH(ENC_SAMPLES[1], "id");
+                blocking.runFPS(ENC_SAMPLES[0], "id", C, hammingThrehold);
                 final HammingLSHBlockingResult result = blocking.getResult();
                 hfpsBuilder
                         .append(result.getBobBlockingSize()).append(',')
@@ -358,8 +357,9 @@ public class HammingLSHFPSBlockingBenchmarkTest {
                         .append(result.getMatchedPairsCount()).append(',')
                         .append(result.getTrullyMatchedCount());
                 hfpsBuilder.append('\n');
+				LOG.info("{}",hfspBuilder.toString());
                 BENCHMARK_REPORT_BUILDER.append(hfpsBuilder.toString());
-            }
+			}
         }
         LOG.info("\n\n\n\n\n\n"+ BENCHMARK_REPORT_BUILDER.toString());
     }

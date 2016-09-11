@@ -342,7 +342,7 @@ public class HammingLSHFPSBlockingBenchmarkTest {
             final short C = (short) FPS_OPT_PARAMS[0];
             final int L = FPS_OPT_PARAMS[1];
             hfpsBuilder
-                    .append((delta <= 0.0005) ? String.format("%.5f", delta) : delta).append(',')
+                    .append((delta <= 0.0001) ? String.format("%.5f", delta) : delta).append(',')
                     .append(K).append(',')
                     .append(FPS_OPT_PARAMS[2]).append(',')
                     .append(FPS_OPT_PARAMS[3]).append(',')

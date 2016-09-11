@@ -261,8 +261,6 @@ public class HammingLSHFPSBlockingBenchmarkTest {
                 "rbf_wd"
         };
         for (String encodingName : ENCODING_NAMES) {
-            System.gc();
-            // avro paths
             final Path[] avroPaths = {
                     new Path("data/benchmarks",encodingName + "_" + DATASET_NAMES[0] + ".avro"),
                     new Path("data/benchmarks",encodingName + "_" + DATASET_NAMES[1] + ".avro")

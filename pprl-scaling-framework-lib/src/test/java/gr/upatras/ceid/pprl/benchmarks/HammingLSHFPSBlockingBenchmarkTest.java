@@ -79,11 +79,11 @@ public class HammingLSHFPSBlockingBenchmarkTest {
     private static final String[] ENCODING_NAMES = {
             "clk",
             "fbf_s",
-            "fbf_d",
-            "rbf_us",
-            "rbf_ud",
-            "rbf_ws",
-            "rbf_wd"
+            // "fbf_d",
+            // "rbf_us",
+            // "rbf_ud",
+            // "rbf_ws",
+            // "rbf_wd"
     };
 
     private static final Map<String,DescriptiveStatistics> HAMMING_STATS = new HashMap();
@@ -100,7 +100,7 @@ public class HammingLSHFPSBlockingBenchmarkTest {
     private static final int HAMMING_LSH_K = 30;
     private static final double[] HAMMING_DELTAS = {0.005, 0.001, 0.0005, 0.0001, 0.00005};
 
-    @Test
+    // @Test
     public void test00() throws IOException, DatasetException {
         LOG.info("CSV to avro");
         Schema schemaVotersA = DatasetsUtil.avroSchema(
@@ -120,7 +120,7 @@ public class HammingLSHFPSBlockingBenchmarkTest {
         LOG.info("Saved at path {} ", pb);
     }
 
-    @Test
+    // @Test
     public void test01() throws IOException, DatasetException {
         LOG.info("Sample and Stats");
         final Path[][] paths = new Path[][]{
@@ -152,7 +152,7 @@ public class HammingLSHFPSBlockingBenchmarkTest {
         LOG.info(DatasetStatistics.prettyStats(STATS));
     }
 
-    @Test
+    // @Test
     public void test02() throws IOException, DatasetException, BloomFilterEncodingException, BlockingException {
         LOG.info("Encoding datasets");
         final int fieldCount = SELECTED_FIELDS.length;
@@ -341,8 +341,8 @@ public class HammingLSHFPSBlockingBenchmarkTest {
                     .append(C).append(',');
 
             final HammingLSHBlocking blocking = new HammingLSHBlocking(L, K, encodings[0], encodings[1]);
-//            blocking.runHLSH(ENC_SAMPLES[1], "id");
-//            blocking.runFPS(ENC_SAMPLES[0], "id", C, hammingThreshold);
+			blocking.runHLSH(ENC_SAMPLES[1], "id");
+			blocking.runFPS(ENC_SAMPLES[0], "id", C, hammingThreshold);
             final HammingLSHBlockingResult result = blocking.getResult();
             hfpsBuilder
                     .append(result.getBobBlockingSize()).append(',')
